@@ -24,14 +24,16 @@ Requirements for the initial repository framework. Each maps to roadmap phases.
 - [x] **RT-02**: OpenClaw and Hermes Agent are documented as first-class required targets with adapter placeholders and research notes.
 - [x] **RT-03**: The docs explain the preferred strategy: canonical source first, runtime-specific adapter notes or generated wrappers second.
 
-### Examples
-
-- [ ] **EX-01**: The repository includes at least one portable example skill using the canonical template.
-- [ ] **EX-02**: The example skill includes runtime adapter notes for all six target runtimes.
-
 ### Planning
 
 - [x] **PLAN-01**: The repository is initialized as a GSD project with project context, config, requirements, roadmap, state, and project instructions.
+
+## Deferred Example Guidance
+
+Examples stay optional for v1. The canonical template remains the main authoring path; the two items below are tracked so the repo can revisit a small portable example only if contributors later need one.
+
+- [ ] **EX-01**: If an example is added later, it should use the canonical template rather than a runtime-specific one-off format.
+- [ ] **EX-02**: If an example is added later, its adapter notes should cover the six target runtimes without turning the example into a showcase.
 
 ## v2 Requirements
 
@@ -61,7 +63,7 @@ Explicitly excluded from v1. Documented to prevent scope creep.
 | Scaffold CLI | Useful after the canonical structure stabilizes; premature for the first framework pass |
 | Schema/lint enforcement | Requires finalizing required sections and adapter metadata first |
 | Runtime execution harness | Needs real runtime installations and stable adapter contracts |
-| Publishing pipeline | Distribution should follow after examples and compatibility docs are useful |
+| Publishing pipeline | Distribution should follow after the canonical contract and compatibility docs are useful |
 
 ## Traceability
 
@@ -78,14 +80,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RT-01 | Phase 2 | Complete |
 | RT-02 | Phase 2 | Complete |
 | RT-03 | Phase 2 | Complete |
-| EX-01 | Phase 3 | Pending |
-| EX-02 | Phase 3 | Pending |
+| EX-01 | Phase 3 | Deferred |
+| EX-02 | Phase 3 | Deferred |
 
 **Coverage:**
-- v1 requirements: 11 total
-- Mapped to phases: 11
+- v1 requirements: 9 total
+- Deferred example guidance: 2 items
+- Mapped to phases: 9
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-30*
-*Last updated: 2026-05-30 after Phase 2 execution*
+*Last updated: 2026-05-30 after Phase 3 scope reconciliation*
