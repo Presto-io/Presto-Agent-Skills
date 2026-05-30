@@ -236,17 +236,15 @@ Paragraph text.
 |---|-------|---------|---------------|
 | A1 | Figures should be handled as a project-level convention layered on top of image/caption patterns, not as a core Markdown primitive. [ASSUMED] | Summary / Code Examples / State of the Art | The planner may under-specify figure handling if Phase 4 assumes a native figure syntax that the chosen Markdown baseline does not provide. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Where should the contract live exactly?**
+1. **RESOLVED: Where should the contract live exactly?**
    - What we know: `docs/` already owns persistent project documentation, while `templates/skill/SKILL.md` is the canonical copyable artifact. [CITED: docs/directory-spec.md; templates/skill/SKILL.md]
-   - What's unclear: whether the Phase 4 contract should be a new dedicated doc such as `docs/markdown-normalization-contract.md` or a very short addition to an existing docs page. [CITED: README.md; docs/directory-spec.md]
-   - Recommendation: create one concise dedicated docs page in `docs/` and add only short pointers from README and template docs. [CITED: README.md; docs/directory-spec.md]
+   - Decision: create one concise dedicated docs page at `docs/markdown-normalization-contract.md` and add only short pointers from README and template docs. [CITED: README.md; docs/directory-spec.md]
 
-2. **How explicit should the shared flagging convention be?**
+2. **RESOLVED: How explicit should the shared flagging convention be?**
    - What we know: the contract must forbid silent dropping/guessing, but the user also rejected a universal marker taxonomy. [CITED: .planning/phases/04-markdown-normalization-contract/04-CONTEXT.md; .planning/REQUIREMENTS.md]
-   - What's unclear: whether the repo should reserve one minimal shared marker shape or only require "visible, reviewable, and preserved" behavior. [CITED: .planning/phases/04-markdown-normalization-contract/04-CONTEXT.md]
-   - Recommendation: keep the contract at the behavioral level and let each skill/template choose the concrete marker syntax. [CITED: .planning/phases/04-markdown-normalization-contract/04-CONTEXT.md]
+   - Decision: keep the contract at the behavioral level and let each skill/template choose the concrete marker syntax. [CITED: .planning/phases/04-markdown-normalization-contract/04-CONTEXT.md]
 
 ## Environment Availability
 
