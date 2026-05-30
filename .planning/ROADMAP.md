@@ -11,7 +11,7 @@ This roadmap establishes the repository as a portable agent skill framework befo
 | Phase | Name | Goal | Requirements |
 |-------|------|------|--------------|
 | 1 | Repository and GSD Foundation | As a skill contributor, I want to use a clear repository foundation and GSD baseline, so that I can author portable skills consistently across runtimes. | DOC-01, DOC-02, DOC-03, PLAN-01 |
-| 2 | Canonical Skill Format and Runtime Adapters | As a skill contributor, I want to use a reusable skill source format and runtime adapter model, so that I can adapt one skill source across all supported runtimes. | TMPL-01, TMPL-02, RT-01, RT-02, RT-03 |
+| 2 | Canonical Skill Format and Runtime Notes | As a skill contributor, I want to use a reusable skill source format with embedded runtime notes, so that I can adapt one skill source across all supported runtimes. | TMPL-01, TMPL-02, RT-01, RT-02, RT-03 |
 | 3 | Portable Example Scope Reconciliation | As a skill contributor, I want the repository to remove unused example artifacts from v1, so that the canonical skill template remains the primary authoring path. | EX-01, EX-02 (deferred) |
 
 ## Phases
@@ -29,19 +29,19 @@ This roadmap establishes the repository as a portable agent skill framework befo
 3. `AGENTS.md` gives agents clear repository instructions, including Simplified Chinese response behavior.
 4. `.planning/` contains project context, configuration, requirements, roadmap, and state files.
 
-### Phase 2: Canonical Skill Format and Runtime Adapters
+### Phase 2: Canonical Skill Format and Runtime Notes
 
-**Goal:** As a skill contributor, I want to use a reusable skill source format and runtime adapter model, so that I can adapt one skill source across all supported runtimes.
+**Goal:** As a skill contributor, I want to use a reusable skill source format with embedded runtime notes, so that I can adapt one skill source across all supported runtimes.
 **Mode:** mvp
 
 **Requirements:** TMPL-01, TMPL-02, RT-01, RT-02, RT-03
 
 **Success Criteria:**
 1. `templates/skill/SKILL.md` can be copied as the starting point for a new portable skill.
-2. `templates/adapter/runtime-adapter.md` captures the differences each runtime adapter must document.
+2. `templates/skill/SKILL.md` includes `Runtime Adapter Notes` for the differences each runtime must document.
 3. `docs/compatibility-matrix.md` covers Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 4. The docs state that OpenClaw and Hermes Agent are required compatibility targets.
-5. The canonical-source-plus-adapters strategy is documented clearly enough for contributors to follow.
+5. The canonical-source-plus-runtime-notes strategy is documented clearly enough for contributors to follow.
 
 ### Phase 3: Portable Example Scope Reconciliation
 

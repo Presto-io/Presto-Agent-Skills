@@ -10,19 +10,19 @@ Requirements for the initial repository framework. Each maps to roadmap phases.
 ### Documentation
 
 - [x] **DOC-01**: A contributor can read the README and understand the repository purpose, target users, and top-level structure.
-- [x] **DOC-02**: A contributor can find a directory specification that explains where skills, templates, adapters, examples, and planning files live.
+- [x] **DOC-02**: A contributor can find a directory specification that explains where skills, templates, runtime compatibility docs, optional examples, and planning files live.
 - [x] **DOC-03**: An agent can read `AGENTS.md` and follow the repository's language, editing, and skill-authoring rules.
 
 ### Templates
 
 - [x] **TMPL-01**: A contributor can copy a canonical `SKILL.md` template that includes metadata, objective, usage, process, outputs, and success criteria.
-- [x] **TMPL-02**: A contributor can copy a runtime adapter template that captures invocation, user-question handling, task/subagent handling, tool differences, and known limitations.
+- [x] **TMPL-02**: A contributor can use the canonical skill template's `Runtime Adapter Notes` to capture invocation, user-question handling, task/subagent handling, tool differences, and known limitations without a separate adapter template.
 
 ### Runtime Compatibility
 
 - [x] **RT-01**: A contributor can inspect a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
-- [x] **RT-02**: OpenClaw and Hermes Agent are documented as first-class required targets with adapter placeholders and research notes.
-- [x] **RT-03**: The docs explain the preferred strategy: canonical source first, runtime-specific adapter notes or generated wrappers second.
+- [x] **RT-02**: OpenClaw and Hermes Agent are documented as first-class required targets with runtime-note guidance and research notes.
+- [x] **RT-03**: The docs explain the preferred strategy: canonical source first, embedded runtime-specific notes second.
 
 ### Planning
 
@@ -61,7 +61,7 @@ Explicitly excluded from v1. Documented to prevent scope creep.
 | Feature | Reason |
 |---------|--------|
 | Scaffold CLI | Useful after the canonical structure stabilizes; premature for the first framework pass |
-| Schema/lint enforcement | Requires finalizing required sections and adapter metadata first |
+| Schema/lint enforcement | Requires finalizing required sections and runtime-note metadata first |
 | Runtime execution harness | Needs real runtime installations and stable adapter contracts |
 | Publishing pipeline | Distribution should follow after the canonical contract and compatibility docs are useful |
 
