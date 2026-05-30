@@ -63,11 +63,11 @@ This roadmap establishes the repository as a portable agent skill framework befo
 | DOC-02 | Phase 1 | Complete |
 | DOC-03 | Phase 1 | Complete |
 | PLAN-01 | Phase 1 | Complete |
-| TMPL-01 | Phase 2 | Pending |
-| TMPL-02 | Phase 2 | Pending |
-| RT-01 | Phase 2 | Pending |
-| RT-02 | Phase 2 | Pending |
-| RT-03 | Phase 2 | Pending |
+| TMPL-01 | Phase 2 | Complete |
+| TMPL-02 | Phase 2 | Complete |
+| RT-01 | Phase 2 | Complete |
+| RT-02 | Phase 2 | Complete |
+| RT-03 | Phase 2 | Complete |
 | EX-01 | Phase 3 | Pending |
 | EX-02 | Phase 3 | Pending |
 

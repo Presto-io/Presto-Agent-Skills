@@ -15,14 +15,14 @@ Requirements for the initial repository framework. Each maps to roadmap phases.
 
 ### Templates
 
-- [ ] **TMPL-01**: A contributor can copy a canonical `SKILL.md` template that includes metadata, objective, usage, process, outputs, and success criteria.
-- [ ] **TMPL-02**: A contributor can copy a runtime adapter template that captures invocation, user-question handling, task/subagent handling, tool differences, and known limitations.
+- [x] **TMPL-01**: A contributor can copy a canonical `SKILL.md` template that includes metadata, objective, usage, process, outputs, and success criteria.
+- [x] **TMPL-02**: A contributor can copy a runtime adapter template that captures invocation, user-question handling, task/subagent handling, tool differences, and known limitations.
 
 ### Runtime Compatibility
 
-- [ ] **RT-01**: A contributor can inspect a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
-- [ ] **RT-02**: OpenClaw and Hermes Agent are documented as first-class required targets with adapter placeholders and research notes.
-- [ ] **RT-03**: The docs explain the preferred strategy: canonical source first, runtime-specific adapter notes or generated wrappers second.
+- [x] **RT-01**: A contributor can inspect a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
+- [x] **RT-02**: OpenClaw and Hermes Agent are documented as first-class required targets with adapter placeholders and research notes.
+- [x] **RT-03**: The docs explain the preferred strategy: canonical source first, runtime-specific adapter notes or generated wrappers second.
 
 ### Examples
 
@@ -73,11 +73,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOC-02 | Phase 1 | Complete |
 | DOC-03 | Phase 1 | Complete |
 | PLAN-01 | Phase 1 | Complete |
-| TMPL-01 | Phase 2 | Pending |
-| TMPL-02 | Phase 2 | Pending |
-| RT-01 | Phase 2 | Pending |
-| RT-02 | Phase 2 | Pending |
-| RT-03 | Phase 2 | Pending |
+| TMPL-01 | Phase 2 | Complete |
+| TMPL-02 | Phase 2 | Complete |
+| RT-01 | Phase 2 | Complete |
+| RT-02 | Phase 2 | Complete |
+| RT-03 | Phase 2 | Complete |
 | EX-01 | Phase 3 | Pending |
 | EX-02 | Phase 3 | Pending |
 
@@ -88,4 +88,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-05-30*
-*Last updated: 2026-05-30 after Phase 1 execution*
+*Last updated: 2026-05-30 after Phase 2 execution*
