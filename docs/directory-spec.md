@@ -8,6 +8,11 @@
 |------|---------|
 | `README.md` | 给人类贡献者看的项目入口 |
 | `AGENTS.md` | 给 coding agents 看的仓库规则和语言约束 |
+| `adapters/` | runtime adapter 的说明和可扩展放置点 |
+| `docs/` | 持久化项目说明、兼容性矩阵和目录契约 |
+| `examples/` | 展示真实技能写法的示例 |
+| `skills/` | canonical 技能源文件 |
+| `templates/` | 可复制的占位符模板 |
 | `.planning/` | GSD 项目规划、需求、路线图和状态 |
 
 ## Skill Sources
