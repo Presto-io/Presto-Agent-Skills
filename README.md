@@ -2,6 +2,8 @@
 
 Presto Agent Skills 是一个面向多类 AI agent 的技能仓库框架。目标是让一个技能先以统一的 canonical `SKILL.md` 写成，再通过 runtime adapter 说明适配到不同 agent。
 
+这个仓库面向编写、审阅和迁移 agent 技能的贡献者，也面向需要读取本地规则并保持 runtime-neutral 输出的 coding agents。
+
 首批支持目标：
 
 - Codex
