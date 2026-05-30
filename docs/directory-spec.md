@@ -24,14 +24,14 @@
 | `skills/<skill-name>/scripts/` | 技能需要调用的辅助脚本 |
 | `skills/<skill-name>/templates/` | 技能输出模板或文件模板 |
 
-`skills/` 下的内容应该尽量 runtime-neutral。遇到 runtime 差异时，在技能内的 adapter section 或 `adapters/` 中记录，而不是复制出多份语义不同的技能。
+`skills/` 下的 `SKILL.md` 是 semantic source of truth。技能正文应该尽量 runtime-neutral；遇到 runtime 差异时，先写在同一个 `SKILL.md` 的 `Runtime Adapter Notes` 中。只有 notes 过长或安装步骤需要单独审阅时，才新增 `adapters/` 文档。不要复制出多份语义不同的技能。
 
 ## Templates
 
 | Path | Purpose |
 |------|---------|
-| `templates/skill/SKILL.md` | 新技能的 canonical 模板 |
-| `templates/adapter/runtime-adapter.md` | 单个 runtime 适配说明模板 |
+| `templates/skill/SKILL.md` | 新技能的默认 canonical 模板，复制后即可作为 `skills/<skill-name>/SKILL.md` |
+| `templates/adapter/runtime-adapter.md` | 可选的单个 runtime 兼容说明模板，用于补充过长的 adapter notes |
 
 模板必须保持占位符形式，不应包含真实项目的业务逻辑。
 
@@ -39,10 +39,10 @@
 
 | Path | Purpose |
 |------|---------|
-| `adapters/README.md` | 解释 adapter 的职责和最佳实践 |
+| `adapters/README.md` | 解释 adapter notes 的职责和最佳实践 |
 | `docs/compatibility-matrix.md` | 记录各 runtime 的加载路径、能力差异和注意事项 |
 
-后续如果某个 runtime 需要较复杂的生成规则，可以新增 `adapters/<runtime>/README.md`。
+后续如果某个 runtime 需要较复杂的安装说明，可以新增 `adapters/<runtime>/<skill-name>.md`。如果某个 runtime 真的需要 generated wrappers，必须先记录生成规则、来源 `SKILL.md`、安全边界和验证步骤；v1 不默认实现 wrapper。
 
 ## Examples
 
