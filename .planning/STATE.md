@@ -1,32 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: MVP
-current_phase: null
-status: completed
-stopped_at: Completed 03-01-SUMMARY.md
-last_updated: "2026-05-30T15:00:56.379Z"
-last_activity: 2026-05-30 — Milestone v1.0 completed and archived
+milestone: v1.1
+milestone_name: Document Workflow
+current_phase: "5"
+status: ready_to_plan
+stopped_at: Phase 4 complete; ready to plan Phase 5
+last_updated: "2026-05-30T18:41:04Z"
+last_activity: 2026-05-31 — Phase 4 completed
 progress:
   total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** None
-**Status:** v1.0 milestone complete
+**Current Phase:** 5
+**Status:** Ready to plan
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-05-30)
+See: `.planning/PROJECT.md` (updated 2026-05-31)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Planning the next milestone
+**Current focus:** v1.1 Document Workflow - Markdown normalization, Typst constraints, and HTML output verification
 
 ## Workflow Preferences
 
@@ -50,7 +49,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-30)
 
 ## Next Up
 
-Start the next milestone with `/gsd:new-milestone`.
+Plan Phase 5 with `/gsd:plan-phase 5`.
 
 ## Decisions
 
@@ -61,6 +60,10 @@ Start the next milestone with `/gsd:new-milestone`.
 - [Phase 03]: EX-01 and EX-02 are deferred as optional example guidance; v1 stays centered on the canonical SKILL.md contract. — User clarified that examples are human-facing and should not drive AI-skill development for v1.
 - [Phase 03]: Removed unused examples directory from v1; examples will only be created later for a concrete contributor need. — The user clarified that unused files and directories should not remain just as optional placeholders.
 - [Phase 03]: Removed standalone adapters and adapter-template directories from v1; runtime differences now live only in canonical SKILL.md Runtime Adapter Notes. — The directories were not runtime-loaded and acted as unused placeholders.
+- [Milestone v1.1]: Document workflow skills use Markdown as the canonical intermediate representation before Typst or HTML output. — User clarified that these skills are input-to-output document workflows.
+- [Milestone v1.1]: Typst output constraints are a first-class part of the workflow, not informal after-the-fact style notes. — User clarified that Typst code generation has hard limits.
+- [Phase 04]: Document workflow skills normalize source material into a persistent Markdown intermediate before target generation. — Phase 4 created `docs/markdown-normalization-contract.md` and linked it from README, directory spec, and the skill template.
+- [Phase 04]: The shared Markdown contract stays behavioral and does not define universal metadata fields or a universal marker taxonomy. — Template-specific metadata, marker syntax, scripts, and renderer rules remain owned by the relevant skill/template or later target-specific docs.
 
 ## Performance Metrics
 
@@ -69,12 +72,13 @@ Start the next milestone with `/gsd:new-milestone`.
 | 01-repository-and-gsd-foundation | 01 | 4min | 3 | 5 |
 | 02-canonical-skill-format-and-runtime-adapters | 01 | 18min | 4 | 11 |
 | Phase 03 P01 | 12min | 3 tasks | 7 files |
+| Phase 04 P01 | 21min | 3 tasks | 4 files |
 
 ## Last Session
 
-- **Completed:** 03-01-PLAN.md
-- **Stopped At:** Completed 03-01-SUMMARY.md
-- **Resume File:** None
+- **Completed:** 04-01-PLAN.md
+- **Stopped At:** Phase 4 complete; ready to plan Phase 5
+- **Resume File:** .planning/phases/04-markdown-normalization-contract/04-01-SUMMARY.md
 
 ## Close Notes
 
@@ -84,11 +88,11 @@ Start the next milestone with `/gsd:new-milestone`.
 
 ## Current Position
 
-Phase: Milestone v1.0 complete
+Phase: 5
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-05-30 — Milestone v1.0 completed and archived
+Status: Ready to plan
+Last activity: 2026-05-31 — Phase 4 completed
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 5 with /gsd:plan-phase 5
