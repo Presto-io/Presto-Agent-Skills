@@ -3,29 +3,29 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 03
-status: planning
-stopped_at: Phase 3 context gathered
-last_updated: "2026-05-30T12:57:31.158Z"
+status: executing
+stopped_at: Phase 3 plan created
+last_updated: "2026-05-30T14:01:26.872Z"
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 2
+  total_plans: 3
   completed_plans: 2
-  percent: 100
+  percent: 67
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 03
-**Status:** Ready to plan
+**Status:** Executing Phase 03
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-05-30)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 03 — portable-example-skill
+**Current focus:** Phase 03 — example-scope reconciliation (canonical template first)
 
 ## Workflow Preferences
 
@@ -49,7 +49,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-30)
 
 ## Next Up
 
-Plan Phase 3: Portable Example Skill.
+Execute Phase 3: reconcile the lean v1 example scope.
 
 ## Decisions
 
@@ -57,6 +57,7 @@ Plan Phase 3: Portable Example Skill.
 - README and directory spec are the contributor-facing contract; AGENTS remains the concise agent constraint surface.
 - Phase 2 keeps one canonical `SKILL.md` as the primary cross-agent artifact, with runtime adapter notes as lightweight install/use compatibility guidance.
 - OpenClaw and Hermes Agent remain first-class required v1 targets, with installation-time verification cautions where behavior is not locally verified.
+- [Phase 03]: EX-01 and EX-02 are deferred as optional example guidance; v1 stays centered on the canonical SKILL.md contract. — User clarified that examples are human-facing and should not drive AI-skill development for v1.
 
 ## Performance Metrics
 
@@ -67,6 +68,6 @@ Plan Phase 3: Portable Example Skill.
 
 ## Last Session
 
-- **Completed:** 02-01-PLAN.md
-- **Stopped At:** Phase 3 context gathered
-- **Resume File:** .planning/phases/03-portable-example-skill/03-CONTEXT.md
+- **Completed:** 03-01-PLAN.md
+- **Stopped At:** Phase 3 plan created
+- **Resume File:** .planning/phases/03-portable-example-skill/03-01-PLAN.md

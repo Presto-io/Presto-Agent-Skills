@@ -12,7 +12,7 @@ This roadmap establishes the repository as a portable agent skill framework befo
 |-------|------|------|--------------|
 | 1 | Repository and GSD Foundation | As a skill contributor, I want to use a clear repository foundation and GSD baseline, so that I can author portable skills consistently across runtimes. | DOC-01, DOC-02, DOC-03, PLAN-01 |
 | 2 | Canonical Skill Format and Runtime Adapters | As a skill contributor, I want to use a reusable skill source format and runtime adapter model, so that I can adapt one skill source across all supported runtimes. | TMPL-01, TMPL-02, RT-01, RT-02, RT-03 |
-| 3 | Portable Example Skill | As a skill contributor, I want to study a concrete example that demonstrates the repository conventions across runtimes, so that I can author the next portable skill with confidence. | EX-01, EX-02 |
+| 3 | Portable Example Scope Reconciliation | As a skill contributor, I want the repository to treat examples as optional reference material instead of a v1 promise, so that the canonical skill template remains the primary authoring path. | EX-01, EX-02 (deferred) |
 
 ## Phases
 
@@ -43,17 +43,17 @@ This roadmap establishes the repository as a portable agent skill framework befo
 4. The docs state that OpenClaw and Hermes Agent are required compatibility targets.
 5. The canonical-source-plus-adapters strategy is documented clearly enough for contributors to follow.
 
-### Phase 3: Portable Example Skill
+### Phase 3: Portable Example Scope Reconciliation
 
-**Goal:** As a skill contributor, I want to study a concrete example that demonstrates the repository conventions across runtimes, so that I can author the next portable skill with confidence.
+**Goal:** As a skill contributor, I want the repository to treat examples as optional reference material instead of a v1 promise, so that the canonical skill template remains the primary authoring path.
 **Mode:** mvp
 
-**Requirements:** EX-01, EX-02
+**Requirements:** EX-01, EX-02 (deferred)
 
 **Success Criteria:**
-1. `examples/portable-skill/SKILL.md` uses the canonical template rather than a runtime-specific one-off format.
-2. The example includes adapter notes for all six target runtimes.
-3. A contributor can compare the example against the templates and understand how to author the next skill.
+1. `README.md` and `docs/directory-spec.md` keep `templates/skill/SKILL.md` as the first/default authoring path.
+2. `examples/README.md` describes examples as optional, small, and non-normative.
+3. Phase 3 planning records explain that EX-01 and EX-02 are deferred rather than treated as hard v1 delivery promises.
 
 ## Requirement Coverage
 
@@ -68,10 +68,10 @@ This roadmap establishes the repository as a portable agent skill framework befo
 | RT-01 | Phase 2 | Complete |
 | RT-02 | Phase 2 | Complete |
 | RT-03 | Phase 2 | Complete |
-| EX-01 | Phase 3 | Pending |
-| EX-02 | Phase 3 | Pending |
+| EX-01 | Phase 3 | Deferred |
+| EX-02 | Phase 3 | Deferred |
 
-**Coverage:** 11/11 v1 requirements mapped
+**Coverage:** 9/9 v1 requirements mapped; 2 example items deferred
 
 ---
 *Roadmap created: 2026-05-30*
