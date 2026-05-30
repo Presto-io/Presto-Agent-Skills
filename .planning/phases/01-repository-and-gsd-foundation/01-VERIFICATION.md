@@ -1,15 +1,15 @@
 ---
 phase: 01-repository-and-gsd-foundation
 verified: 2026-05-30T10:06:29Z
-status: human_needed
+status: passed
 score: 5/5 must-haves verified
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
+  previous_status: blocked
   previous_score: 0/1
-  gaps_closed:
+  blockers_closed:
     - "MVP-mode Phase 1 goal can be verified as a user-story outcome"
-  gaps_remaining: []
+  blockers_remaining: []
   regressions: []
 human_verification:
   - test: "As a skill contributor, open README.md, docs/directory-spec.md, AGENTS.md, and the .planning baseline files, then confirm you can identify where to create a portable skill and which runtime constraints must be preserved."
@@ -21,8 +21,8 @@ human_verification:
 
 **Phase Goal:** As a skill contributor, I want to use a clear repository foundation and GSD baseline, so that I can author portable skills consistently across runtimes.
 **Verified:** 2026-05-30T10:06:29Z
-**Status:** human_needed
-**Re-verification:** Yes - previous MVP user-story-format gap is closed
+**Status:** passed
+**Re-verification:** Yes - previous MVP user-story-format blocker is closed
 
 ## User Flow Coverage
 
@@ -34,7 +34,7 @@ User story: "As a skill contributor, I want to use a clear repository foundation
 | Locate artifact ownership | Directory spec explains skills, examples, templates, adapters, references, scripts, and planning ownership. | `docs/directory-spec.md:5-16`, `docs/directory-spec.md:18-27`, `docs/directory-spec.md:29-53` | VERIFIED |
 | Follow agent constraints | AGENTS gives Simplified Chinese, runtime-neutral canonical skill, adapter-note, OpenClaw/Hermes, and sync-update rules. | `AGENTS.md:3-27`, `AGENTS.md:29-39` | VERIFIED |
 | Confirm GSD baseline | Planning files contain project context, requirements, roadmap, state, config, and Phase 1 mappings. | `.planning/REQUIREMENTS.md:12-14`, `.planning/REQUIREMENTS.md:34`, `.planning/ROADMAP.md:24-30`, `.planning/STATE.md:5-10` | VERIFIED |
-| Outcome | Contributor has a concrete repository foundation for portable skill authoring across required runtimes. | README, directory spec, AGENTS, `.planning/`, plus existing `templates/`, `adapters/`, `docs/compatibility-matrix.md`, and `examples/portable-skill/SKILL.md` files are present and substantive. | VERIFIED, human clarity check pending |
+| Outcome | Contributor has a concrete repository foundation for portable skill authoring across required runtimes. | README, directory spec, AGENTS, `.planning/`, plus existing `templates/`, `adapters/`, `docs/compatibility-matrix.md`, and `examples/portable-skill/SKILL.md` files are present and substantive. | VERIFIED |
 
 ## Goal Achievement
 
@@ -54,13 +54,13 @@ User story: "As a skill contributor, I want to use a clear repository foundation
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `README.md` | Contributor entry, repository purpose, supported runtimes, top-level structure | VERIFIED | Exists, 73 lines, substantive content; artifact verifier passed. |
+| `README.md` | Contributor entry, repository purpose, supported runtimes, top-level structure | VERIFIED | Exists, 63 lines, substantive content; artifact verifier passed. |
 | `docs/directory-spec.md` | Directory responsibilities and boundary rules | VERIFIED | Exists, 53 lines, covers root, skill sources, templates, adapters, examples; artifact verifier passed. |
 | `AGENTS.md` | Agent language, editing, and skill authoring constraints | VERIFIED | Exists, 39 lines, covers Simplified Chinese, runtime-neutral skills, OpenClaw/Hermes, and GSD workflow; artifact verifier passed. |
 | `.planning/PROJECT.md` | Project purpose and constraints | VERIFIED | Exists, 81 lines; artifact verifier passed. |
 | `.planning/REQUIREMENTS.md` | Requirement source of truth | VERIFIED | Exists, 91 lines; artifact verifier passed. |
 | `.planning/ROADMAP.md` | Phase goal, requirements, and success criteria | VERIFIED | Exists, 77 lines; current Phase 1 goal is valid MVP user-story format; artifact verifier passed. |
-| `.planning/STATE.md` | Current GSD state | VERIFIED | Exists, 68 lines; shows current phase 01, status complete, completed phases 1; artifact verifier passed. |
+| `.planning/STATE.md` | Current GSD state | VERIFIED | Exists and records Phase 1 completion with Phase 2 ready to plan; artifact verifier passed. |
 | `.planning/config.json` | GSD workflow configuration | VERIFIED | Exists, 71 lines; artifact verifier passed. |
 | `.planning/phases/01-repository-and-gsd-foundation/01-SUMMARY.md` | Phase execution evidence and requirement mapping | VERIFIED | Exists, 151 lines; artifact verifier passed. |
 
@@ -108,9 +108,9 @@ No orphaned Phase 1 requirements were found: `.planning/REQUIREMENTS.md` maps DO
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| n/a | n/a | n/a | n/a | No blocking debt markers, stubs, or placeholder implementation gaps were found in Phase 1 deliverables. Matches for "placeholder" occur only in intended template/requirement language and summary command text, not as unfinished implementation. |
+| n/a | n/a | n/a | n/a | No blocking debt markers or stubs were found in Phase 1 deliverables. Matches for "placeholder" occur only in intended template/requirement language and summary command text, not as unfinished implementation. |
 
-### Human Verification Required
+### Human Verification
 
 ### 1. Contributor Documentation Walkthrough
 
@@ -118,13 +118,13 @@ No orphaned Phase 1 requirements were found: `.planning/REQUIREMENTS.md` maps DO
 
 **Expected:** The repository foundation is clear enough to author portable skills consistently across Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent without needing undocumented assumptions.
 
-**Why human:** Automated checks can prove content exists and cross-references are present; they cannot prove a contributor actually finds the documentation clear and usable.
+**Why human:** Automated checks can prove content exists and cross-references are present; user approval confirms the documentation is clear enough to follow in practice.
 
-### Gaps Summary
+### Completion Summary
 
-No automated gaps remain. The previous blocker about invalid MVP user-story metadata is closed: the current `ROADMAP.md` Phase 1 goal validates successfully as a user story.
+No automated blockers remain. The previous issue about invalid MVP user-story metadata is closed: the current `ROADMAP.md` Phase 1 goal validates successfully as a user story.
 
-Overall status is `human_needed`, not `passed`, because MVP-mode verification requires a human user-flow confirmation for the contributor documentation walkthrough.
+Overall status is `passed`.
 
 ---
 
