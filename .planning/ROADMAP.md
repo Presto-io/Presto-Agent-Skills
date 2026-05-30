@@ -12,7 +12,7 @@ This roadmap establishes the repository as a portable agent skill framework befo
 |-------|------|------|--------------|
 | 1 | Repository and GSD Foundation | As a skill contributor, I want to use a clear repository foundation and GSD baseline, so that I can author portable skills consistently across runtimes. | DOC-01, DOC-02, DOC-03, PLAN-01 |
 | 2 | Canonical Skill Format and Runtime Adapters | As a skill contributor, I want to use a reusable skill source format and runtime adapter model, so that I can adapt one skill source across all supported runtimes. | TMPL-01, TMPL-02, RT-01, RT-02, RT-03 |
-| 3 | Portable Example Scope Reconciliation | As a skill contributor, I want the repository to treat examples as optional reference material instead of a v1 promise, so that the canonical skill template remains the primary authoring path. | EX-01, EX-02 (deferred) |
+| 3 | Portable Example Scope Reconciliation | As a skill contributor, I want the repository to remove unused example artifacts from v1, so that the canonical skill template remains the primary authoring path. | EX-01, EX-02 (deferred) |
 
 ## Phases
 
@@ -45,14 +45,14 @@ This roadmap establishes the repository as a portable agent skill framework befo
 
 ### Phase 3: Portable Example Scope Reconciliation
 
-**Goal:** As a skill contributor, I want the repository to treat examples as optional reference material instead of a v1 promise, so that the canonical skill template remains the primary authoring path.
+**Goal:** As a skill contributor, I want the repository to remove unused example artifacts from v1, so that the canonical skill template remains the primary authoring path.
 **Mode:** mvp
 
 **Requirements:** EX-01, EX-02 (deferred)
 
 **Success Criteria:**
 1. `README.md` and `docs/directory-spec.md` keep `templates/skill/SKILL.md` as the first/default authoring path.
-2. `examples/README.md` describes examples as optional, small, and non-normative.
+2. The repository does not retain unused example files or directories in v1.
 3. Phase 3 planning records explain that EX-01 and EX-02 are deferred rather than treated as hard v1 delivery promises.
 
 ## Requirement Coverage
