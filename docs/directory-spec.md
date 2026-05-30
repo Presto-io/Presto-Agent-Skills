@@ -8,7 +8,7 @@
 |------|---------|
 | `README.md` | 给人类贡献者看的项目入口 |
 | `AGENTS.md` | 给 coding agents 看的仓库规则和语言约束 |
-| `docs/` | 持久化项目说明、兼容性矩阵和目录契约 |
+| `docs/` | 持久化项目说明、兼容性矩阵、目录契约和 Markdown normalization contract |
 | `examples/` | 可选参考示例目录；仅在确实需要示例时创建，不是 v1 必需交付 |
 | `skills/` | canonical 技能源文件 |
 | `templates/` | 可复制的占位符模板 |
@@ -40,6 +40,14 @@
 | `docs/compatibility-matrix.md` | 记录各 runtime 的加载路径、能力差异和注意事项 |
 
 runtime 差异优先写进 canonical `SKILL.md` 的 `Runtime Adapter Notes`。如果未来某个 runtime 真的需要独立说明或 generated wrapper，必须先重新打开范围，记录生成规则、来源 `SKILL.md`、安全边界和验证步骤；v1 不保留独立 adapter 目录，也不默认实现 wrapper。
+
+## Document Workflow
+
+| Path | Purpose |
+|------|---------|
+| `docs/markdown-normalization-contract.md` | 记录文档工作流技能共享的 Markdown intermediate 归一化契约 |
+
+模板特定的 metadata fields、warning marker syntax、scripts 和 renderer rules 属于拥有它们的 skill/template，或后续目标格式文档；不要把这些差异提升成 universal shared schema。
 
 ## Examples
 
