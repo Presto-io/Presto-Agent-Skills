@@ -13,7 +13,7 @@
 - 优先保持文档和模板简洁、可复制、可审阅。
 - 不要把某个 agent 的私有语法写进 canonical 技能主体；放到 adapter notes。
 - 新技能默认放在 `skills/<skill-name>/SKILL.md`。
-- 示例技能放在 `examples/<example-name>/SKILL.md`。
+- 如确需新增示例技能，放在 `examples/<example-name>/SKILL.md`。
 - 模板只放在 `templates/`，不要把示例内容和模板混在一起。
 - 更新目录约定时，同步更新 `README.md` 和 `docs/directory-spec.md`。
 - 如果新增 runtime 支持，同步更新 `docs/compatibility-matrix.md`。

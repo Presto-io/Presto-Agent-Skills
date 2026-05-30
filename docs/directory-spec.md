@@ -10,7 +10,7 @@
 | `AGENTS.md` | 给 coding agents 看的仓库规则和语言约束 |
 | `adapters/` | runtime adapter 的说明和可扩展放置点 |
 | `docs/` | 持久化项目说明、兼容性矩阵和目录契约 |
-| `examples/` | 可选的、短小的参考示例，不是 v1 必需交付 |
+| `examples/` | 可选参考示例目录；仅在确实需要示例时创建，不是 v1 必需交付 |
 | `skills/` | canonical 技能源文件 |
 | `templates/` | 可复制的占位符模板 |
 | `.planning/` | GSD 项目规划、需求、路线图和状态 |
@@ -50,4 +50,4 @@
 |------|---------|
 | `examples/<example-name>/SKILL.md` | 可选参考示例，帮助读者对照 canonical 模板 |
 
-示例应该保持短小、可审阅，并优先让读者看见 `templates/skill/SKILL.md`。只有在确实有贡献者参考价值时，才补充 `examples/`，而且不要把它写成 v1 的硬要求。
+当前 v1 不保留示例文件。只有在确实有贡献者参考价值时，才创建 `examples/` 并补充短小、可审阅的示例；示例必须优先让读者看见 `templates/skill/SKILL.md`，而且不要把它写成 v1 的硬要求。

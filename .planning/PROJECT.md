@@ -4,7 +4,7 @@
 
 Presto Agent Skills is a portable skill repository for authoring agent skills once and adapting them across multiple AI agent runtimes. The initial targets are Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent, with OpenClaw and Hermes Agent treated as mandatory first-class compatibility targets.
 
-The repository starts as a documentation-first framework: canonical skill templates, runtime adapter guidance, optional example references, and project instructions that different agents can read without guessing the repository contract.
+The repository starts as a documentation-first framework: canonical skill templates, runtime adapter guidance, and project instructions that different agents can read without guessing the repository contract. Example files are not part of v1 and should only be created when they solve a concrete contributor need.
 
 ## Core Value
 
@@ -23,7 +23,7 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [ ] Document adapter expectations for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 - [ ] Treat OpenClaw and Hermes Agent as mandatory supported runtimes, not optional future targets.
 - [ ] Add project-level agent instructions through `AGENTS.md`, including the Simplified Chinese response requirement.
-- [ ] Keep examples optional and brief so they support the canonical template without becoming a v1 requirement.
+- [ ] Keep examples out of v1 unless a concrete contributor need appears.
 
 ### Out of Scope
 
@@ -41,7 +41,7 @@ The user selected the lean v1 scope:
 
 - Core goal: general skill specifications and templates that different agents can read and reuse.
 - Supported runtime list: Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
-- Initial framework: `README`, `AGENTS.md`, skill templates, directory specification, optional example references, and GSD planning.
+- Initial framework: `README`, `AGENTS.md`, skill templates, directory specification, and GSD planning.
 - First milestone completion: repository structure and GSD planning files initialized.
 - Workflow defaults: YOLO mode, coarse phases, parallel execution, planning docs committed, research/checking/verification enabled, balanced model profile.
 
@@ -59,7 +59,7 @@ The user selected the lean v1 scope:
 |----------|-----------|---------|
 | Use a canonical `SKILL.md` plus runtime adapter guidance | Best balance between portability and practical runtime differences; avoids maintaining six divergent skill definitions | - Pending |
 | Support Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent from v1 | User explicitly requires broad agent compatibility and mandatory OpenClaw/Hermes support | - Pending |
-| Start with docs, templates, and planning first, with examples optional | User wants the canonical skill contract first; example material should stay lightweight and non-normative | - Pending |
+| Start with docs, templates, and planning first, without v1 examples | User wants the canonical skill contract first; example material is deferred until it has concrete contributor value | - Pending |
 
 ## Evolution
 
