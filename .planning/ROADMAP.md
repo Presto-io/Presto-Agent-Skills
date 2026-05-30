@@ -10,15 +10,15 @@ This roadmap establishes the repository as a portable agent skill framework befo
 
 | Phase | Name | Goal | Requirements |
 |-------|------|------|--------------|
-| 1 | Repository and GSD Foundation | Create the base repository contract, project instructions, and planning structure | DOC-01, DOC-02, DOC-03, PLAN-01 |
-| 2 | Canonical Skill Format and Runtime Adapters | Define the reusable skill source format and compatibility model for all target runtimes | TMPL-01, TMPL-02, RT-01, RT-02, RT-03 |
-| 3 | Portable Example Skill | Add a concrete example that demonstrates the repository conventions across runtimes | EX-01, EX-02 |
+| 1 | Repository and GSD Foundation | As a skill contributor, I want to use a clear repository foundation and GSD baseline, so that I can author portable skills consistently across runtimes. | DOC-01, DOC-02, DOC-03, PLAN-01 |
+| 2 | Canonical Skill Format and Runtime Adapters | As a skill contributor, I want to use a reusable skill source format and runtime adapter model, so that I can adapt one skill source across all supported runtimes. | TMPL-01, TMPL-02, RT-01, RT-02, RT-03 |
+| 3 | Portable Example Skill | As a skill contributor, I want to study a concrete example that demonstrates the repository conventions across runtimes, so that I can author the next portable skill with confidence. | EX-01, EX-02 |
 
 ## Phases
 
 ### Phase 1: Repository and GSD Foundation
 
-**Goal:** Create the base repository contract, project instructions, and planning structure.
+**Goal:** As a skill contributor, I want to use a clear repository foundation and GSD baseline, so that I can author portable skills consistently across runtimes.
 **Mode:** mvp
 
 **Requirements:** DOC-01, DOC-02, DOC-03, PLAN-01
@@ -31,7 +31,7 @@ This roadmap establishes the repository as a portable agent skill framework befo
 
 ### Phase 2: Canonical Skill Format and Runtime Adapters
 
-**Goal:** Define the reusable skill source format and compatibility model for all target runtimes.
+**Goal:** As a skill contributor, I want to use a reusable skill source format and runtime adapter model, so that I can adapt one skill source across all supported runtimes.
 **Mode:** mvp
 
 **Requirements:** TMPL-01, TMPL-02, RT-01, RT-02, RT-03
@@ -45,7 +45,7 @@ This roadmap establishes the repository as a portable agent skill framework befo
 
 ### Phase 3: Portable Example Skill
 
-**Goal:** Add a concrete example that demonstrates the repository conventions across runtimes.
+**Goal:** As a skill contributor, I want to study a concrete example that demonstrates the repository conventions across runtimes, so that I can author the next portable skill with confidence.
 **Mode:** mvp
 
 **Requirements:** EX-01, EX-02
