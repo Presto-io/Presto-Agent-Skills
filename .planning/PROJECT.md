@@ -2,17 +2,16 @@
 
 ## Current Milestone: v1.1 Document Workflow
 
-**Goal:** Define a markdown-first document workflow skill family that normalizes arbitrary source material into Markdown and then renders semantic HTML with clear target-specific rules.
+**Goal:** Define a markdown-first document workflow skill family that normalizes arbitrary source material into Markdown and then stops at the shared intermediate contract.
 
 **Target features:**
 - Markdown normalization as the shared intermediate representation
-- Semantic HTML output and verification from the same Markdown source
 
 ## Current State
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.1 is now being scoped around a document workflow pattern: normalize any input into Markdown first, then render semantic HTML from that shared intermediate.
+v1.1 is now being scoped around a document workflow pattern: normalize any input into Markdown first, and keep the milestone focused on that shared intermediate contract.
 
 ## What This Is
 
@@ -34,16 +33,16 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Treat OpenClaw and Hermes Agent as mandatory supported runtimes, not optional future targets. - v1.0
 - [x] Add project-level agent instructions through `AGENTS.md`, including the Simplified Chinese response requirement. - v1.0
 - [x] Keep examples out of v1 unless a concrete contributor need appears. - v1.0
+- [x] Define a Markdown-first normalization contract for arbitrary document input. - v1.1 Phase 4
 
 ### Active
 
-- [ ] Define a Markdown-first normalization contract for arbitrary document input.
-- [ ] Define semantic HTML output and verification rules from the shared Markdown source.
+No active follow-up phase is currently scoped. Reconfirm the next code direction before adding new requirements.
 
 ### Out of Scope
 
-- Direct one-step source-to-HTML rendering without Markdown intermediate - it makes target output harder to reason about and verify.
-- PDF generation, page templating, and layout-polish automation - defer until the core Markdown/Typst/HTML contract is stable.
+- Direct one-step source-to-target rendering without Markdown intermediate - it makes target output harder to reason about and verify.
+- HTML, PDF, page templating, and layout-polish automation - defer until the core Markdown contract is stable and there is a concrete need.
 - OCR, image extraction, and handwriting interpretation - not part of the first document workflow slice.
 - Example-heavy showcase expansions - still deferred; the canonical skill path stays primary until a concrete contributor need appears.
 
@@ -57,17 +56,17 @@ v1.0 shipped 3 phases and 3 plans:
 - Phase 2 made `templates/skill/SKILL.md` the canonical copyable artifact and documented runtime compatibility for all six required runtimes.
 - Phase 3 removed unused examples and standalone adapter files, keeping examples optional until they solve a real contributor need.
 
-v1.1 is expected to focus on document-workflow skills that treat Markdown as the canonical intermediate representation before HTML output.
+v1.1 is expected to focus on document-workflow skills that treat Markdown as the canonical intermediate representation.
 
 ## Next Milestone Goals
 
-The next milestone should start with `/gsd:new-milestone` and a fresh requirements pass. The current focus is a markdown-first document workflow with semantic HTML output, not scaffold tooling, Typst constraint design, or example expansion.
+The next milestone should start with `/gsd:new-milestone` and a fresh requirements pass. The current focus is a markdown-first document workflow, not scaffold tooling, output-format design, or example expansion.
 
 ## Constraints
 
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
 - **Source of truth**: Prefer one canonical skill source plus embedded runtime adapter notes - this reduces drift across agents.
-- **Scope discipline**: Keep the document workflow centered on a Markdown intermediate; add automation only after the transform contract is stable.
+- **Scope discipline**: Keep the document workflow centered on a Markdown intermediate; add automation only after the contract is stable.
 - **Language**: Agent-facing responses in this repository should be Simplified Chinese unless a file format or downstream runtime requires otherwise.
 - **Portability**: Avoid assuming one agent's proprietary tool syntax in the canonical skill body; isolate those differences in adapter sections.
 
@@ -78,8 +77,8 @@ The next milestone should start with `/gsd:new-milestone` and a fresh requiremen
 | Use a canonical `SKILL.md` plus runtime adapter guidance | Best balance between portability and practical runtime differences; avoids maintaining six divergent skill definitions | Good - shipped in v1.0 |
 | Support Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent from v1 | User explicitly requires broad agent compatibility and mandatory OpenClaw/Hermes support | Good - documented in v1.0 |
 | Start with docs, templates, and planning first, without v1 examples | User wants the canonical skill contract first; example material is deferred until it has concrete contributor value | Good - v1.0 removed unused examples |
-| Use Markdown as the canonical intermediate for document workflows | Gives the skill family one stable semantic layer before Typst or HTML output | Pending |
-| Remove dedicated Typst constraint work from v1.1 | The user clarified that this is not the right focus and should not drive the next phase | Updated |
+| Use Markdown as the canonical intermediate for document workflows | Gives the skill family one stable semantic layer before target output | Pending |
+| Keep v1.1 focused on the Markdown intermediate rather than output-specific phases | The user clarified that output-specific follow-up phases are not the right focus | Updated |
 
 ## Evolution
 
