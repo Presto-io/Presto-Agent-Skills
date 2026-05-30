@@ -9,9 +9,9 @@ Requirements for the initial repository framework. Each maps to roadmap phases.
 
 ### Documentation
 
-- [ ] **DOC-01**: A contributor can read the README and understand the repository purpose, target users, and top-level structure.
-- [ ] **DOC-02**: A contributor can find a directory specification that explains where skills, templates, adapters, examples, and planning files live.
-- [ ] **DOC-03**: An agent can read `AGENTS.md` and follow the repository's language, editing, and skill-authoring rules.
+- [x] **DOC-01**: A contributor can read the README and understand the repository purpose, target users, and top-level structure.
+- [x] **DOC-02**: A contributor can find a directory specification that explains where skills, templates, adapters, examples, and planning files live.
+- [x] **DOC-03**: An agent can read `AGENTS.md` and follow the repository's language, editing, and skill-authoring rules.
 
 ### Templates
 
@@ -31,7 +31,7 @@ Requirements for the initial repository framework. Each maps to roadmap phases.
 
 ### Planning
 
-- [ ] **PLAN-01**: The repository is initialized as a GSD project with project context, config, requirements, roadmap, state, and project instructions.
+- [x] **PLAN-01**: The repository is initialized as a GSD project with project context, config, requirements, roadmap, state, and project instructions.
 
 ## v2 Requirements
 
@@ -69,10 +69,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DOC-01 | Phase 1 | Pending |
-| DOC-02 | Phase 1 | Pending |
-| DOC-03 | Phase 1 | Pending |
-| PLAN-01 | Phase 1 | Pending |
+| DOC-01 | Phase 1 | Complete |
+| DOC-02 | Phase 1 | Complete |
+| DOC-03 | Phase 1 | Complete |
+| PLAN-01 | Phase 1 | Complete |
 | TMPL-01 | Phase 2 | Pending |
 | TMPL-02 | Phase 2 | Pending |
 | RT-01 | Phase 2 | Pending |
@@ -88,4 +88,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-05-30*
-*Last updated: 2026-05-30 after roadmap creation*
+*Last updated: 2026-05-30 after Phase 1 execution*

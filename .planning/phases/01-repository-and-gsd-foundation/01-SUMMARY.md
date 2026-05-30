@@ -78,7 +78,7 @@ completed: 2026-05-30
 
 1. **Task 1: Audit and patch contributor-facing repository contract** - `bff845d` (`docs`)
 2. **Task 2: Audit and patch agent constraints plus GSD baseline alignment** - `9bb13da` (`docs`)
-3. **Task 3: Capture Phase 1 evidence and summary** - committed with this summary task; final completion output records the hash.
+3. **Task 3: Capture Phase 1 evidence and summary** - `b4a986b` (`docs`)
 
 ## Files Created/Modified
 
@@ -121,6 +121,7 @@ None - plan executed within the documented Phase 1 scope.
 
 - `rg` verification required shell-safe quoting for backticks in `SKILL.md` patterns. The corrected single-quoted command passed and did not affect repository files.
 - `.planning/STATE.md` and `.planning/config.json` had execution-alignment changes present at executor start. They were reviewed, found relevant to Task 2 baseline alignment, and committed without overwriting unrelated work.
+- GSD SDK successfully updated `REQUIREMENTS.md`, but some `STATE.md` update verbs could not parse the current simplified state body and `roadmap.update-plan-progress` did not change the existing status table. Minimal metadata patches were applied manually to `STATE.md` and `ROADMAP.md` as close-out alignment.
 
 ## Known Stubs
 
@@ -141,7 +142,7 @@ Phase 2 can build on a stable repository contract: contributors know where canon
 ## Self-Check: PASSED
 
 - Created file exists: `.planning/phases/01-repository-and-gsd-foundation/01-SUMMARY.md`.
-- Task commits exist: `bff845d` and `9bb13da`.
+- Task commits exist: `bff845d`, `9bb13da`, and `b4a986b`.
 - Requirement evidence covers DOC-01, DOC-02, DOC-03, and PLAN-01.
 - No unexpected tracked-file deletions were introduced by task commits.
 
