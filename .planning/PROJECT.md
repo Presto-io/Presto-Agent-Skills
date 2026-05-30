@@ -1,10 +1,19 @@
 # Presto Agent Skills
 
+## Current Milestone: v1.1 Document Workflow
+
+**Goal:** Define a markdown-first document workflow skill family that normalizes arbitrary source material into Markdown and then renders Typst or HTML with clear target-specific rules.
+
+**Target features:**
+- Markdown normalization as the shared intermediate representation
+- Typst output with hard constraint handling and explicit rejection/rewrite rules
+- Semantic HTML output and verification from the same Markdown source
+
 ## Current State
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-The v1 repository deliberately does not include example skills, standalone adapter directories, scaffold tooling, schema checks, runtime harnesses, or publishing automation. Those remain future work until a concrete contributor need justifies them.
+v1.1 is now being scoped around a document workflow pattern: normalize any input into Markdown first, then render to Typst or HTML from that shared intermediate.
 
 ## What This Is
 
@@ -29,16 +38,16 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ### Active
 
-- [ ] Define the next milestone's requirements from current contributor needs.
-- [ ] Revisit optional example guidance only when a concrete contributor workflow needs it.
+- [ ] Define a Markdown-first normalization contract for arbitrary document input.
+- [ ] Define hard Typst output constraints and the handling rules for unsupported constructs.
+- [ ] Define semantic HTML output and verification rules from the shared Markdown source.
 
 ### Out of Scope
 
-- Automated scaffold CLI - useful later, but v1 focused on stable repository shape and human-readable contracts.
-- Schema validation and lint scripts - deferred until the canonical format is exercised by real skills.
-- Publishing or package-manager distribution - premature before the canonical contract and compatibility docs are proven useful.
-- Full runtime execution test harnesses - requires per-runtime environments and should follow after the compatibility contract is stable.
-- Example-heavy showcase expansions - deferred; v1 keeps `templates/skill/SKILL.md` as the primary authoring path.
+- Direct one-step source-to-target rendering without Markdown intermediate - it makes cross-format behavior harder to reason about and verify.
+- PDF generation, page templating, and layout-polish automation - defer until the core Markdown/Typst/HTML contract is stable.
+- OCR, image extraction, and handwriting interpretation - not part of the first document workflow slice.
+- Example-heavy showcase expansions - still deferred; the canonical skill path stays primary until a concrete contributor need appears.
 
 ## Context
 
@@ -50,15 +59,18 @@ v1.0 shipped 3 phases and 3 plans:
 - Phase 2 made `templates/skill/SKILL.md` the canonical copyable artifact and documented runtime compatibility for all six required runtimes.
 - Phase 3 removed unused examples and standalone adapter files, keeping examples optional until they solve a real contributor need.
 
+v1.1 is expected to focus on document-workflow skills that treat Markdown as the canonical intermediate representation before Typst or HTML output.
+
 ## Next Milestone Goals
 
-The next milestone should start with `/gsd:new-milestone` and a fresh requirements pass. Likely candidates are scaffold tooling, skill schema/lint checks, install/export documentation, or a contributor-driven example, but none should be treated as committed until the new milestone is scoped.
+The next milestone should start with `/gsd:new-milestone` and a fresh requirements pass. The current focus is a markdown-first document workflow with strict Typst constraints and semantic HTML output, not scaffold tooling or example expansion.
 
 ## Constraints
 
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
 - **Source of truth**: Prefer one canonical skill source plus embedded runtime adapter notes - this reduces drift across agents.
-- **Scope discipline**: Keep documentation-first work lean; add tooling only after the repository shape is exercised.
+- **Scope discipline**: Keep the document workflow centered on a Markdown intermediate; add automation only after the transform contract is stable.
+- **Typst safety**: Hard Typst constraints must be explicit, documented, and enforced in output rules rather than left to ad hoc judgment.
 - **Language**: Agent-facing responses in this repository should be Simplified Chinese unless a file format or downstream runtime requires otherwise.
 - **Portability**: Avoid assuming one agent's proprietary tool syntax in the canonical skill body; isolate those differences in adapter sections.
 
@@ -69,6 +81,8 @@ The next milestone should start with `/gsd:new-milestone` and a fresh requiremen
 | Use a canonical `SKILL.md` plus runtime adapter guidance | Best balance between portability and practical runtime differences; avoids maintaining six divergent skill definitions | Good - shipped in v1.0 |
 | Support Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent from v1 | User explicitly requires broad agent compatibility and mandatory OpenClaw/Hermes support | Good - documented in v1.0 |
 | Start with docs, templates, and planning first, without v1 examples | User wants the canonical skill contract first; example material is deferred until it has concrete contributor value | Good - v1.0 removed unused examples |
+| Use Markdown as the canonical intermediate for document workflows | Gives the skill family one stable semantic layer before Typst or HTML output | Pending |
+| Treat Typst hard limits as explicit transformation rules | Prevents invalid Typst output and makes unsupported constructs visible early | Pending |
 
 ## Evolution
 
@@ -88,4 +102,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-05-30 after v1.0 milestone*
+*Last updated: 2026-05-31 after v1.1 milestone definition*
