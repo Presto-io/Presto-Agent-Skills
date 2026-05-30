@@ -256,12 +256,12 @@ rg --files .planning/phases/01-repository-and-gsd-foundation
 | A1 | `rg`, `sed`, and manual Markdown inspection are sufficient verification tools for this documentation-only phase. [ASSUMED] | Standard Stack, Common Pitfalls | Planner may under-specify verification if stricter project tooling is later introduced. |
 | A2 | A warning sign for poor planning is a task that creates files without reviewing existing files first. [ASSUMED] | Common Pitfalls | Planner may treat this as a hard rule rather than a planning heuristic. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should Phase 1 update `.planning/STATE.md` during execution?**
    - What we know: `.planning/STATE.md` currently says Phase 1 is ready for execution. [CITED: .planning/STATE.md]
-   - What's unclear: Whether executor should update state manually or leave state transitions to the GSD workflow command. [ASSUMED]
-   - Recommendation: Planner should include state updates only if required by the local GSD execution convention; otherwise preserve `.planning/STATE.md` until normal phase transition. [ASSUMED]
+   - Resolution: Do not manually change `.planning/STATE.md` unless execution evidence shows a concrete alignment issue or the normal GSD workflow transition updates it. [RESOLVED]
+   - Plan impact: Phase 1 execution should audit `.planning/STATE.md` for PLAN-01 presence/alignment, but should preserve its workflow status until normal GSD execution or transition records the next state. [RESOLVED]
 
 ## Environment Availability
 
