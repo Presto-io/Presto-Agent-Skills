@@ -4,22 +4,23 @@
 
 ## Recommended Pattern
 
-最佳实践是 **canonical source + runtime adapters**：
+最佳实践是 **one canonical `SKILL.md` first, runtime notes second**：
 
-1. 用一个 canonical `SKILL.md` 表达技能语义、触发条件、流程、输出和成功标准。
-2. 在 adapter notes 里记录每个 runtime 的加载路径、frontmatter 限制、工具调用差异、用户问询差异和安全限制。
-3. 只有当 runtime 需要不同文件布局时，才生成专用包装层；不要手写维护多份业务逻辑。
+1. 用一个 canonical `SKILL.md` 表达技能语义、触发条件、流程、输出、验证和安全边界。
+2. 在同一个 `SKILL.md` 的 adapter notes 中记录各 runtime 的加载路径、frontmatter 限制、工具调用、用户问询、任务/子代理和权限差异。
+3. 只有当内嵌 notes 太长时，才新增 `adapters/<runtime>/<skill-name>.md` 作为兼容说明。
+4. 只有当 runtime 确实无法直接使用 canonical 文件时，才考虑 generated wrappers；v1 不实现 wrapper 生成，也不维护多份技能逻辑。
 
 ## Matrix
 
-| Runtime | v1 Status | Expected Skill Shape | Notes |
-|---------|-----------|----------------------|-------|
-| Codex | Required | `AGENTS.md` + local skill instructions where available | Codex 以 `AGENTS.md` 作为项目级 agent 指令入口；技能适配需避免依赖不可用的 Claude-only 语法。 |
-| Claude Code | Required | `.claude/skills/<name>/SKILL.md` | Claude Skills 使用 `SKILL.md` 与 YAML frontmatter；适合做 canonical 结构参考。 |
-| Gemini CLI | Required | `GEMINI.md` context plus project skills adapter | Gemini CLI 官方上下文机制围绕 `GEMINI.md`；SKILL.md 兼容需通过项目规则或 adapter 桥接。 |
-| OpenCode | Required | `.opencode/skill/<name>/SKILL.md` and Claude-compatible skill paths | OpenCode 文档显示其可发现 OpenCode 路径与 Claude-compatible 路径。 |
-| OpenClaw | Required | AgentSkills-compatible folder with `SKILL.md` | 必须注意 frontmatter 兼容性、allowlist、skill roots、sandbox sync 和安全审阅。 |
-| Hermes Agent | Required | `SKILL.md` skill folders, exact path to validate per installed runtime | 公开资料显示 Hermes Agent 采用 SKILL.md 风格技能；v1 需要保留适配占位并在安装后实测路径与加载行为。 |
+| Runtime | v1 Status | Same-File Strategy | Adapter Notes Must Cover |
+|---------|-----------|--------------------|--------------------------|
+| Codex | Required | Keep canonical workflow in `SKILL.md`; expose persistent project guidance through `AGENTS.md` or the local skill mechanism available in the installed Codex environment. | Tool equivalents, unavailable Claude-only syntax, file-write safety, and how Codex is told to read the skill. |
+| Claude Code | Required | Install the same `SKILL.md` in a Claude skill folder such as `.claude/skills/<name>/SKILL.md`. | Trigger-focused `description`, frontmatter/tool allowlist, progressive disclosure, and supporting file paths. |
+| Gemini CLI | Required | Use `GEMINI.md` or project context to point Gemini at the canonical `SKILL.md`. | Discovery bridge, invocation wording, unavailable tool mappings, and user-question fallback. |
+| OpenCode | Required | Prefer an OpenCode skill path that can load the same `SKILL.md`; record any Claude-compatible fallback path as an install note. | Native path, fallback path, tool permission differences, and verification that the runtime selected the skill. |
+| OpenClaw | Required | Treat OpenClaw as a first-class target using an AgentSkills-compatible `SKILL.md` folder when supported by the installed runtime. | Conservative frontmatter, allowlist, skill roots, sandbox sync, third-party skill review, and installation-time parser checks. |
+| Hermes Agent | Required | Treat Hermes Agent as a first-class target with `SKILL.md` skill folders, but validate the exact local/global path in the installed runtime. | Loading path, project-vs-global behavior, script discovery, tool permissions, and verification cautions for untested behavior. |
 
 ## Runtime Notes
 
@@ -28,6 +29,7 @@
 - Put persistent project instructions in `AGENTS.md`.
 - Keep runtime-specific command mappings out of canonical skill bodies.
 - When a skill references tools, document Codex equivalents in adapter notes.
+- If a Codex installation cannot auto-discover `SKILL.md`, record the project-context bridge that tells Codex to read it.
 
 Reference: [OpenAI Codex AGENTS.md docs](https://github.com/openai/codex/blob/main/docs/agents_md.md)
 
@@ -43,6 +45,7 @@ Reference: [Claude Code Skills docs](https://code.claude.com/docs/en/agent-sdk/s
 
 - Treat `GEMINI.md` as the official project-context bridge.
 - If using SKILL.md with Gemini-based workflows, document exactly how the agent is instructed to discover and follow skills.
+- Keep user-question and subagent behavior as explicit fallbacks when Gemini lacks an equivalent tool.
 
 Reference: [Gemini CLI GEMINI.md docs](https://google-gemini.github.io/gemini-cli/docs/cli/gemini-md.html)
 
@@ -50,6 +53,7 @@ Reference: [Gemini CLI GEMINI.md docs](https://google-gemini.github.io/gemini-cl
 
 - Document both native OpenCode skill paths and Claude-compatible fallback paths.
 - Keep the canonical file valid enough that OpenCode can load the same `SKILL.md` when possible.
+- Verify skill discovery in the installed OpenCode version before marking a skill as supported.
 
 Reference: [OpenCode skills docs](https://opencode.ubitools.com/skills/)
 
@@ -58,6 +62,7 @@ Reference: [OpenCode skills docs](https://opencode.ubitools.com/skills/)
 - Use AgentSkills-compatible folders with `SKILL.md`.
 - Keep frontmatter conservative; OpenClaw documentation notes parser constraints for frontmatter keys.
 - Treat third-party skills as untrusted code and review before enabling.
+- Verify allowlist, skill root, and sandbox behavior during installation. Do not move OpenClaw to optional/future status in v1 docs.
 
 References:
 
@@ -69,6 +74,7 @@ References:
 - Keep Hermes in v1 as a required runtime, but mark exact loading paths as implementation-validated rather than assumed.
 - Adapter notes must record whether Hermes loads project-local skills, global skills, or both in the installed version.
 - Avoid depending on automatic script discovery until it has been verified in the target Hermes installation.
+- Do not claim generated-wrapper support unless the wrapper rule and verification checklist are documented.
 
 References:
 
