@@ -8,7 +8,7 @@ stopped_at: Phase 4 complete; ready to plan Phase 5
 last_updated: "2026-05-30T18:41:04Z"
 last_activity: 2026-05-31 — Phase 4 completed
 progress:
-  total_phases: 3
+  total_phases: 2
   completed_phases: 1
   total_plans: 1
   completed_plans: 1
@@ -25,7 +25,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-05-31)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.1 Document Workflow - Markdown normalization, Typst constraints, and HTML output verification
+**Current focus:** v1.1 Document Workflow - Markdown normalization plus HTML output and verification
 
 ## Workflow Preferences
 
@@ -60,8 +60,8 @@ Plan Phase 5 with `/gsd:plan-phase 5`.
 - [Phase 03]: EX-01 and EX-02 are deferred as optional example guidance; v1 stays centered on the canonical SKILL.md contract. — User clarified that examples are human-facing and should not drive AI-skill development for v1.
 - [Phase 03]: Removed unused examples directory from v1; examples will only be created later for a concrete contributor need. — The user clarified that unused files and directories should not remain just as optional placeholders.
 - [Phase 03]: Removed standalone adapters and adapter-template directories from v1; runtime differences now live only in canonical SKILL.md Runtime Adapter Notes. — The directories were not runtime-loaded and acted as unused placeholders.
-- [Milestone v1.1]: Document workflow skills use Markdown as the canonical intermediate representation before Typst or HTML output. — User clarified that these skills are input-to-output document workflows.
-- [Milestone v1.1]: Typst output constraints are a first-class part of the workflow, not informal after-the-fact style notes. — User clarified that Typst code generation has hard limits.
+- [Milestone v1.1]: Document workflow skills use Markdown as the canonical intermediate representation before target output. — User clarified that these skills are input-to-output document workflows.
+- [Milestone v1.1]: Removed the dedicated Typst output constraint phase from the current roadmap. — User clarified that this focus is not aligned and should not drive the next phase.
 - [Phase 04]: Document workflow skills normalize source material into a persistent Markdown intermediate before target generation. — Phase 4 created `docs/markdown-normalization-contract.md` and linked it from README, directory spec, and the skill template.
 - [Phase 04]: The shared Markdown contract stays behavioral and does not define universal metadata fields or a universal marker taxonomy. — Template-specific metadata, marker syntax, scripts, and renderer rules remain owned by the relevant skill/template or later target-specific docs.
 
@@ -95,4 +95,4 @@ Last activity: 2026-05-31 — Phase 4 completed
 
 ## Operator Next Steps
 
-- Plan Phase 5 with /gsd:plan-phase 5
+- Reconfirm the Phase 5 code direction before planning with /gsd:plan-phase 5
