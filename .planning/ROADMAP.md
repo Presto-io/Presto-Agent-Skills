@@ -1,13 +1,14 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-05-30 after v1.0 milestone close
+**Last updated:** 2026-05-31 after v1.1 milestone definition
 **Granularity:** Coarse
 **Project Mode:** MVP
 
 ## Milestones
 
 - **Shipped: v1.0 MVP** - Phases 1-3, shipped 2026-05-30. Full archive: `.planning/milestones/v1.0-ROADMAP.md`
+- **Planned: v1.1 Document Workflow** - Phases 4-6, started 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 
 ## Phases
 
@@ -20,9 +21,53 @@
 
 </details>
 
+### Phase 4: Markdown Normalization Contract
+
+**Goal:** As a document workflow skill author, I want a clear Markdown normalization contract, so arbitrary source material can become one stable intermediate representation before any target-format rendering.
+**Mode:** mvp
+
+**Depends on:** None
+
+**Requirements:** DWF-01, DWF-02
+
+**Success Criteria:**
+1. The repository documents Markdown as the required intermediate representation for document workflow skills.
+2. The normalization contract covers common document primitives such as headings, paragraphs, lists, tables, code blocks, links, figures, callouts, and metadata.
+3. Ambiguous, unsupported, or lossy source fragments have an explicit flagging convention instead of being silently dropped or guessed.
+
+### Phase 5: Typst Output Constraints
+
+**Goal:** As a document workflow skill author, I want Markdown-to-Typst rules with hard constraints, so generated Typst code stays valid and predictable.
+**Mode:** mvp
+
+**Depends on:** Phase 4
+
+**Requirements:** DWF-03, DWF-04
+
+**Success Criteria:**
+1. The repository documents the hard Typst constraints that every document workflow skill must obey.
+2. Markdown constructs have Typst handling rules that say when to render, reject, rewrite, or isolate with an explicit note.
+3. The Typst workflow includes verification steps that catch hard-constraint violations before delivery.
+
+### Phase 6: HTML Output and Verification
+
+**Goal:** As a document workflow skill author, I want semantic Markdown-to-HTML rules and shared verification checks, so HTML output preserves document intent while staying aligned with the Typst path.
+**Mode:** mvp
+
+**Depends on:** Phase 5
+
+**Requirements:** DWF-05, DWF-06
+
+**Success Criteria:**
+1. The repository documents semantic HTML output rules derived from the same Markdown intermediate.
+2. Verification guidance checks Markdown normalization, Typst output constraints, and HTML output structure.
+3. The workflow explains how to compare target outputs for drift when Typst and HTML are generated from the same Markdown source.
+
 ## Current Position
 
-v1.0 is complete. The next milestone has not been scoped yet; start it with `/gsd:new-milestone` so a fresh requirements file and roadmap section can be created from current priorities.
+v1.0 is complete. v1.1 is now scoped around a markdown-first document workflow: arbitrary input becomes Markdown first, then Typst or HTML from the shared intermediate. Typst output requires explicit hard constraints; HTML output should remain semantic and structure-preserving.
+
+Start planning Phase 5 with `/gsd:plan-phase 5` when ready.
 
 ## Progress
 
@@ -31,12 +76,17 @@ v1.0 is complete. The next milestone has not been scoped yet; start it with `/gs
 | 1. Repository and GSD Foundation | v1.0 | 1/1 | Complete | 2026-05-30 |
 | 2. Canonical Skill Format and Runtime Notes | v1.0 | 1/1 | Complete | 2026-05-30 |
 | 3. Portable Example Scope Reconciliation | v1.0 | 1/1 | Complete | 2026-05-30 |
+| 4. Markdown Normalization Contract | v1.1 | 1/1 | Complete | 2026-05-31 |
+| 5. Typst Output Constraints | v1.1 | 0/1 | Not started | - |
+| 6. HTML Output and Verification | v1.1 | 0/1 | Not started | - |
 
 ## Requirement Coverage
 
 v1.0 shipped 9 required items: DOC-01, DOC-02, DOC-03, PLAN-01, TMPL-01, TMPL-02, RT-01, RT-02, and RT-03.
 
+v1.1 currently tracks 6 document workflow requirements: DWF-01, DWF-02, DWF-03, DWF-04, DWF-05, and DWF-06. All 6 are mapped to Phases 4-6 in `.planning/REQUIREMENTS.md`.
+
 EX-01 and EX-02 were explicitly deferred as optional future example guidance, not v1 delivery requirements. See `.planning/milestones/v1.0-REQUIREMENTS.md` for the archived requirement record.
 
 ---
-*Roadmap reorganized: 2026-05-30 after v1.0 milestone close*
+*Roadmap updated: 2026-05-31 after v1.1 milestone definition*
