@@ -1,11 +1,12 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-current_phase: 03
+milestone_name: MVP
+current_phase: null
 status: completed
 stopped_at: Completed 03-01-SUMMARY.md
-last_updated: "2026-05-30T14:45:06.597Z"
+last_updated: "2026-05-30T15:00:56.379Z"
+last_activity: 2026-05-30 — Milestone v1.0 completed and archived
 progress:
   total_phases: 3
   completed_phases: 3
@@ -17,15 +18,15 @@ progress:
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 03
-**Status:** Phase 03 complete
+**Current Phase:** None
+**Status:** v1.0 milestone complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-05-30)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 03 — example-scope reconciliation (canonical template first)
+**Current focus:** Planning the next milestone
 
 ## Workflow Preferences
 
@@ -49,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-30)
 
 ## Next Up
 
-Execute Phase 3: reconcile the lean v1 example scope.
+Start the next milestone with `/gsd:new-milestone`.
 
 ## Decisions
 
@@ -74,3 +75,20 @@ Execute Phase 3: reconcile the lean v1 example scope.
 - **Completed:** 03-01-PLAN.md
 - **Stopped At:** Completed 03-01-SUMMARY.md
 - **Resume File:** None
+
+## Close Notes
+
+- v1.0 archived ROADMAP and REQUIREMENTS under `.planning/milestones/`.
+- Pre-close artifact audit reported Phase 01 human UAT as `resolved` with 0 pending scenarios; no actionable UAT gap remains.
+- No dedicated milestone audit file existed before close. Phase summaries and the requirements archive record the shipped v1.0 evidence; the next milestone should run `/gsd:audit-milestone` before `/gsd:complete-milestone`.
+
+## Current Position
+
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-05-30 — Milestone v1.0 completed and archived
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
