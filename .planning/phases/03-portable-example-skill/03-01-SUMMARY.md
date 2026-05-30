@@ -12,6 +12,7 @@ provides:
   - Deferred EX-01 and EX-02 records
   - Contributor docs that keep templates/skill/SKILL.md as the default authoring path
   - Removed unused v1 example artifacts
+  - Removed standalone adapter directories from v1
 affects: [v1, examples, templates, roadmap, requirements]
 
 tech-stack:
@@ -32,13 +33,15 @@ key-files:
     - docs/directory-spec.md
     - AGENTS.md
   deleted:
+    - adapters/README.md
+    - templates/adapter/runtime-adapter.md
     - examples/README.md
     - examples/portable-skill/SKILL.md
 
 key-decisions:
   - "EX-01 and EX-02 are deferred as optional example guidance, not completed v1 deliverables."
   - "The canonical SKILL.md template remains the primary AI-facing authoring contract."
-  - "Unused example files were removed; no new example skill, runtime harness, scaffold tooling, generated wrapper, or validation tooling was added."
+  - "Unused example and standalone adapter files were removed; no new example skill, runtime harness, scaffold tooling, generated wrapper, or validation tooling was added."
 
 requirements-completed: []
 requirements-addressed: [EX-01, EX-02]
@@ -82,6 +85,8 @@ completed: 2026-05-30
 - `README.md` - Kept `templates/skill/SKILL.md` as the default authoring path and softened `examples/` language.
 - `docs/directory-spec.md` - Defined `examples/` as optional, short, non-required reference material.
 - `AGENTS.md` - Clarified that examples are created only when actually needed.
+- `adapters/README.md` - Deleted because v1 no longer keeps standalone adapter docs.
+- `templates/adapter/runtime-adapter.md` - Deleted because v1 no longer keeps standalone adapter templates.
 - `examples/README.md` - Deleted because v1 no longer keeps example artifacts.
 - `examples/portable-skill/SKILL.md` - Deleted because v1 no longer keeps example artifacts.
 - `.planning/phases/03-portable-example-skill/03-01-SUMMARY.md` - Captures this evidence trail.
@@ -90,7 +95,7 @@ completed: 2026-05-30
 
 - EX-01 and EX-02 were addressed by deferral, not completion.
 - The existing `examples/portable-skill/SKILL.md` was removed after follow-up review because it was not needed for v1.
-- Runtime compatibility remains covered by Phase 2 docs and templates, not by a larger example showcase.
+- Standalone adapter docs and templates were removed for the same reason; runtime differences now live only in canonical `SKILL.md` notes.
 
 ## Deviations from Plan
 
@@ -127,7 +132,7 @@ Phase 3 is ready for verification or milestone close-out. There are no remaining
 
 - Planning records explain the reduced example scope.
 - Contributor docs keep the canonical skill path obvious.
-- No scaffold tooling, runtime harness, generated wrapper, validation tooling, or example skill remains in v1.
+- No scaffold tooling, runtime harness, generated wrapper, validation tooling, example skill, or standalone adapter docs remain in v1.
 
 ---
 *Phase: 03-portable-example-skill*

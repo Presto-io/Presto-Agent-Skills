@@ -8,8 +8,8 @@
 
 1. 用一个 canonical `SKILL.md` 表达技能语义、触发条件、流程、输出、验证和安全边界。
 2. 在同一个 `SKILL.md` 的 adapter notes 中记录各 runtime 的加载路径、frontmatter 限制、工具调用、用户问询、任务/子代理和权限差异。
-3. 只有当内嵌 notes 太长时，才新增 `adapters/<runtime>/<skill-name>.md` 作为兼容说明。
-4. 只有当 runtime 确实无法直接使用 canonical 文件时，才考虑 generated wrappers；v1 不实现 wrapper 生成，也不维护多份技能逻辑。
+3. v1 不维护独立 adapter 文件；如果 notes 变长，先压缩成必要检查点并保留在 canonical 文件里。
+4. 只有当 runtime 确实无法直接使用 canonical 文件时，才重新打开范围讨论 generated wrappers；v1 不实现 wrapper 生成，也不维护多份技能逻辑。
 
 ## Matrix
 

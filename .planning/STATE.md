@@ -5,7 +5,7 @@ milestone_name: milestone
 current_phase: 03
 status: completed
 stopped_at: Completed 03-01-SUMMARY.md
-last_updated: "2026-05-30T14:32:28.515Z"
+last_updated: "2026-05-30T14:45:06.597Z"
 progress:
   total_phases: 3
   completed_phases: 3
@@ -59,6 +59,7 @@ Execute Phase 3: reconcile the lean v1 example scope.
 - OpenClaw and Hermes Agent remain first-class required v1 targets, with installation-time verification cautions where behavior is not locally verified.
 - [Phase 03]: EX-01 and EX-02 are deferred as optional example guidance; v1 stays centered on the canonical SKILL.md contract. — User clarified that examples are human-facing and should not drive AI-skill development for v1.
 - [Phase 03]: Removed unused examples directory from v1; examples will only be created later for a concrete contributor need. — The user clarified that unused files and directories should not remain just as optional placeholders.
+- [Phase 03]: Removed standalone adapters and adapter-template directories from v1; runtime differences now live only in canonical SKILL.md Runtime Adapter Notes. — The directories were not runtime-loaded and acted as unused placeholders.
 
 ## Performance Metrics
 

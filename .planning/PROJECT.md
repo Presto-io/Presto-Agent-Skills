@@ -18,7 +18,7 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ### Active
 
-- [ ] Define a clear repository structure for skills, templates, adapters, examples, and GSD planning files.
+- [ ] Define a clear repository structure for skills, templates, runtime compatibility docs, optional examples, and GSD planning files.
 - [ ] Provide a canonical `SKILL.md` authoring template that can serve as the single source of truth.
 - [ ] Document adapter expectations for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 - [ ] Treat OpenClaw and Hermes Agent as mandatory supported runtimes, not optional future targets.
@@ -48,7 +48,7 @@ The user selected the lean v1 scope:
 ## Constraints
 
 - **Runtime compatibility**: OpenClaw and Hermes Agent must be represented in v1 adapter docs - they are required targets.
-- **Source of truth**: Prefer one canonical skill source plus runtime adapter notes or generated wrappers - this reduces drift across agents.
+- **Source of truth**: Prefer one canonical skill source plus embedded runtime adapter notes - this reduces drift across agents.
 - **Scope discipline**: Keep v1 documentation-first; defer CLI tooling and validation until the shape is exercised.
 - **Language**: Agent-facing responses in this repository should be Simplified Chinese unless a file format or downstream runtime requires otherwise.
 - **Portability**: Avoid assuming one agent's proprietary tool syntax in the canonical skill body; isolate those differences in adapter sections.
