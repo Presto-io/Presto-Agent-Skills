@@ -39,6 +39,8 @@ metadata:
 
 Keep shared workflow logic in this file. Put long background material in `references/`, helper scripts in `scripts/`, and output templates in `templates/` only when the skill needs them.
 
+For document workflow skills, normalize source material into the Markdown intermediate described in `docs/markdown-normalization-contract.md` before generating Typst, HTML, or other target outputs.
+
 ## Runtime Adapter Notes
 
 Use this table for concise compatibility notes. Do not duplicate the skill process into runtime-specific files unless a runtime truly cannot consume this canonical `SKILL.md` directly.
