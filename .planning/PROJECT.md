@@ -1,19 +1,20 @@
 # Presto Agent Skills
 
-## Current Milestone: v1.4 Jiaoan Jihua Skill
+## Current Milestone: v1.5 School Presentation Skill
 
-**Goal:** Create the next concrete document workflow skill, `jiaoan-jihua`, that produces a stable授课进度计划 Markdown intermediate and validates Typst/PDF output through the Presto jiaoan-jihua template.
+**Goal:** Create a `school-presentation` skill that turns user materials into a stable Markdown presentation intermediate, then renders a blue-green school-style, self-contained HTML slide deck with fixed layouts and overflow-safe pagination.
 
 **Target features:**
-- `jiaoan-jihua` trigger for 授课进度计划表 writing
-- `jiaoan-jihua-full.md` Markdown intermediate structure
-- Scripted Markdown-to-Typst/PDF rendering, bundled calendar support resource usage, and reference artifact verification
+- `school-presentation` trigger for official school-style presentation generation
+- Extracted or bundled school identity assets from the provided PPTX/POTX: logo, slogan, palette, and decorative marks
+- Markdown logical-slide intermediate with fixed layout intents, formulas, tables, charts, images, videos, and speaker notes
+- Renderer script that produces an offline self-contained HTML presentation and verification previews
 
 ## Current State
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 now adds `jiaoan-jihua` for授课进度计划表.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shifts the next concrete skill to school-style HTML presentations while preserving the same Markdown-first control surface.
 
 ## What This Is
 
@@ -42,13 +43,18 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ### Active
 
-No active follow-up phase is currently scoped. The next step is to audit or extend `jiaoan-jihua` only after a concrete new requirement appears.
+- Build `school-presentation` as a Markdown-first HTML presentation workflow.
+- Keep Markdown as the editable source of truth: users edit logical slides, while the renderer may split oversized logical slides into multiple physical HTML pages.
+- Use fixed layout families and school identity assets to avoid generic AI-looking decks.
+- Verify formulas, tables, charts, images, videos, text overflow, and static-page packaging behavior.
 
 ### Out of Scope
 
 - Direct one-step source-to-target rendering without Markdown intermediate - it makes target output harder to reason about and verify.
-- Additional output formats beyond the Presto gongwen/jiaoan-shicao/jiaoan-jihua Typst/PDF paths - defer until a concrete new skill requires them.
-- OCR, image extraction, and handwriting interpretation - not part of the first document workflow slice.
+- PPTX, Keynote, and fully editable PowerPoint export for the school presentation skill - prior attempts were too unstable, so v1.5 is HTML-first.
+- Hosted deployment, password-gated sharing, multi-device synchronization, and annotation tools - defer until the offline HTML deck is stable.
+- Cropping user images to fill decorative frames - images should keep their original aspect ratio and use contain-style placement by default.
+- OCR, handwriting interpretation, and arbitrary school-template marketplace support - not part of the first school-presentation slice.
 - Example-heavy showcase expansions - still deferred; the canonical skill path stays primary until a concrete contributor need appears.
 
 ## Context
@@ -63,15 +69,19 @@ v1.0 shipped 3 phases and 3 plans:
 
 v1.2 adds the first concrete skill using that pattern: `skills/gongwen`, backed by a Presto gongwen black-box renderer and Typst PDF verification. v1.3 adds the second concrete skill, `skills/jiaoan-shicao`, backed by a Presto jiaoan-shicao black-box renderer, calendar support resource, and Typst PDF verification. v1.4 adds `skills/jiaoan-jihua`, backed by the Presto jiaoan-jihua black-box renderer and Typst/PDF verification.
 
+v1.5 will add `skills/school-presentation`, backed by extracted official-school visual assets and a Markdown-to-HTML presentation renderer. The milestone deliberately avoids PPTX generation and treats HTML as the primary stable output.
+
 ## Next Milestone Goals
 
-The next milestone should start with `/gsd:new-milestone` and a fresh requirements pass. The current skill is deliberately limited to jiaoan-jihua Markdown, Presto jiaoan-jihua Typst output, bundled calendar support resource usage, and PDF verification.
+The current milestone should implement `school-presentation`: a skill that analyzes presentation materials, writes a persistent Markdown logical-slide intermediate, applies fixed blue-green school layouts, and packages the result as an offline single-file HTML deck with visual verification artifacts.
 
 ## Constraints
 
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
 - **Source of truth**: Prefer one canonical skill source plus embedded runtime adapter notes - this reduces drift across agents.
 - **Scope discipline**: Keep the document workflow centered on a Markdown intermediate; add automation only after the contract is stable.
+- **Presentation output discipline**: For v1.5, HTML is the primary output. PPTX and Keynote export are future options, not current acceptance criteria.
+- **Layout discipline**: Markdown owns logical slide content; the renderer owns physical pagination, text fitting, and overflow handling.
 - **Language**: Agent-facing responses in this repository should be Simplified Chinese unless a file format or downstream runtime requires otherwise.
 - **Portability**: Avoid assuming one agent's proprietary tool syntax in the canonical skill body; isolate those differences in adapter sections.
 
@@ -87,6 +97,8 @@ The next milestone should start with `/gsd:new-milestone` and a fresh requiremen
 | Add `gongwen` as the first real skill | User provided a concrete Presto gongwen fixture and requested a trigger for similar official-document writing | Good - shipped in v1.2 Phase 5 |
 | Add `jiaoan-shicao` as the second real skill | User provided a Presto jiaoan-shicao fixture, `calendar.json`, and requested the trigger word for practical lesson-plan writing | Good - shipped in v1.3 Phase 6 |
 | Add `jiaoan-jihua` as a授课进度计划 skill | User provided a Presto jiaoan-jihua fixture, `calendar.json`, and requested the trigger word for teaching-schedule writing | Good - shipped in v1.4 Phase 7 |
+| Add `school-presentation` as a school-style HTML presentation skill | User rejected unstable PPTX output and prefers Markdown-controlled, single-file HTML presentations with fixed layouts and school visual identity | Planned - v1.5 |
+| Treat logical slides and physical pages separately | Users should edit one Markdown logical slide while the renderer splits overflow into additional HTML pages automatically | Planned - v1.5 |
 
 ## Evolution
 
@@ -106,4 +118,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-05-31 after v1.4 jiaoan-jihua skill implementation*
+*Last updated: 2026-05-31 after v1.5 school-presentation milestone start*

@@ -1,32 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Jiaoan Jihua Skill
-current_phase: 7
-status: completed
-stopped_at: Phase 7 complete; jiaoan-jihua skill implemented and verified
-last_updated: "2026-05-31T11:55:00.000Z"
-last_activity: 2026-05-31 — Jiaoan jihua skill implemented and verified
+milestone: v1.5
+milestone_name: School Presentation Skill
+status: planning
+last_updated: "2026-05-31T14:25:10.561Z"
+last_activity: 2026-05-31 — Milestone v1.5 started
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 7
-**Status:** v1.4 jiaoan-jihua skill complete
+**Current Phase:** Not started (defining requirements)
+**Status:** Defining requirements
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-05-31)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.4 Jiaoan Jihua Skill - teaching-schedule Markdown-to-Typst/PDF workflow
+**Current focus:** v1.5 School Presentation Skill - Markdown-to-single-file-HTML school presentation workflow
 
 ## Workflow Preferences
 
@@ -50,7 +48,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-31)
 
 ## Next Up
 
-Audit or extend `jiaoan-jihua` only after a concrete new requirement appears.
+Plan Phase 8 for `school-presentation`: extract school identity assets, define Markdown logical-slide structure, implement fixed HTML layouts, and verify overflow-safe static output.
 
 ## Decisions
 
@@ -71,6 +69,9 @@ Audit or extend `jiaoan-jihua` only after a concrete new requirement appears.
 - [Phase 06]: The Presto `presto-template-jiaoan-shicao` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
 - [Milestone v1.4]: `jiaoan-jihua` adds a teaching-schedule workflow. — User provided a Presto jiaoan-jihua fixture, `calendar.json`, and requested the trigger word for授课进度计划 writing.
 - [Phase 07]: The Presto `presto-template-jiaoan-jihua` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
+- [Milestone v1.5]: `school-presentation` will generate school-style HTML presentations. — User clarified that PPTX output was unstable and the preferred route is a Markdown intermediate rendered to an offline single-file HTML deck.
+- [Milestone v1.5]: Markdown pages are logical slides, not necessarily physical pages. — If a logical slide contains too much content, the renderer should split it into multiple physical HTML pages while keeping the Markdown easy to edit.
+- [Milestone v1.5]: User images should preserve their original aspect ratio. — Images should be scaled and placed without cropping by default.
 
 ## Performance Metrics
 
@@ -98,10 +99,10 @@ Audit or extend `jiaoan-jihua` only after a concrete new requirement appears.
 
 ## Current Position
 
-Phase: Milestone v1.4 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-05-31 — Jiaoan jihua skill implemented and verified
+Status: Defining requirements
+Last activity: 2026-05-31 — Milestone v1.5 started
 
 ## Operator Next Steps
 

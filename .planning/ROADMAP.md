@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-05-31 after v1.4 jiaoan-jihua skill implementation
+**Last updated:** 2026-05-31 after v1.5 school-presentation milestone start
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -12,6 +12,7 @@
 - **Completed: v1.2 Gongwen Skill** - Phase 5, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.3 Jiaoan Shicao Skill** - Phase 6, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.4 Jiaoan Jihua Skill** - Phase 7, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
+- **Active: v1.5 School Presentation Skill** - Phase 8, planning started 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 
 ## Phases
 
@@ -84,11 +85,28 @@
 4. `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh` renders Markdown through the Presto `jiaoan-jihua` template and compiles/verifies Typst/PDF artifacts.
 5. The provided fixture `jiaoan-jihua-full.md` produces Typst matching the provided reference and a compiled PDF verification artifact.
 
+### Phase 8: School Presentation Skill
+
+**Goal:** As a school presentation author, I want a `school-presentation` skill that turns source materials into a Markdown logical-slide intermediate and renders a blue-green school-style offline HTML deck, so presentations keep school identity while staying versionable, stable, and readable.
+**Mode:** mvp
+
+**Depends on:** Phase 4
+
+**Requirements:** SP-01, SP-02, SP-03, SP-04, SP-05, SP-06, SP-07, SP-08, SP-09
+
+**Success Criteria:**
+1. `skills/school-presentation/SKILL.md` defines trigger wording, workflow, outputs, safety boundaries, verification, and adapter notes for all required runtimes.
+2. `skills/school-presentation/references/` contains the extracted school identity assets or provenance notes from the provided PPTX/POTX materials.
+3. `skills/school-presentation/templates/school-presentation-full.md` provides a reusable Markdown logical-slide intermediate with fixed layout intents, formulas, tables, charts, images, videos, and speaker notes.
+4. `skills/school-presentation/scripts/school-presentation.sh` renders Markdown into an offline self-contained HTML presentation when feasible and documents the large-video fallback behavior.
+5. The renderer preserves image aspect ratios, applies fixed school-style layout families, and automatically splits overflowing logical slides into multiple physical HTML pages.
+6. The provided fixture produces preview/verification artifacts showing formulas, tables, charts, media, readable typography, overflow splitting, and non-generic school visual design.
+
 ## Current Position
 
-v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7.
+v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7. v1.5 starts `school-presentation` as the next concrete skill in Phase 8.
 
-Phase 7 is complete. Reconfirm the next code direction before adding or planning any new phase.
+Phase 8 is planned but not started. Start with `/gsd:plan-phase 8` after reviewing the v1.5 requirements and research notes.
 
 ## Progress
 
@@ -101,6 +119,7 @@ Phase 7 is complete. Reconfirm the next code direction before adding or planning
 | 5. Gongwen Skill | v1.2 | 1/1 | Complete | 2026-05-31 |
 | 6. Jiaoan Shicao Skill | v1.3 | 1/1 | Complete | 2026-05-31 |
 | 7. Jiaoan Jihua Skill | v1.4 | 1/1 | Complete | 2026-05-31 |
+| 8. School Presentation Skill | v1.5 | 0/1 | Planned | — |
 
 ## Requirement Coverage
 
@@ -114,7 +133,9 @@ v1.3 tracks 5 jiaoan-shicao skill requirements: JS-01 through JS-05. All are map
 
 v1.4 tracks 5 jiaoan-jihua skill requirements: JH-01 through JH-05. All are mapped to Phase 7 and are complete.
 
+v1.5 tracks 9 school-presentation requirements: SP-01 through SP-09. All are mapped to Phase 8 and are planned.
+
 EX-01 and EX-02 were explicitly deferred as optional future example guidance, not v1 delivery requirements. See `.planning/milestones/v1.0-REQUIREMENTS.md` for the archived requirement record.
 
 ---
-*Roadmap updated: 2026-05-31 after v1.4 jiaoan-jihua skill implementation*
+*Roadmap updated: 2026-05-31 after v1.5 school-presentation milestone start*
