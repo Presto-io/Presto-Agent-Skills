@@ -1,5 +1,15 @@
 # Milestones
 
+## v1.1 v1.1 (Shipped: 2026-05-31)
+
+**Phases completed:** 1 phases, 1 plans, 3 tasks
+
+**Key accomplishments:**
+
+- Markdown-first document workflow contract with visible review handling for ambiguous or lossy source material
+
+---
+
 ## v1.0 MVP (Shipped: 2026-05-30)
 
 **Phases completed:** 3 phases, 3 plans, 10 tasks
