@@ -1,14 +1,16 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-05-31 after removing output-specific follow-up phases
+**Last updated:** 2026-05-31 after v1.3 jiaoan-shicao skill implementation
 **Granularity:** Coarse
 **Project Mode:** MVP
 
 ## Milestones
 
 - **Shipped: v1.0 MVP** - Phases 1-3, shipped 2026-05-30. Full archive: `.planning/milestones/v1.0-ROADMAP.md`
-- **Planned: v1.1 Document Workflow** - Phase 4, started 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
+- **Completed: v1.1 Document Workflow** - Phase 4, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
+- **Completed: v1.2 Gongwen Skill** - Phase 5, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
+- **Completed: v1.3 Jiaoan Shicao Skill** - Phase 6, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 
 ## Phases
 
@@ -35,11 +37,41 @@
 2. The normalization contract covers common document primitives such as headings, paragraphs, lists, tables, code blocks, links, figures, callouts, and metadata.
 3. Ambiguous, unsupported, or lossy source fragments have an explicit flagging convention instead of being silently dropped or guessed.
 
+### Phase 5: Gongwen Skill
+
+**Goal:** As a document workflow skill author, I want the first concrete `gongwen` skill to produce a stable Markdown intermediate and verified Typst/PDF artifacts, so class-official-document writing can be reused across supported agent runtimes.
+**Mode:** mvp
+
+**Depends on:** Phase 4
+
+**Requirements:** GW-01, GW-02, GW-03, GW-04, GW-05
+
+**Success Criteria:**
+1. `skills/gongwen/SKILL.md` defines trigger wording, workflow, outputs, verification, safety boundaries, and adapter notes for all required runtimes.
+2. `skills/gongwen/templates/gongwen-full.md` provides a reusable Markdown intermediate structure.
+3. `skills/gongwen/scripts/gongwen.sh` renders Markdown through the Presto gongwen template and compiles/verifies Typst/PDF artifacts.
+4. The provided fixture `gongwen-full.md` produces Typst and PDF output matching the provided references.
+
+### Phase 6: Jiaoan Shicao Skill
+
+**Goal:** As a document workflow skill author, I want the second concrete `jiaoan-shicao` skill to produce a stable Markdown intermediate and verified Typst/PDF artifacts, so practical lesson-plan writing can be reused across supported agent runtimes.
+**Mode:** mvp
+
+**Depends on:** Phase 4
+
+**Requirements:** JS-01, JS-02, JS-03, JS-04, JS-05
+
+**Success Criteria:**
+1. `skills/jiaoan-shicao/SKILL.md` defines trigger wording, workflow, outputs, verification, safety boundaries, and adapter notes for all required runtimes.
+2. `skills/jiaoan-shicao/templates/jiaoan-shicao-full.md` provides a reusable Markdown intermediate structure.
+3. `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh` renders Markdown through the Presto `jiaoan-shicao` template and compiles/verifies Typst/PDF artifacts.
+4. The provided fixture `jiaoan-shicao-full.md` produces Typst matching the provided reference and a compiled PDF verification artifact.
+
 ## Current Position
 
-v1.0 is complete. v1.1 currently contains only the Markdown normalization contract from Phase 4. Output-specific follow-up phases have been removed from the current roadmap because they are not the right focus.
+v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6.
 
-Phase 4 is complete. Reconfirm the next code direction before adding or planning any new phase.
+Phase 6 is complete. Reconfirm the next code direction before adding or planning any new phase.
 
 ## Progress
 
@@ -49,14 +81,20 @@ Phase 4 is complete. Reconfirm the next code direction before adding or planning
 | 2. Canonical Skill Format and Runtime Notes | v1.0 | 1/1 | Complete | 2026-05-30 |
 | 3. Portable Example Scope Reconciliation | v1.0 | 1/1 | Complete | 2026-05-30 |
 | 4. Markdown Normalization Contract | v1.1 | 1/1 | Complete | 2026-05-31 |
+| 5. Gongwen Skill | v1.2 | 1/1 | Complete | 2026-05-31 |
+| 6. Jiaoan Shicao Skill | v1.3 | 1/1 | Complete | 2026-05-31 |
 
 ## Requirement Coverage
 
 v1.0 shipped 9 required items: DOC-01, DOC-02, DOC-03, PLAN-01, TMPL-01, TMPL-02, RT-01, RT-02, and RT-03.
 
-v1.1 currently tracks 2 document workflow requirements: DWF-01 and DWF-02. Both are mapped to Phase 4 in `.planning/REQUIREMENTS.md` and are complete.
+v1.1 tracks 2 document workflow requirements: DWF-01 and DWF-02. Both are mapped to Phase 4 in `.planning/REQUIREMENTS.md` and are complete.
+
+v1.2 tracks 5 gongwen skill requirements: GW-01 through GW-05. All are mapped to Phase 5 and are complete.
+
+v1.3 tracks 5 jiaoan-shicao skill requirements: JS-01 through JS-05. All are mapped to Phase 6 and are complete.
 
 EX-01 and EX-02 were explicitly deferred as optional future example guidance, not v1 delivery requirements. See `.planning/milestones/v1.0-REQUIREMENTS.md` for the archived requirement record.
 
 ---
-*Roadmap updated: 2026-05-31 after removing output-specific follow-up phases*
+*Roadmap updated: 2026-05-31 after v1.3 jiaoan-shicao skill implementation*

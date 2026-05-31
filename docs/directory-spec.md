@@ -19,7 +19,7 @@
 | Path | Purpose |
 |------|---------|
 | `skills/<skill-name>/SKILL.md` | canonical 技能源文件 |
-| `skills/<skill-name>/references/` | 可按需读取的长参考资料 |
+| `skills/<skill-name>/references/` | 可按需读取的长参考资料、支持文件和格式说明 |
 | `skills/<skill-name>/scripts/` | 技能需要调用的辅助脚本 |
 | `skills/<skill-name>/templates/` | 技能输出模板或文件模板 |
 
