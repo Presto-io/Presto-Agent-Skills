@@ -48,13 +48,29 @@ Requirements for the teaching-schedule progress skill.
 - [x] **JH-04**: The script can compile the generated Typst into a PDF verification artifact with Typst.
 - [x] **JH-05**: The provided `jiaoan-jihua-full.md` fixture generates Typst matching the provided reference and a PDF verification artifact.
 
+## v1.5 Requirements
+
+Requirements for the school-style HTML presentation skill.
+
+### School Presentation Skill
+
+- [ ] **SP-01**: A user can invoke the `school-presentation` skill when they need a school-official-style presentation generated from source materials, outlines, or loose notes.
+- [ ] **SP-02**: The skill includes school identity references extracted from the provided PPTX/POTX materials, including logo, slogan, blue-green palette, and reusable decorative marks.
+- [ ] **SP-03**: The skill can produce a persistent Markdown intermediate whose body is organized as logical slides with fixed layout intents, speaker notes, and reviewable content warnings.
+- [ ] **SP-04**: Markdown logical slides can include formulas, tables, charts, images, videos, and text blocks without bypassing the Markdown source of truth.
+- [ ] **SP-05**: The renderer can map Markdown logical slides onto a small fixed layout library and preserve school visual identity without requiring the original PPT layout to be cloned.
+- [ ] **SP-06**: The renderer preserves image aspect ratios by default and uses contain-style placement instead of cropping user images.
+- [ ] **SP-07**: The renderer detects excessive content and automatically splits one Markdown logical slide into multiple physical HTML pages without requiring the Markdown author to manually move content between pages.
+- [ ] **SP-08**: The renderer packages CSS, JavaScript, formulas, charts, and school assets into an offline self-contained HTML presentation when media size permits, with documented behavior for large videos.
+- [ ] **SP-09**: The provided fixture generates a school-style HTML deck plus preview/verification artifacts that demonstrate formula, table, chart, image, video, and overflow handling without generic AI-looking visual patterns.
+
 ## Deferred Requirements
 
 Deferred to a later milestone. Tracked but not in the current roadmap.
 
 ### Additional Targets
 
-- **DWF-FUTURE-01**: Add HTML delivery, Typst, DOCX, PDF, or other target formats after the Markdown normalization contract is stable and there is a concrete need.
+- **DWF-FUTURE-01**: Add additional delivery targets beyond current concrete skills, such as DOCX, expanded PDF workflows, PPTX, Keynote, or deployable hosted pages, after the active Markdown-to-target path is stable.
 - **DWF-FUTURE-02**: Add reusable page templates, typography presets, or publishing layouts after the core transformation rules are validated.
 - **DWF-FUTURE-03**: Add automation or lint tooling after the rules have been exercised by real document workflow skills.
 
@@ -68,6 +84,9 @@ Explicitly excluded from v1.1. Documented to prevent scope creep.
 | OCR, handwriting recognition, or image-to-text extraction | Input extraction is a separate problem from document workflow transformation |
 | General PDF rendering or visual publishing pipeline | v1.2 only validates the concrete Presto gongwen Typst/PDF path |
 | Runtime-specific wrappers | v1.1 should stay focused on canonical skill behavior before generated runtime packaging |
+| PPTX/Keynote generation for school presentations | v1.5 uses HTML as the primary stable output because prior PPTX generation quality was poor |
+| Hosted deployment and password access | Offline single-file HTML packaging must work before any hosting adapter is added |
+| Cropping images into decorative frames | School presentation images must preserve original aspect ratio by default |
 
 ## Traceability
 
@@ -92,14 +111,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | JH-03 | Phase 7 | Complete |
 | JH-04 | Phase 7 | Complete |
 | JH-05 | Phase 7 | Complete |
+| SP-01 | Phase 8 | Planned |
+| SP-02 | Phase 8 | Planned |
+| SP-03 | Phase 8 | Planned |
+| SP-04 | Phase 8 | Planned |
+| SP-05 | Phase 8 | Planned |
+| SP-06 | Phase 8 | Planned |
+| SP-07 | Phase 8 | Planned |
+| SP-08 | Phase 8 | Planned |
+| SP-09 | Phase 8 | Planned |
 
 **Coverage:**
 - v1.1 requirements: 2 total
 - v1.2 requirements: 5 total
 - v1.3 requirements: 5 total
 - v1.4 requirements: 5 total
-- Mapped to phases: 17
+- v1.5 requirements: 9 total
+- Mapped to phases: 26
 - Unmapped: 0
 
 ---
-*Requirements updated: 2026-05-31 after v1.4 jiaoan-jihua skill implementation*
+*Requirements updated: 2026-05-31 after v1.5 school-presentation milestone start*
