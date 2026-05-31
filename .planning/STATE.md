@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Document Workflow
-current_phase: 4
+milestone: v1.4
+milestone_name: Jiaoan Jihua Skill
+current_phase: 7
 status: completed
-stopped_at: Phase 4 complete; no further phase currently scoped
-last_updated: "2026-05-31T01:53:50.262Z"
-last_activity: 2026-05-31 — Milestone v1.1 completed and archived
+stopped_at: Phase 7 complete; jiaoan-jihua skill implemented and verified
+last_updated: "2026-05-31T11:55:00.000Z"
+last_activity: 2026-05-31 — Jiaoan jihua skill implemented and verified
 progress:
   total_phases: 1
   completed_phases: 1
@@ -18,15 +18,15 @@ progress:
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 4
-**Status:** v1.1 milestone complete
+**Current Phase:** 7
+**Status:** v1.4 jiaoan-jihua skill complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-05-31)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.1 Document Workflow - Markdown normalization only
+**Current focus:** v1.4 Jiaoan Jihua Skill - teaching-schedule Markdown-to-Typst/PDF workflow
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-31)
 
 ## Next Up
 
-Reconfirm the next code direction before planning any new phase.
+Audit or extend `jiaoan-jihua` only after a concrete new requirement appears.
 
 ## Decisions
 
@@ -65,6 +65,12 @@ Reconfirm the next code direction before planning any new phase.
 - [Milestone v1.1]: Output-specific follow-up phases were removed from the current roadmap. — User clarified that they are not needed for the present direction.
 - [Phase 04]: Document workflow skills normalize source material into a persistent Markdown intermediate before target generation. — Phase 4 created `docs/markdown-normalization-contract.md` and linked it from README, directory spec, and the skill template.
 - [Phase 04]: The shared Markdown contract stays behavioral and does not define universal metadata fields or a universal marker taxonomy. — Template-specific metadata, marker syntax, scripts, and renderer rules remain owned by the relevant skill/template or later target-specific docs.
+- [Milestone v1.2]: `gongwen` is the first concrete skill. — User provided a Presto gongwen fixture and requested the trigger word `gongwen` for similar official-document writing.
+- [Phase 05]: The Presto `presto-template-gongwen` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
+- [Milestone v1.3]: `jiaoan-shicao` is the second concrete skill. — User provided a Presto jiaoan-shicao fixture, `calendar.json`, and requested the trigger word for practical lesson-plan writing.
+- [Phase 06]: The Presto `presto-template-jiaoan-shicao` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
+- [Milestone v1.4]: `jiaoan-jihua` adds a teaching-schedule workflow. — User provided a Presto jiaoan-jihua fixture, `calendar.json`, and requested the trigger word for授课进度计划 writing.
+- [Phase 07]: The Presto `presto-template-jiaoan-jihua` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
 
 ## Performance Metrics
 
@@ -74,12 +80,15 @@ Reconfirm the next code direction before planning any new phase.
 | 02-canonical-skill-format-and-runtime-adapters | 01 | 18min | 4 | 11 |
 | Phase 03 P01 | 12min | 3 tasks | 7 files |
 | Phase 04 P01 | 21min | 3 tasks | 4 files |
+| Phase 05 P01 | current session | 3 tasks | 7 files |
+| Phase 06 P01 | current session | 3 tasks | 8 files |
+| Phase 07 P01 | current session | 3 tasks | 8 files |
 
 ## Last Session
 
-- **Completed:** 04-01-PLAN.md
-- **Stopped At:** Phase 4 complete; no further phase currently scoped
-- **Resume File:** .planning/phases/04-markdown-normalization-contract/04-01-SUMMARY.md
+- **Completed:** 07-01-PLAN.md
+- **Stopped At:** Phase 7 complete; jiaoan-jihua skill implemented and verified
+- **Resume File:** .planning/phases/07-jiaoan-jihua-skill/07-01-SUMMARY.md
 
 ## Close Notes
 
@@ -89,10 +98,10 @@ Reconfirm the next code direction before planning any new phase.
 
 ## Current Position
 
-Phase: Milestone v1.1 complete
+Phase: Milestone v1.4 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-05-31 — Milestone v1.1 completed and archived
+Last activity: 2026-05-31 — Jiaoan jihua skill implemented and verified
 
 ## Operator Next Steps
 

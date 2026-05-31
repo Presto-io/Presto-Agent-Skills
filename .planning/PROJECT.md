@@ -1,17 +1,19 @@
 # Presto Agent Skills
 
-## Current Milestone: v1.1 Document Workflow
+## Current Milestone: v1.4 Jiaoan Jihua Skill
 
-**Goal:** Define a markdown-first document workflow skill family that normalizes arbitrary source material into Markdown and then stops at the shared intermediate contract.
+**Goal:** Create the next concrete document workflow skill, `jiaoan-jihua`, that produces a stable授课进度计划 Markdown intermediate and validates Typst/PDF output through the Presto jiaoan-jihua template.
 
 **Target features:**
-- Markdown normalization as the shared intermediate representation
+- `jiaoan-jihua` trigger for 授课进度计划表 writing
+- `jiaoan-jihua-full.md` Markdown intermediate structure
+- Scripted Markdown-to-Typst/PDF rendering, bundled calendar support resource usage, and reference artifact verification
 
 ## Current State
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.1 is now being scoped around a document workflow pattern: normalize any input into Markdown first, and keep the milestone focused on that shared intermediate contract.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 now adds `jiaoan-jihua` for授课进度计划表.
 
 ## What This Is
 
@@ -34,15 +36,18 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Add project-level agent instructions through `AGENTS.md`, including the Simplified Chinese response requirement. - v1.0
 - [x] Keep examples out of v1 unless a concrete contributor need appears. - v1.0
 - [x] Define a Markdown-first normalization contract for arbitrary document input. - v1.1 Phase 4
+- [x] Add the first concrete `gongwen` skill with trigger wording, canonical workflow, runtime notes, script code, and verification path. - v1.2 Phase 5
+- [x] Add the second concrete `jiaoan-shicao` skill with trigger wording, canonical workflow, support resource, script code, and verification path. - v1.3 Phase 6
+- [x] Add the `jiaoan-jihua` skill with trigger wording, canonical workflow, script code, and black-box Typst/PDF verification path. - v1.4 Phase 7
 
 ### Active
 
-No active follow-up phase is currently scoped. Reconfirm the next code direction before adding new requirements.
+No active follow-up phase is currently scoped. The next step is to audit or extend `jiaoan-jihua` only after a concrete new requirement appears.
 
 ### Out of Scope
 
 - Direct one-step source-to-target rendering without Markdown intermediate - it makes target output harder to reason about and verify.
-- HTML, PDF, page templating, and layout-polish automation - defer until the core Markdown contract is stable and there is a concrete need.
+- Additional output formats beyond the Presto gongwen/jiaoan-shicao/jiaoan-jihua Typst/PDF paths - defer until a concrete new skill requires them.
 - OCR, image extraction, and handwriting interpretation - not part of the first document workflow slice.
 - Example-heavy showcase expansions - still deferred; the canonical skill path stays primary until a concrete contributor need appears.
 
@@ -56,11 +61,11 @@ v1.0 shipped 3 phases and 3 plans:
 - Phase 2 made `templates/skill/SKILL.md` the canonical copyable artifact and documented runtime compatibility for all six required runtimes.
 - Phase 3 removed unused examples and standalone adapter files, keeping examples optional until they solve a real contributor need.
 
-v1.1 is expected to focus on document-workflow skills that treat Markdown as the canonical intermediate representation.
+v1.2 adds the first concrete skill using that pattern: `skills/gongwen`, backed by a Presto gongwen black-box renderer and Typst PDF verification. v1.3 adds the second concrete skill, `skills/jiaoan-shicao`, backed by a Presto jiaoan-shicao black-box renderer, calendar support resource, and Typst PDF verification. v1.4 adds `skills/jiaoan-jihua`, backed by the Presto jiaoan-jihua black-box renderer and Typst/PDF verification.
 
 ## Next Milestone Goals
 
-The next milestone should start with `/gsd:new-milestone` and a fresh requirements pass. The current focus is a markdown-first document workflow, not scaffold tooling, output-format design, or example expansion.
+The next milestone should start with `/gsd:new-milestone` and a fresh requirements pass. The current skill is deliberately limited to jiaoan-jihua Markdown, Presto jiaoan-jihua Typst output, bundled calendar support resource usage, and PDF verification.
 
 ## Constraints
 
@@ -77,8 +82,11 @@ The next milestone should start with `/gsd:new-milestone` and a fresh requiremen
 | Use a canonical `SKILL.md` plus runtime adapter guidance | Best balance between portability and practical runtime differences; avoids maintaining six divergent skill definitions | Good - shipped in v1.0 |
 | Support Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent from v1 | User explicitly requires broad agent compatibility and mandatory OpenClaw/Hermes support | Good - documented in v1.0 |
 | Start with docs, templates, and planning first, without v1 examples | User wants the canonical skill contract first; example material is deferred until it has concrete contributor value | Good - v1.0 removed unused examples |
-| Use Markdown as the canonical intermediate for document workflows | Gives the skill family one stable semantic layer before target output | Pending |
+| Use Markdown as the canonical intermediate for document workflows | Gives the skill family one stable semantic layer before target output | Good - shipped in v1.1 and reused in v1.2/v1.3 |
 | Keep v1.1 focused on the Markdown intermediate rather than output-specific phases | The user clarified that output-specific follow-up phases are not the right focus | Updated |
+| Add `gongwen` as the first real skill | User provided a concrete Presto gongwen fixture and requested a trigger for similar official-document writing | Good - shipped in v1.2 Phase 5 |
+| Add `jiaoan-shicao` as the second real skill | User provided a Presto jiaoan-shicao fixture, `calendar.json`, and requested the trigger word for practical lesson-plan writing | Good - shipped in v1.3 Phase 6 |
+| Add `jiaoan-jihua` as a授课进度计划 skill | User provided a Presto jiaoan-jihua fixture, `calendar.json`, and requested the trigger word for teaching-schedule writing | Good - shipped in v1.4 Phase 7 |
 
 ## Evolution
 
@@ -98,4 +106,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-05-31 after v1.1 milestone definition*
+*Last updated: 2026-05-31 after v1.4 jiaoan-jihua skill implementation*
