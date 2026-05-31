@@ -1,5 +1,20 @@
 # Milestones
 
+## v1.4 Jiaoan Jihua Skill (Shipped: 2026-05-31)
+
+**Phases completed:** 1 phase, 1 plan, 3 tasks
+
+**Key accomplishments:**
+
+- Added `jiaoan-jihua`, with a reusable授课进度计划 Markdown intermediate and verified Typst/PDF render path
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.4-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.4-REQUIREMENTS.md`
+
+---
+
 ## v1.3 Jiaoan Shicao Skill (Shipped: 2026-05-31)
 
 **Phases completed:** 1 phase, 1 plan, 3 tasks

@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-05-31 after v1.3 jiaoan-shicao skill implementation
+**Last updated:** 2026-05-31 after v1.4 jiaoan-jihua skill implementation
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -11,6 +11,7 @@
 - **Completed: v1.1 Document Workflow** - Phase 4, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.2 Gongwen Skill** - Phase 5, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.3 Jiaoan Shicao Skill** - Phase 6, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
+- **Completed: v1.4 Jiaoan Jihua Skill** - Phase 7, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 
 ## Phases
 
@@ -67,11 +68,27 @@
 3. `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh` renders Markdown through the Presto `jiaoan-shicao` template and compiles/verifies Typst/PDF artifacts.
 4. The provided fixture `jiaoan-shicao-full.md` produces Typst matching the provided reference and a compiled PDF verification artifact.
 
+### Phase 7: Jiaoan Jihua Skill
+
+**Goal:** As a document workflow skill author, I want the next concrete `jiaoan-jihua` skill to produce a stable Markdown intermediate and verified Typst/PDF artifacts, so授课进度计划 writing can be reused across supported agent runtimes.
+**Mode:** mvp
+
+**Depends on:** Phase 4
+
+**Requirements:** JH-01, JH-02, JH-03, JH-04, JH-05
+
+**Success Criteria:**
+1. `skills/jiaoan-jihua/SKILL.md` defines trigger wording, workflow, outputs, verification, safety boundaries, and adapter notes for all required runtimes.
+2. `skills/jiaoan-jihua/templates/jiaoan-jihua-full.md` provides a reusable Markdown intermediate structure.
+3. `skills/jiaoan-jihua/references/calendar.json` provides the bundled teaching-calendar support resource.
+4. `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh` renders Markdown through the Presto `jiaoan-jihua` template and compiles/verifies Typst/PDF artifacts.
+5. The provided fixture `jiaoan-jihua-full.md` produces Typst matching the provided reference and a compiled PDF verification artifact.
+
 ## Current Position
 
-v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6.
+v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7.
 
-Phase 6 is complete. Reconfirm the next code direction before adding or planning any new phase.
+Phase 7 is complete. Reconfirm the next code direction before adding or planning any new phase.
 
 ## Progress
 
@@ -83,6 +100,7 @@ Phase 6 is complete. Reconfirm the next code direction before adding or planning
 | 4. Markdown Normalization Contract | v1.1 | 1/1 | Complete | 2026-05-31 |
 | 5. Gongwen Skill | v1.2 | 1/1 | Complete | 2026-05-31 |
 | 6. Jiaoan Shicao Skill | v1.3 | 1/1 | Complete | 2026-05-31 |
+| 7. Jiaoan Jihua Skill | v1.4 | 1/1 | Complete | 2026-05-31 |
 
 ## Requirement Coverage
 
@@ -94,7 +112,9 @@ v1.2 tracks 5 gongwen skill requirements: GW-01 through GW-05. All are mapped to
 
 v1.3 tracks 5 jiaoan-shicao skill requirements: JS-01 through JS-05. All are mapped to Phase 6 and are complete.
 
+v1.4 tracks 5 jiaoan-jihua skill requirements: JH-01 through JH-05. All are mapped to Phase 7 and are complete.
+
 EX-01 and EX-02 were explicitly deferred as optional future example guidance, not v1 delivery requirements. See `.planning/milestones/v1.0-REQUIREMENTS.md` for the archived requirement record.
 
 ---
-*Roadmap updated: 2026-05-31 after v1.3 jiaoan-shicao skill implementation*
+*Roadmap updated: 2026-05-31 after v1.4 jiaoan-jihua skill implementation*

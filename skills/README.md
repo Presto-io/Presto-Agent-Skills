@@ -2,6 +2,12 @@
 
 Canonical skills live here.
 
+Current skills:
+
+- `gongwen`: 类公文 Markdown intermediate 到 Presto gongwen Typst/PDF 的工作流。
+- `jiaoan-jihua`: 授课进度计划 Markdown intermediate 到 Presto jiaoan-jihua Typst/PDF 的工作流。
+- `jiaoan-shicao`: 实操教案 Markdown intermediate 到 Presto jiaoan-shicao Typst/PDF 的工作流。
+
 Expected layout:
 
 ```text
@@ -13,6 +19,6 @@ skills/
     └── templates/
 ```
 
-Only `SKILL.md` is required. Add supporting folders only when the skill needs them.
+Only `SKILL.md` is required. Add supporting folders only when the skill needs them. Keep reusable support files like calendars, schemas, and long format notes under `references/`.
 
 Before adding a new skill, copy `templates/skill/SKILL.md` and fill the runtime adapter table for all required runtimes.
