@@ -5,8 +5,8 @@ milestone_name: Document Workflow
 current_phase: 4
 status: completed
 stopped_at: Phase 4 complete; no further phase currently scoped
-last_updated: "2026-05-30T19:43:37.963Z"
-last_activity: 2026-05-31 — Phase 4 completed
+last_updated: "2026-05-31T01:53:50.262Z"
+last_activity: 2026-05-31 — Milestone v1.1 completed and archived
 progress:
   total_phases: 1
   completed_phases: 1
@@ -19,7 +19,7 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 4
-**Status:** Phase 4 complete; no further phase currently scoped
+**Status:** v1.1 milestone complete
 
 ## Project Reference
 
@@ -89,11 +89,11 @@ Reconfirm the next code direction before planning any new phase.
 
 ## Current Position
 
-Phase: 4
+Phase: Milestone v1.1 complete
 Plan: —
-Status: Phase 4 complete; no further phase currently scoped
-Last activity: 2026-05-31 — Phase 4 completed
+Status: Awaiting next milestone
+Last activity: 2026-05-31 — Milestone v1.1 completed and archived
 
 ## Operator Next Steps
 
-- Reconfirm the next code direction before adding a new phase.
+- Start the next milestone with /gsd-new-milestone
