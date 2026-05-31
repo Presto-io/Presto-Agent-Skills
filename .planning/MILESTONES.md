@@ -1,5 +1,35 @@
 # Milestones
 
+## v1.3 Jiaoan Shicao Skill (Shipped: 2026-05-31)
+
+**Phases completed:** 1 phase, 1 plan, 3 tasks
+
+**Key accomplishments:**
+
+- Second concrete skill in the repository: `jiaoan-shicao`, with a reusable Markdown intermediate, bundled calendar support resource, and verified Typst/PDF render path
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.3-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.3-REQUIREMENTS.md`
+
+---
+
+## v1.2 Gongwen Skill (Shipped: 2026-05-31)
+
+**Phases completed:** 1 phase, 1 plan, 3 tasks
+
+**Key accomplishments:**
+
+- First concrete skill in the repository: `gongwen`, with a reusable Markdown intermediate and verified Typst/PDF render path
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.2-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.2-REQUIREMENTS.md`
+
+---
+
 ## v1.1 v1.1 (Shipped: 2026-05-31)
 
 **Phases completed:** 1 phases, 1 plans, 3 tasks
