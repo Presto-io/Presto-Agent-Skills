@@ -1,0 +1,86 @@
+{
+  "sources": [
+    {
+      "path": "/Users/mrered/Desktop/双校名ppt模板（通用）.pptx",
+      "type": "pptx"
+    },
+    {
+      "path": "/Users/mrered/Desktop/学院PPT模板.potx",
+      "type": "potx"
+    }
+  ],
+  "assets": [
+    {
+      "file": "images/logo-combined.png",
+      "role": "school logo and bilingual school name",
+      "source": "双校名ppt模板（通用）.pptx:ppt/media/image6.png",
+      "width": 1589,
+      "height": 485,
+      "sha256": "6250b9a4c1f3beabef5c39664bad0397a091c34c54bc0417d204f8045ed57069"
+    },
+    {
+      "file": "images/logo-white.png",
+      "role": "white cover/footer logo and bilingual school name",
+      "source": "/Users/mrered/Desktop/双校名ppt模板（通用）_convertedToPDF_convertedToImages/学校logo白色.png",
+      "width": 1063,
+      "height": 325,
+      "sha256": "999bc2bc358867a5d86fd4b08872e99ad1993b15a9bb3f64cdcd77b2e5b9bf91"
+    },
+    {
+      "file": "images/slogan-en.png",
+      "role": "English slogan",
+      "source": "双校名ppt模板（通用）.pptx:ppt/media/image5.png",
+      "width": 142,
+      "height": 21,
+      "sha256": "e96b504798ebefa8467e5a17c815686a1a6e9b1e9b36d49800fcb674ad57b7b7"
+    },
+    {
+      "file": "images/slogan-white-script.png",
+      "role": "white handwritten slogan",
+      "source": "学院PPT模板.potx:ppt/media/image5.png",
+      "width": 547,
+      "height": 203,
+      "sha256": "362aefc286ea68081ef8f1a9978ae997b77a8550732cfb01613a021c277c248e"
+    },
+    {
+      "file": "images/gradient-cover.png",
+      "role": "green-to-blue cover background",
+      "source": "双校名ppt模板（通用）.pptx:ppt/media/image2.png",
+      "width": 1818,
+      "height": 1023,
+      "sha256": "beb0bee6f36b27eff2aac7f59fa06c4adf8acb38d00cde4b3207dad6894d3721"
+    },
+    {
+      "file": "images/decorative-wave-top.png",
+      "role": "top wave decoration",
+      "source": "双校名ppt模板（通用）.pptx:ppt/media/image3.png",
+      "width": 1136,
+      "height": 66,
+      "sha256": "705cfdc05af27463a59ec008088653971b30bae4886e7b577e2bd392d0e3e9bf"
+    },
+    {
+      "file": "images/decorative-footer-band.png",
+      "role": "legacy footer band decoration",
+      "source": "双校名ppt模板（通用）.pptx:ppt/media/image8.png",
+      "width": 910,
+      "height": 200,
+      "sha256": "433e6bbbe2d7eb2b84845ba0a6bbff1b005c463adc6a36a5636230fa1050862f"
+    },
+    {
+      "file": "images/body-page-footer.png",
+      "role": "full-width body page footer",
+      "source": "双校名ppt模板（通用）.pptx:ppt/media/image7.png",
+      "width": 910,
+      "height": 47,
+      "sha256": "ab835ea913fc52c11f0148d41afb1e21e3e7afed46f05d81c1d60ece529398de"
+    },
+    {
+      "file": "images/school-icon-white.png",
+      "role": "legacy white school icon",
+      "source": "/Users/mrered/Desktop/双校名ppt模板（通用）_convertedToPDF_convertedToImages/学校logo白色.png",
+      "width": 388,
+      "height": 356,
+      "sha256": "82d6efeb82dc3093005595d447d967ffe575a1c3bd25d5a54b4782b196f435b1"
+    }
+  ]
+}
