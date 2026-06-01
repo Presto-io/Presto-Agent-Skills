@@ -1,5 +1,22 @@
 # Milestones
 
+## v1.5 School Presentation Skill (Shipped: 2026-06-01)
+
+**Phases completed:** 1 phase, 1 plan, 3 tasks
+
+**Key accomplishments:**
+
+- Added `school-presentation`, with a reusable Markdown logical-slide intermediate and an offline self-contained HTML deck renderer.
+- Extracted school identity assets and applied blue-green school-style layouts, footer branding, formula/table/chart/media rendering, overflow splitting, and a closing page.
+- Passed deterministic render verification and user-confirmed visual UAT.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.5-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.5-REQUIREMENTS.md`
+
+---
+
 ## v1.4 Jiaoan Jihua Skill (Shipped: 2026-05-31)
 
 **Phases completed:** 1 phase, 1 plan, 3 tasks

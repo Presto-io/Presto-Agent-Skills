@@ -1,6 +1,6 @@
 # Presto Agent Skills
 
-## Current Milestone: v1.5 School Presentation Skill
+## Current Milestone: v1.5 School Presentation Skill (Completed)
 
 **Goal:** Create a `school-presentation` skill that turns user materials into a stable Markdown presentation intermediate, then renders a blue-green school-style, self-contained HTML slide deck with fixed layouts and overflow-safe pagination.
 
@@ -14,7 +14,7 @@
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shifts the next concrete skill to school-style HTML presentations while preserving the same Markdown-first control surface.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations.
 
 ## What This Is
 
@@ -40,13 +40,11 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Add the first concrete `gongwen` skill with trigger wording, canonical workflow, runtime notes, script code, and verification path. - v1.2 Phase 5
 - [x] Add the second concrete `jiaoan-shicao` skill with trigger wording, canonical workflow, support resource, script code, and verification path. - v1.3 Phase 6
 - [x] Add the `jiaoan-jihua` skill with trigger wording, canonical workflow, script code, and black-box Typst/PDF verification path. - v1.4 Phase 7
+- [x] Add the `school-presentation` skill with a Markdown logical-slide intermediate, school identity assets, offline HTML rendering, overflow splitting, and human-accepted visual output. - v1.5 Phase 8
 
 ### Active
 
-- Build `school-presentation` as a Markdown-first HTML presentation workflow.
-- Keep Markdown as the editable source of truth: users edit logical slides, while the renderer may split oversized logical slides into multiple physical HTML pages.
-- Use fixed layout families and school identity assets to avoid generic AI-looking decks.
-- Verify formulas, tables, charts, images, videos, text overflow, and static-page packaging behavior.
+- Define the next milestone scope.
 
 ### Out of Scope
 
@@ -69,11 +67,11 @@ v1.0 shipped 3 phases and 3 plans:
 
 v1.2 adds the first concrete skill using that pattern: `skills/gongwen`, backed by a Presto gongwen black-box renderer and Typst PDF verification. v1.3 adds the second concrete skill, `skills/jiaoan-shicao`, backed by a Presto jiaoan-shicao black-box renderer, calendar support resource, and Typst PDF verification. v1.4 adds `skills/jiaoan-jihua`, backed by the Presto jiaoan-jihua black-box renderer and Typst/PDF verification.
 
-v1.5 will add `skills/school-presentation`, backed by extracted official-school visual assets and a Markdown-to-HTML presentation renderer. The milestone deliberately avoids PPTX generation and treats HTML as the primary stable output.
+v1.5 added `skills/school-presentation`, backed by extracted official-school visual assets and a Markdown-to-HTML presentation renderer. The milestone deliberately avoids PPTX generation and treats HTML as the primary stable output.
 
 ## Next Milestone Goals
 
-The current milestone should implement `school-presentation`: a skill that analyzes presentation materials, writes a persistent Markdown logical-slide intermediate, applies fixed blue-green school layouts, and packages the result as an offline single-file HTML deck with visual verification artifacts.
+The next milestone is not yet scoped.
 
 ## Constraints
 
@@ -97,8 +95,8 @@ The current milestone should implement `school-presentation`: a skill that analy
 | Add `gongwen` as the first real skill | User provided a concrete Presto gongwen fixture and requested a trigger for similar official-document writing | Good - shipped in v1.2 Phase 5 |
 | Add `jiaoan-shicao` as the second real skill | User provided a Presto jiaoan-shicao fixture, `calendar.json`, and requested the trigger word for practical lesson-plan writing | Good - shipped in v1.3 Phase 6 |
 | Add `jiaoan-jihua` as a授课进度计划 skill | User provided a Presto jiaoan-jihua fixture, `calendar.json`, and requested the trigger word for teaching-schedule writing | Good - shipped in v1.4 Phase 7 |
-| Add `school-presentation` as a school-style HTML presentation skill | User rejected unstable PPTX output and prefers Markdown-controlled, single-file HTML presentations with fixed layouts and school visual identity | Planned - v1.5 |
-| Treat logical slides and physical pages separately | Users should edit one Markdown logical slide while the renderer splits overflow into additional HTML pages automatically | Planned - v1.5 |
+| Add `school-presentation` as a school-style HTML presentation skill | User rejected unstable PPTX output and prefers Markdown-controlled, single-file HTML presentations with fixed layouts and school visual identity | Good - shipped in v1.5 Phase 8 |
+| Treat logical slides and physical pages separately | Users should edit one Markdown logical slide while the renderer splits overflow into additional HTML pages automatically | Good - shipped in v1.5 Phase 8 |
 
 ## Evolution
 
@@ -118,4 +116,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-05-31 after v1.5 school-presentation milestone start*
+*Last updated: 2026-06-01 after v1.5 school-presentation milestone completion*

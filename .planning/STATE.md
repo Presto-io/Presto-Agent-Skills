@@ -2,31 +2,31 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: School Presentation Skill
-current_phase: Not started (defining requirements)
-status: Defining requirements
-stopped_at: Phase 8 context gathered
-last_updated: "2026-05-31T14:57:03.655Z"
-last_activity: 2026-05-31 — Milestone v1.5 started
+current_phase: 8
+status: completed
+stopped_at: Phase 8 completed after human visual UAT
+last_updated: "2026-06-01T05:31:36Z"
+last_activity: 2026-06-01 — Milestone v1.5 completed and archived
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 5
   percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** Not started (defining requirements)
-**Status:** Defining requirements
+**Current Phase:** 8
+**Status:** v1.5 milestone complete
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-05-31)
+See: `.planning/PROJECT.md` (updated 2026-06-01)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.5 School Presentation Skill - Markdown-to-single-file-HTML school presentation workflow
+**Current focus:** v1.5 complete; awaiting next milestone definition
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-31)
 
 ## Next Up
 
-Plan Phase 8 for `school-presentation`: extract school identity assets, define Markdown logical-slide structure, implement fixed HTML layouts, and verify overflow-safe static output.
+Start the next milestone when new scope is ready.
 
 ## Decisions
 
@@ -71,7 +71,7 @@ Plan Phase 8 for `school-presentation`: extract school identity assets, define M
 - [Phase 06]: The Presto `presto-template-jiaoan-shicao` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
 - [Milestone v1.4]: `jiaoan-jihua` adds a teaching-schedule workflow. — User provided a Presto jiaoan-jihua fixture, `calendar.json`, and requested the trigger word for授课进度计划 writing.
 - [Phase 07]: The Presto `presto-template-jiaoan-jihua` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
-- [Milestone v1.5]: `school-presentation` will generate school-style HTML presentations. — User clarified that PPTX output was unstable and the preferred route is a Markdown intermediate rendered to an offline single-file HTML deck.
+- [Milestone v1.5]: `school-presentation` generates school-style HTML presentations. — User clarified that PPTX output was unstable and the preferred route is a Markdown intermediate rendered to an offline single-file HTML deck.
 - [Milestone v1.5]: Markdown pages are logical slides, not necessarily physical pages. — If a logical slide contains too much content, the renderer should split it into multiple physical HTML pages while keeping the Markdown easy to edit.
 - [Milestone v1.5]: User images should preserve their original aspect ratio. — Images should be scaled and placed without cropping by default.
 
@@ -86,12 +86,13 @@ Plan Phase 8 for `school-presentation`: extract school identity assets, define M
 | Phase 05 P01 | current session | 3 tasks | 7 files |
 | Phase 06 P01 | current session | 3 tasks | 8 files |
 | Phase 07 P01 | current session | 3 tasks | 8 files |
+| Phase 08 P01 | current session | 3 tasks | 8 files |
 
 ## Last Session
 
-- **Completed:** 07-01-PLAN.md
-- **Stopped At:** Phase 8 context gathered
-- **Resume File:** .planning/phases/08-school-presentation-skill/08-CONTEXT.md
+- **Completed:** 08-01-PLAN.md
+- **Stopped At:** Phase 8 complete; v1.5 archived
+- **Resume File:** —
 
 ## Close Notes
 
@@ -101,10 +102,10 @@ Plan Phase 8 for `school-presentation`: extract school identity assets, define M
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Milestone v1.5 complete
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-31 — Milestone v1.5 started
+Status: Awaiting next milestone
+Last activity: 2026-06-01 — Milestone v1.5 completed and archived
 
 ## Operator Next Steps
 

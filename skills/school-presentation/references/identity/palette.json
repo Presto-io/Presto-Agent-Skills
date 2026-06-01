@@ -1,0 +1,19 @@
+{
+  "source": "ppt/theme/theme1.xml from /Users/mrered/Desktop/学院PPT模板.potx",
+  "colors": {
+    "school-green": "#579E40",
+    "soft-green": "#5E9768",
+    "teal": "#549183",
+    "blue-teal": "#498B9E",
+    "school-blue": "#3E85B9",
+    "bright-blue": "#0084CC",
+    "ink": "#0E2841",
+    "paper": "#FFFFFF",
+    "soft-paper": "#E8E8E8"
+  },
+  "compatible_colors_from_double-school-template": {
+    "accent-blue": "#4874CB",
+    "accent-green": "#75BD42",
+    "accent-teal": "#30C0B4"
+  }
+}
