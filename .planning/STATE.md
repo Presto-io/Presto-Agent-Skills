@@ -1,32 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: School Presentation Skill
-current_phase: 8
-status: completed
-stopped_at: Phase 8 completed after human visual UAT
-last_updated: "2026-06-01T05:31:36Z"
-last_activity: 2026-06-01 — Milestone v1.5 completed and archived
+milestone: v1.6
+milestone_name: School Presentation Playback UX
+current_phase: 10
+status: planning
+stopped_at: Phase 9 complete; Phase 10 planned next
+last_updated: "2026-06-02T14:20:06Z"
+last_activity: 2026-06-02 — Phase 9 human UAT passed after browser visual review
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_phases: 10
+  completed_phases: 9
+  total_plans: 9
+  completed_plans: 9
+  percent: 90
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 8
-**Status:** v1.5 milestone complete
+**Current Phase:** 10
+**Status:** Phase 9 complete with human UAT passed; Phase 10 planned next
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-01)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.5 complete; awaiting next milestone definition
+**Current focus:** v1.6 School Presentation Playback UX - playback workspace, page hierarchy, ordered reveals, and classroom answer masks
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-01)
 
 ## Next Up
 
-Start the next milestone when new scope is ready.
+Execute Phase 10: Ordered Reveals and Classroom Answer Masks.
 
 ## Decisions
 
@@ -74,6 +74,7 @@ Start the next milestone when new scope is ready.
 - [Milestone v1.5]: `school-presentation` generates school-style HTML presentations. — User clarified that PPTX output was unstable and the preferred route is a Markdown intermediate rendered to an offline single-file HTML deck.
 - [Milestone v1.5]: Markdown pages are logical slides, not necessarily physical pages. — If a logical slide contains too much content, the renderer should split it into multiple physical HTML pages while keeping the Markdown easy to edit.
 - [Milestone v1.5]: User images should preserve their original aspect ratio. — Images should be scaled and placed without cropping by default.
+- [Milestone v1.6]: Playback UX comes before marking tools. — User requested playback, thumbnail/preview/overview, hierarchy, ordered reveal, emphasis animation, and answer masks now; marking-style tools are deferred to the next milestone.
 
 ## Performance Metrics
 
@@ -87,12 +88,13 @@ Start the next milestone when new scope is ready.
 | Phase 06 P01 | current session | 3 tasks | 8 files |
 | Phase 07 P01 | current session | 3 tasks | 8 files |
 | Phase 08 P01 | current session | 3 tasks | 8 files |
+| Phase 09 P01 | current session | 4 tasks | 6 files |
 
 ## Last Session
 
-- **Completed:** 08-01-PLAN.md
-- **Stopped At:** Phase 8 complete; v1.5 archived
-- **Resume File:** —
+- **Completed:** 09-01-PLAN.md
+- **Stopped At:** Phase 9 complete with human UAT passed; Phase 10 planned next
+- **Resume File:** Not created yet; plan Phase 10 before execution.
 
 ## Close Notes
 
@@ -102,11 +104,11 @@ Start the next milestone when new scope is ready.
 
 ## Current Position
 
-Phase: Milestone v1.5 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-01 — Milestone v1.5 completed and archived
+Phase: 10 - Ordered Reveals and Classroom Answer Masks
+Plan: Not created yet
+Status: Ready for Phase 10 planning
+Last activity: 2026-06-02 — Phase 9 human UAT passed after browser visual review
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- `/gsd:plan-phase 10`

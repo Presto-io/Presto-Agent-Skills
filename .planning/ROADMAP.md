@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-01 after v1.5 school-presentation milestone completion
+**Last updated:** 2026-06-02 after Phase 9 human UAT
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -13,6 +13,7 @@
 - **Completed: v1.3 Jiaoan Shicao Skill** - Phase 6, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.4 Jiaoan Jihua Skill** - Phase 7, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.5 School Presentation Skill** - Phase 8, completed 2026-06-01. Requirements: `.planning/REQUIREMENTS.md`
+- **Active: v1.6 School Presentation Playback UX** - Phases 9-10, planning started 2026-06-01. Requirements: `.planning/REQUIREMENTS.md`
 
 ## Phases
 
@@ -102,11 +103,43 @@
 5. The renderer preserves image aspect ratios, applies fixed school-style layout families, and automatically splits overflowing logical slides into multiple physical HTML pages.
 6. The provided fixture produces preview/verification artifacts showing formulas, tables, charts, media, readable typography, overflow splitting, and non-generic school visual design.
 
+### Phase 9: Playback Workspace and Page Hierarchy
+
+**Goal:** As a presenter, I want the generated school-presentation HTML deck to play and preview like slide software, so I can navigate physical pages, scan a tiled overview, and understand the hierarchy of logical slides and generated pages before presenting.
+**Mode:** mvp
+
+**Depends on:** Phase 8
+
+**Requirements:** SP-10, SP-11, SP-12, SP-13
+
+**Success Criteria:**
+1. The generated HTML deck has a playback mode with mouse and keyboard previous/next navigation and a focused presentation view.
+2. The preview workspace shows a left thumbnail rail and a right large preview, with selection state synchronized across the rail, preview, and playback.
+3. A tiled overview shows all generated physical pages and allows direct page selection without breaking the offline self-contained output model.
+4. The Markdown template and renderer document a page hierarchy model for logical slides, physical pages, sections, and reveal steps.
+5. The fixture demonstrates logical-slide-to-physical-page hierarchy and verifies thumbnails, overview tiles, and current-page state.
+
+### Phase 10: Ordered Reveals and Classroom Answer Masks
+
+**Goal:** As a classroom presenter, I want content emphasis, reveal animation, and answer masks controlled from Markdown, so I can lead questions and explanations step by step instead of exposing every answer immediately.
+**Mode:** mvp
+
+**Depends on:** Phase 9
+
+**Requirements:** SP-14, SP-15, SP-16
+
+**Success Criteria:**
+1. The Markdown template supports explicit reveal groups, emphasis markers, and answer-mask blocks without making visual order the only reveal order.
+2. The renderer converts reveal metadata into deterministic click steps that can advance in the requested sequence during playback.
+3. Emphasis animation is restrained, readable, and compatible with the school-official visual style.
+4. Answer masks cover selected answers during classroom questioning and uncover them one step at a time.
+5. The verification fixture includes non-top-to-bottom reveals, emphasized content, and masked answers with screenshot or DOM-state checks.
+
 ## Current Position
 
-v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7. v1.5 adds `school-presentation` as the next concrete skill in Phase 8.
+v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7. v1.5 adds `school-presentation` as the next concrete skill in Phase 8. v1.6 refines that skill with playback, preview, page hierarchy, ordered reveals, and classroom answer masks.
 
-Phase 8 is complete. The generated school-presentation HTML deck passed automated verification and human visual UAT.
+Phase 9 is complete with human UAT passed. Execute ordered reveals and classroom answer masks in Phase 10 next.
 
 ## Progress
 
@@ -120,6 +153,8 @@ Phase 8 is complete. The generated school-presentation HTML deck passed automate
 | 6. Jiaoan Shicao Skill | v1.3 | 1/1 | Complete | 2026-05-31 |
 | 7. Jiaoan Jihua Skill | v1.4 | 1/1 | Complete | 2026-05-31 |
 | 8. School Presentation Skill | v1.5 | 1/1 | Complete | 2026-06-01 |
+| 9. Playback Workspace and Page Hierarchy | v1.6 | 1/1 | Complete | 2026-06-01 |
+| 10. Ordered Reveals and Classroom Answer Masks | v1.6 | 0/1 | Planned | — |
 
 ## Requirement Coverage
 
@@ -135,7 +170,9 @@ v1.4 tracks 5 jiaoan-jihua skill requirements: JH-01 through JH-05. All are mapp
 
 v1.5 tracks 9 school-presentation requirements: SP-01 through SP-09. All are mapped to Phase 8 and are complete.
 
+v1.6 tracks 7 school-presentation playback requirements: SP-10 through SP-16. SP-10 through SP-13 are complete in Phase 9; SP-14 through SP-16 are mapped to Phase 10.
+
 EX-01 and EX-02 were explicitly deferred as optional future example guidance, not v1 delivery requirements. See `.planning/milestones/v1.0-REQUIREMENTS.md` for the archived requirement record.
 
 ---
-*Roadmap updated: 2026-06-01 after v1.5 school-presentation milestone completion*
+*Roadmap updated: 2026-06-02 after Phase 9 human UAT*

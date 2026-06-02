@@ -1,20 +1,21 @@
 # Presto Agent Skills
 
-## Current Milestone: v1.5 School Presentation Skill (Completed)
+## Current Milestone: v1.6 School Presentation Playback UX
 
-**Goal:** Create a `school-presentation` skill that turns user materials into a stable Markdown presentation intermediate, then renders a blue-green school-style, self-contained HTML slide deck with fixed layouts and overflow-safe pagination.
+**Goal:** Refine `school-presentation` from a generated HTML deck into an interactive classroom playback experience with slide-software-style preview, hierarchy, ordered reveals, emphasis animation, and answer masks.
 
 **Target features:**
-- `school-presentation` trigger for official school-style presentation generation
-- Extracted or bundled school identity assets from the provided PPTX/POTX: logo, slogan, palette, and decorative marks
-- Markdown logical-slide intermediate with fixed layout intents, formulas, tables, charts, images, videos, and speaker notes
-- Renderer script that produces an offline self-contained HTML presentation and verification previews
+- Playback mode that supports mouse/keyboard navigation like presentation software
+- Left thumbnail rail, right large preview, and tiled overview for scanning generated pages
+- Page hierarchy that distinguishes logical slides, physical pages, sections, and reveal steps
+- Content emphasis and ordered reveal animation controlled from Markdown, not only top-to-bottom DOM order
+- Classroom answer masks that hide selected content until the presenter advances step by step
 
 ## Current State
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 now focuses on interactive playback and classroom presentation controls for that HTML output.
 
 ## What This Is
 
@@ -44,13 +45,16 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ### Active
 
-- Define the next milestone scope.
+- Refine `school-presentation` playback so generated HTML can be presented, previewed, and scanned like slide software.
+- Add hierarchy metadata and renderer behavior for logical slides, physical pages, sections, and reveal steps.
+- Add Markdown-controlled emphasis, ordered reveal animation, and classroom answer masks.
 
 ### Out of Scope
 
 - Direct one-step source-to-target rendering without Markdown intermediate - it makes target output harder to reason about and verify.
 - PPTX, Keynote, and fully editable PowerPoint export for the school presentation skill - prior attempts were too unstable, so v1.5 is HTML-first.
 - Hosted deployment, password-gated sharing, multi-device synchronization, and annotation tools - defer until the offline HTML deck is stable.
+- Marking, annotation, drawing, and presenter markup tools - explicitly deferred to the next milestone after playback and reveal controls are stable.
 - Cropping user images to fill decorative frames - images should keep their original aspect ratio and use contain-style placement by default.
 - OCR, handwriting interpretation, and arbitrary school-template marketplace support - not part of the first school-presentation slice.
 - Example-heavy showcase expansions - still deferred; the canonical skill path stays primary until a concrete contributor need appears.
@@ -71,7 +75,7 @@ v1.5 added `skills/school-presentation`, backed by extracted official-school vis
 
 ## Next Milestone Goals
 
-The next milestone is not yet scoped.
+v1.6 should refine `school-presentation` into an interactive classroom presentation experience: the generated HTML deck should support playback, thumbnail navigation, tiled overview, page hierarchy, ordered content reveals, emphasis animation, and answer masks. Marking and annotation features are deliberately deferred to the following milestone.
 
 ## Constraints
 
@@ -80,6 +84,7 @@ The next milestone is not yet scoped.
 - **Scope discipline**: Keep the document workflow centered on a Markdown intermediate; add automation only after the contract is stable.
 - **Presentation output discipline**: For v1.5, HTML is the primary output. PPTX and Keynote export are future options, not current acceptance criteria.
 - **Layout discipline**: Markdown owns logical slide content; the renderer owns physical pagination, text fitting, and overflow handling.
+- **Interaction discipline**: Markdown may describe interaction intent such as reveal order, emphasis, and answer masks, while the renderer owns the concrete playback state and animation timing.
 - **Language**: Agent-facing responses in this repository should be Simplified Chinese unless a file format or downstream runtime requires otherwise.
 - **Portability**: Avoid assuming one agent's proprietary tool syntax in the canonical skill body; isolate those differences in adapter sections.
 
@@ -97,6 +102,7 @@ The next milestone is not yet scoped.
 | Add `jiaoan-jihua` as a授课进度计划 skill | User provided a Presto jiaoan-jihua fixture, `calendar.json`, and requested the trigger word for teaching-schedule writing | Good - shipped in v1.4 Phase 7 |
 | Add `school-presentation` as a school-style HTML presentation skill | User rejected unstable PPTX output and prefers Markdown-controlled, single-file HTML presentations with fixed layouts and school visual identity | Good - shipped in v1.5 Phase 8 |
 | Treat logical slides and physical pages separately | Users should edit one Markdown logical slide while the renderer splits overflow into additional HTML pages automatically | Good - shipped in v1.5 Phase 8 |
+| Defer marking and annotation tools from playback UX | The current milestone should focus on slide playback, preview, hierarchy, reveals, and answer masks before adding presenter markup controls | Planned - v1.6 |
 
 ## Evolution
 
@@ -116,4 +122,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-01 after v1.5 school-presentation milestone completion*
+*Last updated: 2026-06-01 after v1.6 school-presentation playback milestone start*

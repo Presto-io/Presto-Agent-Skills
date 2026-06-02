@@ -64,6 +64,20 @@ Requirements for the school-style HTML presentation skill.
 - [x] **SP-08**: The renderer packages CSS, JavaScript, formulas, charts, and school assets into an offline self-contained HTML presentation when media size permits, with documented behavior for large videos.
 - [x] **SP-09**: The provided fixture generates a school-style HTML deck plus preview/verification artifacts that demonstrate formula, table, chart, image, video, and overflow handling without generic AI-looking visual patterns.
 
+## v1.6 Requirements
+
+Requirements for refining the school-style HTML presentation skill into an interactive playback and classroom preview experience.
+
+### School Presentation Playback UX
+
+- [x] **SP-10**: A presenter can play the generated HTML deck with mouse and keyboard navigation, including previous/next movement and a focused presentation view.
+- [x] **SP-11**: A presenter can use a slide-software-style preview workspace with a left thumbnail rail and a synchronized large preview on the right.
+- [x] **SP-12**: A presenter can switch to a tiled overview that shows the generated physical pages for rapid scanning and page selection.
+- [x] **SP-13**: The Markdown intermediate can express page hierarchy for logical slides, physical pages, sections, and reveal steps, and the rendered UI exposes that hierarchy for navigation.
+- [ ] **SP-14**: A Markdown author can mark emphasized content and ordered reveal groups whose click order is explicit and does not have to follow visual top-to-bottom order.
+- [ ] **SP-15**: The renderer animates content emphasis and ordered reveals in a stable, classroom-appropriate way during playback.
+- [ ] **SP-16**: A Markdown author can define answer masks for classroom questions so selected answers remain covered until the presenter advances them step by step.
+
 ## Deferred Requirements
 
 Deferred to a later milestone. Tracked but not in the current roadmap.
@@ -73,6 +87,7 @@ Deferred to a later milestone. Tracked but not in the current roadmap.
 - **DWF-FUTURE-01**: Add additional delivery targets beyond current concrete skills, such as DOCX, expanded PDF workflows, PPTX, Keynote, or deployable hosted pages, after the active Markdown-to-target path is stable.
 - **DWF-FUTURE-02**: Add reusable page templates, typography presets, or publishing layouts after the core transformation rules are validated.
 - **DWF-FUTURE-03**: Add automation or lint tooling after the rules have been exercised by real document workflow skills.
+- **SP-FUTURE-01**: Add presenter marking, annotation, drawing, and in-class markup tools after playback, hierarchy, reveal, and masking behavior are stable.
 
 ## Out of Scope
 
@@ -87,6 +102,7 @@ Explicitly excluded from v1.1. Documented to prevent scope creep.
 | PPTX/Keynote generation for school presentations | v1.5 uses HTML as the primary stable output because prior PPTX generation quality was poor |
 | Hosted deployment and password access | Offline single-file HTML packaging must work before any hosting adapter is added |
 | Cropping images into decorative frames | School presentation images must preserve original aspect ratio by default |
+| Marking and annotation tools | User explicitly deferred marker-style functionality to the next milestone |
 
 ## Traceability
 
@@ -120,6 +136,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SP-07 | Phase 8 | Complete |
 | SP-08 | Phase 8 | Complete |
 | SP-09 | Phase 8 | Complete |
+| SP-10 | Phase 9 | Complete |
+| SP-11 | Phase 9 | Complete |
+| SP-12 | Phase 9 | Complete |
+| SP-13 | Phase 9 | Complete |
+| SP-14 | Phase 10 | Planned |
+| SP-15 | Phase 10 | Planned |
+| SP-16 | Phase 10 | Planned |
 
 **Coverage:**
 - v1.1 requirements: 2 total
@@ -127,8 +150,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v1.3 requirements: 5 total
 - v1.4 requirements: 5 total
 - v1.5 requirements: 9 total
-- Mapped to phases: 26
+- v1.6 requirements: 7 total
+- Mapped to phases: 33
 - Unmapped: 0
 
 ---
-*Requirements updated: 2026-06-01 after v1.5 school-presentation milestone completion*
+*Requirements updated: 2026-06-01 after Phase 9 playback workspace completion*
