@@ -19,6 +19,14 @@
       "sha256": "6250b9a4c1f3beabef5c39664bad0397a091c34c54bc0417d204f8045ed57069"
     },
     {
+      "file": "images/school-icon-color.png",
+      "role": "color school emblem without school name, derived for preview header",
+      "source": "derived crop from images/logo-combined.png",
+      "width": 532,
+      "height": 485,
+      "sha256": "f27faa2783ad8b0e3c657c91c2361b58cfdf7e58a0f6ac7abc68ba6895cf4fab"
+    },
+    {
       "file": "images/logo-white.png",
       "role": "white cover/footer logo and bilingual school name",
       "source": "/Users/mrered/Desktop/双校名ppt模板（通用）_convertedToPDF_convertedToImages/学校logo白色.png",
