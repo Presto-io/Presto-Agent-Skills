@@ -29,6 +29,7 @@
 | File | Role |
 |------|------|
 | `images/logo-combined.png` | 校徽 + 中英双校名组合，适合封面和页脚。 |
+| `images/school-icon-color.png` | 彩色校徽 icon（无校名），用于顶栏等紧凑位置。 |
 | `images/logo-white.png` | 白色剪影校徽 + 中英双校名组合，渲染器默认用于封面深色背景。 |
 | `images/slogan-en.png` | 英文 slogan：`LET EVERY STUDENT BECOME AN EXCELLENT CRAFTSMAN`。 |
 | `images/slogan-white-script.png` | 白色手写风格 slogan，用于深色背景。 |

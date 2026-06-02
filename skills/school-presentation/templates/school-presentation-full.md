@@ -1,15 +1,19 @@
 ---
 template: "school-presentation"
 title: "智能制造实训基地建设汇报"
-subtitle: "Markdown 逻辑页到学校风格 HTML 演示文稿"
+subtitle: ""
 school: "西安技师学院 / 西电机电学院"
-author: "电气工程系"
+department: "电气工程系"
+author: "课程建设团队"
 date: "2026-05-31"
+cover_location: "智能制造实训中心"
 page_ratio: "16:9"
 max_output_mb: 50
 ---
 
-## Slide: 智能制造实训基地建设汇报
+## Section: 建设背景
+
+### Slide: 智能制造实训基地建设汇报
 
 <!-- slide
 layout: cover
@@ -22,7 +26,7 @@ split: auto
 开场页保留校徽、校名和蓝绿色视觉识别，避免泛化模板感。
 :::
 
-## Slide: 建设目标
+### Slide: 建设目标
 
 <!-- slide
 layout: auto
@@ -30,16 +34,18 @@ intent: summarize the core goals before details
 split: auto
 -->
 
+::: warning
+若源材料没有明确经费、工位数或设备型号，不要在正式汇报中补写具体数字。
+:::
+
 - 建成“课程教学、技能训练、竞赛备赛、企业服务”四位一体的实训空间。
 - 形成从低压电器识别、控制线路安装到 PLC 联调的连续学习任务。
 - 用过程数据支撑教学诊改，保留学生作品、评价记录和设备状态。
 - 输出可复用课件、工作页、评价表和项目化案例。
 
-::: warning
-若源材料没有明确经费、工位数或设备型号，不要在正式汇报中补写具体数字。
-:::
+## Section: 教学内容与资源
 
-## Slide: 课程链路与公式
+### Slide: 课程链路与公式
 
 <!-- slide
 layout: auto
@@ -53,13 +59,13 @@ $$U = I \times R$$
 
 $$P = \sqrt{3} \times U \times I \times \cos\varphi$$
 
-### 讲解重点
+#### 讲解重点
 
 - 电压、电流、功率与安全载流量的关系。
 - 主电路与控制电路的分工。
 - 测量前先判断断电、验电和表笔档位。
 
-## Slide: 建设任务表
+### Slide: 建设任务表
 
 <!-- slide
 layout: table
@@ -75,7 +81,7 @@ split: auto
 | 故障排查 | 断路、短路、互锁异常、元件失效 | 排故报告 | 学生小组 |
 | 资源沉淀 | 工作页、微课、评价量表 | 资源包清单 | 课程负责人 |
 
-## Slide: 进度与资源投入
+### Slide: 进度与资源投入
 
 <!-- slide
 layout: chart
@@ -93,25 +99,168 @@ PLC 联调: 52
 
 图表数据保留在 Markdown fenced block 中，便于 review 和版本比较。
 
-## Slide: 图片与视频材料
+### Slide: 图右文左示例
 
 <!-- slide
 layout: media-right
-intent: demonstrate contain images and large-video fallback
+intent: demonstrate image on the right with explanatory text on the left
+split: false
+-->
+
+图片默认按原始比例 contain 放置，不裁切用户照片。右侧图片保留完整画面，左侧文字用于说明场景、观察点和汇报结论。
+
+![风景图：用于检验横向图片 contain 效果](media/风景.webp)
+
+- 适合展示实训环境、校园空间或项目现场。
+- 文字区保留足够宽度，便于放置三到五条讲解重点。
+
+### Slide: 图左文右示例
+
+<!-- slide
+layout: media-left
+intent: demonstrate image on the left with explanatory text on the right
+split: false
+-->
+
+![猫猫图：用于检验方形或近方形图片效果](media/猫猫.png)
+
+左侧图片承载视觉焦点，右侧用于放置结论、说明或评审意见。
+
+- 适合人物、作品、设备局部或成果照片。
+- 图片不会拉伸变形，说明文字与图片保持同屏阅读。
+
+### Slide: 居中图片与底部说明
+
+<!-- slide
+layout: media-center
+intent: demonstrate centered image with caption and bottom explanation
+split: false
+-->
+
+![AI 人像：用于检验竖向图片居中展示效果](media/AI人像.jpg)
+
+底部说明可以补充图片来源、使用边界、教学观察点或展示结论。
+
+### Slide: 双图对比
+
+<!-- slide
+layout: media-compare
+intent: demonstrate two image comparison
+split: false
+-->
+
+![横向场景图](media/风景.webp)
+
+![竖向人像图](media/AI人像.jpg)
+
+### Slide: 图片与图表对比
+
+<!-- slide
+layout: media-chart
+intent: compare visual evidence with chart data
+split: false
+-->
+
+![猫猫图：左侧视觉材料](media/猫猫.png)
+
+```chart
+画面完整度: 92
+主体清晰度: 88
+色彩稳定性: 76
+汇报适配度: 84
+```
+
+::: notes
+本组页面用于验证不同图片比例与图文组合方式的视觉效果。
+:::
+
+## Section: 能力审阅
+
+### Slide: 功能矩阵
+
+<!-- slide
+layout: table
+intent: summarize what the renderer can do
 split: auto
 -->
 
-图片默认按原始比例 contain 放置，不裁切用户照片。
+| 功能点 | 当前表现 | 审阅关注 |
+|---|---|---|
+| 封面 | 标题、副标题、学校信息、汇报人、日期、可选字段 | 重点看封面排版是否拥挤 |
+| 章节页 | 自动章节分组和逻辑页编号 | 看章节标题是否清楚 |
+| 段落与列表 | 普通文本、加粗、项目符号 | 看字号和行距是否够远看 |
+| 表格 | 表头、行斑马纹、长表拆页 | 看列宽与溢出是否稳定 |
+| 图表 | Markdown fenced chart | 看比例条和数字对齐 |
+| 公式 | `\sqrt{}`、`\times`、`\cos`、上下标 | 看根号、斜体、函数正体 |
+| 图片 | contain 等比放置 | 看横图、竖图、方图是否都不变形 |
+| 视频 | 超大或缺失时 fallback | 看 fallback 是否清楚提示 |
+| 绝对路径媒体 | 支持存在的本地绝对路径 | 看路径解析是否稳定 |
+| 缩略图 | 左侧 rail 与右侧预览一致 | 看缩略图是否乱掉 |
+| 播放态 | 全屏播放、悬浮工具条、键盘导航 | 看控制条是否干净 |
+| 预览 / 概览 | 工作区、概览、播放三态 | 看切换是否流畅 |
 
-![学校页脚横幅](references/identity/images/body-page-footer.png)
+### Slide: 风险矩阵
 
-![video:设备联调演示](media/device-debug-demo.mp4)
+<!-- slide
+layout: table
+intent: show likely bugs and review points
+split: auto
+-->
 
-::: notes
-若视频不存在或会导致 HTML 超过 50 MB，渲染器输出 fallback 卡片并在 manifest 中记录。
+| 风险点 | 典型表现 | 你该看什么 |
+|---|---|---|
+| 公式过简 | 根号像普通字符、函数看着像文本 | 数学排版是否像真正公式 |
+| 长表过密 | 表格列太窄、分页断裂不自然 | 是否需要再拆表或缩字 |
+| 长文过长 | 一个逻辑页拆成多物理页 | 页码和内容顺序是否正确 |
+| 图文拥挤 | 图片和说明抢空间 | 是否需要换版式 |
+| 图像比例异常 | 竖图被压扁或横图显得过小 | contain 是否真的保比例 |
+| 媒体缺失 | 只显示 fallback 卡片 | 缺失信息是否可读 |
+| 视频过大 | fallback 而不是强塞进 HTML | 是否记录了外链或提示 |
+| 小屏布局 | 侧栏太挤、正文太小 | 是否需要再调响应式字号 |
+| 播放工具条 | 遮挡正文或看起来太重 | 浮窗是否轻一点 |
+| 绝对路径媒体 | 路径不可移植 | 是否只在本机示例中使用 |
+
+### Slide: 媒体 fallback 与错误输入
+
+<!-- slide
+layout: content
+intent: show current fallback behavior for broken media
+split: false
+-->
+
+下面这页故意放缺失媒体，用来观察 fallback 是否够明确。
+
+![缺失图片示例](media/this-file-does-not-exist.png)
+
+![video:缺失视频示例](media/this-video-does-not-exist.mp4)
+
+### Slide: 强调块示例
+
+<!-- slide
+layout: content
+intent: demonstrate GitHub-style alert blocks
+split: false
+-->
+
+::: info
+这是信息块，用于放背景说明或审阅提示。
 :::
 
-## Slide: 过长内容自动拆页示例
+::: tip
+这是提示块，用于放建议、做法或下一步动作。
+:::
+
+::: warning
+这是警告块，用于放边界条件或需要注意的事项。
+:::
+
+::: error
+这是错误块，用于放风险、异常或不应继续的情况。
+:::
+
+## Section: 推进与验收
+
+### Slide: 过长内容自动拆页示例
 
 <!-- slide
 layout: content
@@ -136,7 +285,7 @@ split: auto
 - 竞赛训练材料与常规教学材料分开归档，避免评价标准混用。
 - 新设备上线必须同步补写操作说明、维护周期和常见故障库。
 
-## Slide: 收束
+### Slide: 收束
 
 <!-- slide
 layout: closing
