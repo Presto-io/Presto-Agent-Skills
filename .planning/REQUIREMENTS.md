@@ -74,9 +74,9 @@ Requirements for refining the school-style HTML presentation skill into an inter
 - [x] **SP-11**: A presenter can use a slide-software-style preview workspace with a left thumbnail rail and a synchronized large preview on the right.
 - [x] **SP-12**: A presenter can switch to a tiled overview that shows the generated physical pages for rapid scanning and page selection.
 - [x] **SP-13**: The Markdown intermediate can express page hierarchy for logical slides, physical pages, sections, and reveal steps, and the rendered UI exposes that hierarchy for navigation.
-- [ ] **SP-14**: A Markdown author can mark emphasized content and ordered reveal groups whose click order is explicit and does not have to follow visual top-to-bottom order.
-- [ ] **SP-15**: The renderer animates content emphasis and ordered reveals in a stable, classroom-appropriate way during playback.
-- [ ] **SP-16**: A Markdown author can define answer masks for classroom questions so selected answers remain covered until the presenter advances them step by step.
+- [x] **SP-14**: A Markdown author can mark emphasized content and ordered reveal groups whose click order is explicit and does not have to follow visual top-to-bottom order.
+- [x] **SP-15**: The renderer animates content emphasis and ordered reveals in a stable, classroom-appropriate way during playback.
+- [x] **SP-16**: A Markdown author can define answer masks for classroom questions so selected answers remain covered until the presenter advances them step by step.
 
 ## Deferred Requirements
 
@@ -140,9 +140,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SP-11 | Phase 9 | Complete |
 | SP-12 | Phase 9 | Complete |
 | SP-13 | Phase 9 | Complete |
-| SP-14 | Phase 10 | Planned |
-| SP-15 | Phase 10 | Planned |
-| SP-16 | Phase 10 | Planned |
+| SP-14 | Phase 10 | Complete |
+| SP-15 | Phase 10 | Complete |
+| SP-16 | Phase 10 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 2 total

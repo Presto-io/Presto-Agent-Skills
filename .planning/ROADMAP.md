@@ -139,7 +139,7 @@
 
 v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7. v1.5 adds `school-presentation` as the next concrete skill in Phase 8. v1.6 refines that skill with playback, preview, page hierarchy, ordered reveals, and classroom answer masks.
 
-Phase 9 is complete with human UAT passed. Execute ordered reveals and classroom answer masks in Phase 10 next.
+Phase 10 is implemented and automated verification passed. Run human visual UAT only if animation polish needs final presentation approval.
 
 ## Progress
 
@@ -154,7 +154,7 @@ Phase 9 is complete with human UAT passed. Execute ordered reveals and classroom
 | 7. Jiaoan Jihua Skill | v1.4 | 1/1 | Complete | 2026-05-31 |
 | 8. School Presentation Skill | v1.5 | 1/1 | Complete | 2026-06-01 |
 | 9. Playback Workspace and Page Hierarchy | v1.6 | 1/1 | Complete | 2026-06-01 |
-| 10. Ordered Reveals and Classroom Answer Masks | v1.6 | 0/1 | Planned | — |
+| 10. Ordered Reveals and Classroom Answer Masks | v1.6 | 1/1 | Complete | 2026-06-03 |
 
 ## Requirement Coverage
 
@@ -170,9 +170,9 @@ v1.4 tracks 5 jiaoan-jihua skill requirements: JH-01 through JH-05. All are mapp
 
 v1.5 tracks 9 school-presentation requirements: SP-01 through SP-09. All are mapped to Phase 8 and are complete.
 
-v1.6 tracks 7 school-presentation playback requirements: SP-10 through SP-16. SP-10 through SP-13 are complete in Phase 9; SP-14 through SP-16 are mapped to Phase 10.
+v1.6 tracks 7 school-presentation playback requirements: SP-10 through SP-16. SP-10 through SP-13 are complete in Phase 9; SP-14 through SP-16 are complete in Phase 10.
 
 EX-01 and EX-02 were explicitly deferred as optional future example guidance, not v1 delivery requirements. See `.planning/milestones/v1.0-REQUIREMENTS.md` for the archived requirement record.
 
 ---
-*Roadmap updated: 2026-06-02 after Phase 9 human UAT*
+*Roadmap updated: 2026-06-03 after Phase 10 automated verification*
