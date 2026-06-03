@@ -1,24 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-SKILL_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-TEMPLATE_MD="$SKILL_DIR/templates/jiaoan-jihua-full.md"
-DEFAULT_TEMPLATE_BINARY="/Users/mrered/Library/Application Support/com.mrered.presto/templates/jiaoan-jihua/presto-template-jiaoan-jihua"
+SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
+if [[ "$SCRIPT_DIR" == "${BASH_SOURCE[0]}" ]]; then
+  SCRIPT_DIR="."
+fi
+SKILL_DIR="${SCRIPT_DIR}/.."
+TEMPLATE_MD="${SKILL_DIR}/templates/jiaoan-jihua-full.md"
 
 usage() {
-  cat <<'USAGE'
+  while IFS= read -r line; do printf '%s\n' "$line"; done <<'USAGE'
 Usage:
   jiaoan-jihua.sh example --output <jiaoan-jihua-full.md>
-  jiaoan-jihua.sh render --input <input.md> [--typ <output.typ>] [--pdf <output.pdf>]
-                         [--template <presto-template-jiaoan-jihua>]
-                         [--expected-typ <reference.typ>] [--expected-pdf <reference.pdf>]
-  jiaoan-jihua.sh manifest [--template <presto-template-jiaoan-jihua>]
-  jiaoan-jihua.sh info [--template <presto-template-jiaoan-jihua>]
-  jiaoan-jihua.sh version [--template <presto-template-jiaoan-jihua>]
+  jiaoan-jihua.sh render --input <input.md> [--typ <output.typ>]
+                         [--expected-typ <reference.typ>]
+  jiaoan-jihua.sh manifest
+  jiaoan-jihua.sh info
+  jiaoan-jihua.sh version
 
-Environment:
-  JIAOAN_JIHUA_TEMPLATE_BINARY  Override the default Presto jiaoan-jihua template binary.
+The Markdown-to-Typst conversion is implemented by this Bash script itself.
+It does not call external renderers, PDF compilers, or template executables.
 USAGE
 }
 
@@ -28,251 +29,418 @@ die() {
 }
 
 need_file() {
-  local path="$1"
-  [[ -f "$path" ]] || die "file not found: $path"
+  [[ -f "$1" ]] || die "file not found: $1"
 }
 
-need_executable() {
-  local path="$1"
-  [[ -x "$path" ]] || die "executable not found or not executable: $path"
-}
-
-template_binary() {
-  local explicit="${1:-}"
-  if [[ -n "$explicit" ]]; then
-    printf '%s\n' "$explicit"
-  elif [[ -n "${JIAOAN_JIHUA_TEMPLATE_BINARY:-}" ]]; then
-    printf '%s\n' "$JIAOAN_JIHUA_TEMPLATE_BINARY"
-  else
-    printf '%s\n' "$DEFAULT_TEMPLATE_BINARY"
+ensure_parent_dir() {
+  local path="$1" parent
+  parent="${path%/*}"
+  if [[ "$parent" != "$path" && -n "$parent" && ! -d "$parent" ]]; then
+    die "parent directory does not exist: $parent"
   fi
 }
 
-mkdir_parent() {
-  local path="$1"
-  local parent
-  parent="$(dirname -- "$path")"
-  mkdir -p "$parent"
+trim() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value"
 }
 
-abs_path() {
-  local path="$1"
-  local parent
-  local base
-  parent="$(cd -- "$(dirname -- "$path")" && pwd)"
-  base="$(basename -- "$path")"
-  printf '%s/%s\n' "$parent" "$base"
+strip_quotes() {
+  local value
+  value="$(trim "$1")"
+  if [[ "$value" == \"*\" && "$value" == *\" ]]; then
+    value="${value#\"}"
+    value="${value%\"}"
+  elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
+    value="${value#\'}"
+    value="${value%\'}"
+  fi
+  printf '%s' "$value"
 }
 
-normalize_pdf_metadata() {
-  local input="$1"
-  local output="$2"
+escape_string() {
+  local value="$1"
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  printf '%s' "$value"
+}
 
-  perl -0777 -pe '
-    s#/ModDate \(D:[^)]*\)#/ModDate (D:__DATE__)#g;
-    s#/CreationDate \(D:[^)]*\)#/CreationDate (D:__DATE__)#g;
-    s#<xmp:ModifyDate>[^<]*</xmp:ModifyDate>#<xmp:ModifyDate>__DATE__</xmp:ModifyDate>#g;
-    s#<xmp:CreateDate>[^<]*</xmp:CreateDate>#<xmp:CreateDate>__DATE__</xmp:CreateDate>#g;
-    s#<xmpMM:InstanceID>[^<]*</xmpMM:InstanceID>#<xmpMM:InstanceID>__ID__</xmpMM:InstanceID>#g;
-    s#/ID \[\(([^)]*)\) \(([^)]*)\)\]#/ID [($1) (__ID__)]#g;
-  ' "$input" > "$output"
+escape_content() {
+  local value="$1"
+  value="${value//\\/\\\\}"
+  value="${value//\[/\\[}"
+  value="${value//\]/\\]}"
+  value="${value//#/\\#}"
+  value="${value//\$/\\$}"
+  value="${value//%/\\%}"
+  value="${value//&/\\&}"
+  printf '%s' "$value"
+}
+
+render_plain_segment() {
+  local value="$1" part
+  while [[ "$value" == *"<br>"* ]]; do
+    part="${value%%<br>*}"
+    escape_content "$part"
+    printf '#linebreak()'
+    value="${value#*<br>}"
+  done
+  escape_content "$value"
+}
+
+render_inline() {
+  local value="$1" before strong
+  while [[ "$value" == *"**"* ]]; do
+    before="${value%%\*\**}"
+    value="${value#*\*\*}"
+    if [[ "$value" != *"**"* ]]; then
+      render_plain_segment "$before"
+      printf '**'
+      render_plain_segment "$value"
+      return
+    fi
+    strong="${value%%\*\**}"
+    value="${value#*\*\*}"
+    render_plain_segment "$before"
+    printf '#strong['
+    render_plain_segment "$strong"
+    printf ']'
+  done
+  render_plain_segment "$value"
+}
+
+FM_TITLE="教学实施计划"
+FM_COURSE=""
+FM_MAJOR=""
+FM_TEACHER=""
+FM_CLASS=""
+FM_FIRST_DAY=""
+FM_DAILY_HOURS=""
+BODY_LINES=()
+
+set_meta_value() {
+  local key="$1" value="$2"
+  value="$(strip_quotes "$value")"
+  case "$key" in
+    major_name) FM_MAJOR="$value" ;;
+    course_name) FM_COURSE="$value"; FM_TITLE="$value 教学实施计划" ;;
+    teacher_name) FM_TEACHER="$value" ;;
+    class_name) FM_CLASS="$value" ;;
+    first_teaching_day) FM_FIRST_DAY="$value" ;;
+    daily_hours) FM_DAILY_HOURS="$value" ;;
+  esac
+}
+
+parse_input() {
+  local input="$1" line first=true in_fm=false key value
+  BODY_LINES=()
+  FM_TITLE="教学实施计划"
+  FM_COURSE=""
+  FM_MAJOR=""
+  FM_TEACHER=""
+  FM_CLASS=""
+  FM_FIRST_DAY=""
+  FM_DAILY_HOURS=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    if [[ "$first" == true ]]; then
+      first=false
+      if [[ "$line" == "---" ]]; then
+        in_fm=true
+        continue
+      fi
+    fi
+
+    if [[ "$in_fm" == true ]]; then
+      if [[ "$line" == "---" ]]; then
+        in_fm=false
+        continue
+      fi
+      if [[ "$line" =~ ^([A-Za-z0-9_-]+):[[:space:]]*(.*)$ ]]; then
+        key="${BASH_REMATCH[1]}"
+        value="${BASH_REMATCH[2]}"
+        set_meta_value "$key" "$value"
+      fi
+    else
+      BODY_LINES+=("$line")
+    fi
+  done < "$input"
+}
+
+emit_head() {
+  while IFS= read -r line; do printf '%s\n' "$line"; done <<'TYP'
+// Generated by jiaoan-jihua.sh with Bash builtins only.
+
+#set page(
+  paper: "a4",
+  margin: (x: 24mm, y: 24mm),
+)
+
+#set text(
+  lang: "zh",
+  font: ("Noto Serif CJK SC", "Songti SC", "STSong"),
+  size: 11pt,
+)
+
+#set par(
+  justify: true,
+  leading: 0.65em,
+  spacing: 0.75em,
+)
+
+#show heading.where(level: 1): it => block(above: 0pt, below: 1.2em)[
+  #align(center)[#text(size: 20pt, weight: "bold")[#it.body]]
+]
+
+#show heading.where(level: 2): it => block(above: 1.1em, below: 0.55em)[
+  #text(size: 15pt, weight: "bold")[#it.body]
+]
+
+#show heading.where(level: 3): it => block(above: 0.9em, below: 0.35em)[
+  #text(size: 13pt, weight: "bold")[#it.body]
+]
+
+#show heading.where(level: 4): it => block(above: 0.7em, below: 0.25em)[
+  #text(size: 11pt, weight: "bold")[#it.body]
+]
+
+#let meta-row(label, value) = if value != "" [
+  #text(weight: "bold")[#label：]#value#linebreak()
+]
+
+TYP
+}
+
+emit_meta() {
+  printf '#set document(title: "%s", author: "%s")\n\n' "$(escape_string "$FM_TITLE")" "$(escape_string "$FM_TEACHER")"
+  printf '= %s\n\n' "$(escape_content "$FM_TITLE")"
+  printf '#block(stroke: 0.6pt, inset: 8pt, width: 100%%)[\n'
+  printf '#meta-row("专业", "%s")\n' "$(escape_string "$FM_MAJOR")"
+  printf '#meta-row("课程", "%s")\n' "$(escape_string "$FM_COURSE")"
+  printf '#meta-row("任课教师", "%s")\n' "$(escape_string "$FM_TEACHER")"
+  printf '#meta-row("授课班级", "%s")\n' "$(escape_string "$FM_CLASS")"
+  printf '#meta-row("开课日期", "%s")\n' "$(escape_string "$FM_FIRST_DAY")"
+  printf '#meta-row("每日课时", "%s")\n' "$(escape_string "$FM_DAILY_HOURS")"
+  printf ']\n\n'
+}
+
+emit_heading() {
+  local level="$1" text="$2" marker="" i
+  for ((i = 0; i < level; i++)); do marker+="="; done
+  printf '%s ' "$marker"
+  render_inline "$text"
+  printf '\n\n'
+}
+
+emit_paragraph() {
+  render_inline "$1"
+  printf '\n\n'
+}
+
+split_table_row() {
+  local row="$1" cell
+  TABLE_CELLS=()
+  row="$(trim "$row")"
+  row="${row#|}"
+  row="${row%|}"
+  while [[ "$row" == *"|"* ]]; do
+    cell="${row%%|*}"
+    TABLE_CELLS+=("$(trim "$cell")")
+    row="${row#*|}"
+  done
+  TABLE_CELLS+=("$(trim "$row")")
+}
+
+is_table_delimiter() {
+  local row="$1"
+  row="${row//|/}"
+  row="${row//:/}"
+  row="${row//-/}"
+  row="${row// /}"
+  [[ -z "$row" ]]
+}
+
+emit_table() {
+  local rows=("$@") max_cols row_idx cell i start=1
+  split_table_row "${rows[0]}"
+  max_cols="${#TABLE_CELLS[@]}"
+  if [[ "${#rows[@]}" -gt 1 ]] && is_table_delimiter "${rows[1]}"; then
+    start=2
+  fi
+  printf '#table(\n'
+  printf '  columns: ('
+  for ((i = 0; i < max_cols; i++)); do
+    (( i > 0 )) && printf ', '
+    printf '1fr'
+  done
+  printf '),\n'
+  split_table_row "${rows[0]}"
+  for cell in "${TABLE_CELLS[@]}"; do
+    printf '  table.cell(fill: luma(235))[#strong['
+    render_inline "$cell"
+    printf ']],\n'
+  done
+  for ((row_idx = start; row_idx < ${#rows[@]}; row_idx++)); do
+    split_table_row "${rows[$row_idx]}"
+    for cell in "${TABLE_CELLS[@]}"; do
+      printf '  ['
+      render_inline "$cell"
+      printf '],\n'
+    done
+  done
+  printf ')\n\n'
+}
+
+render_body() {
+  local total="${#BODY_LINES[@]}" i=0 line rows
+  while (( i < total )); do
+    line="${BODY_LINES[$i]}"
+    if [[ -z "$(trim "$line")" ]]; then
+      ((i++))
+      continue
+    fi
+    if [[ "$line" =~ ^(#{1,5})[[:space:]]+(.*)$ ]]; then
+      emit_heading "${#BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+      ((i++))
+      continue
+    fi
+    if [[ "$line" =~ ^[[:space:]]*\|.*\|[[:space:]]*$ ]]; then
+      rows=()
+      while (( i < total )) && [[ "${BODY_LINES[$i]}" =~ ^[[:space:]]*\|.*\|[[:space:]]*$ ]]; do
+        rows+=("${BODY_LINES[$i]}")
+        ((i++))
+      done
+      emit_table "${rows[@]}"
+      continue
+    fi
+    if [[ "$line" =~ ^[[:space:]]*([0-9]+)\.[[:space:]]+(.*)$ ]]; then
+      printf '+ '
+      render_inline "${BASH_REMATCH[2]}"
+      printf '\n'
+      ((i++))
+      continue
+    fi
+    if [[ "$line" =~ ^[[:space:]]*-[[:space:]]+(.*)$ ]]; then
+      printf -- '- '
+      render_inline "${BASH_REMATCH[1]}"
+      printf '\n'
+      ((i++))
+      continue
+    fi
+    emit_paragraph "$line"
+    ((i++))
+  done
+}
+
+render_markdown_to_typst() {
+  local input="$1" output="$2"
+  parse_input "$input"
+  ensure_parent_dir "$output"
+  : > "$output"
+  {
+    emit_head
+    emit_meta
+    render_body
+  } >> "$output"
+}
+
+copy_file_shell() {
+  local source="$1" output="$2" line
+  ensure_parent_dir "$output"
+  : > "$output"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    printf '%s\n' "$line" >> "$output"
+  done < "$source"
+}
+
+same_file_shell() {
+  local expected="$1" actual="$2" left right
+  exec 3< "$expected"
+  exec 4< "$actual"
+  while true; do
+    IFS= read -r left <&3; local left_status=$?
+    IFS= read -r right <&4; local right_status=$?
+    if [[ "$left_status" -ne "$right_status" ]]; then exec 3<&-; exec 4<&-; return 1; fi
+    if [[ "$left_status" -ne 0 ]]; then exec 3<&-; exec 4<&-; return 0; fi
+    if [[ "$left" != "$right" ]]; then exec 3<&-; exec 4<&-; return 1; fi
+  done
 }
 
 cmd_example() {
   local output=""
-
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --output)
-        output="${2:-}"
-        shift 2
-        ;;
-      -h|--help)
-        usage
-        exit 0
-        ;;
-      *)
-        die "unknown argument for example: $1"
-        ;;
+      --output) output="${2:-}"; shift 2 ;;
+      -h|--help) usage; exit 0 ;;
+      *) die "unknown argument for example: $1" ;;
     esac
   done
-
   [[ -n "$output" ]] || die "example requires --output"
   need_file "$TEMPLATE_MD"
-  mkdir_parent "$output"
-  cp "$TEMPLATE_MD" "$output"
+  copy_file_shell "$TEMPLATE_MD" "$output"
   printf 'wrote %s\n' "$output"
 }
 
 cmd_render() {
-  local input=""
-  local typ=""
-  local pdf=""
-  local template_arg=""
-  local expected_typ=""
-  local expected_pdf=""
-
+  local input="" typ="" expected_typ=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --input)
-        input="${2:-}"
-        shift 2
-        ;;
-      --typ)
-        typ="${2:-}"
-        shift 2
-        ;;
-      --pdf)
-        pdf="${2:-}"
-        shift 2
-        ;;
-      --template)
-        template_arg="${2:-}"
-        shift 2
-        ;;
-      --expected-typ)
-        expected_typ="${2:-}"
-        shift 2
-        ;;
-      --expected-pdf)
-        expected_pdf="${2:-}"
-        shift 2
-        ;;
-      -h|--help)
-        usage
-        exit 0
-        ;;
-      *)
-        die "unknown argument for render: $1"
-        ;;
+      --input) input="${2:-}"; shift 2 ;;
+      --typ) typ="${2:-}"; shift 2 ;;
+      --expected-typ) expected_typ="${2:-}"; shift 2 ;;
+      -h|--help) usage; exit 0 ;;
+      *) die "unknown argument for render: $1" ;;
     esac
   done
-
   [[ -n "$input" ]] || die "render requires --input"
   need_file "$input"
-
-  if [[ -z "$typ" ]]; then
-    typ="${input%.*}.typ"
-  fi
-
-  if [[ -n "$expected_pdf" && -z "$pdf" ]]; then
-    pdf="${typ%.*}.pdf"
-  fi
-
-  local renderer
-  renderer="$(template_binary "$template_arg")"
-  need_executable "$renderer"
-
-  mkdir_parent "$typ"
-  local tmp_typ
-  tmp_typ="$(mktemp)"
-  "$renderer" < "$input" > "$tmp_typ"
-  mv "$tmp_typ" "$typ"
+  [[ -n "$typ" ]] || typ="${input%.*}.typ"
+  render_markdown_to_typst "$input" "$typ"
   printf 'wrote %s\n' "$typ"
-
   if [[ -n "$expected_typ" ]]; then
     need_file "$expected_typ"
-    diff -u "$expected_typ" "$typ"
+    same_file_shell "$expected_typ" "$typ" || die "Typst differs from expected file: $expected_typ"
     printf 'verified Typst matches %s\n' "$expected_typ"
-  fi
-
-  if [[ -n "$pdf" ]]; then
-    command -v typst >/dev/null 2>&1 || die "typst command not found"
-    mkdir_parent "$pdf"
-    local typ_abs
-    local pdf_abs
-    local typ_dir
-    local pdf_dir
-    local typ_base
-    local pdf_base
-    typ_abs="$(abs_path "$typ")"
-    pdf_abs="$(abs_path "$pdf")"
-    typ_dir="$(dirname -- "$typ_abs")"
-    pdf_dir="$(dirname -- "$pdf_abs")"
-    typ_base="$(basename -- "$typ_abs")"
-    pdf_base="$(basename -- "$pdf_abs")"
-    if [[ "$typ_dir" == "$pdf_dir" ]]; then
-      (cd "$typ_dir" && typst compile "$typ_base" "$pdf_base")
-    else
-      (cd "$typ_dir" && typst compile "$typ_base" "$pdf_abs")
-    fi
-    printf 'wrote %s\n' "$pdf"
-  fi
-
-  if [[ -n "$expected_pdf" ]]; then
-    need_file "$expected_pdf"
-    [[ -n "$pdf" ]] || die "--expected-pdf requires --pdf or an inferred pdf output"
-    if cmp -s "$expected_pdf" "$pdf"; then
-      printf 'verified PDF matches %s\n' "$expected_pdf"
-    else
-      local norm_expected
-      local norm_pdf
-      norm_expected="$(mktemp)"
-      norm_pdf="$(mktemp)"
-      normalize_pdf_metadata "$expected_pdf" "$norm_expected"
-      normalize_pdf_metadata "$pdf" "$norm_pdf"
-      cmp -s "$norm_expected" "$norm_pdf" || die "PDF differs from expected file: $expected_pdf"
-      printf 'verified PDF matches %s after normalizing volatile PDF metadata\n' "$expected_pdf"
-      rm -f "$norm_expected" "$norm_pdf"
-    fi
   fi
 }
 
-cmd_passthrough() {
-  local flag="$1"
-  shift
-  local template_arg=""
+cmd_manifest() {
+  while IFS= read -r line; do printf '%s\n' "$line"; done <<'JSON'
+{
+  "name": "jiaoan-jihua",
+  "displayName": "教学计划",
+  "version": "0.2.0-shell-only",
+  "description": "Bash-only Markdown-to-Typst renderer for teaching plans."
+}
+JSON
+}
 
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --template)
-        template_arg="${2:-}"
-        shift 2
-        ;;
-      -h|--help)
-        usage
-        exit 0
-        ;;
-      *)
-        die "unknown argument: $1"
-        ;;
-    esac
-  done
+cmd_info() {
+  while IFS= read -r line; do printf '%s\n' "$line"; done <<'INFO'
+jiaoan-jihua shell-only renderer
+- Markdown-to-Typst conversion is performed inside this Bash script.
+- PDF generation and external template execution are intentionally outside this script.
+INFO
+}
 
-  local renderer
-  renderer="$(template_binary "$template_arg")"
-  need_executable "$renderer"
-  "$renderer" "$flag"
+cmd_version() {
+  printf 'jiaoan-jihua.sh 0.2.0-shell-only\n'
 }
 
 main() {
   local command="${1:-}"
-  if [[ $# -gt 0 ]]; then
-    shift
-  fi
-
+  [[ $# -gt 0 ]] && shift
   case "$command" in
-    example)
-      cmd_example "$@"
-      ;;
-    render)
-      cmd_render "$@"
-      ;;
-    manifest)
-      cmd_passthrough -manifest "$@"
-      ;;
-    info)
-      cmd_passthrough -info "$@"
-      ;;
-    version)
-      cmd_passthrough -version "$@"
-      ;;
-    -h|--help|"")
-      usage
-      ;;
-    *)
-      die "unknown command: $command"
-      ;;
+    example) cmd_example "$@" ;;
+    render) cmd_render "$@" ;;
+    manifest) cmd_manifest "$@" ;;
+    info) cmd_info "$@" ;;
+    version) cmd_version "$@" ;;
+    -h|--help|"") usage ;;
+    *) die "unknown command: $command" ;;
   esac
 }
 
