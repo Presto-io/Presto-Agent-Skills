@@ -152,6 +152,78 @@ def normalize_alert_type(raw: str) -> str | None:
     return ALERT_ALIASES.get(raw.strip().lower())
 
 
+INTERACTION_KINDS = {"reveal", "mask", "emphasis"}
+STRUCTURE_KINDS: set[str] = set()
+
+
+def parse_attrs(raw: str) -> dict[str, str]:
+    attrs: dict[str, str] = {}
+    for key, double_quoted, single_quoted, bare in re.findall(r"([A-Za-z_-][A-Za-z0-9_-]*)=(?:\"([^\"]*)\"|'([^']*)'|([^ \t]+))", raw):
+        attrs[key.strip()] = (double_quoted or single_quoted or bare or "").strip()
+    return attrs
+
+
+def normalize_order(raw: str | None, fallback: str = "1") -> str:
+    value = (raw or fallback).strip()
+    if not value:
+        value = fallback
+    try:
+        number = float(value)
+    except ValueError:
+        number = float(fallback)
+    text = f"{number:.6f}".rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def order_sort_key(raw: str) -> tuple[float, str]:
+    try:
+        return (float(raw), raw)
+    except ValueError:
+        return (0.0, raw)
+
+
+def order_number(raw: str) -> float | None:
+    try:
+        return float(raw)
+    except ValueError:
+        return None
+
+
+def normalize_animation_mode(raw: str | None) -> str:
+    value = (raw or "none").strip().lower()
+    if value in {"off", "false", "no", "none"}:
+        return "none"
+    if value in {"all", "page", "full"}:
+        return "all"
+    if value in {"step", "steps", "paragraph", "paragraphs", "staged"}:
+        return "step"
+    return "none"
+
+
+def reveal_orders_in_html(rendered: str) -> list[float]:
+    orders: list[float] = []
+    for match in re.finditer(r'data-reveal-order="([^"]+)"', rendered):
+        number = order_number(html.unescape(match.group(1)))
+        if number is not None:
+            orders.append(number)
+    return orders
+
+
+def order_before_inner(rendered: str, fallback: str) -> str:
+    orders = reveal_orders_in_html(rendered)
+    if not orders:
+        return fallback
+    return normalize_order(str(min(orders) - 0.1), fallback)
+
+
+def next_auto_order(animation_state: dict[str, float] | None) -> str:
+    if animation_state is None:
+        return "1"
+    current = animation_state.get("next", 1.0)
+    animation_state["next"] = current + 1.0
+    return normalize_order(str(current))
+
+
 def parse_slide_meta(raw: str) -> tuple[dict[str, str], str]:
     raw = raw.lstrip()
     if not raw.startswith("<!--"):
@@ -252,17 +324,26 @@ def split_blocks(raw: str) -> list[dict[str, str]]:
             blocks.append({"type": "fence", "lang": lang, "text": "\n".join(body)})
             continue
         alert_match = re.match(r"^:::\s*([A-Za-z_-]+)\s*$", line.strip())
-        if alert_match:
-            alert_type = normalize_alert_type(alert_match.group(1))
-            if alert_type:
-                body = []
+        directive_match = re.match(r"^:::\s*([A-Za-z_-]+)(.*?)\s*$", line.strip())
+        if directive_match:
+            directive_name = directive_match.group(1).strip().lower()
+            attrs = parse_attrs(directive_match.group(2))
+            body = []
+            i += 1
+            while i < len(lines) and not re.match(r"^:::\s*$", lines[i].strip()):
+                body.append(lines[i])
                 i += 1
-                while i < len(lines) and not re.match(r"^:::\s*$", lines[i].strip()):
-                    body.append(lines[i])
-                    i += 1
-                if i < len(lines):
-                    i += 1
-                blocks.append({"type": "alert", "alert_type": alert_type, "text": "\n".join(body).strip()})
+            if i < len(lines):
+                i += 1
+            body_text = "\n".join(body).strip()
+            if directive_name in INTERACTION_KINDS or directive_name in STRUCTURE_KINDS:
+                block = {"type": directive_name, "text": body_text}
+                block.update({f"attr_{key}": value for key, value in attrs.items()})
+                blocks.append(block)
+                continue
+            alert_type = normalize_alert_type(directive_name)
+            if alert_type:
+                blocks.append({"type": "alert", "alert_type": alert_type, "text": body_text})
                 continue
         github_alert_match = re.match(r"^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$", line.strip(), flags=re.I)
         if github_alert_match:
@@ -338,6 +419,22 @@ def block_score(block: dict[str, str]) -> int:
         return 10 if block.get("lang") == "chart" else 6
     if kind == "math":
         return 5
+    if kind in {"reveal", "mask", "emphasis", "animate"}:
+        inner_score = sum(block_score(inner) for inner in split_blocks(text))
+        return max(4, inner_score)
+    if kind == "sort":
+        return max(8, len([line for line in text.splitlines() if line.strip()]) * 2)
+    if kind in STRUCTURE_KINDS:
+        item_count = len([line for line in text.splitlines() if re.match(r"^\s*[-*]\s+", line)])
+        if kind == "timeline":
+            return max(12, item_count * 5)
+        if kind == "gallery":
+            return max(10, item_count * 4)
+        if kind == "smartart":
+            smart_type = (block.get("attr_type") or "").strip().lower()
+            multiplier = 6 if smart_type == "picture" else 4
+            return max(10, item_count * multiplier)
+        return max(8, item_count * 3)
     return max(3, len(text) // 70 + 2)
 
 
@@ -397,14 +494,118 @@ def chunk_blocks(blocks: list[dict[str, str]], split_mode: str) -> list[list[dic
     return pages or [[]]
 
 
+def render_inline_interaction(kind: str, attr_text: str, body: str) -> str:
+    attrs = parse_attrs(attr_text)
+    order = normalize_order(attrs.get("order"))
+    label = attrs.get("label", "")
+    class_name = f"reveal-target reveal-kind-{kind} inline-reveal"
+    if kind == "emphasis":
+        class_name += " emphasis-underline"
+    mathish = "\\" in body or any(token in body for token in ["√", "×", "cos", "sin", "tan", "^", "_"])
+    content = latex_to_html(body) if mathish else inline_markdown(body)
+    label_attr = f' data-reveal-label="{html.escape(label, quote=True)}"' if label else ""
+    return (
+        f'<span class="{class_name}" data-reveal-order="{html.escape(order, quote=True)}" '
+        f'data-reveal-kind="{html.escape(kind, quote=True)}"{label_attr}>'
+        f'<span class="reveal-content">{content}</span></span>'
+    )
+
+
+def safe_trigger_mode(raw: str | None) -> str:
+    value = (raw or "both").strip().lower()
+    return value if value in {"hover", "click", "both"} else "both"
+
+
+def render_inline_zoom(attr_text: str, body: str) -> str:
+    attrs = parse_attrs(attr_text)
+    scale = attrs.get("scale", "1.16")
+    try:
+        scale_value = max(1.04, min(1.32, float(scale)))
+    except ValueError:
+        scale_value = 1.16
+    content = inline_markdown(body)
+    return (
+        f'<span class="hover-zoom" tabindex="0" style="--hover-zoom-scale:{scale_value:.2f}">'
+        f'{content}</span>'
+    )
+
+
+def render_peek_template(attrs: dict[str, str], body_html: str = "", input_dir: Path | None = None, media_warnings: list[str] | None = None) -> tuple[str, bool]:
+    title = attrs.get("title", "").strip()
+    text = attrs.get("text", "").strip()
+    image = (attrs.get("image") or attrs.get("media") or "").strip()
+    video = attrs.get("video", "").strip()
+    parts: list[str] = ['<div class="peek-panel']
+    has_media = bool(image or video)
+    if has_media:
+        parts[0] += ' has-media'
+    parts[0] += '">'
+    if title:
+        parts.append(f'<strong class="peek-title">{inline_markdown(title)}</strong>')
+    if video:
+        path = resolve_asset(video, input_dir) if input_dir else None
+        if path is None:
+            if media_warnings is not None:
+                media_warnings.append(f"peek video missing: {video}")
+            parts.append(
+                '<figure class="peek-media media-broken">'
+                '<div class="broken-media-icon broken-video" aria-hidden="true"></div>'
+                f'<figcaption><code>{html.escape(video)}</code></figcaption></figure>'
+            )
+        else:
+            parts.append(f'<video class="peek-media" controls muted playsinline loop src="{data_uri(path)}"></video>')
+    elif image:
+        path = resolve_asset(image, input_dir) if input_dir else None
+        if path is None:
+            if media_warnings is not None:
+                media_warnings.append(f"peek image missing: {image}")
+            parts.append(
+                '<figure class="peek-media media-broken">'
+                '<div class="broken-media-icon broken-image" aria-hidden="true"></div>'
+                f'<figcaption><code>{html.escape(image)}</code></figcaption></figure>'
+            )
+        else:
+            alt = title or image
+            parts.append(f'<img class="peek-media" src="{data_uri(path)}" alt="{html.escape(alt)}">')
+    body = text or body_html
+    if body:
+        if text:
+            parts.append(f'<p class="peek-body">{inline_markdown(body)}</p>')
+        else:
+            parts.append(f'<div class="peek-body">{body}</div>')
+    parts.append('</div>')
+    return "".join(parts), has_media
+
+
+def render_inline_peek(attr_text: str, body: str) -> str:
+    attrs = parse_attrs(attr_text)
+    mode = safe_trigger_mode(attrs.get("trigger"))
+    label = inline_markdown(body)
+    panel, has_media = render_peek_template(attrs)
+    media_attr = ' data-peek-media="true"' if has_media else ""
+    return (
+        f'<span class="peek-trigger" tabindex="0" role="button" data-peek-trigger="{html.escape(mode, quote=True)}"{media_attr}>'
+        f'{label}<template class="peek-template">{panel}</template></span>'
+    )
+
+
 def inline_markdown(text: str) -> str:
-    escaped = html.escape(text)
+    pattern = re.compile(r"\{\{(mask|emphasis|reveal)([^}]*)\}\}(.*?)\{\{/\1\}\}", re.S)
+    parts: list[str] = []
+    cursor = 0
+    for match in pattern.finditer(text):
+        parts.append(html.escape(text[cursor:match.start()]))
+        kind = match.group(1)
+        parts.append(render_inline_interaction(kind, match.group(2), match.group(3)))
+        cursor = match.end()
+    parts.append(html.escape(text[cursor:]))
+    escaped = "".join(parts)
     escaped = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
     escaped = re.sub(r"`([^`]+)`", r"<code>\1</code>", escaped)
     return escaped
 
 
-def render_table(text: str) -> str:
+def render_table(text: str, row_orders: list[str] | None = None) -> str:
     rows = [row.strip().strip("|").split("|") for row in text.splitlines() if row.strip()]
     if len(rows) >= 2 and all(set(cell.strip()) <= {"-", ":"} for cell in rows[1]):
         header, body = rows[0], rows[2:]
@@ -414,8 +615,12 @@ def render_table(text: str) -> str:
     for cell in header:
         parts.append(f"<th>{inline_markdown(cell.strip())}</th>")
     parts.append("</tr></thead><tbody>")
-    for row in body:
-        parts.append("<tr>")
+    for idx, row in enumerate(body):
+        row_attr = ""
+        if row_orders and idx < len(row_orders):
+            order = html.escape(row_orders[idx], quote=True)
+            row_attr = f' class="reveal-target reveal-kind-animate" data-reveal-order="{order}" data-reveal-kind="animate"'
+        parts.append(f"<tr{row_attr}>")
         for cell in row:
             parts.append(f"<td>{inline_markdown(cell.strip())}</td>")
         parts.append("</tr>")
@@ -506,6 +711,21 @@ def latex_to_html(expr: str) -> str:
         out: list[str] = []
         i = 0
         while i < len(value):
+            interaction_match = re.match(r"\{\{(mask|emphasis|reveal|animate)([^}]*)\}\}(.*?)\{\{/\1\}\}", value[i:], flags=re.S)
+            if interaction_match:
+                kind = interaction_match.group(1)
+                attrs = parse_attrs(interaction_match.group(2))
+                order = normalize_order(attrs.get("order"))
+                class_name = f"reveal-target reveal-kind-{kind} inline-reveal"
+                if kind == "emphasis":
+                    class_name += " emphasis-underline"
+                out.append(
+                    f'<span class="{class_name}" data-reveal-order="{html.escape(order, quote=True)}" '
+                    f'data-reveal-kind="{html.escape(kind, quote=True)}">'
+                    f'<span class="reveal-content">{render_inner(interaction_match.group(3))}</span></span>'
+                )
+                i += len(interaction_match.group(0))
+                continue
             char = value[i]
             if char.isspace():
                 out.append(" ")
@@ -596,15 +816,15 @@ def render_media(line: str, input_dir: Path, media_warnings: list[str]) -> str:
     if is_video:
         if path is None:
             media_warnings.append(f"video fallback: missing file {raw_path}")
-            return f"<figure class=\"video-fallback\"><div>VIDEO</div><figcaption>{inline_markdown(label_text)}<br><code>{html.escape(raw_path)}</code></figcaption></figure>"
+            return f"<figure class=\"video-fallback media-broken\"><div class=\"broken-media-icon broken-video\" aria-hidden=\"true\"></div><figcaption><code>{html.escape(raw_path)}</code></figcaption></figure>"
         size_mb = path.stat().st_size / (1024 * 1024)
         if size_mb > 20:
             media_warnings.append(f"video fallback: {raw_path} is {size_mb:.2f} MB")
-            return f"<figure class=\"video-fallback\"><div>VIDEO</div><figcaption>{inline_markdown(label_text)}<br><a href=\"{html.escape(str(path))}\">external media</a></figcaption></figure>"
+            return f"<figure class=\"video-fallback media-broken\"><div class=\"broken-media-icon broken-video\" aria-hidden=\"true\"></div><figcaption><a href=\"{html.escape(str(path))}\">{html.escape(raw_path)}</a></figcaption></figure>"
         return f"<video controls src=\"{data_uri(path)}\"></video><p class=\"caption\">{inline_markdown(label_text)}</p>"
     if path is None:
         media_warnings.append(f"image missing: {raw_path}")
-        return f"<figure class=\"missing-media\"><div>IMAGE MISSING</div><figcaption>{inline_markdown(label_text)}<br><code>{html.escape(raw_path)}</code></figcaption></figure>"
+        return f"<figure class=\"missing-media media-broken\"><div class=\"broken-media-icon broken-image\" aria-hidden=\"true\"></div><figcaption><code>{html.escape(raw_path)}</code></figcaption></figure>"
     return f"<figure><img src=\"{data_uri(path)}\" alt=\"{html.escape(label_text)}\"><figcaption>{inline_markdown(label_text)}</figcaption></figure>"
 
 
@@ -612,7 +832,300 @@ def render_alert(kind: str, text: str) -> str:
     alert_type = normalize_alert_type(kind) or "info"
     label = ALERT_LABELS[alert_type]
     body = inline_markdown(text.strip()) if text.strip() else ""
-    return f"<aside class=\"alert alert-{html.escape(alert_type)}\"><strong>{html.escape(label)}</strong><p>{body}</p></aside>"
+    icon = {"info": "review", "tip": "target", "warning": "risk", "error": "risk"}.get(alert_type, "review")
+    return (
+        f"<aside class=\"alert alert-{html.escape(alert_type)}\">"
+        f"{render_semantic_icon(icon, 'mini')}"
+        f"<div><strong>{html.escape(label)}</strong><p>{body}</p></div></aside>"
+    )
+
+
+def parse_structured_items(text: str) -> list[dict[str, str]]:
+    items: list[dict[str, str]] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        match = re.match(r"^[-*]\s*(?:\[([^\]]+)\]\s*)?(.*)$", line)
+        if not match:
+            continue
+        attrs = parse_attrs(match.group(1) or "")
+        body = match.group(2).strip()
+        title = attrs.get("title") or attrs.get("label") or ""
+        if not title and "：" in body:
+            head, rest = body.split("：", 1)
+            if 0 < len(head) <= 18:
+                title, body = head.strip(), rest.strip()
+        elif not title and ":" in body:
+            head, rest = body.split(":", 1)
+            if 0 < len(head) <= 18:
+                title, body = head.strip(), rest.strip()
+        items.append({"body": body, "title": title, **attrs})
+    return items
+
+
+def structure_icon_html(item: dict[str, str], fallback_text: str = "") -> str:
+    raw_icon = item.get("icon")
+    icon = normalize_icon_name(raw_icon)
+    if icon == "":
+        return ""
+    if not raw_icon or icon == "auto":
+        icon = semantic_icon_for_text(" ".join([item.get("title", ""), item.get("body", ""), fallback_text]), "target")
+    return render_semantic_icon(icon or "target", "mini")
+
+
+def structure_media_html(item: dict[str, str], input_dir: Path, media_warnings: list[str], label: str = "") -> str:
+    raw_path = (item.get("image") or item.get("media") or "").strip()
+    if not raw_path:
+        return ""
+    alt = label or item.get("title") or raw_path
+    path = resolve_asset(raw_path, input_dir)
+    if path is None:
+        media_warnings.append(f"structure media missing: {raw_path}")
+        return (
+            '<figure class="structure-media media-broken">'
+            '<div class="broken-media-icon broken-image" aria-hidden="true"></div>'
+            f'<figcaption><code>{html.escape(raw_path)}</code></figcaption></figure>'
+        )
+    return f'<figure class="structure-media"><img src="{data_uri(path)}" alt="{html.escape(alt)}"></figure>'
+
+
+def render_timeline_block(block: dict[str, str], input_dir: Path, media_warnings: list[str]) -> str:
+    variant = html.escape((block.get("attr_variant") or "vertical").strip().lower())
+    items = parse_structured_items(block["text"])
+    rows = []
+    feature_media = []
+    has_media = False
+    for idx, item in enumerate(items, start=1):
+        title = item.get("title") or f"节点 {idx}"
+        time_label = item.get("time") or item.get("date") or str(idx)
+        media = structure_media_html(item, input_dir, media_warnings, title)
+        icon = structure_icon_html(item, title)
+        has_media = has_media or bool(media)
+        item_class = " has-media" if media else ""
+        media_class = " has-media" if media and variant != "horizontal" else ""
+        card_media = media if variant != "horizontal" else ""
+        if media and variant == "horizontal":
+            feature_media.append(
+                '<div class="timeline-feature-card">'
+                f'{media}'
+                '<div class="timeline-feature-caption">'
+                f'<small>{html.escape(time_label)}</small>'
+                f'<strong>{inline_markdown(title)}</strong>'
+                f'<span>{inline_markdown(item.get("body", ""))}</span>'
+                '</div></div>'
+            )
+        rows.append(
+            f'<article class="timeline-item{item_class}">'
+            f'<div class="timeline-point"><span>{html.escape(time_label)}</span>{icon}</div>'
+            f'<div class="timeline-card{media_class}">{card_media}<div class="timeline-card-text"><h3>{inline_markdown(title)}</h3><p>{inline_markdown(item.get("body", ""))}</p></div></div>'
+            '</article>'
+        )
+    block_class = f"structure-block timeline timeline-{variant}"
+    if has_media:
+        block_class += " timeline-with-media"
+    if variant == "horizontal" and feature_media:
+        return f'<div class="{block_class}"><div class="timeline-track">{"".join(rows)}</div><div class="timeline-feature-panel">{"".join(feature_media)}</div></div>'
+    return f'<div class="{block_class}">{"".join(rows)}</div>'
+
+
+def render_cards_block(block: dict[str, str]) -> str:
+    variant = html.escape((block.get("attr_variant") or "kanban").strip().lower())
+    columns = block.get("attr_columns") or "3"
+    try:
+        column_count = max(2, min(4, int(columns)))
+    except ValueError:
+        column_count = 3
+    items = parse_structured_items(block["text"])
+    cards = []
+    for idx, item in enumerate(items, start=1):
+        title = item.get("title") or f"卡片 {idx}"
+        status = item.get("status") or item.get("tag") or ""
+        status_html = f'<small>{inline_markdown(status)}</small>' if status else ""
+        cards.append(
+            '<article class="board-card">'
+            f'{structure_icon_html(item, title)}<div><h3>{inline_markdown(title)}</h3>'
+            f'{status_html}<p>{inline_markdown(item.get("body", ""))}</p></div></article>'
+        )
+    return f'<div class="structure-block card-board card-board-{variant}" style="--card-columns:{column_count}">{"".join(cards)}</div>'
+
+
+def render_gallery_block(block: dict[str, str], input_dir: Path, media_warnings: list[str]) -> str:
+    variant = html.escape((block.get("attr_variant") or "album").strip().lower())
+    items = parse_structured_items(block["text"])
+    cards = []
+    for idx, item in enumerate(items, start=1):
+        title = item.get("title") or f"画册 {idx}"
+        media = structure_media_html(item, input_dir, media_warnings, title)
+        if not media:
+            media = f'<div class="gallery-icon-panel">{structure_icon_html(item, title)}</div>'
+        cards.append(
+            '<article class="gallery-item">'
+            f'{media}<div class="gallery-copy"><h3>{inline_markdown(title)}</h3><p>{inline_markdown(item.get("body", ""))}</p></div></article>'
+        )
+    return f'<div class="structure-block gallery gallery-{variant}">{"".join(cards)}</div>'
+
+
+def render_smartart_block(block: dict[str, str], input_dir: Path, media_warnings: list[str]) -> str:
+    smart_type = html.escape((block.get("attr_type") or "process").strip().lower())
+    variant = html.escape((block.get("attr_variant") or "steps").strip().lower())
+    items = parse_structured_items(block["text"])
+    parts = []
+    for idx, item in enumerate(items, start=1):
+        title = item.get("title") or f"项目 {idx}"
+        media = structure_media_html(item, input_dir, media_warnings, title) if smart_type == "picture" else ""
+        pyramid_width = min(94, 44 + idx * 12)
+        layer_width = max(54, 100 - (idx - 1) * 8)
+        style = f"--item-index:{idx};--item-count:{max(1, len(items))};--pyramid-width:{pyramid_width}%;--layer-width:{layer_width}%"
+        parts.append(
+            f'<article class="smartart-item" style="{style}">'
+            f'<span class="smartart-index">{idx}</span>{media}{structure_icon_html(item, title)}'
+            f'<div><h3>{inline_markdown(title)}</h3><p>{inline_markdown(item.get("body", ""))}</p></div></article>'
+        )
+    return f'<div class="structure-block smartart smartart-{smart_type} smartart-{smart_type}-{variant}">{"".join(parts)}</div>'
+
+
+def render_peek_block(block: dict[str, str], input_dir: Path, media_warnings: list[str]) -> str:
+    attrs = {
+        key.removeprefix("attr_"): value
+        for key, value in block.items()
+        if key.startswith("attr_")
+    }
+    mode = safe_trigger_mode(attrs.get("trigger"))
+    title = attrs.get("title", "").strip()
+    target = attrs.get("target", "").strip() or title or "查看说明"
+    body_html = "".join(render_block(inner, input_dir, media_warnings) for inner in split_blocks(block["text"]))
+    panel, has_media = render_peek_template(attrs, body_html, input_dir, media_warnings)
+    icon_hint = semantic_icon_for_text(" ".join([title, target, block["text"]]), "review")
+    media_attr = ' data-peek-media="true"' if has_media else ""
+    subtitle = title if title and title != target else "补充说明"
+    return (
+        f'<button class="peek-trigger-card" type="button" data-peek-trigger="{html.escape(mode, quote=True)}"{media_attr}>'
+        f'{render_semantic_icon(icon_hint, "mini")}'
+        f'<span><strong>{inline_markdown(target)}</strong>'
+        f'<small>{inline_markdown(subtitle)}</small></span>'
+        f'<template class="peek-template">{panel}</template>'
+        f'</button>'
+    )
+
+
+def render_blocks(
+    blocks: list[dict[str, str]],
+    input_dir: Path,
+    media_warnings: list[str],
+    section_index: int | None = None,
+    formula_counters: dict[int, int] | None = None,
+    animation_mode: str = "none",
+    animation_state: dict[str, float] | None = None,
+) -> str:
+    parts: list[str] = []
+    for block in blocks:
+        if animation_mode == "step" and block["type"] not in INTERACTION_KINDS:
+            parts.append(render_auto_animated_block(block, input_dir, media_warnings, section_index, formula_counters, animation_state))
+        else:
+            parts.append(render_block(block, input_dir, media_warnings, section_index, formula_counters))
+    return "".join(parts)
+
+
+def wrap_animated_content(rendered: str, order: str, tag: str = "div") -> str:
+    safe_order = html.escape(order, quote=True)
+    return (
+        f'<{tag} class="reveal-target reveal-kind-animate" '
+        f'data-reveal-order="{safe_order}" data-reveal-kind="animate">'
+        f'<div class="reveal-content">{rendered}</div></{tag}>'
+    )
+
+
+def render_auto_animated_block(
+    block: dict[str, str],
+    input_dir: Path,
+    media_warnings: list[str],
+    section_index: int | None = None,
+    formula_counters: dict[int, int] | None = None,
+    animation_state: dict[str, float] | None = None,
+) -> str:
+    kind = block["type"]
+    text = block["text"]
+    if kind == "list":
+        items = [re.sub(r"^\s*[-*]\s+", "", line).strip() for line in text.splitlines()]
+        rows = []
+        for item in items:
+            rendered = inline_markdown(item)
+            order = order_before_inner(rendered, next_auto_order(animation_state))
+            safe_order = html.escape(order, quote=True)
+            rows.append(
+                f'<li class="reveal-target reveal-kind-animate" '
+                f'data-reveal-order="{safe_order}" data-reveal-kind="animate">'
+                f'<span class="reveal-content">{rendered}</span></li>'
+            )
+        return "<ul>" + "".join(rows) + "</ul>"
+    if kind == "table":
+        rows = [row for row in text.splitlines() if row.strip()]
+        body_rows = rows[2:] if len(rows) >= 2 and all(set(cell.strip()) <= {"-", ":"} for cell in rows[1].strip().strip("|").split("|")) else rows[1:]
+        row_orders = [next_auto_order(animation_state) for _ in body_rows]
+        return render_table(text, row_orders)
+    rendered = render_block(block, input_dir, media_warnings, section_index, formula_counters)
+    order = order_before_inner(rendered, next_auto_order(animation_state))
+    return wrap_animated_content(rendered, order)
+
+
+def render_interaction_block(
+    kind: str,
+    block: dict[str, str],
+    input_dir: Path,
+    media_warnings: list[str],
+    section_index: int | None = None,
+    formula_counters: dict[int, int] | None = None,
+) -> str:
+    order = normalize_order(block.get("attr_order"))
+    label = block.get("attr_label", "")
+    class_name = f"reveal-target reveal-kind-{kind}"
+    if kind == "emphasis":
+        class_name += " emphasis-underline"
+    label_attr = f' data-reveal-label="{html.escape(label, quote=True)}"' if label else ""
+    rendered = render_blocks(split_blocks(block["text"]), input_dir, media_warnings, section_index, formula_counters)
+    return (
+        f'<div class="{class_name}" data-reveal-order="{html.escape(order, quote=True)}" '
+        f'data-reveal-kind="{html.escape(kind, quote=True)}"{label_attr}>'
+        f'<div class="reveal-content">{rendered}</div></div>'
+    )
+
+
+def render_sort_block(block: dict[str, str]) -> str:
+    items: list[dict[str, str]] = []
+    for idx, raw_line in enumerate(block["text"].splitlines(), start=1):
+        line = raw_line.strip()
+        if not line:
+            continue
+        match = re.match(r"^[-*]\s*\[([^\]]+)\]\s*(.+)$", line)
+        if match:
+            attrs = parse_attrs(match.group(1))
+            body = match.group(2).strip()
+        else:
+            attrs = {"order": str(idx)}
+            body = re.sub(r"^[-*]\s+", "", line)
+        order = normalize_order(attrs.get("order"), str(idx))
+        items.append({"order": order, "body": body})
+    if not items:
+        return ""
+    unique_orders = sorted({item["order"] for item in items}, key=order_sort_key)
+    rank_by_order = {order: str(idx) for idx, order in enumerate(unique_orders, start=1)}
+    final_order = normalize_order(block.get("attr_final_order"), str(len(unique_orders) + 1))
+    rows = []
+    for item in items:
+        rank = rank_by_order[item["order"]]
+        rows.append(
+            f'<div class="sort-item reveal-target reveal-kind-sort-rank" '
+            f'data-reveal-order="{html.escape(item["order"], quote=True)}" data-reveal-kind="sort-rank" '
+            f'style="--sort-order:{html.escape(rank)}">'
+            f'<i>{html.escape(rank)}</i><span>{inline_markdown(item["body"])}</span></div>'
+        )
+    return (
+        f'<div class="sort-list reveal-target reveal-kind-sort-final" '
+        f'data-reveal-order="{html.escape(final_order, quote=True)}" data-reveal-kind="sort-final">'
+        + "".join(rows)
+        + "</div>"
+    )
 
 
 def render_block(
@@ -641,6 +1154,10 @@ def render_block(
         return render_media(text, input_dir, media_warnings)
     if kind == "heading":
         return f"<h3>{inline_markdown(text.lstrip('#').strip())}</h3>"
+    if kind in {"reveal", "mask", "emphasis"}:
+        return render_interaction_block(kind, block, input_dir, media_warnings, section_index, formula_counters)
+    if kind == "sort":
+        return render_sort_block(block)
     return f"<p>{inline_markdown(text)}</p>"
 
 
@@ -666,6 +1183,106 @@ def html_attrs(values: dict[str, object]) -> str:
     for key, value in values.items():
         parts.append(f'{key}="{html.escape(str(value), quote=True)}"')
     return " ".join(parts)
+
+
+ICON_ALIASES = {
+    "auto": "auto",
+    "none": "",
+    "off": "",
+    "false": "",
+    "target": "target",
+    "goal": "target",
+    "objective": "target",
+    "process": "process",
+    "flow": "process",
+    "step": "process",
+    "safety": "safety",
+    "safe": "safety",
+    "risk": "risk",
+    "warning": "risk",
+    "error": "risk",
+    "formula": "formula",
+    "math": "formula",
+    "table": "table",
+    "matrix": "table",
+    "chart": "chart",
+    "data": "chart",
+    "media": "media",
+    "image": "media",
+    "video": "media",
+    "reveal": "reveal",
+    "mask": "reveal",
+    "answer": "reveal",
+    "review": "review",
+    "check": "review",
+    "default": "target",
+}
+
+ICON_KEYWORDS: list[tuple[str, list[str]]] = [
+    ("safety", ["安全", "急停", "接地", "绝缘", "通电", "断电", "保护", "故障", "短路", "排故"]),
+    ("risk", ["风险", "警告", "错误", "异常", "缺失", "fallback", "不可", "过大"]),
+    ("formula", ["公式", "计算", "电压", "电流", "功率", "阻值", "sqrt", "cos", "sin", "tan", "u =", "p ="]),
+    ("chart", ["图表", "进度", "数据", "统计", "比例", "达成", "投入", "评分"]),
+    ("table", ["表格", "矩阵", "清单", "验收", "责任", "检测点", "功能点", "模块"]),
+    ("media", ["图片", "视频", "照片", "媒体", "横向", "竖向", "双图", "图右", "图左"]),
+    ("reveal", ["揭示", "遮罩", "强调", "排序", "答案", "选择题", "填空", "判断", "动画", "order"]),
+    ("review", ["审阅", "关注", "评价", "复盘", "验证", "检查", "看什么"]),
+    ("process", ["流程", "步骤", "链路", "推进", "安装", "调试", "联调", "沉淀"]),
+    ("target", ["目标", "建设", "任务", "内容", "资源", "课程", "背景"]),
+]
+
+
+def normalize_icon_name(raw: str | None) -> str | None:
+    if raw is None:
+        return "auto"
+    value = raw.strip().lower()
+    return ICON_ALIASES.get(value, value if value in {name for name, _ in ICON_KEYWORDS} else "auto")
+
+
+def semantic_icon_for_text(text: str, fallback: str = "target") -> str:
+    lowered = text.lower()
+    scores: dict[str, int] = {}
+    for icon, keywords in ICON_KEYWORDS:
+        score = 0
+        for keyword in keywords:
+            if keyword.lower() in lowered:
+                score += 1
+        if score:
+            scores[icon] = score
+    if scores:
+        return max(scores.items(), key=lambda item: (item[1], -[name for name, _ in ICON_KEYWORDS].index(item[0])))[0]
+    return fallback
+
+
+def semantic_icon_for_slide(slide: dict[str, object], layout: str, blocks: list[dict[str, str]]) -> str:
+    meta = slide["meta"] if isinstance(slide.get("meta"), dict) else {}
+    explicit = normalize_icon_name(meta.get("icon") if isinstance(meta, dict) else None)
+    if explicit == "":
+        return ""
+    if explicit and explicit != "auto":
+        return explicit
+    if layout in {"cover", "closing", "section"}:
+        return ""
+    if layout == "table":
+        return "table"
+    if layout == "chart":
+        return "chart"
+    if layout.startswith("media"):
+        return "media"
+    text_parts = [str(slide.get("title", ""))]
+    if isinstance(meta, dict):
+        text_parts.append(str(meta.get("intent", "")))
+    text_parts.extend(block.get("text", "") for block in blocks[:6])
+    return semantic_icon_for_text("\n".join(text_parts))
+
+
+def render_semantic_icon(icon: str, extra_class: str = "") -> str:
+    if not icon:
+        return ""
+    class_attr = f"semantic-icon icon-{html.escape(icon)}"
+    if extra_class:
+        class_attr += f" {html.escape(extra_class)}"
+    return f'<span class="{class_attr}" aria-hidden="true"></span>'
 
 
 def render_cover_details(meta: dict[str, str]) -> str:
@@ -723,6 +1340,8 @@ def render_page_section(
     formula_counters: dict[int, int],
 ) -> str:
     page_title = html.escape(str(slide["title"]))
+    slide_meta = slide["meta"] if isinstance(slide.get("meta"), dict) else {}
+    animation_mode = normalize_animation_mode(slide_meta.get("animate") if isinstance(slide_meta, dict) else None)
     attrs = html_attrs({
         "data-section-index": record["section_index"],
         "data-section-title": record["section_title"],
@@ -733,8 +1352,11 @@ def render_page_section(
         "data-page-id": record["page_id"],
         "data-page-label": record["page_label"],
         "data-layout": layout,
+        "data-body-animation": animation_mode,
     })
     classes = f"slide layout-{html.escape(layout)}"
+    if animation_mode == "all":
+        classes += " body-animate-page"
     if layout == "closing":
         return (
             f"<section class=\"{classes}\" {attrs}>"
@@ -746,10 +1368,19 @@ def render_page_section(
             f"</section>"
         )
     section_number = int(record["section_index"])
-    rendered_blocks = "".join(
-        render_block(block, input_dir, media_warnings, section_number, formula_counters)
-        for block in chunk
+    animation_start = order_number(normalize_order(slide_meta.get("animate_order") if isinstance(slide_meta, dict) else None, "1")) or 1.0
+    animation_state = {"next": animation_start}
+    semantic_icon = ""
+    rendered_blocks = render_blocks(
+        chunk,
+        input_dir,
+        media_warnings,
+        section_number,
+        formula_counters,
+        animation_mode=animation_mode,
+        animation_state=animation_state,
     )
+    record["reveal_steps"] = collect_reveal_steps(rendered_blocks)
     warnings = "".join(f"<aside class=\"warning\">{inline_markdown(w)}</aside>" for w in slide["warnings"])
     notes = "".join(f"<details class=\"notes\"><summary>Speaker notes</summary><p>{inline_markdown(n)}</p></details>" for n in slide["notes"])
     if layout == "cover":
@@ -768,10 +1399,11 @@ def render_page_section(
             f"<img class=\"cover-slogan\" src=\"{cover_slogan_uri}\" alt=\"school slogan\">"
             f"</section>"
         )
-    page_marker = f"<span>{html.escape(str(record['page_label']))}</span>"
+    page_marker = f"<span class=\"page-marker\">{html.escape(str(record['page_label']))}</span>"
+    title_lockup = f"<div class=\"title-lockup\"><h2>{page_title}</h2></div>"
     return (
         f"<section class=\"{classes}\" {attrs}>"
-        f"<div class=\"slide-title\"><h2>{page_title}</h2>{page_marker}</div>"
+        f"<div class=\"slide-title\">{title_lockup}{page_marker}</div>"
         f"<main>{warnings}{rendered_blocks}{notes}</main>"
         f"<footer class=\"slide-footer\" aria-hidden=\"true\">"
         f"<img class=\"footer-band\" src=\"{footer_uri}\" alt=\"\">"
@@ -801,7 +1433,7 @@ def render_agenda_page_section(
     items = []
     for idx, section_title in enumerate(section_titles, start=1):
         items.append(
-            "<li>"
+            f"<li data-agenda-section-index=\"{idx}\" role=\"button\" tabindex=\"0\" aria-label=\"跳转到第 {idx:02d} 章 {html.escape(section_title, quote=True)}\">"
             f"<span>{idx:02d}</span>"
             f"<strong>{html.escape(section_title)}</strong>"
             "</li>"
@@ -809,13 +1441,46 @@ def render_agenda_page_section(
     return (
         f"<section class=\"slide layout-agenda\" {attrs}>"
         "<div class=\"agenda-kicker\">目录</div>"
-        "<div class=\"agenda-head\"><h2>汇报路径</h2><p>CONTENT</p></div>"
         f"<ol class=\"agenda-list\">{''.join(items)}</ol>"
         "<div class=\"agenda-route\" aria-hidden=\"true\"><i></i><i></i><i></i></div>"
         f"<footer class=\"slide-footer\" aria-hidden=\"true\">"
         f"<img class=\"footer-band\" src=\"{footer_uri}\" alt=\"\">"
         f"<img class=\"footer-logo\" src=\"{footer_logo_uri}\" alt=\"\">"
         f"</footer>"
+        f"</section>"
+    )
+
+
+def render_section_divider_page_section(
+    record: dict[str, object],
+    section_slides: list[dict[str, object]],
+    logo_uri: str,
+    wave_top_uri: str,
+) -> str:
+    attrs = html_attrs({
+        "data-section-index": record["section_index"],
+        "data-section-title": record["section_title"],
+        "data-logical-index": record["logical_index"],
+        "data-logical-title": record["logical_title"],
+        "data-physical-index": record["physical_index"],
+        "data-global-index": record["global_index"],
+        "data-page-id": record["page_id"],
+        "data-page-label": record["page_label"],
+        "data-layout": "section",
+        "data-section-divider": "true",
+        "data-print-optional": "section-divider",
+    })
+    section_title = html.escape(str(record["section_title"]))
+    section_index = int(record["section_index"])
+    return (
+        f"<section class=\"slide layout-section\" {attrs}>"
+        f"<img class=\"section-logo\" src=\"{logo_uri}\" alt=\"school logo\">"
+        f"<img class=\"section-wave\" src=\"{wave_top_uri}\" alt=\"\" aria-hidden=\"true\">"
+        f"<div class=\"section-hero\">"
+        f"<span class=\"section-kicker\">第 {section_index:02d} 章</span>"
+        f"<h1>{section_title}</h1>"
+        f"<i aria-hidden=\"true\"></i>"
+        f"</div>"
         f"</section>"
     )
 
@@ -827,8 +1492,9 @@ def render_thumb_card(record: dict[str, object], attr_name: str, extra_class: st
     logical_title = html.escape(str(record["logical_title"]))
     section_title = html.escape(str(record["section_title"]))
     label = f"{page_label} {logical_title}".strip()
+    section_divider_attr = ' data-section-divider-entry="true"' if bool(record.get("is_section_divider")) else ""
     return (
-        f"<button class=\"thumb-item {extra_class}\" {attr_name}=\"{page_id}\" data-page-index=\"{record['global_index']}\" aria-current=\"false\" aria-label=\"{html.escape(label, quote=True)}\">"
+        f"<button class=\"thumb-item {extra_class}\" {attr_name}=\"{page_id}\" data-page-index=\"{record['global_index']}\"{section_divider_attr} aria-current=\"false\" aria-label=\"{html.escape(label, quote=True)}\">"
         f"<span class=\"thumb-label\">{page_label}</span>"
         f"<div class=\"thumb-real\" aria-hidden=\"true\"></div>"
         f"<div class=\"thumb-card layout-{layout}\" aria-hidden=\"true\">"
@@ -836,6 +1502,29 @@ def render_thumb_card(record: dict[str, object], attr_name: str, extra_class: st
         f"</div>"
         f"</button>"
     )
+
+
+def collect_reveal_steps(rendered_html: str) -> list[dict[str, object]]:
+    grouped: dict[str, dict[str, object]] = {}
+    for match in re.finditer(r'data-reveal-order="([^"]+)"\s+data-reveal-kind="([^"]+)"', rendered_html):
+        order = html.unescape(match.group(1))
+        kind = html.unescape(match.group(2))
+        entry = grouped.setdefault(order, {"priority": order, "kinds": set(), "target_count": 0})
+        kinds = entry["kinds"]
+        if isinstance(kinds, set):
+            kinds.add(kind)
+        entry["target_count"] = int(entry["target_count"]) + 1
+    steps: list[dict[str, object]] = []
+    for idx, order in enumerate(sorted(grouped, key=order_sort_key), start=1):
+        entry = grouped[order]
+        kinds = entry["kinds"]
+        steps.append({
+            "step_index": idx,
+            "priority": order,
+            "kinds": sorted(kinds) if isinstance(kinds, set) else [],
+            "target_count": entry["target_count"],
+        })
+    return steps
 
 
 def render_deck(input_path: Path, max_size_mb: int) -> tuple[str, dict[str, object]]:
@@ -862,31 +1551,72 @@ def render_deck(input_path: Path, max_size_mb: int) -> tuple[str, dict[str, obje
     page_records: list[dict[str, object]] = []
     manifest_sections: list[dict[str, object]] = []
     logical_count = 0
-    display_logical_count = 0
     formula_counters: dict[int, int] = {}
     layouts_used: list[str] = []
     agenda_inserted = False
     agenda_section_titles = [str(section["title"]) for section in hierarchy]
     for section_index, section in enumerate(hierarchy, start=1):
         section_title = str(section["title"])
+        section_display_count = 0
         section_manifest: dict[str, object] = {
             "section_index": section_index,
             "section_title": section_title,
             "logical_slides": [],
         }
         slides = section["slides"] if isinstance(section["slides"], list) else []
+        section_divider_inserted = True
         for slide in slides:
             if not isinstance(slide, dict):
                 continue
-            logical_count += 1
             body_text = str(slide["body"])
             blocks = split_blocks(body_text)
-            layout = choose_layout(slide, blocks, logical_count - 1)
+            layout = choose_layout(slide, blocks, logical_count)
             layouts_used.append(layout)
             numbered_layout = layout not in {"cover", "closing"}
+            logical_slides = section_manifest["logical_slides"]
+            if numbered_layout and not section_divider_inserted and section_title != "默认章节":
+                section_divider_inserted = True
+                layouts_used.append("section")
+                logical_count += 1
+                global_index = len(page_records) + 1
+                section_record: dict[str, object] = {
+                    "page_id": f"p{global_index}",
+                    "page_label": str(section_index),
+                    "section_index": section_index,
+                    "section_title": section_title,
+                    "logical_index": logical_count,
+                    "display_logical_index": str(section_index),
+                    "logical_title": section_title,
+                    "physical_index": 1,
+                    "global_index": global_index,
+                    "layout": "section",
+                    "reveal_steps": [],
+                    "is_section_divider": True,
+                    "print_optional": "section-divider",
+                }
+                page_sections.append(render_section_divider_page_section(
+                    section_record,
+                    slides,
+                    logo_uri,
+                    wave_top_uri,
+                ))
+                page_records.append(section_record)
+                if isinstance(logical_slides, list):
+                    logical_slides.append({
+                        "section_index": section_index,
+                        "section_title": section_title,
+                        "logical_index": logical_count,
+                        "display_logical_index": str(section_index),
+                        "logical_title": section_title,
+                        "is_section_divider": True,
+                        "print_optional": "section-divider",
+                        "physical_pages": [dict(section_record)],
+                        "reveal_steps": [],
+                    })
+            logical_count += 1
             if numbered_layout:
-                display_logical_count += 1
-                display_logical_label = str(display_logical_count)
+                section_display_count += 1
+                display_logical_label = f"{section_index}.{section_display_count}"
             elif layout == "closing":
                 display_logical_label = "封底"
             else:
@@ -907,7 +1637,7 @@ def render_deck(input_path: Path, max_size_mb: int) -> tuple[str, dict[str, obje
             for page_idx, chunk in enumerate(chunks, start=1):
                 global_index = len(page_records) + 1
                 if numbered_layout:
-                    page_label = f"{display_logical_count}.{page_idx}"
+                    page_label = f"{display_logical_label}.{page_idx}"
                 elif layout == "closing":
                     page_label = "封底"
                 else:
@@ -947,7 +1677,17 @@ def render_deck(input_path: Path, max_size_mb: int) -> tuple[str, dict[str, obje
                 physical_pages = slide_manifest["physical_pages"]
                 if isinstance(physical_pages, list):
                     physical_pages.append(dict(record))
-            logical_slides = section_manifest["logical_slides"]
+                reveal_steps = slide_manifest["reveal_steps"]
+                if isinstance(reveal_steps, list):
+                    reveal_steps.extend([
+                        {
+                            **step,
+                            "page_id": record["page_id"],
+                            "page_label": record["page_label"],
+                        }
+                        for step in record.get("reveal_steps", [])
+                        if isinstance(step, dict)
+                    ])
             if isinstance(logical_slides, list):
                 logical_slides.append(slide_manifest)
                 if layout == "cover" and not agenda_inserted:
@@ -988,14 +1728,15 @@ def render_deck(input_path: Path, max_size_mb: int) -> tuple[str, dict[str, obje
     css = """
 :root{__RATIO_CSS__;--slide-design-width:1280px;--slide-design-height:calc(1280px / var(--slide-ratio));--slide-max-width:1280px;--rail-width:260px;--resizer-width:8px;--green:#579E40;--teal:#549183;--blue:#0084CC;--deep:#0E2841;--paper:#fff;--soft:#E8E8E8;--gold:#F2BA02;--line:#d8e6ec;--shadow:0 18px 42px rgba(14,40,65,.16)}
 *{box-sizing:border-box}body{margin:0;background:#eef3f5;color:var(--deep);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",Arial,sans-serif;letter-spacing:0;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-button{font:inherit;color:inherit}.app{height:100vh;display:grid;grid-template-rows:auto 1fr}.app[data-view="playback"]{display:block}.app[data-view="playback"] .app-top{display:none}.app-top{height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(10px);overflow:hidden}.brand-lockup{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:12px;min-width:0;max-width:min(620px,calc(100vw - 360px));height:100%}.brand-lockup img{width:42px;max-height:38px;object-fit:contain;box-shadow:none;border-radius:0;background:transparent}.brand-text{min-width:0;display:grid;gap:2px}.brand-title{display:block;color:#0056A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;font-size:15px}.brand-context{display:block;min-width:0;font-size:11px;line-height:1.2;color:#58717c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.icon-btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:7px 12px;cursor:pointer}.icon-btn.primary{background:linear-gradient(90deg,var(--green),var(--blue));color:#fff;border:0}.current-page-chip{min-width:78px;text-align:center;color:#0056A8;font-weight:700}
-.view{min-height:0}.view[hidden]{display:none!important}.workspace{display:grid;grid-template-columns:var(--rail-width) var(--resizer-width) minmax(0,1fr);height:calc(100vh - 56px);min-height:0}.thumbnail-rail{border-right:1px solid var(--line);background:#f8fbfc;overflow:auto;padding:12px}.rail-resizer{position:relative;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);background:linear-gradient(180deg,#f7fbfc,#edf4f6);cursor:col-resize;padding:0}.rail-resizer::before{content:"";position:absolute;left:50%;top:50%;width:3px;height:52px;border-radius:99px;background:linear-gradient(180deg,var(--green),var(--blue));transform:translate(-50%,-50%);opacity:.55}.rail-resizer:hover::before,.rail-resizer.is-dragging::before{opacity:1}.drawer-handle{display:none}.rail-section{margin:0 0 16px}.rail-section-title{margin:0 0 8px;font-size:12px;color:#0056A8;text-transform:none}.rail-logical-title{margin:10px 0 6px;font-size:13px;color:#466;font-weight:700}.rail-pages{display:grid;gap:8px}.thumb-item{position:relative;display:grid;grid-template-columns:42px 1fr;align-items:center;gap:8px;width:100%;border:1px solid transparent;background:transparent;border-radius:8px;padding:6px;text-align:left;cursor:pointer}.thumb-item[aria-current="true"],.thumb-item.is-active{border-color:var(--blue);background:#fff;box-shadow:0 8px 20px rgba(0,132,204,.12)}.thumb-label{font-size:12px;font-weight:800;color:#fff;background:var(--green);border-radius:4px;text-align:center;padding:4px 0}.thumb-real{position:relative;display:grid;place-items:center;aspect-ratio:var(--slide-aspect);overflow:hidden;border:1px solid var(--line);border-radius:5px;background:#fff;pointer-events:none}.thumb-card{display:none;aspect-ratio:var(--slide-aspect);border:1px solid var(--line);border-radius:5px;background:linear-gradient(135deg,#fff,#edf7fb);padding:8px;overflow:hidden;pointer-events:none}.thumb-card span{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:var(--blue);border-radius:3px;padding:2px 6px}.thumb-card strong{display:block;margin-top:8px;font-size:12px;line-height:1.22;color:#0056A8}.thumb-card em{display:block;margin-top:4px;font-style:normal;font-size:10px;color:#60757e}.thumb-card i{display:block;margin-top:8px;height:5px;background:linear-gradient(90deg,var(--green),var(--blue),var(--gold));border-radius:99px}.layout-cover.thumb-card,.layout-section.thumb-card{background:linear-gradient(135deg,var(--green),var(--blue));color:#fff}.layout-cover.thumb-card strong,.layout-cover.thumb-card em,.layout-section.thumb-card strong,.layout-section.thumb-card em{color:#fff}.layout-agenda.thumb-card{background:linear-gradient(90deg,#fafdff 0 36%,var(--deep) 36%);color:#fff}.layout-agenda.thumb-card strong,.layout-agenda.thumb-card em{color:#fff}.layout-table.thumb-card{background:repeating-linear-gradient(180deg,#fff 0 17px,#e9f4f7 17px 18px)}.layout-chart.thumb-card i{height:22px;background:linear-gradient(90deg,var(--green) 68%,#e4f0f4 68%)}.layout-media-right.thumb-card,.layout-media-left.thumb-card{background:linear-gradient(90deg,#fff 0 54%,#dfeff4 54%)}.layout-quote.thumb-card{background:linear-gradient(135deg,#fff 0 76%,#f9e9a8 76%)}.layout-closing.thumb-card{background:linear-gradient(135deg,#fff 0 45%,var(--blue) 45%,var(--green) 72%,#fff 72%)}
-.preview-pane{min-width:0;display:grid;grid-template-rows:1fr auto;padding:18px;gap:12px;overflow:hidden}.preview-stage{place-self:stretch;width:100%;height:100%;min-height:0;display:grid;place-items:center;overflow:hidden}.preview-stage,.playback-stage{position:relative}.slide-scale-shell{position:relative;width:var(--scaled-slide-width,var(--slide-design-width));height:var(--scaled-slide-height,var(--slide-design-height));overflow:hidden;background:#fff;contain:paint}.preview-stage .slide-scale-shell,.playback-stage .slide-scale-shell{box-shadow:var(--shadow);outline:1px solid rgba(14,40,65,.18);outline-offset:0}.thumb-real .slide-scale-shell{outline:0;box-shadow:none}.preview-stage.is-transitioning .slide-scale-shell,.playback-stage.is-transitioning .slide-scale-shell{transition:opacity .18s ease}.preview-stage.is-fade-out .slide-scale-shell,.playback-stage.is-fade-out .slide-scale-shell{opacity:.82}.preview-stage.is-fade-in .slide-scale-shell,.playback-stage.is-fade-in .slide-scale-shell{animation:stageFadeIn .18s ease both}@keyframes stageFadeIn{from{opacity:.82}to{opacity:1}}.slide-scale-shell .slide{position:absolute;left:0;top:0;width:var(--slide-design-width);height:var(--slide-design-height);max-width:none;transform:scale(var(--stage-scale,1));transform-origin:top left;pointer-events:none}.preview-meta{display:flex;align-items:center;justify-content:space-between;color:#4f6874;font-size:13px}.overview{height:calc(100vh - 56px);overflow:auto;padding:20px 24px;background:#f4f8fa}.overview-toolbar{display:flex;align-items:center;justify-content:space-between;margin:0 0 18px}.overview-grid{display:grid;gap:22px}.section-group{border-top:4px solid var(--blue);background:#fff;padding:14px;border-radius:8px;box-shadow:0 10px 28px rgba(14,40,65,.08)}.section-title{margin:0 0 12px;color:#0056A8}.overview-pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:12px}.overview-tile{display:grid;gap:7px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px;text-align:left;cursor:pointer}.overview-tile.section-first{border-top:5px solid var(--green)}.overview-tile[aria-current="true"],.overview-tile.is-active{border-color:var(--blue);box-shadow:0 10px 28px rgba(0,132,204,.15)}.overview-tile .thumb-real{width:100%}.overview-tile b{font-size:12px;color:#0056A8}.overview-tile span{font-size:11px;color:#60757e}.playback{position:fixed;inset:0;z-index:50;height:100vh;background:#071923;display:grid;place-items:center;cursor:none}.playback-stage{width:100vw;height:100vh;display:grid;place-items:center;overflow:hidden}.progress{position:fixed;left:0;right:0;top:0;height:4px;background:rgba(255,255,255,.18);z-index:80}.progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--green),var(--blue));transition:width .2s}.playback-zone{position:fixed;top:0;bottom:0;border:0;background:transparent;color:transparent;cursor:pointer;z-index:60}.playback-zone.prev{left:0;width:25vw}.playback-zone.center{left:25vw;width:50vw}.playback-zone.next{right:0;width:25vw}.playback-toolbar{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,10px) scale(.96);display:flex;align-items:center;gap:6px;padding:7px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(8,25,35,.72);backdrop-filter:blur(18px) saturate(140%);box-shadow:0 18px 48px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.18);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:85}.playback-control,.playback-exit,.playback-page-pill{height:38px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}.playback-control{width:38px;display:grid;place-items:center;padding:0;font-size:24px;line-height:1;cursor:pointer}.playback-control:hover,.playback-exit:hover{background:rgba(255,255,255,.18)}.playback-page-pill{display:grid;place-items:center;min-width:64px;padding:0 14px;font-weight:800;color:#fff;background:linear-gradient(90deg,rgba(87,158,64,.86),rgba(0,132,204,.86));letter-spacing:0}.playback-exit{padding:0 14px;font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer}.playback.show-ui{cursor:default}.playback.show-ui .playback-toolbar{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}
+button{font:inherit;color:inherit}.app{height:100vh;display:grid;grid-template-rows:auto 1fr}.app[data-view="playback"]{display:block}.app[data-view="playback"] .app-top{display:none}.app-top{height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(10px);overflow:hidden}.brand-lockup{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:12px;min-width:0;max-width:min(620px,calc(100vw - 360px));height:100%}.brand-lockup img{width:42px;max-height:38px;object-fit:contain;box-shadow:none;border-radius:0;background:transparent}.brand-text{min-width:0;display:grid;gap:2px}.brand-title{display:block;color:#0056A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;font-size:15px}.brand-context{display:block;min-width:0;font-size:11px;line-height:1.2;color:#58717c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.icon-btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:7px 12px;cursor:pointer}.icon-btn.primary{background:linear-gradient(90deg,var(--green),var(--blue));color:#fff;border:0}.icon-btn.print-toggle[aria-pressed="false"]{background:#f6fafb;color:#60757e}.current-page-chip{min-width:78px;text-align:center;color:#0056A8;font-weight:700}
+.view{min-height:0}.view[hidden]{display:none!important}.workspace{display:grid;grid-template-columns:var(--rail-width) var(--resizer-width) minmax(0,1fr);height:calc(100vh - 56px);min-height:0}.thumbnail-rail{border-right:1px solid var(--line);background:#f8fbfc;overflow:auto;padding:12px}.rail-resizer{position:relative;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);background:linear-gradient(180deg,#f7fbfc,#edf4f6);cursor:col-resize;padding:0}.rail-resizer::before{content:"";position:absolute;left:50%;top:50%;width:3px;height:52px;border-radius:99px;background:linear-gradient(180deg,var(--green),var(--blue));transform:translate(-50%,-50%);opacity:.55}.rail-resizer:hover::before,.rail-resizer.is-dragging::before{opacity:1}.drawer-handle{display:none}.rail-section{margin:0 0 16px;min-width:0}.rail-section-title{margin:0 0 8px;font-size:12px;color:#0056A8;text-transform:none}.rail-logical-title{margin:10px 0 6px;font-size:13px;color:#466;font-weight:700}.rail-pages{display:grid;gap:10px;min-width:0}.thumb-item{position:relative;display:block;width:100%;min-width:0;max-width:100%;overflow:visible;border:0;background:transparent;border-radius:6px;padding:0;text-align:left;cursor:pointer}.thumb-item[aria-current="true"],.thumb-item.is-active{outline:2px solid var(--blue);outline-offset:2px;background:#fff;box-shadow:0 8px 20px rgba(0,132,204,.12)}html.hide-section-dividers [data-section-divider-entry="true"]{display:none!important}.thumb-label{position:absolute;left:5px;top:5px;z-index:4;min-width:42px;font-size:11px;font-weight:800;color:#fff;background:var(--green);border-radius:4px;text-align:center;padding:4px 6px;box-shadow:0 2px 6px rgba(14,40,65,.18)}.thumb-real{position:relative;display:grid;place-items:center;width:100%;min-width:0;max-width:100%;aspect-ratio:var(--slide-aspect);overflow:hidden;border:1px solid var(--line);border-radius:5px;background:#fff;pointer-events:none}.thumb-real .slide-scale-shell,.overview-tile .slide-scale-shell{max-width:100%;max-height:100%;overflow:hidden}.thumb-real .slide,.overview-tile .slide{overflow:hidden}.thumb-card{display:none;aspect-ratio:var(--slide-aspect);border:1px solid var(--line);border-radius:5px;background:linear-gradient(135deg,#fff,#edf7fb);padding:8px;overflow:hidden;pointer-events:none}.thumb-card span{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:var(--blue);border-radius:3px;padding:2px 6px}.thumb-card strong{display:block;margin-top:8px;font-size:12px;line-height:1.22;color:#0056A8}.thumb-card em{display:block;margin-top:4px;font-style:normal;font-size:10px;color:#60757e}.thumb-card i{display:block;margin-top:8px;height:5px;background:linear-gradient(90deg,var(--green),var(--blue),var(--gold));border-radius:99px}.layout-cover.thumb-card,.layout-section.thumb-card{background:linear-gradient(135deg,var(--green),var(--blue));color:#fff}.layout-cover.thumb-card strong,.layout-cover.thumb-card em,.layout-section.thumb-card strong,.layout-section.thumb-card em{color:#fff}.layout-agenda.thumb-card{background:linear-gradient(135deg,#fff 0 68%,#edf8f6 68%);color:var(--deep);border-top:4px solid var(--blue)}.layout-agenda.thumb-card span{background:var(--green)}.layout-agenda.thumb-card strong{color:#0056A8}.layout-agenda.thumb-card em{color:#60757e}.layout-table.thumb-card{background:repeating-linear-gradient(180deg,#fff 0 17px,#e9f4f7 17px 18px)}.layout-chart.thumb-card i{height:22px;background:linear-gradient(90deg,var(--green) 68%,#e4f0f4 68%)}.layout-media-right.thumb-card,.layout-media-left.thumb-card{background:linear-gradient(90deg,#fff 0 54%,#dfeff4 54%)}.layout-quote.thumb-card{background:linear-gradient(135deg,#fff 0 76%,#f9e9a8 76%)}.layout-closing.thumb-card{background:linear-gradient(135deg,#fff 0 45%,var(--blue) 45%,var(--green) 72%,#fff 72%)}
+.preview-pane{min-width:0;display:grid;grid-template-rows:1fr auto;padding:18px;gap:12px;overflow:hidden}.preview-stage{place-self:stretch;width:100%;height:100%;min-height:0;display:grid;place-items:center;overflow:hidden}.preview-stage,.playback-stage{position:relative}.slide-scale-shell{position:relative;width:var(--scaled-slide-width,var(--slide-design-width));height:var(--scaled-slide-height,var(--slide-design-height));overflow:hidden;background:#fff;contain:paint}.preview-stage .slide-scale-shell,.playback-stage .slide-scale-shell{box-shadow:var(--shadow);outline:1px solid rgba(14,40,65,.18);outline-offset:0}.thumb-real .slide-scale-shell{outline:0;box-shadow:none}.preview-stage.is-transitioning .slide-scale-shell,.playback-stage.is-transitioning .slide-scale-shell{transition:opacity .18s ease}.preview-stage.is-fade-out .slide-scale-shell,.playback-stage.is-fade-out .slide-scale-shell{opacity:.82}.preview-stage.is-fade-in .slide-scale-shell,.playback-stage.is-fade-in .slide-scale-shell{animation:stageFadeIn .18s ease both}@keyframes stageFadeIn{from{opacity:.82}to{opacity:1}}.slide-scale-shell .slide{position:absolute;left:0;top:0;width:var(--slide-design-width);height:var(--slide-design-height);max-width:none;transform:scale(var(--stage-scale,1));transform-origin:top left;pointer-events:none}.preview-meta{display:flex;align-items:center;justify-content:space-between;color:#4f6874;font-size:13px}.overview{height:calc(100vh - 56px);overflow:auto;padding:20px 24px;background:#f4f8fa}.overview-toolbar{display:flex;align-items:center;justify-content:space-between;margin:0 0 18px}.overview-grid{display:grid;gap:22px}.section-group{border-top:4px solid var(--blue);background:#fff;padding:14px;border-radius:8px;box-shadow:0 10px 28px rgba(14,40,65,.08)}.section-title{margin:0 0 12px;color:#0056A8}.overview-pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:14px}.overview-tile{display:grid;grid-template-columns:1fr;grid-template-rows:auto auto auto;align-content:start;gap:7px;border:1px solid #d8e6ec;border-radius:8px;background:#fff;padding:10px;text-align:left;cursor:pointer;box-shadow:0 8px 20px rgba(14,40,65,.06)}.overview-tile.section-first{border-top:4px solid var(--green)}.overview-tile[aria-current="true"],.overview-tile.is-active{border-color:var(--blue);box-shadow:0 10px 28px rgba(0,132,204,.15)}.overview-tile>.thumb-label{display:none}.overview-tile .thumb-real{width:100%;border-radius:6px;border-color:#cfe2ea;background:#f8fbfc}.overview-tile b{display:block;min-width:0;margin-top:1px;font-size:13px;line-height:1.22;color:#0056A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.overview-tile>span:not(.thumb-label){display:block;font-size:11px;line-height:1.15;color:#60757e}.playback{position:fixed;inset:0;z-index:50;height:100vh;background:#071923;display:grid;place-items:center;cursor:none}.playback-stage{width:100vw;height:100vh;display:grid;place-items:center;overflow:hidden;pointer-events:none}.progress{position:fixed;left:0;right:0;top:0;height:4px;background:rgba(255,255,255,.18);z-index:80}.progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--green),var(--blue));transition:width .2s}.playback-zone{position:fixed;top:0;bottom:0;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:transparent!important;appearance:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;cursor:pointer;z-index:60}.playback-zone:focus,.playback-zone:focus-visible,.playback-zone:active{border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:transparent!important}.playback-zone.prev{left:0;width:25vw}.playback-zone.center{left:25vw;width:50vw}.playback-zone.next{right:0;width:25vw}.playback-toolbar{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,10px) scale(.96);display:flex;align-items:center;gap:6px;padding:7px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(8,25,35,.72);backdrop-filter:blur(18px) saturate(140%);box-shadow:0 18px 48px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.18);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:85}.playback-control,.playback-exit,.playback-page-pill{height:38px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}.playback-control{width:38px;display:grid;place-items:center;padding:0;font-size:24px;line-height:1;cursor:pointer}.playback-control:hover,.playback-exit:hover{background:rgba(255,255,255,.18)}.playback-page-pill{display:grid;place-items:center;min-width:64px;padding:0 14px;font-weight:800;color:#fff;background:linear-gradient(90deg,rgba(87,158,64,.86),rgba(0,132,204,.86));letter-spacing:0}.playback-exit{padding:0 14px;font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer}.playback.show-ui{cursor:default}.playback.show-ui .playback-toolbar{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}
 .page-source{display:none}.deck{width:100%;display:grid;justify-items:center;gap:28px;padding:28px 0}.slide{position:relative;width:min(calc(100vw - 32px),calc((100vh - 56px) * var(--slide-ratio)),var(--slide-max-width));aspect-ratio:var(--slide-aspect);height:auto;padding:4.3% 6% 8.2%;display:grid;grid-template-rows:auto auto 1fr;overflow:hidden;isolation:isolate;background:linear-gradient(115deg,#ffffff 0%,#ffffff 58%,#edf7fb 100%);-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .slide::before{content:"";position:absolute;left:0;top:0;width:16px;height:100%;background:linear-gradient(180deg,var(--green),var(--blue));z-index:0}.slide::after{content:"";position:absolute;right:4%;top:2.8%;width:48%;height:8%;background:url("__WAVE_TOP__") right top/contain no-repeat;opacity:.22;z-index:0;pointer-events:none}.slide>*{position:relative;z-index:1}
 .brand-logo{width:min(18%,180px);height:auto;object-fit:contain;align-self:flex-start;box-shadow:none;border-radius:0;background:transparent}.slide-title{position:relative;display:flex;align-items:end;justify-content:space-between;gap:24px;margin:1.5% 0 2%;border-bottom:3px solid var(--blue);padding-bottom:10px}
 .slide-title::before{content:"";position:absolute;right:74px;bottom:-6px;width:118px;height:3px;background:linear-gradient(90deg,var(--green),var(--blue))}.slide-title::after{content:"";position:absolute;right:0;top:-9px;width:72px;height:10px;background:linear-gradient(90deg,var(--green) 0 24px,transparent 24px 31px,var(--blue) 31px 55px,transparent 55px 62px,var(--gold) 62px 72px);opacity:.9}
-.slide-title h2{font-size:44px;line-height:1.08;margin:0;color:#0056A8;font-weight:800}.slide-title span{font-size:16px;color:#fff;background:var(--green);padding:5px 10px;border-radius:4px;min-width:42px;text-align:center}
+.title-lockup{display:flex;align-items:center;gap:14px;min-width:0}.slide-title h2{font-size:44px;line-height:1.08;margin:0;color:#0056A8;font-weight:800;min-width:0}.page-marker{font-size:16px;color:#fff;background:var(--green);padding:5px 10px;border-radius:4px;min-width:42px;text-align:center}
+.semantic-icon{--icon-size:44px;position:relative;display:inline-grid;place-items:center;flex:0 0 var(--icon-size);width:var(--icon-size);height:var(--icon-size);border-radius:14px;background:linear-gradient(135deg,var(--green),var(--blue));box-shadow:0 8px 18px rgba(0,132,204,.18),inset 0 1px 0 rgba(255,255,255,.34);overflow:hidden}.semantic-icon::before,.semantic-icon::after{content:"";position:absolute;box-sizing:border-box}.semantic-icon.mini{--icon-size:30px;border-radius:9px;box-shadow:0 5px 12px rgba(0,132,204,.14)}.title-icon{margin-bottom:1px}.icon-target::before{width:25px;height:25px;border:3px solid rgba(255,255,255,.95);border-radius:50%;box-shadow:inset 0 0 0 5px rgba(255,255,255,.22)}.icon-target::after{width:7px;height:7px;border-radius:50%;background:#fff}.icon-process::before{left:12px;right:12px;top:21px;height:3px;border-radius:99px;background:#fff}.icon-process::after{left:11px;top:15px;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:11px 0 0 #fff,22px 0 0 #fff}.icon-safety::before{width:24px;height:28px;background:rgba(255,255,255,.96);clip-path:polygon(50% 0,86% 14%,80% 67%,50% 100%,20% 67%,14% 14%)}.icon-safety::after{width:13px;height:7px;border-left:3px solid var(--green);border-bottom:3px solid var(--green);transform:rotate(-45deg);top:18px}.icon-risk{background:linear-gradient(135deg,var(--gold),var(--blue))}.icon-risk::before{width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-bottom:25px solid rgba(255,255,255,.96);top:7px}.icon-risk::after{content:"!";top:15px;color:#0E2841;font-size:18px;font-weight:900;line-height:1}.icon-formula::before{content:"fx";color:#fff;font:italic 900 20px Georgia,"Times New Roman",serif;letter-spacing:0}.icon-formula::after{right:8px;bottom:10px;width:16px;height:2px;background:rgba(255,255,255,.8);box-shadow:0 -7px 0 rgba(255,255,255,.52)}.icon-table::before{width:26px;height:22px;border:2px solid #fff;border-radius:3px;background:linear-gradient(90deg,transparent 31%,rgba(255,255,255,.85) 32% 36%,transparent 37% 64%,rgba(255,255,255,.85) 65% 69%,transparent 70%),linear-gradient(180deg,transparent 45%,rgba(255,255,255,.85) 46% 52%,transparent 53%)}.icon-chart::before{left:11px;bottom:11px;width:6px;height:13px;border-radius:2px;background:#fff;box-shadow:10px -7px 0 #fff,20px -13px 0 #fff}.icon-chart::after{left:9px;right:8px;bottom:9px;height:2px;background:rgba(255,255,255,.7)}.icon-media::before{width:27px;height:22px;border:2px solid #fff;border-radius:4px}.icon-media::after{left:12px;right:10px;bottom:12px;height:11px;background:linear-gradient(135deg,transparent 0 38%,#fff 39% 58%,transparent 59%),linear-gradient(45deg,transparent 0 34%,rgba(255,255,255,.72) 35% 58%,transparent 59%)}.icon-reveal::before{width:29px;height:18px;border:3px solid #fff;border-radius:50%;transform:rotate(-7deg)}.icon-reveal::after{width:9px;height:9px;border-radius:50%;background:#fff}.icon-review::before{width:24px;height:24px;border:3px solid #fff;border-radius:50%}.icon-review::after{width:12px;height:7px;border-left:3px solid #fff;border-bottom:3px solid #fff;transform:rotate(-45deg);top:17px}
 main.slide-content,.slide main{min-height:0;overflow:hidden;font-size:28px;line-height:1.38;width:100%;max-width:none;justify-self:stretch}
 .layout-cover{grid-template-rows:auto 1fr;padding:5.3% 7.2% 8.2%;color:#fff;background:radial-gradient(circle at 76% 20%,rgba(255,255,255,.2),transparent 28%),linear-gradient(115deg,rgba(87,158,64,.96),rgba(0,132,204,.96)),#0084CC}
 .layout-cover::before{display:none}
@@ -1006,18 +1747,25 @@ main.slide-content,.slide main{min-height:0;overflow:hidden;font-size:28px;line-
 .cover-hero h1{margin:0;color:#fff;font-size:76px;line-height:1.02;font-weight:850;letter-spacing:0;text-wrap:balance}
 .cover-summary{margin-top:12px;max-width:760px!important;color:rgba(255,255,255,.94);font-size:28px!important;line-height:1.42!important}
 .cover-summary p{margin:0}.cover-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 28px;margin-top:4px;padding-top:14px;width:min(70%,820px);border-top:1px solid rgba(255,255,255,.38);color:rgba(255,255,255,.95);font-size:18px}.cover-details span{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:baseline;gap:9px;min-width:0}.cover-details span:first-child{grid-column:1 / -1}.cover-details b{font-weight:700;color:rgba(255,255,255,.72);white-space:nowrap}.cover-details em{font-style:normal;font-weight:650;color:#fff;min-width:0}.cover-slogan{position:absolute;right:7%;bottom:7.6%;width:min(27%,330px);height:auto;max-height:122px;object-fit:contain;box-shadow:none;border-radius:0;background:transparent}.layout-cover .slide-footer{display:none}.layout-cover figure{margin:.8em 0 0}.layout-cover figure img{max-width:52%;max-height:216px;box-shadow:none;border-radius:4px}.layout-cover figcaption{display:none}
-.layout-agenda{padding:0;color:#fff;background:linear-gradient(90deg,#fafdff 0 34%,#0e2841 34% 100%)}.layout-agenda::before{left:34%;top:0;width:2px;height:100%;background:linear-gradient(180deg,var(--green),var(--gold),var(--blue))}.layout-agenda::after{right:3.5%;top:6%;width:42%;height:9%;opacity:.16;filter:brightness(0) invert(1)}.agenda-kicker{position:absolute;left:7%;top:9%;display:inline-grid;place-items:center;width:104px;height:104px;border:2px solid rgba(0,132,204,.28);border-radius:50%;color:#0056A8;font-size:30px;font-weight:850}.agenda-head{position:absolute;left:7%;top:29%;width:23%;display:grid;gap:18px;color:#0056A8}.agenda-head h2{margin:0;font-size:58px;line-height:1.04;font-weight:850}.agenda-head p{margin:0;width:max-content;padding:8px 13px;background:#eaf5f8;color:#0E2841;border-left:7px solid var(--gold);font-size:18px;font-weight:850}.agenda-list{position:absolute;left:42%;right:7%;top:13%;bottom:18%;display:grid;align-content:center;gap:18px;margin:0;padding:0;list-style:none}.agenda-list li{display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:24px;min-height:92px;border-bottom:1px solid rgba(255,255,255,.2)}.agenda-list li:first-child{border-top:1px solid rgba(255,255,255,.2)}.agenda-list span{font-family:Georgia,"Times New Roman",serif;font-size:54px;line-height:1;color:rgba(242,186,2,.94);font-weight:700}.agenda-list strong{display:block;min-width:0;color:#fff;font-size:50px;line-height:1.08;font-weight:850}.agenda-route{position:absolute;left:36.6%;top:17%;bottom:19%;display:grid;align-content:space-between}.agenda-route i{display:block;width:18px;height:18px;border:4px solid var(--gold);border-radius:50%;background:#0E2841;box-shadow:0 0 0 8px rgba(242,186,2,.12)}.layout-agenda .slide-footer::before{left:34%;background:linear-gradient(90deg,var(--gold),rgba(0,132,204,.58),transparent)}
+.layout-section{padding:0;background:#fff;color:#fff}.layout-section::before{left:0;right:0;top:25%;width:100%;height:75%;background:radial-gradient(circle at 76% 20%,rgba(255,255,255,.2),transparent 28%),linear-gradient(115deg,rgba(87,158,64,.96),rgba(0,132,204,.96)),#0084CC;-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.68) 24%,rgba(0,0,0,1) 45%);mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.68) 24%,rgba(0,0,0,1) 45%);z-index:0}.layout-section::after{display:none}.section-logo{position:absolute;left:7%;top:8%;width:min(23%,230px);height:auto;box-shadow:none;border-radius:0;background:transparent}.section-wave{position:absolute;left:0;top:68%;z-index:1;width:100%;height:auto;max-width:none;max-height:none;object-fit:fill;border-radius:0;background:transparent;box-shadow:none;opacity:1;pointer-events:none}.section-hero{position:absolute;left:7%;right:8%;top:39%;display:grid;grid-template-columns:minmax(0,1fr);align-content:center;gap:18px;z-index:2}.section-kicker{display:inline-grid;justify-self:start;min-width:112px;padding:8px 17px;border-left:6px solid var(--gold);background:rgba(255,255,255,.15);color:rgba(255,255,255,.96);font-size:25px;font-weight:850;letter-spacing:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}.section-hero h1{margin:0;color:#fff;font-size:84px;line-height:1.04;font-weight:850;letter-spacing:0;text-wrap:balance;text-shadow:0 12px 30px rgba(0,45,92,.3)}.section-hero i{display:block;width:min(42%,410px);height:7px;border-radius:99px;background:linear-gradient(90deg,var(--gold),rgba(255,255,255,.78),rgba(255,255,255,0))}
+	.layout-agenda{padding:0;color:var(--deep);background:linear-gradient(115deg,#fff 0 62%,#edf8f6 100%)}.layout-agenda::before{left:0;top:0;width:16px;height:100%;background:linear-gradient(180deg,var(--green),var(--blue))}.layout-agenda::after{right:4%;top:3.5%;width:48%;height:8%;opacity:.2;filter:none}.agenda-kicker{position:absolute;left:20%;top:44%;transform:translate(-50%,-50%);display:block;color:#0056A8;font-size:72px;line-height:1.02;font-weight:850}.agenda-list{position:absolute;left:40%;right:7%;top:12%;bottom:17%;display:grid;align-content:center;gap:14px;margin:0;padding:0;list-style:none}.agenda-list li{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;gap:20px;min-height:80px;padding:14px 22px 14px 18px;border:1px solid #d8e6ec;border-left:7px solid rgba(0,132,204,.7);border-radius:8px;background:rgba(255,255,255,.88);box-shadow:0 10px 24px rgba(14,40,65,.08);cursor:pointer;pointer-events:auto;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.agenda-list li:hover,.agenda-list li:focus-visible{transform:translateX(6px);border-color:rgba(0,132,204,.72);box-shadow:0 12px 28px rgba(0,132,204,.14);outline:none}.agenda-list span{font-family:Georgia,"Times New Roman",serif;font-size:44px;line-height:1;color:var(--green);font-weight:700}.agenda-list strong{display:block;min-width:0;color:#0E2841;font-size:40px;line-height:1.12;font-weight:850}.agenda-route{position:absolute;left:36.8%;top:18%;bottom:20%;width:2px;background:linear-gradient(180deg,rgba(87,158,64,.2),rgba(0,132,204,.72),rgba(242,186,2,.32))}.agenda-route i{display:block;position:absolute;left:50%;width:16px;height:16px;border:4px solid var(--gold);border-radius:50%;background:#fff;box-shadow:0 0 0 7px rgba(242,186,2,.11);transform:translateX(-50%)}.agenda-route i:nth-child(1){top:0}.agenda-route i:nth-child(2){top:50%;transform:translate(-50%,-50%)}.agenda-route i:nth-child(3){bottom:0}.layout-agenda .slide-footer::before{left:16px;background:linear-gradient(90deg,var(--green),rgba(0,132,204,.58),transparent)}
 .layout-closing{padding:0;background:#fff}.layout-closing::before,.layout-closing::after,.layout-closing .slide-title,.layout-closing main,.layout-closing .slide-footer,.layout-closing .brand-logo{display:none}.layout-closing .closing-stage{position:absolute;inset:0;overflow:hidden;background:#fff}.layout-closing .closing-band{position:absolute;left:0;right:0;top:30%;height:31%;background:url("__CLOSING_BG__") center/cover no-repeat}.layout-closing .closing-slogan{position:absolute;left:53%;top:44%;width:min(27%,340px);transform:translate(-50%,-50%);height:auto;box-shadow:none;border-radius:0;background:transparent}.layout-closing .closing-ribbon{position:absolute;left:0;right:0;top:57%;width:100%;height:19%;object-fit:fill;box-shadow:none;border-radius:0;background:transparent}.layout-closing .closing-logo{position:absolute;left:50%;bottom:9%;width:min(30%,380px);transform:translateX(-50%);height:auto;box-shadow:none;border-radius:0;background:transparent}
 .slide p{margin:0 0 28px}.slide ul{margin:6px 0 28px;padding-left:34px}.slide li{margin:8px 0}.slide h3{position:relative;margin:15px 0 13px;padding-left:18px;color:#0056A8}.slide h3::before{content:"";position:absolute;left:0;top:8px;width:8px;height:29px;background:linear-gradient(180deg,var(--green),var(--blue));border-radius:2px}.slide strong{color:#0056A8}.slide code{font-size:18px;line-height:1.25;background:#eef7fb;padding:2px 5px;border-radius:4px}
 .table-wrap{position:relative;overflow:auto;border:1px solid #d8e6ec;border-radius:6px;background:#fff;box-shadow:0 12px 28px rgba(14,40,65,.08)}.table-wrap::before,.chart::before{content:"";position:absolute;right:0;top:0;width:74px;height:5px;background:linear-gradient(90deg,var(--green),var(--blue));z-index:2}table{width:100%;border-collapse:collapse;font-size:.84em}th{background:#0084CC;color:#fff}th,td{padding:13px 14px;border-bottom:1px solid #dfe9ee;text-align:left;vertical-align:top}tr:nth-child(even) td{background:#f7fbfc}
 figure{margin:24px 0;max-width:100%;display:grid;justify-items:center;align-content:start}img,video{max-width:100%;max-height:346px;object-fit:contain;border-radius:6px;background:#fff;box-shadow:0 14px 32px rgba(14,40,65,.13)}figcaption,.caption{width:100%;font-size:21px;line-height:1.3;color:#4b6470;margin-top:8px;text-align:center}
 .layout-media-right main,.layout-media-left main,.layout-media-center main,.layout-media-compare main,.layout-media-chart main{display:grid;gap:18px;align-content:start;min-width:0}.layout-media-right main,.layout-media-left main,.layout-media-chart main{justify-content:center}.layout-media-right main{grid-template-columns:minmax(440px,560px) minmax(240px,max-content);column-gap:52px;align-items:start}.layout-media-left main{grid-template-columns:minmax(240px,max-content) minmax(440px,560px);column-gap:52px;align-items:start}.layout-media-right main figure{grid-column:2;grid-row:1 / span 6;justify-self:center}.layout-media-right main > :not(figure){grid-column:1}.layout-media-left main figure{grid-column:1;grid-row:1 / span 6;justify-self:center}.layout-media-left main > :not(figure){grid-column:2}.layout-media-left main figure,.layout-media-right main figure{width:max-content;max-width:430px}.layout-media-left main img,.layout-media-right main img{max-width:430px;max-height:331px}.layout-media-center main{grid-template-columns:1fr;justify-items:center;text-align:center}.layout-media-center main figure{width:min(76%,780px)}.layout-media-center main figure img{max-height:389px}.layout-media-compare main{grid-template-columns:repeat(2,max-content);justify-content:center;column-gap:52px;row-gap:14px;align-content:start}.layout-media-compare main figure:nth-of-type(1){grid-column:1}.layout-media-compare main figure:nth-of-type(2){grid-column:2}.layout-media-compare main figure{width:max-content;max-width:380px;justify-self:center}.layout-media-compare main img{width:auto;max-width:380px;max-height:288px}.layout-media-compare main p,.layout-media-compare main ul,.layout-media-compare main ol,.layout-media-compare main .warning,.layout-media-compare main .notes{grid-column:1 / -1}.layout-media-chart main{grid-template-columns:minmax(260px,max-content) minmax(420px,560px);column-gap:52px;align-items:start}.layout-media-chart main .chart{grid-column:2;grid-row:1 / span 5}.layout-media-chart main figure{grid-column:1;grid-row:1 / span 5;width:max-content;max-width:430px;justify-self:center}.layout-media-chart main figure img{max-width:430px;max-height:331px}.layout-media-chart main p,.layout-media-chart main ul,.layout-media-chart main ol,.layout-media-chart main .warning,.layout-media-chart main .notes{grid-column:1 / -1}.layout-media-right main figure,.layout-media-left main figure,.layout-media-center main figure,.layout-media-compare main figure,.layout-media-chart main figure{margin:0}.layout-media-right main > :not(figure):not(.notes):not(.warning),.layout-media-left main > :not(figure):not(.notes):not(.warning),.layout-media-center main > :not(figure):not(.notes):not(.warning),.layout-media-compare main > :not(figure):not(.chart):not(.notes):not(.warning),.layout-media-chart main > :not(figure):not(.chart):not(.notes):not(.warning){min-width:0}
 .layout-media-compare main p{font-size:.86em;line-height:1.34;margin-top:2px;text-align:center}
-.chart{position:relative;display:grid;gap:12px;background:#fff;border:1px solid #d8e6ec;border-radius:6px;padding:24px;box-shadow:0 12px 28px rgba(14,40,65,.08)}.chart-row{display:grid;grid-template-columns:190px 1fr 70px;gap:14px;align-items:center;font-size:.86em}.bar{height:24px;background:#e3eff3;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--blue))}
-.formula{position:relative;display:grid;gap:12px;margin:12px 0 24px;padding:18px 24px;background:#f7fbfc;border-radius:4px;font-family:Georgia,"Times New Roman",serif;font-size:1.16em;color:#0056A8}.formula-row{position:relative;display:flex;align-items:center;justify-content:center;min-height:1.55em;padding:0 6em}.formula-line{white-space:normal;line-height:1.5;text-align:center}.formula-number{position:absolute;right:0;top:50%;transform:translateY(-50%);font-family:"Noto Sans SC",Arial,sans-serif;font-size:.78em;color:#0E2841;white-space:nowrap}.formula-line var{font-style:italic}.math-fn{font-style:normal;font-family:Georgia,"Times New Roman",serif}.math-op{display:inline-block;margin:0 .18em}.math-sqrt{display:inline-flex;align-items:flex-start;vertical-align:-.18em;margin:0 .12em}.math-radical{font-size:1.22em;line-height:1.08;margin-right:-.04em}.math-radicand{display:inline-block;border-top:2px solid currentColor;padding:.04em .08em 0 .1em;line-height:1.05}.math-frac{display:inline-grid;grid-template-rows:auto auto;place-items:center;vertical-align:-.45em;margin:0 .14em}.math-frac span:first-child{border-bottom:1.5px solid currentColor;padding:0 .2em .05em}.math-frac span:last-child{padding:.05em .2em 0}
-.alert{display:grid;gap:8px;margin:0 0 18px;padding:14px 16px;border-left:6px solid;border-radius:6px;background:#f7fbfc;font-size:25px;line-height:1.32;break-inside:avoid}.alert:last-child{margin-bottom:0}.alert strong{font-size:20px;line-height:1.1;letter-spacing:0;text-transform:none}.alert p{margin:0;line-height:1.34}.alert-info{border-color:#5b9bd5;background:#eef7ff;color:#164a78}.alert-tip{border-color:#5cb85c;background:#eef9ef;color:#2a5d2a}.alert-warning{border-color:#F2BA02;background:#fff8df;color:#675100}.alert-error{border-color:#d9534f;background:#fff1f0;color:#8d1f1f}.notes{display:none}.video-fallback,.missing-media{display:grid;grid-template-rows:auto auto;align-content:center;justify-items:center;row-gap:8px;width:100%;min-height:180px;padding:16px 20px;border:2px dashed #8ab5c8;border-radius:6px;background:#f5fbfd;text-align:center}.video-fallback div,.missing-media div{font-size:46px;line-height:1;font-weight:800;color:#0084CC}.video-fallback figcaption,.missing-media figcaption{margin:0;font-size:21px;line-height:1.3}.video-fallback code,.missing-media code{display:inline-block;margin-top:4px;font-size:18px;line-height:1.25}
+	.chart{position:relative;display:grid;gap:12px;background:#fff;border:1px solid #d8e6ec;border-radius:6px;padding:24px;box-shadow:0 12px 28px rgba(14,40,65,.08)}.chart-row{display:grid;grid-template-columns:190px 1fr 70px;gap:14px;align-items:center;font-size:.86em}.bar{height:24px;background:#e3eff3;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--blue))}
+	.structure-block{width:100%;max-width:100%;margin:6px 0 22px;font-size:22px;line-height:1.32}.structure-block h3{margin:0 0 6px!important;padding:0!important;font-size:25px;line-height:1.12;color:#0056A8}.structure-block h3::before{display:none}.structure-block p{margin:0;color:#304d5a}.structure-media{margin:0!important;width:100%;min-width:0}.structure-media img{display:block;width:100%;height:100%;max-height:none;object-fit:contain;border-radius:6px;box-shadow:none;background:#f7fbfc}.structure-media.media-broken{min-height:118px;padding:12px}.timeline{display:grid;gap:13px}.timeline-item{position:relative;display:grid;grid-template-columns:126px minmax(0,1fr);gap:18px;align-items:stretch}.timeline-item::before{content:"";position:absolute;left:62px;top:46px;bottom:-18px;width:2px;background:linear-gradient(180deg,rgba(87,158,64,.65),rgba(0,132,204,.18))}.timeline-item:last-child::before{display:none}.timeline-point{display:grid;justify-items:center;align-content:start;gap:8px;color:#0056A8;font-weight:850}.timeline-point span{display:grid;place-items:center;min-width:82px;min-height:34px;padding:5px 9px;border-radius:4px;background:#eef8f5;border:1px solid rgba(87,158,64,.35);font-size:19px}.timeline-card{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-height:86px;padding:14px 16px;border:1px solid var(--line);border-left:6px solid var(--blue);border-radius:6px;background:#fff;box-shadow:0 10px 24px rgba(14,40,65,.08)}.timeline-card-text{display:block;min-width:0}.timeline-card.has-media{grid-template-rows:112px auto;gap:11px;padding:12px 14px;overflow:hidden}.timeline-card .structure-media{height:112px;border-radius:6px;background:#eef7fb}.timeline-horizontal{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.timeline-horizontal .timeline-item{grid-template-columns:1fr;gap:10px}.timeline-horizontal .timeline-item::before{left:50%;right:-56%;top:37px;bottom:auto;width:auto;height:2px}.timeline-horizontal .timeline-card{min-height:190px;border-left:1px solid var(--line);border-top:6px solid var(--blue)}.timeline-horizontal .timeline-card.has-media{min-height:226px}.timeline-horizontal .timeline-card.has-media h3{font-size:22px}.timeline-horizontal .timeline-card.has-media p{font-size:19px;line-height:1.24}.timeline-compact{grid-template-columns:repeat(2,minmax(0,1fr))}.timeline-compact .timeline-item{grid-template-columns:94px minmax(0,1fr);gap:12px}.timeline-compact .timeline-item::before{left:46px}.timeline-compact .timeline-card{min-height:74px;padding:12px 14px}.timeline:not(.timeline-horizontal) .timeline-card.has-media{grid-template-columns:174px minmax(0,1fr);grid-template-rows:auto}.timeline:not(.timeline-horizontal) .timeline-card.has-media .structure-media{height:118px}.card-board{display:grid;grid-template-columns:repeat(var(--card-columns),minmax(0,1fr));gap:14px}.board-card{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:start;gap:12px;min-height:142px;padding:16px;border:1px solid var(--line);border-top:5px solid var(--green);border-radius:6px;background:linear-gradient(180deg,#fff,#f8fbfc);box-shadow:0 10px 24px rgba(14,40,65,.08)}.board-card small{display:inline-block;margin:0 0 7px;padding:3px 7px;border-radius:4px;background:#eef7fb;color:#0056A8;font-size:16px;font-weight:800}.card-board-metrics .board-card{grid-template-columns:1fr;min-height:112px;border-top-color:var(--blue)}.card-board-metrics .semantic-icon{margin-bottom:5px}.gallery{display:grid;gap:14px}.gallery-album{grid-template-columns:repeat(3,minmax(0,1fr))}.gallery-mosaic{grid-template-columns:1.2fr .8fr .8fr}.gallery-strip{grid-template-columns:repeat(4,minmax(0,1fr))}.gallery-item{overflow:hidden;border:1px solid var(--line);border-radius:6px;background:#fff;box-shadow:0 10px 24px rgba(14,40,65,.08)}.gallery-item .structure-media,.gallery-icon-panel{height:152px;background:#eef7fb}.gallery-mosaic .gallery-item:first-child{grid-row:span 2}.gallery-mosaic .gallery-item:first-child .structure-media{height:330px}.gallery-strip .gallery-item .structure-media,.gallery-strip .gallery-icon-panel{height:118px}.gallery-item div:last-child{padding:12px 14px}.gallery-icon-panel{display:grid;place-items:center}.smartart{display:grid;gap:13px}.smartart-item{position:relative;display:grid;grid-template-columns:38px 34px minmax(0,1fr);gap:10px;align-items:start;min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:6px;background:#fff;box-shadow:0 8px 20px rgba(14,40,65,.07)}.smartart-index{display:grid;place-items:center;width:32px;height:32px;border-radius:4px;background:linear-gradient(135deg,var(--green),var(--blue));color:#fff;font-size:17px;font-weight:900}.smartart-list-accent{grid-template-columns:repeat(2,minmax(0,1fr))}.smartart-list-stack{gap:10px}.smartart-list-columns{grid-template-columns:repeat(3,minmax(0,1fr))}.smartart-list-accent .smartart-item,.smartart-list-columns .smartart-item{grid-template-columns:34px 34px minmax(0,1fr);min-height:128px}.smartart-process{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.smartart-process .smartart-item{grid-template-columns:1fr;min-height:166px;border-top:6px solid var(--blue)}.smartart-process-chevron .smartart-item::after,.smartart-process-ribbon .smartart-item::after{content:"";position:absolute;right:-12px;top:50%;width:22px;height:22px;border-top:4px solid rgba(0,132,204,.45);border-right:4px solid rgba(0,132,204,.45);transform:translateY(-50%) rotate(45deg);z-index:2}.smartart-process .smartart-item:last-child::after{display:none}.smartart-cycle{position:relative;grid-template-columns:repeat(4,minmax(0,1fr));padding:48px 14px}.smartart-cycle::before{content:"";position:absolute;left:25%;right:25%;top:50%;height:118px;border:5px solid rgba(0,132,204,.18);border-radius:999px;transform:translateY(-50%)}.smartart-cycle .smartart-item{grid-template-columns:1fr;min-height:132px;background:rgba(255,255,255,.96)}.smartart-cycle-segments .smartart-item{border-top:6px solid var(--green)}.smartart-hierarchy{grid-template-columns:repeat(4,minmax(0,1fr));align-items:start}.smartart-hierarchy .smartart-item:first-child{grid-column:1 / -1;justify-self:center;width:46%;border-top:6px solid var(--blue)}.smartart-hierarchy .smartart-item{grid-template-columns:34px 34px minmax(0,1fr);min-height:116px}.smartart-hierarchy-layers{grid-template-columns:1fr}.smartart-hierarchy-layers .smartart-item{width:var(--layer-width);justify-self:center}.smartart-matrix{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.smartart-matrix .smartart-item{grid-template-columns:34px 34px minmax(0,1fr);min-height:128px}.smartart-matrix-axis{padding:22px;border-left:4px solid var(--green);border-bottom:4px solid var(--blue);background:linear-gradient(135deg,rgba(87,158,64,.06),rgba(0,132,204,.05))}.smartart-matrix-grid .smartart-item:nth-child(odd){border-left:6px solid var(--green)}.smartart-matrix-grid .smartart-item:nth-child(even){border-left:6px solid var(--blue)}.smartart-pyramid{display:flex;flex-direction:column-reverse;align-items:center;gap:8px}.smartart-pyramid .smartart-item{grid-template-columns:42px 34px minmax(0,1fr);width:var(--pyramid-width);min-height:76px;text-align:center;background:linear-gradient(90deg,rgba(87,158,64,.08),rgba(0,132,204,.08),#fff)}.smartart-pyramid-inverted{flex-direction:column}.smartart-picture{grid-template-columns:repeat(3,minmax(0,1fr))}.smartart-picture .smartart-item{grid-template-columns:1fr;grid-template-rows:126px auto;gap:9px;min-height:0;padding:10px}.smartart-picture .smartart-index{position:absolute;left:10px;top:10px;z-index:3}.smartart-picture .semantic-icon{display:none}.smartart-picture .structure-media{height:126px;grid-row:1}.smartart-picture .smartart-item>div{grid-row:2;padding:0 4px}.smartart-picture .smartart-item h3{font-size:22px}.smartart-picture .smartart-item p{font-size:18px;line-height:1.24}.smartart-picture-strip{grid-template-columns:repeat(4,minmax(0,1fr))}.smartart-picture-strip .smartart-item{grid-template-rows:108px auto}.smartart-picture-strip .structure-media{height:108px}
+.smartart-cycle{display:block;position:relative;min-height:360px;padding:10px 18px;margin-top:2px}.smartart-cycle::before{content:"";position:absolute;left:50%;top:50%;width:360px;height:224px;border:7px solid rgba(0,132,204,.2);border-top-color:rgba(87,158,64,.55);border-right-color:rgba(0,132,204,.48);border-bottom-color:rgba(242,186,2,.45);border-left-color:rgba(87,158,64,.42);border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.72) 0 54%,rgba(0,132,204,.05) 55% 100%);transform:translate(-50%,-50%)}.smartart-cycle::after{content:"";position:absolute;left:50%;top:50%;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,rgba(87,158,64,.18),rgba(0,132,204,.16));box-shadow:inset 0 0 0 2px rgba(255,255,255,.8),0 0 0 10px rgba(255,255,255,.38);transform:translate(-50%,-50%)}.smartart-cycle .smartart-item{position:absolute;z-index:2;width:250px;min-height:92px;grid-template-columns:34px 34px minmax(0,1fr);gap:9px;align-items:start;border-left:6px solid var(--green);border-top:1px solid var(--line);background:rgba(255,255,255,.97)}.smartart-cycle .smartart-item h3{font-size:22px!important}.smartart-cycle .smartart-item p{font-size:18px;line-height:1.24}.smartart-cycle .smartart-item:nth-child(1){left:50%;top:0;transform:translateX(-50%)}.smartart-cycle .smartart-item:nth-child(2){right:18px;top:50%;transform:translateY(-50%);border-left-color:var(--blue)}.smartart-cycle .smartart-item:nth-child(3){left:50%;bottom:0;transform:translateX(-50%);border-left-color:var(--gold)}.smartart-cycle .smartart-item:nth-child(4){left:18px;top:50%;transform:translateY(-50%)}.smartart-cycle .smartart-item::after{content:"";position:absolute;z-index:3;width:34px;height:34px;border-top:5px solid rgba(0,132,204,.55);border-right:5px solid rgba(0,132,204,.55);border-radius:3px}.smartart-cycle .smartart-item:nth-child(1)::after{right:-54px;top:62px;transform:rotate(45deg)}.smartart-cycle .smartart-item:nth-child(2)::after{left:72px;bottom:-48px;transform:rotate(135deg)}.smartart-cycle .smartart-item:nth-child(3)::after{left:-54px;top:22px;transform:rotate(225deg)}.smartart-cycle .smartart-item:nth-child(4)::after{right:72px;top:-48px;transform:rotate(315deg)}.gallery{gap:16px;align-items:start}.gallery-album,.gallery-mosaic{grid-template-columns:repeat(3,minmax(0,1fr))}.gallery-item{display:grid;grid-template-rows:168px minmax(116px,auto);min-width:0;border-radius:7px}.gallery-mosaic .gallery-item:first-child{grid-row:auto}.gallery-item .structure-media,.gallery-icon-panel,.gallery-mosaic .gallery-item:first-child .structure-media{height:168px;background:#eef7fb;border-bottom:1px solid #dceaf0}.gallery-item .structure-media img{padding:0;object-fit:contain}.gallery-copy{display:grid;align-content:start;gap:7px;min-width:0;padding:13px 15px 15px;background:linear-gradient(180deg,#fff,#f8fbfc)}.gallery-copy h3{font-size:23px!important;line-height:1.12}.gallery-copy p{font-size:18px;line-height:1.28}.gallery-strip .gallery-item{grid-template-rows:118px minmax(96px,auto)}.gallery-strip .gallery-item .structure-media,.gallery-strip .gallery-icon-panel{height:118px}.gallery-strip .gallery-copy{padding:10px 12px}.gallery-strip .gallery-copy h3{font-size:20px!important}.gallery-strip .gallery-copy p{font-size:16px;line-height:1.22}
+.gallery-item .structure-media{overflow:hidden;display:grid;place-items:center}.gallery-item .structure-media img{width:100%!important;height:100%!important;max-height:100%!important;object-fit:contain!important}
+	.formula{position:relative;display:grid;gap:12px;margin:12px 0 24px;padding:18px 24px;background:#f7fbfc;border-radius:4px;font-family:Georgia,"Times New Roman",serif;font-size:1.16em;color:#0056A8}.formula-row{position:relative;display:flex;align-items:center;justify-content:center;min-height:1.55em;padding:0 6em}.formula-line{white-space:normal;line-height:1.5;text-align:center}.formula-number{position:absolute;right:0;top:50%;transform:translateY(-50%);font-family:"Noto Sans SC",Arial,sans-serif;font-size:.78em;color:#0E2841;white-space:nowrap}.formula-line var{font-style:italic}.math-fn{font-style:normal;font-family:Georgia,"Times New Roman",serif}.math-op{display:inline-block;margin:0 .18em}.math-sqrt{display:inline-flex;align-items:flex-start;vertical-align:-.18em;margin:0 .12em}.math-radical{font-size:1.22em;line-height:1.08;margin-right:-.04em}.math-radicand{display:inline-block;border-top:2px solid currentColor;padding:.04em .08em 0 .1em;line-height:1.05}.math-frac{display:inline-grid;grid-template-rows:auto auto;place-items:center;vertical-align:-.45em;margin:0 .14em}.math-frac span:first-child{border-bottom:1.5px solid currentColor;padding:0 .2em .05em}.math-frac span:last-child{padding:.05em .2em 0}
+.alert{display:grid;grid-template-columns:30px minmax(0,1fr);align-items:start;gap:10px;margin:0 0 18px;padding:14px 16px;border-left:6px solid;border-radius:6px;background:#f7fbfc;font-size:25px;line-height:1.32;break-inside:avoid}.alert:last-child{margin-bottom:0}.alert strong{display:block;font-size:20px;line-height:1.1;letter-spacing:0;text-transform:none}.alert p{margin:4px 0 0;line-height:1.34}.alert-info{border-color:#5b9bd5;background:#eef7ff;color:#164a78}.alert-tip{border-color:#5cb85c;background:#eef9ef;color:#2a5d2a}.alert-warning{border-color:#F2BA02;background:#fff8df;color:#675100}.alert-error{border-color:#d9534f;background:#fff1f0;color:#8d1f1f}.hover-zoom,.peek-trigger{position:relative;display:inline-block;pointer-events:auto;cursor:zoom-in;border-radius:5px;transition:transform .2s ease,color .2s ease,background .2s ease;transform-origin:center;will-change:transform}.hover-zoom:hover,.hover-zoom:focus-visible{transform:scale(var(--hover-zoom-scale,1.16));background:rgba(0,132,204,.08);outline:none}.hover-zoom:hover+.hover-zoom,.hover-zoom:has(+ .hover-zoom:hover){transform:scale(1.07)}.peek-trigger{color:#0056A8;text-decoration:underline;text-decoration-thickness:3px;text-decoration-color:rgba(87,158,64,.45);text-underline-offset:5px}.peek-trigger:hover,.peek-trigger:focus-visible{background:rgba(87,158,64,.08);outline:none}.peek-template{display:none}.peek-trigger-card{position:relative;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:12px;width:min(100%,640px);margin:10px 0 18px;padding:14px 16px;border:1px solid rgba(0,132,204,.24);border-left:6px solid var(--green);border-radius:7px;background:linear-gradient(180deg,#fff,#f7fbfc);box-shadow:0 10px 24px rgba(14,40,65,.08);text-align:left;cursor:zoom-in;pointer-events:auto;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}.peek-trigger-card:hover,.peek-trigger-card:focus-visible{transform:translateY(-2px);border-color:rgba(0,132,204,.58);box-shadow:0 14px 30px rgba(0,132,204,.14);outline:none}.peek-trigger-card strong{display:block;color:#0056A8;font-size:24px;line-height:1.16}.peek-trigger-card small{display:block;margin-top:3px;color:#60757e;font-size:17px;line-height:1.2}.playback .peek-trigger,.playback .peek-trigger-card,.playback .hover-zoom{z-index:70}.peek-popover{position:fixed;left:0;top:0;z-index:120;max-width:calc(100vw - 48px);max-height:calc(100vh - 48px);opacity:0;transform:translateY(8px) scale(.98);pointer-events:none;transition:opacity .18s ease,transform .18s ease}.peek-popover.is-open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}.peek-panel{display:grid;gap:12px;width:min(560px,calc(100vw - 48px));max-height:calc(100vh - 64px);overflow:auto;padding:18px 20px;border:1px solid rgba(0,132,204,.26);border-radius:8px;background:rgba(255,255,255,.97);box-shadow:0 24px 70px rgba(14,40,65,.24),inset 0 1px 0 rgba(255,255,255,.9);backdrop-filter:blur(14px) saturate(130%);color:var(--deep)}.peek-panel.has-media{width:min(820px,calc(100vw - 48px));min-width:min(640px,calc(100vw - 48px))}.peek-title{display:block;color:#0056A8;font-size:24px;line-height:1.18}.peek-body{margin:0;font-size:20px;line-height:1.45;color:#263f4d}.peek-body p{margin:0 0 .55em}.peek-body p:last-child{margin-bottom:0}.peek-media{display:block;width:100%;min-height:min(48vh,420px);max-height:calc(100vh - 210px);object-fit:contain;border-radius:6px;background:#eef6f8}.peek-media.media-broken{min-height:min(48vh,420px);align-content:center}.reveal-target{position:relative}.inline-reveal{display:inline-grid;vertical-align:baseline}.reveal-content{position:relative;z-index:1}.playback .reveal-kind-animate:not(.is-revealed){visibility:hidden}.playback .reveal-kind-reveal:not(.is-revealed){visibility:hidden}.playback .reveal-kind-reveal:not(.is-revealed)::after{content:"";visibility:visible;position:absolute;inset:-4px -7px;border-radius:6px;background:linear-gradient(90deg,#e8f2f5,#dbecef);border:1px solid rgba(0,132,204,.22)}.playback .reveal-kind-mask:not(.is-revealed)>.reveal-content{visibility:hidden}.playback .reveal-kind-mask:not(.is-revealed)::after{content:"";position:absolute;inset:-4px -7px;border-radius:6px;background:linear-gradient(90deg,#e8f2f5,#dbecef);border:1px solid rgba(0,132,204,.24);box-shadow:inset 0 0 0 1px rgba(255,255,255,.65);z-index:2}.playback .reveal-kind-mask.is-newly-revealed::after,.playback .reveal-kind-reveal.is-newly-revealed::after{content:"";position:absolute;inset:-4px -7px;border-radius:6px;background:linear-gradient(90deg,#e8f2f5,#dbecef);border:1px solid rgba(0,132,204,.22);z-index:2;pointer-events:none;animation:maskClear .24s ease both}.playback .reveal-kind-animate.is-newly-revealed,.playback .reveal-kind-mask.is-newly-revealed>.reveal-content,.playback .reveal-kind-reveal.is-newly-revealed>.reveal-content{animation:bodyEnter .22s ease both}.playback .body-animate-page main.slide-content>*{animation:bodyEnter .24s ease both}.reveal-kind-emphasis.is-revealed,.emphasis-underline.is-revealed{text-decoration:underline;text-decoration-thickness:5px;text-decoration-color:rgba(242,186,2,.88);text-underline-offset:7px;background:rgba(87,158,64,.08);border-radius:4px}.playback .reveal-kind-emphasis.is-newly-revealed{animation:emphasisSettle .22s ease both}@keyframes bodyEnter{from{opacity:.35;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}@keyframes maskClear{from{opacity:1;clip-path:inset(0 0 0 0)}to{opacity:0;clip-path:inset(0 0 0 100%)}}@keyframes emphasisSettle{from{opacity:.78;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}.sort-list{display:grid;gap:12px;margin:0 0 20px}.sort-item{display:grid;grid-template-columns:44px 1fr;align-items:center;gap:14px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:10px 14px;transition:border-color .2s,background .2s}.sort-item i{display:grid;place-items:center;width:34px;height:34px;border-radius:6px;background:var(--blue);color:#fff;font-style:normal;font-weight:850;opacity:1;transform:scale(1);transition:opacity .2s,transform .2s}.playback .sort-item:not(.is-revealed) i{opacity:0;transform:scale(.88)}.sort-list.is-sorted .sort-item{order:var(--sort-order);background:#f4fbf2;border-color:rgba(87,158,64,.62)}.sort-list.is-sorting .sort-item{box-shadow:0 8px 18px rgba(0,132,204,.12)}@media(prefers-reduced-motion:reduce){.hover-zoom,.peek-trigger,.peek-trigger-card,.peek-popover,.playback .reveal-kind-animate.is-newly-revealed,.playback .reveal-kind-mask.is-newly-revealed>.reveal-content,.playback .reveal-kind-reveal.is-newly-revealed>.reveal-content,.playback .reveal-kind-mask.is-newly-revealed::after,.playback .reveal-kind-reveal.is-newly-revealed::after,.playback .reveal-kind-emphasis.is-newly-revealed,.playback .body-animate-page main.slide-content>*{animation:none;transition:none}.hover-zoom:hover,.hover-zoom:focus-visible,.hover-zoom:hover+.hover-zoom,.hover-zoom:has(+ .hover-zoom:hover),.peek-trigger-card:hover,.peek-trigger-card:focus-visible,.peek-popover{transform:none}.sort-item,.sort-item i{transition:none}}.notes{display:none}.video-fallback,.missing-media{display:grid;grid-template-rows:auto auto;align-content:center;justify-items:center;row-gap:9px;width:100%;min-height:150px;padding:16px 20px;border:1.5px dashed #9fb7c4;border-radius:6px;background:#f7fbfd;text-align:center}.media-broken figcaption{margin:0;font-size:0;line-height:1.1;color:#526a76}.media-broken code,.media-broken a{display:inline-block;max-width:100%;font-family:"SFMono-Regular",Consolas,monospace;font-size:16px;line-height:1.2;color:#526a76;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.broken-media-icon{position:relative;width:72px;height:58px;border:4px solid #8ea8b6;border-radius:6px;background:#fff;box-shadow:inset 0 0 0 2px #f0f5f7}.broken-media-icon::before{content:"";position:absolute;left:10px;right:10px;bottom:9px;height:22px;background:linear-gradient(135deg,transparent 0 35%,#9fb7c4 36% 55%,transparent 56%),linear-gradient(45deg,transparent 0 34%,#c5d4db 35% 56%,transparent 57%);opacity:.95}.broken-media-icon::after{content:"";position:absolute;right:11px;top:10px;width:10px;height:10px;border-radius:50%;background:#9fb7c4}.broken-video{border-radius:8px}.broken-video::before{left:24px;right:auto;top:13px;bottom:auto;width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:23px solid #8ea8b6;background:none}.broken-video::after{left:12px;right:12px;top:50%;width:auto;height:0;border-radius:0;border-top:4px solid #c05050;background:none;transform:rotate(-18deg)}
+.smartart-picture{gap:16px}.smartart-picture .smartart-item{display:grid;grid-template-columns:1fr;grid-template-rows:158px minmax(96px,auto);gap:0;min-height:0;padding:0;overflow:hidden;border-radius:7px}.smartart-picture .smartart-index{left:10px;top:10px;z-index:4;box-shadow:0 4px 12px rgba(14,40,65,.18)}.smartart-picture .structure-media{position:relative;grid-row:1;height:158px;margin:0!important;overflow:hidden;border-bottom:1px solid #dceaf0;background:#eef7fb}.smartart-picture .structure-media img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;box-shadow:none}.smartart-picture .smartart-item>div{grid-row:2;padding:13px 15px 15px;background:linear-gradient(180deg,#fff,#f8fbfc)}.smartart-picture .smartart-item h3{font-size:23px!important;line-height:1.12}.smartart-picture .smartart-item p{font-size:18px;line-height:1.28}.smartart-picture-strip .smartart-item{grid-template-rows:118px minmax(88px,auto)}.smartart-picture-strip .structure-media{height:118px}.smartart-picture-strip .smartart-item>div{padding:10px 12px}.smartart-picture-strip .smartart-item h3{font-size:20px!important}.smartart-picture-strip .smartart-item p{font-size:16px;line-height:1.22}.gallery-item .structure-media{position:relative}.gallery-item .structure-media img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important}
+.playback .reveal-kind-mask:not(.inline-reveal):not(.is-revealed)::after,.playback .reveal-kind-reveal:not(.inline-reveal):not(.is-revealed)::after,.playback .reveal-kind-mask:not(.inline-reveal).is-newly-revealed::after,.playback .reveal-kind-reveal:not(.inline-reveal).is-newly-revealed::after{left:0;right:0;box-sizing:border-box}
+.timeline-media{display:none}.timeline-horizontal.timeline-with-media{grid-template-columns:1fr;gap:12px}.timeline-horizontal.timeline-with-media .timeline-track{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.timeline-horizontal.timeline-with-media .timeline-item{grid-template-columns:1fr;gap:8px}.timeline-horizontal.timeline-with-media .timeline-item::before{left:50%;right:-56%;top:37px;bottom:auto;width:auto;height:2px}.timeline-horizontal.timeline-with-media .timeline-item:last-child::before{display:none}.timeline-horizontal.timeline-with-media .timeline-card{min-height:118px;padding:11px 14px;border-left:1px solid var(--line);border-top:6px solid var(--blue)}.timeline-horizontal.timeline-with-media .timeline-item.has-media .timeline-card{border-top-color:var(--green);background:linear-gradient(180deg,#fff,#f5fbf7)}.timeline-horizontal.timeline-with-media .timeline-card h3{font-size:22px!important;line-height:1.08;margin-bottom:4px!important}.timeline-horizontal.timeline-with-media .timeline-card p{font-size:17px;line-height:1.18}.timeline-feature-panel{display:grid;gap:12px;min-width:0}.timeline-feature-card{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:16px;align-items:stretch;min-height:300px;padding:12px;border:1px solid #d8e6ec;border-radius:7px;background:linear-gradient(180deg,#fff,#f7fbfc);box-shadow:0 10px 24px rgba(14,40,65,.08)}.timeline-feature-card .structure-media{position:relative;height:100%;min-height:276px;margin:0!important;overflow:hidden;border-radius:6px;background:#eef7fb;border:1px solid #dceaf0}.timeline-feature-card .structure-media img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;box-shadow:none}.timeline-feature-caption{display:grid;align-content:center;gap:8px;min-width:0;padding:14px 18px;border-left:5px solid var(--green);background:rgba(238,248,245,.72);border-radius:5px}.timeline-feature-caption small{color:var(--green);font-size:19px;line-height:1;font-weight:850}.timeline-feature-caption strong{color:#0056A8;font-size:30px;line-height:1.12}.timeline-feature-caption span{color:#304d5a;font-size:21px;line-height:1.32}.timeline:not(.timeline-horizontal) .timeline-card.has-media{grid-template-columns:174px minmax(0,1fr);grid-template-rows:auto}.timeline:not(.timeline-horizontal) .timeline-card.has-media .structure-media{height:118px}
 .slide-footer{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:2;pointer-events:none}.slide-footer::before{content:"";position:absolute;left:16px;right:0;top:-2px;height:2px;background:linear-gradient(90deg,rgba(87,158,64,.85),rgba(0,132,204,.45),transparent)}.footer-band{display:block;width:100%;height:auto;max-height:none;object-fit:fill;box-shadow:none;border-radius:0;background:transparent}.footer-logo{position:absolute;left:3.4%;bottom:12%;width:13.5%;min-width:118px;max-width:178px;height:auto;box-shadow:none;border-radius:0;background:transparent}
-@media print{body{overflow:visible}.app-top,.thumbnail-rail,.rail-resizer,.drawer-handle,.preview-meta,.overview,.playback,.page-source{display:none!important}.workspace{display:block;height:auto}.preview-stage{width:100%;display:block}.slide-scale-shell{width:100%;height:auto}.slide-scale-shell .slide{position:relative;transform:none}.preview-stage .slide{page-break-after:always;width:100%;height:auto;box-shadow:none}}@media(max-width:1040px){:root{--rail-width:230px}.preview-pane{padding:14px}.brand-lockup{max-width:calc(100vw - 230px);grid-template-columns:38px minmax(0,1fr)}.brand-lockup img{width:38px;max-height:34px}.brand-context{display:none}.top-actions .icon-btn{padding:7px 10px}.thumb-item{grid-template-columns:36px 1fr;gap:6px}.thumb-label{font-size:11px}}@media(max-width:680px){body{overflow:hidden}.app-top{position:sticky;top:0;z-index:40;padding:0 10px}.workspace{grid-template-columns:1fr;height:calc(100vh - 56px);overflow:hidden}.thumbnail-rail{position:fixed;left:0;top:56px;bottom:0;width:min(84vw,330px);max-width:calc(100vw - 44px);z-index:45;border-right:1px solid var(--line);border-bottom:0;box-shadow:18px 0 46px rgba(14,40,65,.22);transform:translateX(calc(-100% - 2px));transition:transform .24s cubic-bezier(.22,1,.36,1);max-height:none}.app.rail-open .thumbnail-rail{transform:translateX(0)}.rail-resizer{display:none}.drawer-handle{position:fixed;left:0;top:50%;z-index:46;display:grid;place-items:center;width:34px;height:76px;border:1px solid rgba(0,132,204,.28);border-left:0;border-radius:0 16px 16px 0;background:linear-gradient(180deg,var(--green),var(--blue));color:#fff;font-weight:850;box-shadow:0 10px 28px rgba(14,40,65,.24);transform:translateY(-50%);cursor:pointer}.drawer-handle::before{content:"☰";font-size:20px;line-height:1}.app.rail-open .drawer-handle{left:min(84vw,330px);transform:translate(-34px,-50%);border-radius:16px;background:rgba(14,40,65,.86);backdrop-filter:blur(12px)}.preview-pane{height:100%;min-height:0;padding:12px 10px 10px}.preview-meta{font-size:12px}.thumb-real{display:none}.thumb-card{display:block}.overview{height:auto}.brand-title{font-size:13px}.current-page-chip{min-width:46px}.top-actions{gap:5px}.top-actions .icon-btn{padding:7px 8px}}
+@media print{body{overflow:visible}.app-top,.thumbnail-rail,.rail-resizer,.drawer-handle,.preview-meta,.overview,.playback,.page-source{display:none!important}.workspace{display:block;height:auto}.preview-stage{width:100%;display:block}.slide-scale-shell{width:100%;height:auto}.slide-scale-shell .slide{position:relative;transform:none}.preview-stage .slide{page-break-after:always;width:100%;height:auto;box-shadow:none}html.skip-section-dividers .slide[data-section-divider="true"]{display:none!important}}@media(max-width:1040px){:root{--rail-width:230px}.preview-pane{padding:14px}.brand-lockup{max-width:calc(100vw - 230px);grid-template-columns:38px minmax(0,1fr)}.brand-lockup img{width:38px;max-height:34px}.brand-context{display:none}.top-actions .icon-btn{padding:7px 10px}.thumb-label{font-size:11px}}@media(max-width:680px){body{overflow:hidden}.app-top{position:sticky;top:0;z-index:40;padding:0 10px}.workspace{grid-template-columns:1fr;height:calc(100vh - 56px);overflow:hidden}.thumbnail-rail{position:fixed;left:0;top:56px;bottom:0;width:min(84vw,330px);max-width:calc(100vw - 44px);z-index:45;border-right:1px solid var(--line);border-bottom:0;box-shadow:18px 0 46px rgba(14,40,65,.22);transform:translateX(calc(-100% - 2px));transition:transform .24s cubic-bezier(.22,1,.36,1);max-height:none}.app.rail-open .thumbnail-rail{transform:translateX(0)}.rail-resizer{display:none}.drawer-handle{position:fixed;left:0;top:50%;z-index:46;display:grid;place-items:center;width:34px;height:76px;border:1px solid rgba(0,132,204,.28);border-left:0;border-radius:0 16px 16px 0;background:linear-gradient(180deg,var(--green),var(--blue));color:#fff;font-weight:850;box-shadow:0 10px 28px rgba(14,40,65,.24);transform:translateY(-50%);cursor:pointer}.drawer-handle::before{content:"☰";font-size:20px;line-height:1}.app.rail-open .drawer-handle{left:min(84vw,330px);transform:translate(-34px,-50%);border-radius:16px;background:rgba(14,40,65,.86);backdrop-filter:blur(12px)}.preview-pane{height:100%;min-height:0;padding:12px 10px 10px}.preview-meta{font-size:12px}.thumb-real{display:none}.thumb-card{display:block}.overview{height:auto}.brand-title{font-size:13px}.current-page-chip{min-width:46px}.top-actions{gap:5px}.top-actions .icon-btn{padding:7px 8px}}
 """
     css = css.replace("__RATIO_CSS__", f"--slide-aspect:{page_ratio_width} / {page_ratio_height};--slide-ratio:{page_ratio_value:.8f}")
     css = css.replace("__CLOSING_BG__", closing_bg_uri)
@@ -1036,7 +1784,7 @@ figure{margin:24px 0;max-width:100%;display:grid;justify-items:center;align-cont
             if not isinstance(logical, dict):
                 continue
             display_logical_index = logical.get("display_logical_index", logical.get("logical_index"))
-            logical_heading = f"{display_logical_index}. {logical['logical_title']}" if str(display_logical_index).isdigit() else f"{display_logical_index} {logical['logical_title']}"
+            logical_heading = f"{display_logical_index} {logical['logical_title']}"
             rail_parts.append(f"<h4 class=\"rail-logical-title\">{html.escape(str(logical_heading))}</h4><div class=\"rail-pages\">")
             physical_pages = logical["physical_pages"] if isinstance(logical["physical_pages"], list) else []
             for record in physical_pages:
@@ -1060,20 +1808,198 @@ const SLIDE_DESIGN_WIDTH = 1280;
 const SLIDE_RATIO = {page_ratio_value:.8f};
 const SLIDE_DESIGN_HEIGHT = Math.round(SLIDE_DESIGN_WIDTH / SLIDE_RATIO);
 let currentPageIndex = 0;
+let currentRevealStep = 0;
 let viewMode = 'workspace';
 let toolbarTimer = null;
 let transitionSerial = 0;
+let manualRevealKeys = new Set();
+let showSectionDividers = true;
 
 function sourcePage(page) {{
   return document.querySelector('.page-source [data-page-id=\"' + page.page_id + '\"]');
 }}
 
-function buildStageShell(page) {{
+function maxRevealStep(page) {{
+  return Array.isArray(page.reveal_steps) ? page.reveal_steps.length : 0;
+}}
+
+function isSectionDividerPage(page) {{
+  return page?.is_section_divider === true || page?.print_optional === 'section-divider';
+}}
+
+function isPageVisibleInUi(page) {{
+  return showSectionDividers || !isSectionDividerPage(page);
+}}
+
+function visiblePageIndexes() {{
+  return pages.map((page, index) => isPageVisibleInUi(page) ? index : -1).filter((index) => index >= 0);
+}}
+
+function nearestVisiblePageIndex(index, direction = 1) {{
+  if (!pages.length) return -1;
+  const clamped = Math.max(0, Math.min(pages.length - 1, index));
+  if (isPageVisibleInUi(pages[clamped])) return clamped;
+  const primary = direction >= 0 ? 1 : -1;
+  for (let i = clamped + primary; i >= 0 && i < pages.length; i += primary) {{
+    if (isPageVisibleInUi(pages[i])) return i;
+  }}
+  for (let i = clamped - primary; i >= 0 && i < pages.length; i -= primary) {{
+    if (isPageVisibleInUi(pages[i])) return i;
+  }}
+  return clamped;
+}}
+
+	function adjacentVisiblePageIndex(index, direction) {{
+	  const step = direction >= 0 ? 1 : -1;
+	  for (let i = index + step; i >= 0 && i < pages.length; i += step) {{
+	    if (isPageVisibleInUi(pages[i])) return i;
+	  }}
+	  return -1;
+	}}
+
+	function agendaTargetPageIndex(sectionIndex) {{
+	  const targetSection = Number(sectionIndex);
+	  if (!Number.isFinite(targetSection)) return -1;
+	  const sectionPages = pages
+	    .map((page, index) => ({{page, index}}))
+	    .filter((entry) => Number(entry.page.section_index) === targetSection);
+	  if (!sectionPages.length) return -1;
+	  const divider = sectionPages.find((entry) => isSectionDividerPage(entry.page) && isPageVisibleInUi(entry.page));
+	  if (showSectionDividers && divider) return divider.index;
+	  const firstContent = sectionPages.find((entry) => (
+	    isPageVisibleInUi(entry.page)
+	    && !isSectionDividerPage(entry.page)
+	    && !['cover','agenda','closing'].includes(String(entry.page.layout || ''))
+	  ));
+	  if (firstContent) return firstContent.index;
+	  const firstVisible = sectionPages.find((entry) => isPageVisibleInUi(entry.page));
+	  return firstVisible ? firstVisible.index : -1;
+	}}
+
+	function navigateAgendaSection(sectionIndex) {{
+	  const target = agendaTargetPageIndex(sectionIndex);
+	  if (target < 0) return;
+	  selectPage(target, {{animate:true, direction: target >= currentPageIndex ? 1 : -1}});
+	  if (isMobileRailMode()) closeRailDrawer();
+	}}
+
+function visiblePriorities(page, stepIndex) {{
+  const steps = Array.isArray(page.reveal_steps) ? page.reveal_steps : [];
+  return new Set(steps.filter((step) => Number(step.step_index) <= stepIndex).map((step) => String(step.priority)));
+}}
+
+	function revealTargetKey(page, target, index) {{
+	  return page.page_id + ':' + index + ':' + (target.dataset.revealKind || '') + ':' + (target.dataset.revealOrder || '');
+	}}
+
+	function stepSatisfiedBeforeAdvance(page, stepIndex, currentStep) {{
+	  const step = Array.isArray(page.reveal_steps) ? page.reveal_steps.find((item) => Number(item.step_index) === stepIndex) : null;
+	  if (!step) return false;
+	  const order = String(step.priority);
+	  const priorities = visiblePriorities(page, currentStep);
+	  const stage = document.getElementById('playback-stage');
+	  if (!stage) return false;
+	  const targets = [...stage.querySelectorAll('[data-reveal-order]')];
+	  const stepTargets = targets
+	    .map((target, index) => ({{target, index}}))
+	    .filter((entry) => String(entry.target.dataset.revealOrder) === order);
+	  if (!stepTargets.length) return false;
+	  return stepTargets.every((entry) => (
+	    priorities.has(order) || manualRevealKeys.has(revealTargetKey(page, entry.target, entry.index))
+	  ));
+	}}
+
+	function nextPendingRevealStep(page) {{
+	  const maxStep = maxRevealStep(page);
+	  for (let step = currentRevealStep + 1; step <= maxStep; step += 1) {{
+	    if (!stepSatisfiedBeforeAdvance(page, step, currentRevealStep)) return step;
+	  }}
+	  return maxStep + 1;
+	}}
+
+function captureSortItemRects(list) {{
+  return new Map([...list.querySelectorAll(':scope > .sort-item')].map((item) => [item, item.getBoundingClientRect()]));
+}}
+
+function stageScaleFor(element) {{
+  const shell = element.closest('.slide-scale-shell');
+  const raw = shell ? getComputedStyle(shell).getPropertyValue('--stage-scale') : '1';
+  const scale = Number.parseFloat(raw);
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}}
+
+function animateSortFinal(list, beforeRects) {{
+  const items = [...list.querySelectorAll(':scope > .sort-item')];
+  const moving = [];
+  const scale = stageScaleFor(list);
+  items.forEach((item) => {{
+    const before = beforeRects.get(item);
+    if (!before) return;
+    const after = item.getBoundingClientRect();
+    const dx = (before.left - after.left) / scale;
+    const dy = (before.top - after.top) / scale;
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+    item.style.transition = 'none';
+    item.style.transform = 'translate(' + dx.toFixed(2) + 'px,' + dy.toFixed(2) + 'px)';
+    item.style.zIndex = '3';
+    moving.push(item);
+  }});
+  if (!moving.length) return;
+  list.classList.add('is-sorting');
+  list.getBoundingClientRect();
+  requestAnimationFrame(() => {{
+    moving.forEach((item) => {{
+      item.style.transition = 'transform .28s ease, border-color .2s, background .2s';
+      item.style.transform = 'translate(0,0)';
+    }});
+    window.setTimeout(() => {{
+      list.classList.remove('is-sorting');
+      moving.forEach((item) => {{
+        item.style.transition = '';
+        item.style.transform = '';
+        item.style.zIndex = '';
+      }});
+    }}, 330);
+  }});
+}}
+
+function applyRevealStateToRoot(root, page, stepIndex, showAll = false, options = {{}}) {{
+  if (!root) return;
+  const priorities = visiblePriorities(page, showAll ? maxRevealStep(page) : stepIndex);
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const animateNew = options.animateNew === true && !showAll && !reduceMotion;
+  const previousPriorities = animateNew ? visiblePriorities(page, Number(options.previousStep) || 0) : new Set();
+  root.querySelectorAll('[data-reveal-order]').forEach((target, index) => {{
+    target.classList.remove('is-newly-revealed');
+    const order = String(target.dataset.revealOrder);
+	    const manualVisible = manualRevealKeys.has(revealTargetKey(page, target, index));
+	    const visible = showAll || priorities.has(String(target.dataset.revealOrder)) || manualVisible;
+	    const animateSort = animateNew && visible && target.dataset.revealKind === 'sort-final' && priorities.has(order) && !previousPriorities.has(order);
+	    const sortRects = animateSort ? captureSortItemRects(target) : null;
+	    target.classList.toggle('is-revealed', visible);
+	    const shouldAnimateTarget = animateNew && visible && priorities.has(order) && !previousPriorities.has(order) && !manualVisible;
+    if (shouldAnimateTarget && ['animate','mask','reveal','emphasis'].includes(target.dataset.revealKind || '')) {{
+      target.classList.add('is-newly-revealed');
+      window.setTimeout(() => target.classList.remove('is-newly-revealed'), 320);
+    }}
+    if (target.dataset.revealKind === 'sort-final') {{
+      target.classList.toggle('is-sorted', visible);
+      if (sortRects) animateSortFinal(target, sortRects);
+    }}
+  }});
+}}
+
+function resetManualRevealState() {{
+  manualRevealKeys = new Set();
+}}
+
+function buildStageShell(page, stepIndex = maxRevealStep(page), showAll = true, options = {{}}) {{
   const source = sourcePage(page);
   if (!source) return null;
   const shell = document.createElement('div');
   shell.className = 'slide-scale-shell';
   shell.appendChild(source.cloneNode(true));
+  applyRevealStateToRoot(shell, page, stepIndex, showAll, options);
   return shell;
 }}
 
@@ -1085,9 +2011,10 @@ function clearStageTransition(stage) {{
   stage.classList.remove('is-transitioning','is-fade-out','is-fade-in');
 }}
 
-function clonePageInto(stageId, page, animate = false) {{
+function clonePageInto(stageId, page, animate = false, options = {{}}) {{
   const stage = document.getElementById(stageId);
-  const shell = buildStageShell(page);
+  const showAll = options.showAll ?? stageId !== 'playback-stage';
+  const shell = buildStageShell(page, options.step ?? (showAll ? maxRevealStep(page) : 0), showAll, options);
   if (!stage || !shell) return;
   const oldShells = [...stage.querySelectorAll('.slide-scale-shell')];
   const oldShell = oldShells.at(-1);
@@ -1127,13 +2054,14 @@ function renderThumbnailClones() {{
     const page = pages.find((item) => item.page_id === pageId);
     const source = page ? sourcePage(page) : null;
     if (!source) return;
-    const shell = document.createElement('div');
-    shell.className = 'slide-scale-shell';
-    shell.appendChild(source.cloneNode(true));
-    target.replaceChildren(shell);
-    fitStage(target);
-  }});
-}}
+	    const shell = document.createElement('div');
+	    shell.className = 'slide-scale-shell';
+	    shell.appendChild(source.cloneNode(true));
+	    applyRevealStateToRoot(shell, page, maxRevealStep(page), true);
+	    target.replaceChildren(shell);
+	    fitStage(target);
+	  }});
+	}}
 
 function fitStage(stage) {{
   if (!stage) return;
@@ -1154,6 +2082,140 @@ function fitVisibleStages() {{
   fitStage(document.getElementById('preview-stage'));
   fitStage(document.getElementById('playback-stage'));
   document.querySelectorAll('.thumb-real').forEach(fitStage);
+}}
+
+function applyRevealState(stageId, page, stepIndex, options = {{}}) {{
+  const stage = document.getElementById(stageId);
+  if (!stage) return;
+  const showAll = stageId === 'preview-stage';
+  applyRevealStateToRoot(stage, page, showAll ? maxRevealStep(page) : stepIndex, showAll, options);
+}}
+
+function maskTargetAtPoint(clientX, clientY) {{
+  const stage = document.getElementById('playback-stage');
+  if (!stage) return null;
+  const targets = [...stage.querySelectorAll('.reveal-kind-mask[data-reveal-order]:not(.is-revealed)')];
+  return targets.find((target) => {{
+    const rect = target.getBoundingClientRect();
+    return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+  }}) || null;
+}}
+
+function revealMaskAtPoint(event) {{
+  if (viewMode !== 'playback') return false;
+  const target = maskTargetAtPoint(event.clientX, event.clientY);
+  if (!target) return false;
+  const stage = document.getElementById('playback-stage');
+  const page = pages[currentPageIndex];
+  const index = [...stage.querySelectorAll('[data-reveal-order]')].indexOf(target);
+  if (index < 0) return false;
+  manualRevealKeys.add(revealTargetKey(page, target, index));
+  applyRevealState('playback-stage', page, currentRevealStep);
+  revealPlaybackToolbar();
+  return true;
+}}
+
+let peekHoverTimer = null;
+let peekLeaveTimer = null;
+let activePeek = null;
+let spaceHoldTimer = null;
+let spaceHoldTrigger = null;
+let spaceHoldOpened = false;
+let playbackHoverTrigger = null;
+
+function peekTriggerMode(trigger) {{
+  return trigger?.dataset?.peekTrigger || 'both';
+}}
+
+function peekAllows(trigger, action) {{
+  const mode = peekTriggerMode(trigger);
+  return mode === 'both' || mode === action;
+}}
+
+function peekTriggerAtPoint(clientX, clientY) {{
+  const stage = document.getElementById('playback-stage');
+  if (!stage) return null;
+  const triggers = [...stage.querySelectorAll('[data-peek-trigger]')];
+  return triggers.find((trigger) => {{
+    const rect = trigger.getBoundingClientRect();
+    return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+  }}) || null;
+}}
+
+function peekTriggerFromEvent(event) {{
+  return event.target.closest?.('[data-peek-trigger]') || (viewMode === 'playback' ? peekTriggerAtPoint(event.clientX, event.clientY) : null);
+}}
+
+function ensurePeekPopover() {{
+  let popover = document.getElementById('peek-popover');
+  if (!popover) {{
+    popover = document.createElement('div');
+    popover.id = 'peek-popover';
+    popover.className = 'peek-popover';
+    popover.setAttribute('role', 'dialog');
+    popover.setAttribute('aria-live', 'polite');
+    document.body.appendChild(popover);
+    popover.addEventListener('pointerenter', () => window.clearTimeout(peekLeaveTimer));
+    popover.addEventListener('pointerleave', () => {{
+      if (activePeek && !activePeek.pinned) closePeek();
+    }});
+  }}
+  return popover;
+}}
+
+function positionPeek(trigger) {{
+  const popover = document.getElementById('peek-popover');
+  if (!popover || !trigger) return;
+  const rect = trigger.getBoundingClientRect();
+  const popRect = popover.getBoundingClientRect();
+  const margin = 24;
+  let left = rect.left + rect.width / 2 - popRect.width / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - popRect.width - margin));
+  let top = rect.bottom + 14;
+  if (top + popRect.height > window.innerHeight - margin) {{
+    top = rect.top - popRect.height - 14;
+  }}
+  top = Math.max(margin, Math.min(top, window.innerHeight - popRect.height - margin));
+  popover.style.left = left.toFixed(1) + 'px';
+  popover.style.top = top.toFixed(1) + 'px';
+}}
+
+function openPeek(trigger, options = {{}}) {{
+  if (!trigger) return;
+  const template = trigger.querySelector(':scope > .peek-template');
+  if (!template) return;
+  const popover = ensurePeekPopover();
+  const pinned = options.pinned === true;
+  popover.replaceChildren(template.content.cloneNode(true));
+  popover.classList.toggle('has-media', trigger.dataset.peekMedia === 'true');
+  activePeek = {{trigger, pinned}};
+  requestAnimationFrame(() => {{
+    positionPeek(trigger);
+    popover.classList.add('is-open');
+    popover.querySelectorAll('video').forEach((video) => video.play?.().catch?.(() => {{}}));
+  }});
+}}
+
+function closePeek() {{
+  window.clearTimeout(peekHoverTimer);
+  window.clearTimeout(peekLeaveTimer);
+  const popover = document.getElementById('peek-popover');
+  if (popover) {{
+    popover.querySelectorAll('video').forEach((video) => {{
+      video.pause?.();
+      try {{ video.currentTime = 0; }} catch (error) {{}}
+    }});
+    popover.classList.remove('is-open','has-media');
+  }}
+  activePeek = null;
+}}
+
+function togglePinnedPeek(trigger) {{
+  if (activePeek?.trigger === trigger && activePeek.pinned) {{
+    closePeek();
+    return;
+  }}
+  openPeek(trigger, {{pinned:true}});
 }}
 
 function isMobileRailMode() {{
@@ -1212,6 +2274,43 @@ function initRailControls() {{
   document.getElementById('drawer-handle')?.addEventListener('click', toggleRailDrawer);
 }}
 
+function setPrintSectionDividers(include) {{
+  document.documentElement.classList.toggle('skip-section-dividers', !include);
+}}
+
+function setSectionDividersVisible(visible, persist = true) {{
+  showSectionDividers = visible;
+  document.documentElement.classList.toggle('hide-section-dividers', !visible);
+  const button = document.getElementById('section-divider-toggle');
+  if (button) {{
+    button.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    button.textContent = visible ? '隐藏章节页' : '显示章节页';
+  }}
+  if (persist) {{
+    try {{ localStorage.setItem('school-presentation-section-dividers-visible', visible ? '1' : '0'); }} catch (error) {{}}
+  }}
+  if (!isPageVisibleInUi(pages[currentPageIndex])) {{
+    const next = nearestVisiblePageIndex(currentPageIndex, 1);
+    if (next >= 0) selectPage(next, {{animate:false}});
+  }} else {{
+    setActiveState(pages[currentPageIndex]);
+    fitVisibleStages();
+  }}
+}}
+
+function toggleSectionDividers() {{
+  setSectionDividersVisible(!showSectionDividers);
+}}
+
+function initSectionDividerControls() {{
+  let visible = true;
+  try {{
+    const stored = localStorage.getItem('school-presentation-section-dividers-visible');
+    if (stored === '0') visible = false;
+  }} catch (error) {{}}
+  setSectionDividersVisible(visible, false);
+}}
+
 function setActiveState(page) {{
   document.querySelectorAll('[data-thumb-page-id],[data-overview-page-id]').forEach((item) => {{
     const active = item.dataset.thumbPageId === page.page_id || item.dataset.overviewPageId === page.page_id;
@@ -1222,31 +2321,102 @@ function setActiveState(page) {{
   document.querySelectorAll('[data-current-logical-title]').forEach((item) => item.textContent = page.logical_title);
   document.querySelectorAll('[data-current-section-title]').forEach((item) => item.textContent = page.section_title);
   const progress = document.getElementById('playback-progress');
-  if (progress) progress.style.width = (((currentPageIndex + 1) / pages.length) * 100).toFixed(2) + '%';
+  if (progress) {{
+    const visibleIndexes = visiblePageIndexes();
+    const visiblePosition = Math.max(0, visibleIndexes.indexOf(currentPageIndex));
+    const visibleTotal = Math.max(1, visibleIndexes.length);
+    const local = maxRevealStep(page) ? currentRevealStep / Math.max(1, maxRevealStep(page)) : 1;
+    progress.style.width = (((visiblePosition + local) / visibleTotal) * 100).toFixed(2) + '%';
+  }}
   const activeRail = document.querySelector('[data-thumb-page-id=\"' + page.page_id + '\"]');
   activeRail?.scrollIntoView({{block:'nearest', inline:'nearest'}});
 }}
 
 function syncHash(page) {{
-  const nextHash = '#p=' + encodeURIComponent(page.page_id);
+  const nextHash = '#p=' + encodeURIComponent(page.page_id) + '&s=' + encodeURIComponent(String(currentRevealStep));
   if (window.location.hash !== nextHash) history.replaceState(null, '', nextHash);
 }}
 
 function selectPage(target, options = {{}}) {{
-  const idx = typeof target === 'number' ? target : pages.findIndex((page) => page.page_id === target || String(page.global_index) === String(target));
+  let idx = typeof target === 'number' ? target : pages.findIndex((page) => page.page_id === target || String(page.global_index) === String(target));
   if (idx < 0 || idx >= pages.length) return;
+  if (options.allowHidden !== true && !isPageVisibleInUi(pages[idx])) {{
+    idx = nearestVisiblePageIndex(idx, options.direction ?? 1);
+    if (idx < 0 || idx >= pages.length) return;
+  }}
+  const previousPageIndex = currentPageIndex;
+  const previousRevealStep = currentRevealStep;
   const animate = options.animate !== false && idx !== currentPageIndex;
+  const samePage = idx === previousPageIndex;
+  if (idx !== previousPageIndex) closePeek();
+  if (idx !== previousPageIndex || options.resetManualReveal === true) resetManualRevealState();
   currentPageIndex = idx;
   const page = pages[currentPageIndex];
-  clonePageInto('preview-stage', page, animate);
-  clonePageInto('playback-stage', page, animate);
+  const requestedStep = options.step ?? (previousPageIndex === idx ? currentRevealStep : 0);
+  currentRevealStep = Math.max(0, Math.min(maxRevealStep(page), Number(requestedStep) || 0));
+  const animateRevealStep = options.animateStep === true && idx === previousPageIndex && currentRevealStep > previousRevealStep;
+  const revealAnimationOptions = animateRevealStep ? {{animateNew:true, previousStep:previousRevealStep}} : {{}};
+  const hasPreviewShell = !!document.querySelector('#preview-stage .slide-scale-shell');
+  const hasPlaybackShell = !!document.querySelector('#playback-stage .slide-scale-shell');
+  const canReuseShells = samePage && !animate && hasPreviewShell && hasPlaybackShell;
+  if (!canReuseShells) {{
+    clonePageInto('preview-stage', page, animate, {{step:maxRevealStep(page), showAll:true}});
+    clonePageInto('playback-stage', page, animate, {{step:currentRevealStep, showAll:false, ...revealAnimationOptions}});
+  }}
+  if (!animate || canReuseShells) {{
+    applyRevealState('preview-stage', page, maxRevealStep(page));
+    applyRevealState('playback-stage', page, currentRevealStep, revealAnimationOptions);
+  }}
   setActiveState(page);
   if (options.hash !== false) syncHash(page);
 }}
 
-function goToPage(deltaOrIndex) {{
-  const next = Math.max(0, Math.min(pages.length - 1, currentPageIndex + deltaOrIndex));
-  selectPage(next);
+function goToPage(deltaOrIndex, options = {{}}) {{
+  const direction = deltaOrIndex >= 0 ? 1 : -1;
+  const next = adjacentVisiblePageIndex(currentPageIndex, direction);
+  if (next >= 0) selectPage(next, {{...options, direction}});
+}}
+
+function nextAction() {{
+  if (viewMode !== 'playback') {{
+    goToPage(1);
+    return;
+  }}
+	  const page = pages[currentPageIndex];
+	  const maxStep = maxRevealStep(page);
+	  if (currentRevealStep < maxStep) {{
+	    const nextStep = nextPendingRevealStep(page);
+	    if (nextStep <= maxStep) {{
+	      selectPage(currentPageIndex, {{step: nextStep, animate:false, animateStep:true}});
+	      return;
+	    }}
+	    currentRevealStep = maxStep;
+	  }}
+  if (currentPageIndex >= pages.length - 1) {{
+    showWorkspace();
+    return;
+  }}
+  const next = adjacentVisiblePageIndex(currentPageIndex, 1);
+  if (next >= 0) {{
+    selectPage(next, {{step:0, direction:1}});
+    return;
+  }}
+  showWorkspace();
+}}
+
+function previousAction() {{
+  if (viewMode !== 'playback') {{
+    goToPage(-1);
+    return;
+  }}
+  if (currentRevealStep > 0) {{
+    selectPage(currentPageIndex, {{step: currentRevealStep - 1, animate:false}});
+    return;
+  }}
+  const previous = adjacentVisiblePageIndex(currentPageIndex, -1);
+  if (previous >= 0) {{
+    selectPage(previous, {{step:0, direction:-1}});
+  }}
 }}
 
 function setView(mode) {{
@@ -1264,8 +2434,9 @@ function showWorkspace() {{
 }}
 
 function showPlayback() {{
+  resetManualRevealState();
   setView('playback');
-  selectPage(currentPageIndex, {{animate:false}});
+  selectPage(currentPageIndex, {{animate:false, resetManualReveal:true}});
   revealPlaybackToolbar();
   fitVisibleStages();
 }}
@@ -1277,11 +2448,14 @@ function showOverview() {{
 }}
 
 function selectFromHash() {{
-  const raw = decodeURIComponent(window.location.hash.replace(/^#p=/, ''));
+  const raw = window.location.hash.replace(/^#/, '');
   if (!raw) return false;
-  const idx = pages.findIndex((page) => page.page_id === raw || String(page.global_index) === raw);
+  const params = new URLSearchParams(raw);
+  const pageId = decodeURIComponent(params.get('p') || raw.replace(/^p=/, '').split('&')[0]);
+  const step = Number(params.get('s') || 0);
+  const idx = pages.findIndex((page) => page.page_id === pageId || String(page.global_index) === pageId);
   if (idx >= 0) {{
-    selectPage(idx, {{hash:false, animate:false}});
+    selectPage(idx, {{hash:false, animate:false, step:Number.isFinite(step) ? step : 0}});
     return true;
   }}
   return false;
@@ -1294,28 +2468,134 @@ function revealPlaybackToolbar() {{
   toolbarTimer = setTimeout(() => playback?.classList.remove('show-ui'), 1800);
 }}
 
+document.addEventListener('pointerover', (event) => {{
+  const trigger = event.target.closest?.('[data-peek-trigger]');
+  if (!trigger || !peekAllows(trigger, 'hover')) return;
+  if (trigger.contains(event.relatedTarget)) return;
+  window.clearTimeout(peekLeaveTimer);
+  window.clearTimeout(peekHoverTimer);
+  peekHoverTimer = window.setTimeout(() => openPeek(trigger, {{pinned:false}}), 320);
+}});
+
+document.addEventListener('pointermove', (event) => {{
+  if (viewMode !== 'playback') return;
+  const trigger = peekTriggerAtPoint(event.clientX, event.clientY);
+  if (trigger === playbackHoverTrigger) return;
+  window.clearTimeout(peekHoverTimer);
+  if (activePeek?.trigger === playbackHoverTrigger && !activePeek.pinned) closePeek();
+  playbackHoverTrigger = trigger;
+  if (trigger && peekAllows(trigger, 'hover')) {{
+    window.clearTimeout(peekLeaveTimer);
+    peekHoverTimer = window.setTimeout(() => openPeek(trigger, {{pinned:false}}), 320);
+  }}
+}});
+
+document.addEventListener('pointerout', (event) => {{
+  const trigger = event.target.closest?.('[data-peek-trigger]');
+  if (!trigger || !peekAllows(trigger, 'hover')) return;
+  if (trigger.contains(event.relatedTarget)) return;
+  window.clearTimeout(peekHoverTimer);
+  if (activePeek?.trigger === trigger && !activePeek.pinned) {{
+    peekLeaveTimer = window.setTimeout(() => closePeek(), 120);
+  }}
+}});
+
 document.addEventListener('click', (event) => {{
-  const rail = event.target.closest('[data-thumb-page-id]');
-  if (rail) {{
-    selectPage(rail.dataset.thumbPageId);
+  const trigger = peekTriggerFromEvent(event);
+  if (trigger && peekAllows(trigger, 'click')) {{
+    event.preventDefault();
+    event.stopPropagation();
+    togglePinnedPeek(trigger);
+    return;
+  }}
+  const popover = document.getElementById('peek-popover');
+  if (activePeek?.pinned && popover && !popover.contains(event.target)) {{
+    closePeek();
+  }}
+}}, true);
+
+document.addEventListener('click', (event) => {{
+  if (revealMaskAtPoint(event)) {{
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }}
+}}, true);
+
+	document.addEventListener('click', (event) => {{
+	  const agenda = event.target.closest('[data-agenda-section-index]');
+	  if (agenda) {{
+	    event.preventDefault();
+	    event.stopPropagation();
+	    navigateAgendaSection(agenda.dataset.agendaSectionIndex);
+	    return;
+	  }}
+	  const rail = event.target.closest('[data-thumb-page-id]');
+	  if (rail) {{
+	    selectPage(rail.dataset.thumbPageId);
     if (isMobileRailMode()) closeRailDrawer();
   }}
   const overview = event.target.closest('[data-overview-page-id]');
   if (overview) {{
     selectPage(overview.dataset.overviewPageId);
     showWorkspace();
-  }}
-}});
+	  }}
+	}});
 
-document.addEventListener('keydown', (event) => {{
-  if (event.key === 'Escape' && viewMode === 'playback') {{ event.preventDefault(); showWorkspace(); return; }}
-  if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') {{ event.preventDefault(); goToPage(1); }}
-  if (event.key === 'ArrowLeft' || event.key === 'PageUp') {{ event.preventDefault(); goToPage(-1); }}
-}});
+	document.addEventListener('keydown', (event) => {{
+	  const peekTrigger = event.target.closest?.('[data-peek-trigger]');
+	  if (!peekTrigger) return;
+	  if (event.key === 'Enter' && peekAllows(peekTrigger, 'click')) {{
+	    event.preventDefault();
+	    event.stopPropagation();
+	    togglePinnedPeek(peekTrigger);
+	    return;
+	  }}
+	  if (event.key !== ' ') return;
+	  event.preventDefault();
+	  event.stopPropagation();
+	  if (event.repeat || spaceHoldTimer) return;
+	  spaceHoldTrigger = peekTrigger;
+	  spaceHoldOpened = false;
+	  spaceHoldTimer = window.setTimeout(() => {{
+	    spaceHoldOpened = true;
+	    openPeek(spaceHoldTrigger, {{pinned:false}});
+	  }}, 300);
+	}}, true);
 
-document.querySelector('.playback-zone.prev')?.addEventListener('click', () => goToPage(-1));
-document.querySelector('.playback-zone.center')?.addEventListener('click', () => goToPage(1)); // Phase 10 will prefer reveal steps before page advance.
-document.querySelector('.playback-zone.next')?.addEventListener('click', () => goToPage(1));
+	document.addEventListener('keyup', (event) => {{
+	  if (event.key !== ' ' || !spaceHoldTrigger) return;
+	  event.preventDefault();
+	  event.stopPropagation();
+	  window.clearTimeout(spaceHoldTimer);
+	  if (spaceHoldOpened) {{
+	    closePeek();
+	  }} else {{
+	    togglePinnedPeek(spaceHoldTrigger);
+	  }}
+	  spaceHoldTimer = null;
+	  spaceHoldTrigger = null;
+	  spaceHoldOpened = false;
+	}}, true);
+
+	document.addEventListener('keydown', (event) => {{
+	  const agenda = event.target.closest?.('[data-agenda-section-index]');
+	  if (!agenda || (event.key !== 'Enter' && event.key !== ' ')) return;
+	  event.preventDefault();
+	  navigateAgendaSection(agenda.dataset.agendaSectionIndex);
+	}});
+
+	document.addEventListener('keydown', (event) => {{
+	  if (event.target.closest?.('[data-peek-trigger]')) return;
+	  if (event.target.closest?.('[data-agenda-section-index]')) return;
+	  if (event.key === 'Escape' && viewMode === 'playback') {{ event.preventDefault(); showWorkspace(); return; }}
+	  if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') {{ event.preventDefault(); nextAction(); }}
+	  if (event.key === 'ArrowLeft' || event.key === 'PageUp') {{ event.preventDefault(); previousAction(); }}
+	}});
+
+document.querySelector('.playback-zone.prev')?.addEventListener('click', previousAction);
+document.querySelector('.playback-zone.center')?.addEventListener('click', nextAction);
+document.querySelector('.playback-zone.next')?.addEventListener('click', nextAction);
 document.getElementById('playback')?.addEventListener('mousemove', revealPlaybackToolbar);
 document.getElementById('playback')?.addEventListener('touchstart', revealPlaybackToolbar, {{passive:true}});
 let touchStartX = null;
@@ -1323,16 +2603,18 @@ document.getElementById('playback')?.addEventListener('touchstart', (event) => {
 document.getElementById('playback')?.addEventListener('touchend', (event) => {{
   if (touchStartX === null) return;
   const dx = (event.changedTouches[0]?.clientX ?? touchStartX) - touchStartX;
-  if (Math.abs(dx) > 42) goToPage(dx < 0 ? 1 : -1);
+  if (Math.abs(dx) > 42) (dx < 0 ? nextAction : previousAction)();
   touchStartX = null;
 }}, {{passive:true}});
 window.addEventListener('hashchange', selectFromHash);
 
 renderThumbnailClones();
 initRailControls();
+initSectionDividerControls();
 window.addEventListener('resize', () => {{
   if (!isMobileRailMode()) closeRailDrawer();
   fitVisibleStages();
+  if (activePeek) positionPeek(activePeek.trigger);
 }});
 if (!selectFromHash()) selectPage(0);
 fitVisibleStages();
@@ -1359,7 +2641,7 @@ fitVisibleStages();
         "<section id=\"playback\" class=\"playback view\" hidden>"
         "<div class=\"progress\" aria-hidden=\"true\"><i id=\"playback-progress\"></i></div>"
         "<button class=\"playback-zone prev\" type=\"button\" aria-label=\"previous page\"></button><button class=\"playback-zone center\" type=\"button\" aria-label=\"next page\"></button><button class=\"playback-zone next\" type=\"button\" aria-label=\"next page\"></button>"
-        "<div id=\"playback-stage\" class=\"playback-stage\"></div><div class=\"playback-toolbar\" aria-label=\"playback controls\"><button class=\"playback-control\" type=\"button\" onclick=\"goToPage(-1)\" aria-label=\"上一页\"><span aria-hidden=\"true\">‹</span></button><span class=\"playback-page-pill\" data-current-page-label></span><button class=\"playback-control\" type=\"button\" onclick=\"goToPage(1)\" aria-label=\"下一页\"><span aria-hidden=\"true\">›</span></button><button class=\"playback-exit\" type=\"button\" onclick=\"showWorkspace()\" aria-label=\"退出播放\">Esc</button></div>"
+        "<div id=\"playback-stage\" class=\"playback-stage\"></div><div class=\"playback-toolbar\" aria-label=\"playback controls\"><button class=\"playback-control\" type=\"button\" onclick=\"previousAction()\" aria-label=\"上一步\"><span aria-hidden=\"true\">‹</span></button><span class=\"playback-page-pill\" data-current-page-label></span><button class=\"playback-control\" type=\"button\" onclick=\"nextAction()\" aria-label=\"下一步\"><span aria-hidden=\"true\">›</span></button><button class=\"playback-exit\" type=\"button\" onclick=\"showWorkspace()\" aria-label=\"退出播放\">Esc</button></div>"
         "</section>"
         "<div class=\"page-source\" hidden>" + "".join(page_sections) + "</div>"
         f"<script>{js}</script></div></body></html>"
@@ -1442,9 +2724,21 @@ def cmd_verify(args: argparse.Namespace) -> None:
     first_html = first.read_text(encoding="utf-8")
 
     hierarchy_verified = False
+    reveal_verified = False
     try:
         sections = m1.get("sections", [])
         pages = m1.get("pages", [])
+        reveal_pages = [
+            page for page in pages
+            if isinstance(page, dict) and isinstance(page.get("reveal_steps"), list) and page.get("reveal_steps")
+        ]
+        reveal_kinds = {
+            kind
+            for page in reveal_pages
+            for step in page.get("reveal_steps", [])
+            if isinstance(step, dict)
+            for kind in step.get("kinds", [])
+        }
         hierarchy_verified = (
             isinstance(sections, list)
             and len(sections) >= 1
@@ -1463,7 +2757,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
                 and page.get("physical_index") is not None
                 and page.get("global_index") is not None
                 and page.get("layout")
-                and page.get("reveal_steps") == []
+                and isinstance(page.get("reveal_steps"), list)
                 for page in pages
                 if isinstance(page, dict)
             )
@@ -1475,8 +2769,26 @@ def cmd_verify(args: argparse.Namespace) -> None:
                 if isinstance(slide, dict)
             )
         )
+        reveal_verified = (
+            len(reveal_pages) >= 4
+            and {"mask", "emphasis", "reveal"}.issubset(reveal_kinds)
+            and not {"animate", "sort-rank", "sort-final"}.intersection(reveal_kinds)
+            and any(
+                [step.get("target_count") for step in page.get("reveal_steps", []) if isinstance(step, dict)].count(2) >= 1
+                for page in reveal_pages
+            )
+            and any(
+                {"2.1", "2.55"}.issubset({
+                    str(step.get("priority"))
+                    for step in page.get("reveal_steps", [])
+                    if isinstance(step, dict)
+                })
+                for page in reveal_pages
+            )
+        )
     except Exception:
         hierarchy_verified = False
+        reveal_verified = False
 
     required_html_tokens = [
         "workspace",
@@ -1510,8 +2822,23 @@ def cmd_verify(args: argparse.Namespace) -> None:
         "data-page-id",
         "data-thumb-page-id",
         "data-overview-page-id",
+        "data-reveal-order",
+        "data-reveal-kind",
+        "reveal-kind-mask",
+        "reveal-kind-emphasis",
+        "reveal-kind-reveal",
+        "nextAction",
+        "previousAction",
+        "URLSearchParams",
     ]
     workspace_verified = all(token in first_html for token in required_html_tokens)
+    thumbnail_ratio_verified = (
+        ".thumb-item{position:relative;display:block;width:100%" in first_html
+        and "aspect-ratio:var(--slide-aspect)" in first_html
+        and ".thumb-real .slide-scale-shell,.overview-tile .slide-scale-shell" in first_html
+        and "grid-template-columns:56px minmax(0,1fr)" not in first_html
+        and "grid-template-columns:48px 1fr" not in first_html
+    )
 
     flat_sample = workdir / "flat-compat.md"
     flat_html = workdir / "flat-compat.html"
@@ -1559,14 +2886,18 @@ split: auto
         and bool(m1.get("under_size_cap"))
         and bool(m2.get("under_size_cap"))
         and hierarchy_verified
+        and reveal_verified
         and workspace_verified
+        and thumbnail_ratio_verified
         and flat_slide_compat_verified
     )
     verification = {
         "status": "passed" if passed else "failed",
         "repeatable_html": stable,
         "hierarchy_verified": hierarchy_verified,
+        "reveal_verified": reveal_verified,
         "workspace_verified": workspace_verified,
+        "thumbnail_ratio_verified": thumbnail_ratio_verified,
         "flat_slide_compat_verified": flat_slide_compat_verified,
         "first_sha256": m1.get("html_sha256"),
         "second_sha256": m2.get("html_sha256"),
