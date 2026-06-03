@@ -198,6 +198,9 @@ split: auto
 | 缩略图 | 左侧 rail 与右侧预览一致 | 看缩略图是否乱掉 |
 | 播放态 | 全屏播放、悬浮工具条、键盘导航 | 看控制条是否干净 |
 | 预览 / 概览 | 工作区、概览、播放三态 | 看切换是否流畅 |
+| 有序揭示 | `order` 优先级控制播放顺序 | 看非视觉顺序和同序号同时出现 |
+| 答案遮罩 | 填空、判断、表格答案在播放态遮住 | 看遮罩是否不泄露提示文字 |
+| 正确项强调 | 选择题选项常显，正确项用强调出现 | 看下划线在打印态是否仍可见 |
 
 ### Slide: 风险矩阵
 
@@ -256,6 +259,131 @@ split: false
 
 ::: error
 这是错误块，用于放风险、异常或不应继续的情况。
+:::
+
+## Section: 课堂揭示与答案遮罩
+
+### Slide: 填空题与公式答案遮罩
+
+<!-- slide
+layout: content
+intent: demonstrate answer masks for blanks and formulas
+split: auto
+-->
+
+三相功率计算公式为：
+
+$$P = {{mask order=1}}\sqrt{3}{{/mask}} \times U \times I \times {{mask order=2}}\cos\varphi{{/mask}}$$
+
+两个答案按 `order` 依次揭开。遮罩不显示“答案”“点击揭示”或“步骤 1/3”等提示文字。
+
+::: mask order=3
+$$P = \sqrt{3} \times U \times I \times \cos\varphi$$
+:::
+
+### Slide: 判断题答案与依据遮罩
+
+<!-- slide
+layout: content
+intent: demonstrate judgement answer reveal
+split: auto
+-->
+
+题干：通电前可以先试车，再检查保护接地。
+
+::: mask order=1
+判断：错误。
+:::
+
+::: mask order=2
+依据：通电前必须先完成绝缘测试、保护接地检查和急停按钮测试。
+:::
+
+### Slide: 选择题正确项强调
+
+<!-- slide
+layout: content
+intent: demonstrate visible options with emphasized correct answers
+split: auto
+-->
+
+哪几项属于通电前检查？
+
+- A. 作品拍照归档
+- {{emphasis order=1}}B. 绝缘测试{{/emphasis}}
+- {{emphasis order=1}}C. 保护接地检查{{/emphasis}}
+- {{emphasis order=2}}D. 急停按钮测试{{/emphasis}}
+
+选择题直接展示所有选项，不用遮罩；播放时只把正确项逐步变成强调状态。默认强调保留下划线，便于打印或静态审阅。
+
+### Slide: Reveal 可以包住常见块
+
+<!-- slide
+layout: content
+intent: demonstrate block reveal across common Markdown content
+split: auto
+-->
+
+::: reveal order=1
+- 先观察设备状态灯。
+- 再检查 I/O 分配和端子对应关系。
+:::
+
+::: reveal order=2
+$$U = I \times R$$
+:::
+
+::: reveal order=3
+```chart
+观察状态灯: 70
+核对端子: 82
+联机调试: 64
+```
+:::
+
+::: reveal order=4
+说明段落也可以作为一个整体 reveal；如果内容太多，渲染器继续按物理页拆分，不靠隐藏内容硬塞进一页。
+:::
+
+### Slide: 多个答案按 order 推进
+
+<!-- slide
+layout: table
+intent: demonstrate multiple table answers by order
+split: auto
+-->
+
+| 检测点 | 现象 | 答案 |
+|---|---|---|
+| 线圈 A1-A2 | 阻值无穷大 | {{mask order=1}}线圈断路{{/mask}} |
+| 互锁触点 | 两路同时吸合 | {{mask order=2}}互锁失效{{/mask}} |
+| 急停回路 | 按下后仍可启动 | {{mask order=2}}急停回路异常{{/mask}} |
+| 保护接地 | 接地电阻异常 | {{mask order=3}}接地不可靠{{/mask}} |
+
+### Slide: 非视觉顺序与小数优先级
+
+<!-- slide
+layout: content
+intent: demonstrate non-visual order and decimal priorities
+split: auto
+-->
+
+下面四个区域的播放顺序不按视觉位置，而按 `order` 数字。小数优先级会在 manifest 中归一成连续步骤。
+
+::: mask order=3
+左上：第三步显示。
+:::
+
+::: mask order=1
+右上：第一步显示。
+:::
+
+::: mask order=2.1
+右下：第二步后插入显示。
+:::
+
+::: mask order=2.55
+左下：插入优先级会排在 2.1 和 3 之间。
 :::
 
 ## Section: 推进与验收
