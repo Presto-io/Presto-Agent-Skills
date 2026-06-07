@@ -13,6 +13,7 @@ usage() {
 Usage:
   gongwen.sh example --output <gongwen-full.md>
   gongwen.sh render --input <input.md> [--typ <output.typ>]
+                    [--pdf <output.pdf>]
                     [--expected-typ <reference.typ>]
   gongwen.sh manifest
   gongwen.sh info
@@ -20,6 +21,7 @@ Usage:
 
 The Markdown-to-Typst conversion is implemented by this Bash script itself. It
 does not call the Presto template executable or any external Markdown parser.
+PDF export is optional and uses the installed typst CLI only when --pdf is set.
 USAGE
 }
 
@@ -249,6 +251,9 @@ emit_template_head() {
   hyphenate: false,
   cjk-latin-spacing: auto,
 )
+
+// 强制加粗在缺少粗体字重的中文字体环境中仍可见
+#show strong: it => text(weight: "bold", stroke: 0.2pt + black)[#it.body]
 
 // 设置段落样式，以满足"每行28字符，每页22行"的网格标准，首行缩进2字符
 #set par(
@@ -1026,18 +1031,18 @@ render_body() {
       ((i++)); continue
     fi
 
-    if [[ "$line" =~ ^[[:space:]]*([0-9]+)\.[[:space:]]+(.*)$ ]]; then
+    if [[ "$line" =~ ^([[:space:]]*)[0-9]+\.[[:space:]]+(.*)$ ]]; then
       [[ "$last_list_kind" == "ul" ]] && printf '\n\n'
-      printf '+ '
+      printf '%s+ ' "${BASH_REMATCH[1]}"
       render_inline "${BASH_REMATCH[2]}"
       printf '\n'
       last_list_kind="ol"
       ((i++)); continue
     fi
 
-    if [[ "$line" =~ ^[[:space:]]*-[[:space:]]+(.*)$ ]]; then
-      printf -- '- '
-      render_inline "${BASH_REMATCH[1]}"
+    if [[ "$line" =~ ^([[:space:]]*)-[[:space:]]+(.*)$ ]]; then
+      printf '%s- ' "${BASH_REMATCH[1]}"
+      render_inline "${BASH_REMATCH[2]}"
       printf '\n'
       last_list_kind="ul"
       ((i++)); continue
@@ -1176,11 +1181,12 @@ cmd_example() {
 }
 
 cmd_render() {
-  local input="" typ="" expected_typ=""
+  local input="" typ="" pdf="" expected_typ=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --input) input="${2:-}"; shift 2 ;;
       --typ) typ="${2:-}"; shift 2 ;;
+      --pdf) pdf="${2:-}"; shift 2 ;;
       --expected-typ) expected_typ="${2:-}"; shift 2 ;;
       -h|--help) usage; exit 0 ;;
       *) die "unknown argument for render: $1" ;;
@@ -1196,6 +1202,12 @@ cmd_render() {
     same_file_shell "$expected_typ" "$typ" || die "Typst differs from expected file: $expected_typ"
     printf 'verified Typst matches %s\n' "$expected_typ"
   fi
+  if [[ -n "$pdf" ]]; then
+    command -v typst >/dev/null 2>&1 || die "typst CLI not found; install typst or omit --pdf"
+    ensure_parent_dir "$pdf"
+    typst compile "$typ" "$pdf"
+    printf 'wrote %s\n' "$pdf"
+  fi
 }
 
 cmd_manifest() {
@@ -1203,8 +1215,8 @@ cmd_manifest() {
 {
   "name": "gongwen",
   "displayName": "类公文模板",
-  "version": "0.2.0-shell-only",
-  "description": "Bash-only Markdown-to-Typst renderer aligned to the Presto gongwen black-box output."
+  "version": "0.2.1-shell-only",
+  "description": "Bash-only Markdown-to-Typst renderer with optional Typst PDF export."
 }
 JSON
 }
@@ -1214,12 +1226,12 @@ cmd_info() {
 gongwen shell-only renderer
 - Markdown-to-Typst conversion is performed inside this Bash script.
 - The script does not call external template binaries or Markdown converters.
-- PDF compilation is intentionally outside this script.
+- PDF compilation is optional via --pdf and requires an installed typst CLI.
 INFO
 }
 
 cmd_version() {
-  printf 'gongwen.sh 0.2.0-shell-only\n'
+  printf 'gongwen.sh 0.2.1-shell-only\n'
 }
 
 main() {
