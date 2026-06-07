@@ -41,16 +41,18 @@ metadata:
    - `date`: `YYYY-MM-DD` 格式日期。
    - `signature`: 是否启用签名信息。
    - `template`: 固定为 `gongwen`。
-3. 正文使用可审阅的 Markdown 表达结构：标题、段落、有序/无序列表、表格、代码块、引用、图片和图组。
+3. 正文使用可审阅的 Markdown 表达结构：标题、段落、有序/无序列表、表格、代码块、引用、图片和图组。只有源材料明确要求顺序、步骤或编号时才使用有序列表；不要为了套用模板而凭空添加项目序号、编号列或“序号/项目”字段。
 4. 对公文模板特有的控制语法保持显式、局部、可审阅：
    - `::: {.noindent}` 表示无首行缩进块。
-   - `{.indent}`、`{.bold}` 表示局部排版属性。
+   - Markdown `**加粗内容**` 表示正文或标题内的行内加粗，渲染和 PDF 导出时应保留为加粗语义；`{.indent}`、`{.bold}` 表示局部排版属性。
    - `{.br:N}` 表示插入 N 个换行。
    - `{pagebreak}` 或 `{pagebreak:weak}` 表示分页。
    - Markdown 表格后的 `: 表题` 表示表格题名。
    - 同一段内多张图片且 alt 相同表示一组子图。
-5. 生成 Markdown 后，运行 `skills/gongwen/scripts/gongwen.sh render` 生成 `.typ`；该 Markdown 到 Typst 转换由脚本内置 shell 逻辑完成，不依赖外部模板二进制、Pandoc、Python、Node、Typst 或其他转换器。
-6. 若有参考 Typst，使用脚本的 `--expected-typ` 进行黑盒一致性验证。
+5. 不要为了“看起来规范”凭空增加项目序号、序号列、项目编号、有序列表或手写标题编号；只有源材料明确给出编号时才保留。公文层级编号由模板根据标题层级自动生成，不要在标题文字里重复写 `一、`、`（一）`、`1.` 或 `（1）`。
+6. 生成 Markdown 后，运行 `skills/gongwen/scripts/gongwen.sh render` 生成 `.typ`；该 Markdown 到 Typst 转换由脚本内置 shell 逻辑完成，不依赖外部模板二进制、Pandoc、Python、Node 或其他 Markdown 转换器。
+7. 如需 PDF 导出，给 `render` 增加 `--pdf <output.pdf>`；该步骤只调用已安装的 `typst` CLI 编译脚本生成的 `.typ`，不会调用外部模板二进制。
+8. 若有参考 Typst，使用脚本的 `--expected-typ` 进行黑盒一致性验证。
 
 ## Script Usage
 
@@ -60,6 +62,11 @@ skills/gongwen/scripts/gongwen.sh example --output gongwen-full.md
 skills/gongwen/scripts/gongwen.sh render \
   --input gongwen-full.md \
   --typ gongwen-full.typ
+
+skills/gongwen/scripts/gongwen.sh render \
+  --input gongwen-full.md \
+  --typ gongwen-full.typ \
+  --pdf gongwen-full.pdf
 ```
 
 带参考产物验证：
@@ -75,7 +82,7 @@ skills/gongwen/scripts/gongwen.sh render \
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | 读取本 `SKILL.md` 后执行流程；用 shell 调用 `scripts/gongwen.sh`；写文件前确认目标路径；PDF 编译若需要，必须在脚本外单独执行。 |
+| Codex | 读取本 `SKILL.md` 后执行流程；用 shell 调用 `scripts/gongwen.sh`；写文件前确认目标路径；如需 PDF，可使用 `render --pdf <output.pdf>`。 |
 | Claude Code | 可把同一目录安装到 `.claude/skills/gongwen/`；frontmatter 的 `description` 是触发入口；脚本属于显式外部命令，执行前检查路径和权限。 |
 | Gemini CLI | 通过 `GEMINI.md` 或项目上下文指向本 `SKILL.md`；若无法自动发现脚本，按 `Script Usage` 手动调用。 |
 | OpenCode | 使用可加载 `SKILL.md` 的 skill 路径；若走 Claude-compatible fallback，保持同一目录结构并验证脚本可执行。 |
@@ -91,6 +98,7 @@ skills/gongwen/scripts/gongwen.sh render \
 
 - [ ] `skills/gongwen/scripts/gongwen.sh example --output <file>` 能输出可审阅的 `gongwen-full.md` 结构。
 - [ ] `skills/gongwen/scripts/gongwen.sh render --input <md> --typ <typ>` 能不依赖任何外部转换器生成 Typst。
+- [ ] `skills/gongwen/scripts/gongwen.sh render --input <md> --typ <typ> --pdf <pdf>` 能在安装 `typst` CLI 时导出 PDF，并保留 `**加粗内容**` 的加粗效果。
 - [ ] 对给定 fixture 运行 `--expected-typ` 时，生成 Typst 与参考文件一致。
 - [ ] OpenClaw 与 Hermes Agent 的运行时差异保留在 adapter notes 中，没有写入 canonical 主流程。
 
@@ -98,11 +106,12 @@ skills/gongwen/scripts/gongwen.sh render \
 
 - 技能在触发词 `gongwen` 下能指导 agent 产出类公文 Markdown intermediate。
 - 脚本能从 `gongwen-full.md` 生成稳定 Typst，且转换效果与参考黑盒 Typst 一致。
+- 技能不会在源材料没有编号要求时新增项目序号或序号列。
 - 技能保持 canonical 单文件语义源，不引入 runtime-specific wrapper。
 
 ## Safety
 
 - 不要静默删除源材料中不确定、缺失或无法表达的内容；必须就近标记复核。
 - 不要把凭据、私有路径或用户专属资源写入正文，除非用户明确要求。
-- 脚本的 Markdown 到 Typst 转换不得调用外部模板二进制、Pandoc、Python、Node、Typst 或其他外部命令。
-- 脚本只读取输入 Markdown，并只写入用户指定的 Typst 输出路径；输出路径的父目录必须已存在。
+- 脚本的 Markdown 到 Typst 转换不得调用外部模板二进制、Pandoc、Python、Node 或其他 Markdown 转换器。
+- 脚本只读取输入 Markdown，并只写入用户指定的 Typst/PDF 输出路径；输出路径的父目录必须已存在。PDF 导出需要用户环境已有 `typst` CLI。
