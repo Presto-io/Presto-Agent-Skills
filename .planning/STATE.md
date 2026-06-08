@@ -1,32 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: School Presentation Playback UX
-current_phase: 10
-status: verified
-stopped_at: Phase 10 implemented and automated verification passed
-last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 — Phase 10 reveal, emphasis, and answer-mask scope verified
+milestone: v1.7
+milestone_name: End-of-Term Teaching Materials Skill
+current_phase: 11
+status: ready
+stopped_at: Ready to discuss or plan Phase 11
+last_updated: "2026-06-08T21:21:48.864Z"
+last_activity: 2026-06-08 — Milestone v1.7 roadmap created
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 10
-  completed_plans: 10
-  percent: 100
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 10
-**Status:** Phase 10 implemented and automated verification passed
+**Current Phase:** 11
+**Status:** Ready to discuss or plan Phase 11
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-01)
+See: `.planning/PROJECT.md` (updated 2026-06-08)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.6 School Presentation Playback UX - playback workspace, page hierarchy, ordered reveals, and classroom answer masks
+**Current focus:** v1.7 End-of-Term Teaching Materials Skill - structured data, Markdown intermediate, fixed-template Typst/PDF, table artifacts, and verification
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-01)
 
 ## Next Up
 
-Run human visual UAT for Phase 10 animation polish if needed, then close or archive v1.6.
+Discuss or plan Phase 11: End-of-Term Data and Markdown Contract.
 
 ## Decisions
 
@@ -75,6 +75,8 @@ Run human visual UAT for Phase 10 animation polish if needed, then close or arch
 - [Milestone v1.5]: Markdown pages are logical slides, not necessarily physical pages. — If a logical slide contains too much content, the renderer should split it into multiple physical HTML pages while keeping the Markdown easy to edit.
 - [Milestone v1.5]: User images should preserve their original aspect ratio. — Images should be scaled and placed without cropping by default.
 - [Milestone v1.6]: Playback UX comes before marking tools. — User requested playback, thumbnail/preview/overview, hierarchy, ordered reveal, emphasis animation, and answer masks now; marking-style tools are deferred to the next milestone.
+- [Milestone v1.7]: The end-of-term teaching-materials skill should use structured data -> Markdown -> Typst -> PDF. — User requested a fixed-template workflow for semester-end submission documents and tables.
+- [Milestone v1.7]: Skip external research for this milestone. — The work follows already validated document-skill patterns in this repository.
 
 ## Performance Metrics
 
@@ -90,12 +92,14 @@ Run human visual UAT for Phase 10 animation polish if needed, then close or arch
 | Phase 08 P01 | current session | 3 tasks | 8 files |
 | Phase 09 P01 | current session | 4 tasks | 6 files |
 | Phase 10 P01 | current session | 5 tasks | 7 files |
+| Phase 11 P01 | planned | — | — |
+| Phase 12 P01 | planned | — | — |
 
 ## Last Session
 
-- **Completed:** 10-01-PLAN.md
-- **Stopped At:** Phase 10 implemented and automated verification passed
-- **Resume File:** Not created; current work can continue from `.planning/phases/10-ordered-reveals-and-classroom-answer-masks/10-01-SUMMARY.md`.
+- **Completed:** v1.7 milestone planning
+- **Stopped At:** Ready to discuss or plan Phase 11
+- **Resume File:** Not created; current work can continue from `.planning/ROADMAP.md`.
 
 ## Close Notes
 
@@ -105,12 +109,12 @@ Run human visual UAT for Phase 10 animation polish if needed, then close or arch
 
 ## Current Position
 
-Phase: 10 - Ordered Reveals and Classroom Answer Masks
-Plan: 10-01-PLAN.md
-Status: Automated verification passed
-Last activity: 2026-06-03 — Phase 10 reveal, emphasis, and answer-mask scope verified
+Phase: 11 - End-of-Term Data and Markdown Contract
+Plan: —
+Status: Ready for discussion or phase planning
+Last activity: 2026-06-08 — Milestone v1.7 roadmap created
 
 ## Operator Next Steps
 
-- Run human visual UAT only if presentation animation polish needs manual approval.
-- Close or archive v1.6 when ready.
+- `/gsd:discuss-phase 11` to gather exact template and data-contract details.
+- `/gsd:plan-phase 11` to plan directly from the current roadmap.

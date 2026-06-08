@@ -1,5 +1,22 @@
 # Milestones
 
+## v1.6 School Presentation Playback UX (Verified: 2026-06-03)
+
+**Phases completed:** 2 phases, 2 plans, automated verification passed
+
+**Key accomplishments:**
+
+- Added playback mode, thumbnail rail, large preview, and tiled overview for generated `school-presentation` HTML decks.
+- Documented and rendered page hierarchy across logical slides, physical pages, sections, and reveal steps.
+- Added ordered reveals, restrained emphasis animation, and classroom answer masks controlled from Markdown.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.6-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.6-REQUIREMENTS.md`
+
+---
+
 ## v1.5 School Presentation Skill (Shipped: 2026-06-01)
 
 **Phases completed:** 1 phase, 1 plan, 3 tasks
