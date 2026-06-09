@@ -82,6 +82,8 @@ Parent directories for `--output` must already exist. `--workdir` must already e
 - `tables/score-summary.json`: student/task/blank-cell summary and formula placeholder notes.
 - `tables/scorebook.xlsx`: teacher-facing workbook with `成绩数据`、`任务映射`、`成绩汇总` sheets.
 
+PDF rendering uses the fixed Excel-style grid for the score book body, score summary, and analysis sheet: column proportions, row rhythm, thin borders, merged headers, and diagonal header cells are encoded in the skill-local renderer.
+
 ## Runtime Adapter Notes
 
 | Runtime | Notes |
