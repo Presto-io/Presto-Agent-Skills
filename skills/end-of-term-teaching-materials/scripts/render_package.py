@@ -399,6 +399,298 @@ def table_block(headers: list[str], rows: list[list[str]]) -> str:
     return f"#table(columns: {len(headers)}, inset: 3.5pt, stroke: 0.45pt,\n  {joined},\n)"
 
 
+def typst_mm(value: float) -> str:
+    return f"{value:.2f}mm"
+
+
+def typst_table_cell(
+    content: str,
+    *,
+    colspan: int = 1,
+    rowspan: int = 1,
+    align: str = "center + horizon",
+    inset: str = "2pt",
+    raw: bool = False,
+    fill: str | None = None,
+) -> str:
+    args = []
+    if colspan != 1:
+        args.append(f"colspan: {colspan}")
+    if rowspan != 1:
+        args.append(f"rowspan: {rowspan}")
+    args.append(f"align: {align}")
+    args.append(f"inset: {inset}")
+    if fill:
+        args.append(f"fill: {fill}")
+    body = content if raw else typst_escape(content)
+    return f"table.cell({', '.join(args)})[{body}]"
+
+
+def typst_table(columns: list[float], rows: list[float], cells: list[str]) -> str:
+    col_spec = "(" + ", ".join(typst_mm(value) for value in columns) + ")"
+    row_spec = "(" + ", ".join(typst_mm(value) for value in rows) + ")"
+    return (
+        f"#table(columns: {col_spec}, rows: {row_spec}, stroke: 0.45pt, inset: 2pt,\n  "
+        + ",\n  ".join(cells)
+        + ",\n)"
+    )
+
+
+def excel_scaled_widths(raw_widths: list[float], target_mm: float = 166.0) -> list[float]:
+    total = sum(raw_widths)
+    return [target_mm * value / total for value in raw_widths]
+
+
+def score_value(row: dict[str, str], header: str) -> str:
+    return row.get(header, "")
+
+
+def numeric_average(values: list[str]) -> str:
+    nums: list[float] = []
+    for value in values:
+        try:
+            if value != "":
+                nums.append(float(value))
+        except ValueError:
+            pass
+    if not nums:
+        return ""
+    return str(round(sum(nums) / len(nums)))
+
+
+def final_score(row: dict[str, str]) -> str:
+    task_values = [value for key, value in row.items() if key.startswith("任务")]
+    process = numeric_average(task_values)
+    final = row.get("期末", "")
+    if not process and not final:
+        return ""
+    try:
+        return str(round((float(process or 0) * 0.4) + (float(final or 0) * 0.6)))
+    except ValueError:
+        return ""
+
+
+def excel_cover_page(package: MarkdownPackage) -> str:
+    class_name = "、".join(list_value(package.meta.get("class_name")))
+    teachers = "  ".join(list_value(package.meta.get("teachers")))
+    rows = [
+        '#align(center)[#text(size: 24pt, weight: "bold")[成  绩  记  分  册]]',
+        "#v(46mm)",
+        f'#align(center)[#text(size: 14pt)[{typst_escape(package.meta.get("school_year", ""))}{typst_escape(package.meta.get("semester", ""))}]]',
+        "#v(10mm)",
+        f'#align(center)[#text(size: 14pt)[班级  {typst_escape(class_name)}班]]',
+        "#v(10mm)",
+        f'#align(center)[#text(size: 14pt)[学科  {typst_escape(package.meta.get("course_name", ""))}]]',
+        "#v(10mm)",
+        f'#align(center)[#text(size: 14pt)[授课教师  {typst_escape(teachers)}]]',
+        "#v(16mm)",
+        f'#align(center)[#text(size: 13pt)[{typst_escape(package.meta.get("date", ""))}]]',
+    ]
+    return "#pagebreak(weak: true)\n" + "\n".join(rows)
+
+
+def scorebook_body_page(package: MarkdownPackage) -> str:
+    raw_widths = [11.140625, 5.640625, 13.0, 4.140625, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 11.0, 11.0, 11.0, 9.5]
+    cols = excel_scaled_widths(raw_widths)
+    data_row_count = max(54, len(package.score_rows))
+    rows = [12.0, 8.8] + [7.3] * data_row_count + [8.4, 8.4, 8.4, 8.4]
+    cells: list[str] = []
+    diag_width = sum(cols[:3])
+    diag_height = sum(rows[:2])
+    cells.append(
+        typst_table_cell(
+            f'#excel-diag({typst_mm(diag_width)}, {typst_mm(diag_height)}, [学   号], [姓   名])',
+            colspan=3,
+            rowspan=2,
+            inset="0pt",
+            raw=True,
+        )
+    )
+    cells.append(typst_table_cell("作 业 测 试 成 绩", colspan=8, align="center + horizon"))
+    cells.extend(
+        [
+            typst_table_cell("平时\n成绩", rowspan=2),
+            typst_table_cell("期末\n成绩", rowspan=2),
+            typst_table_cell("学期\n成绩", rowspan=2),
+            typst_table_cell("备注", rowspan=2),
+        ]
+    )
+    for i in range(1, 9):
+        cells.append(typst_table_cell(str(i)))
+    for index in range(data_row_count):
+        row = package.score_rows[index] if index < len(package.score_rows) else {}
+        task_values = [score_value(row, f"任务{i}") for i in range(1, 9)]
+        process = numeric_average([score_value(row, f"任务{i}") for i in range(1, len(package.tasks) + 1)])
+        values = [
+            row.get("学号", ""),
+            row.get("姓名", ""),
+            "",
+            *task_values,
+            process,
+            row.get("期末", ""),
+            final_score(row),
+            "",
+        ]
+        cells.append(typst_table_cell(values[0], align="center + horizon"))
+        cells.append(typst_table_cell(values[1], colspan=2, align="center + horizon"))
+        for value in values[3:]:
+            cells.append(typst_table_cell(value, align="center + horizon"))
+    footer = [
+        ("任课教师签名", 3, 1),
+        ("", 2, 1),
+        ("教研室审核", 3, 1),
+        ("", 3, 1),
+        ("系部审核", 2, 2),
+        ("", 2, 2),
+        ("日期", 3, 1),
+        (package.meta.get("date", ""), 2, 1),
+        ("", 6, 1),
+        ("", 0, 0),
+    ]
+    cells.extend(
+        [
+            typst_table_cell("任课教师签名", colspan=3),
+            typst_table_cell("", colspan=2),
+            typst_table_cell("教研室审核", colspan=3),
+            typst_table_cell("", colspan=3),
+            typst_table_cell("系部审核", colspan=2, rowspan=2),
+            typst_table_cell("", colspan=2, rowspan=2),
+            typst_table_cell("日期", colspan=3),
+            typst_table_cell(package.meta.get("date", ""), colspan=2),
+            typst_table_cell("", colspan=6),
+        ]
+    )
+    return "#pagebreak(weak: true)\n#text(size: 7.4pt)[\n" + typst_table(cols, rows, cells) + "\n]"
+
+
+def score_summary_page(package: MarkdownPackage) -> str:
+    raw_widths = [4.296875, 8.8515625, 7.03125, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 5.59375]
+    cols = excel_scaled_widths(raw_widths)
+    data_count = max(42, len(package.score_rows))
+    rows = [10.5, 8.0, 7.0, 15.5, 12.0, 7.0] + [6.7] * data_count
+    cells = [
+        typst_table_cell("工学一体化课程/基本技能课程考核成绩汇总表", colspan=11, align="center + horizon", raw=False),
+        typst_table_cell("专业：", colspan=2),
+        typst_table_cell(package.meta.get("major_name", ""), colspan=3),
+        typst_table_cell("班级："),
+        typst_table_cell("、".join(list_value(package.meta.get("class_name"))), colspan=2),
+        typst_table_cell(f"{package.meta.get('school_year', '')} {package.meta.get('semester', '')}", colspan=3),
+        typst_table_cell("课程名称", colspan=2),
+        typst_table_cell(package.meta.get("course_name", ""), colspan=3),
+        typst_table_cell("课程类型", colspan=2),
+        typst_table_cell("一体化课□  基本技能实训课√", colspan=4),
+        typst_table_cell(""),
+        typst_table_cell(
+            f'#excel-diag({typst_mm(sum(cols[:2]))}, {typst_mm(rows[3] + rows[4] + rows[5])}, [学生\\n姓名], [考核\\n成绩])',
+            colspan=2,
+            rowspan=3,
+            inset="0pt",
+            raw=True,
+        ),
+    ]
+    for i in range(8):
+        task = package.tasks[i] if i < len(package.tasks) else {"task_name": "", "hours": ""}
+        cells.append(typst_table_cell(f"{task['task_name']}\n{task['hours']}", rowspan=2))
+    cells.append(typst_table_cell("总评成绩", rowspan=3))
+    for i in range(8):
+        task = package.tasks[i] if i < len(package.tasks) else {"hours": ""}
+        cells.append(typst_table_cell(str(task.get("hours", ""))))
+    for index in range(data_count):
+        row = package.score_rows[index] if index < len(package.score_rows) else {}
+        cells.append(typst_table_cell(str(index + 1) if row else ""))
+        cells.append(typst_table_cell(row.get("姓名", "")))
+        for i in range(1, 9):
+            cells.append(typst_table_cell(row.get(f"任务{i}", "")))
+        cells.append(typst_table_cell(final_score(row)))
+    return "#pagebreak(weak: true)\n#text(size: 6.9pt)[\n" + typst_table(cols, rows, cells) + "\n]"
+
+
+def analysis_page(package: MarkdownPackage) -> str:
+    raw_widths = [8.7109375, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 15.75]
+    cols = excel_scaled_widths(raw_widths)
+    rows = [13.0, 11.0, 8.5, 9.0, 9.0, 9.0, 9.0, 8.5, 26.0, 26.0, 26.0, 26.0, 22.0]
+    cells = [
+        typst_table_cell("成   绩  分  析  表", colspan=9, align="center + horizon"),
+        typst_table_cell(f"{package.meta.get('school_year', '')}{package.meta.get('semester', '')}", colspan=4),
+        typst_table_cell("班级："),
+        typst_table_cell("、".join(list_value(package.meta.get("class_name"))), colspan=2),
+        typst_table_cell("时间："),
+        typst_table_cell(package.meta.get("date", "")),
+        typst_table_cell("课程名称", colspan=2),
+        typst_table_cell(package.meta.get("course_name", ""), colspan=5),
+        typst_table_cell("教师姓名"),
+        typst_table_cell("、".join(list_value(package.meta.get("teachers")))),
+        typst_table_cell("全班人数", rowspan=2),
+        typst_table_cell("缺考人数", rowspan=2),
+        typst_table_cell("考试成绩、分类、人数及百分比", colspan=6),
+        typst_table_cell("最高分"),
+        typst_table_cell("不及格"),
+        typst_table_cell("及格"),
+        typst_table_cell("80分以上"),
+        typst_table_cell("90分以上"),
+        typst_table_cell("平均成绩"),
+        typst_table_cell("及格率"),
+        typst_table_cell(summary_stat(package, "max")),
+        typst_table_cell(str(len(package.score_rows)), rowspan=2),
+        typst_table_cell("0", rowspan=2),
+        typst_table_cell(summary_stat(package, "lt60"), rowspan=2),
+        typst_table_cell(summary_stat(package, "gte60"), rowspan=2),
+        typst_table_cell(summary_stat(package, "gte80lt90"), rowspan=2),
+        typst_table_cell(summary_stat(package, "gte90"), rowspan=2),
+        typst_table_cell(summary_stat(package, "avg"), rowspan=2),
+        typst_table_cell(summary_stat(package, "pass_rate"), rowspan=2),
+        typst_table_cell("最低分"),
+        typst_table_cell(summary_stat(package, "min")),
+        typst_table_cell("从学生掌握基本理论、基本概念、基本技能和重点难关等方面进行分析", colspan=9),
+        typst_table_cell("试卷分析"),
+        typst_table_cell(package.analysis.get("试卷分析", "无"), colspan=8, align="left + horizon"),
+        typst_table_cell("存在问题"),
+        typst_table_cell(package.analysis.get("存在问题", "无"), colspan=8, align="left + horizon"),
+        typst_table_cell("今后改进措施"),
+        typst_table_cell(package.analysis.get("今后改进措施", "无"), colspan=8, align="left + horizon"),
+        typst_table_cell("异常情况分析"),
+        typst_table_cell(package.analysis.get("异常情况分析", "无"), colspan=8, align="left + horizon"),
+        typst_table_cell("教研室意见", colspan=5),
+        typst_table_cell("系部意见", colspan=4),
+    ]
+    return "#pagebreak(weak: true)\n#text(size: 7.2pt)[\n" + typst_table(cols, rows, cells) + "\n]"
+
+
+def summary_scores(package: MarkdownPackage) -> list[float]:
+    values: list[float] = []
+    for row in package.score_rows:
+        score = final_score(row)
+        try:
+            if score != "":
+                values.append(float(score))
+        except ValueError:
+            pass
+    return values
+
+
+def summary_stat(package: MarkdownPackage, kind: str) -> str:
+    scores = summary_scores(package)
+    if not scores:
+        return ""
+    if kind == "max":
+        return str(round(max(scores)))
+    if kind == "min":
+        return str(round(min(scores)))
+    if kind == "avg":
+        return f"{sum(scores) / len(scores):.2f}"
+    if kind == "lt60":
+        return str(sum(1 for score in scores if score < 60))
+    if kind == "gte60":
+        return str(sum(1 for score in scores if score >= 60))
+    if kind == "gte80lt90":
+        return str(sum(1 for score in scores if 80 <= score < 90))
+    if kind == "gte90":
+        return str(sum(1 for score in scores if score >= 90))
+    if kind == "pass_rate":
+        return f"{sum(1 for score in scores if score >= 60) / len(scores):.0%}"
+    return ""
+
+
 def enabled_packages(package: MarkdownPackage) -> tuple[dict[str, bool], list[str]]:
     flags = package_flags(package.meta)
     warnings: list[str] = []
@@ -411,20 +703,14 @@ def enabled_packages(package: MarkdownPackage) -> tuple[dict[str, bool], list[st
 
 def generate_typst(package: MarkdownPackage, template_path: Path) -> tuple[str, list[str], dict[str, bool]]:
     flags, warnings = enabled_packages(package)
-    body: list[str] = ["= 期末教学材料包", ""]
+    body: list[str] = []
     if flags["成绩记分册"]:
-        body.append(f'#cover("成绩记分册", "重新设计封面", [\n{meta_rows(package)}\n])')
-        body.append("== 成绩记分册")
-        body.append(table_block(package.score_headers, [[row.get(header, "") for header in package.score_headers] for row in package.score_rows]))
+        body.append(excel_cover_page(package))
+        body.append(scorebook_body_page(package))
     if flags["成绩汇总表"]:
-        body.append('== 成绩汇总表')
-        summary_rows = score_summary_rows(package)
-        body.append(table_block(["项目", "值"], summary_rows))
+        body.append(score_summary_page(package))
     if flags["成绩分析表"]:
-        body.append("== 成绩分析表")
-        for title in ["试卷分析", "存在问题", "今后改进措施", "异常情况分析"]:
-            body.append(f"=== {typst_escape(title)}")
-            body.append(typst_escape(package.analysis.get(title, "无")))
+        body.append(analysis_page(package))
     if flags["教学日志封面"]:
         body.append(f'#cover("教学日志封面", "固定模板封面", [\n{meta_rows(package)}\n])')
     if flags["过程考核评价表封面"]:

@@ -2,7 +2,7 @@
 // The renderer replaces the placeholders below with escaped Typst content.
 // Fixed artifacts: 成绩记分册, 成绩汇总表, 成绩分析表, 教学日志封面, 过程考核评价表封面, 交接班记录封面.
 
-#set page(paper: "a4", margin: (x: 22mm, y: 20mm))
+#set page(paper: "a4", margin: (x: 22mm, y: 16mm))
 #set text(lang: "zh", font: ("Noto Serif CJK SC", "Songti SC", "STSong"), size: 10.5pt)
 #set par(justify: true, leading: 0.65em)
 
@@ -41,6 +41,12 @@
   align: horizon,
   ..rows,
 )
+
+#let excel-diag(width, height, top-left, bottom-right) = box(width: width, height: height)[
+  #place(dx: 0pt, dy: 0pt)[#line(length: width * 1.08, angle: 28deg, stroke: 0.45pt)]
+  #place(dx: 4pt, dy: 2pt)[#text(size: 8pt)[#top-left]]
+  #place(dx: width - 18mm, dy: height - 8mm)[#text(size: 8pt)[#bottom-right]]
+]
 
 #set document(title: "{{DOCUMENT_TITLE}}", author: "{{DOCUMENT_AUTHOR}}")
 
