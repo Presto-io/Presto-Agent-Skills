@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: End-of-Term Teaching Materials Skill
 current_phase: 11
-status: Phase 11 complete; ready to plan Phase 12
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-06-08T23:53:29Z"
+status: planning
+stopped_at: Phase 12 context gathered
+last_updated: "2026-06-09T00:18:38.633Z"
 last_activity: 2026-06-09 — Phase 11 contract slice completed
 progress:
   total_phases: 9
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 8
   completed_plans: 8
   percent: 100
@@ -99,8 +99,8 @@ Plan Phase 12: Fixed-Template Rendering and Verification.
 ## Last Session
 
 - **Completed:** Phase 11 contract slice
-- **Stopped At:** Completed 11-01-PLAN.md
-- **Resume File:** None
+- **Stopped At:** Phase 12 context gathered
+- **Resume File:** .planning/phases/12-fixed-template-rendering-and-verification/12-CONTEXT.md
 
 ## Close Notes
 
