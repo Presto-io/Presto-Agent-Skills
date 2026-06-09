@@ -12,7 +12,7 @@
 | `semester` | yes | string | 学期，例如 `第二学期`。 |
 | `major_name` | yes | string | 专业名称。 |
 | `course_name` | yes | string | 课程名称。 |
-| `course_type_label` | no | string | 成绩汇总表的课程类型显示文本，例如 `一体化课□ 基本技能实训课√`；缺失时 renderer 使用该默认文本。 |
+| `course_type_label` | no | string | 课程类型枚举，支持 `一体化`、`基本技能`、`单技能`；renderer 会据此在成绩汇总表中勾选 `一体化课` 或 `基本技能实训课`。已带 `√/□` 的完整显示文本会原样输出。缺失时默认 `基本技能`。 |
 | `class_name` | yes | string array | 当前教师所带班级短名称数组，例如 `示例电气2`；renderers 在目标模板需要时自行追加 `班`。 |
 | `teachers` | yes | string array | 任课教师有序数组；输出顺序跟随数组顺序，不添加 `primary_teacher`。 |
 | `handover_class_name` | no | string array | 交接班短名称数组；可表示一个或多个交接班级。 |

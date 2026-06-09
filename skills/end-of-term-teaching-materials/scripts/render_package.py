@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape as xml_escape
 
-VERSION = "0.3.3"
+VERSION = "0.3.4"
 PACKAGE_ARTIFACTS = [
     "成绩记分册",
     "成绩汇总表",
@@ -480,7 +480,17 @@ def teacher_label(package: MarkdownPackage, sep: str = "  ") -> str:
 
 
 def course_type_label(package: MarkdownPackage) -> str:
-    return scalar(package.meta.get("course_type_label")) or "一体化课□ 基本技能实训课√"
+    value = scalar(package.meta.get("course_type_label")).strip()
+    if not value:
+        value = "基本技能"
+    if "√" in value or "□" in value:
+        return value
+    compact = value.replace(" ", "")
+    if "一体化" in compact:
+        return "一体化课√ 基本技能实训课□"
+    if "基本技能" in compact or "单技能" in compact:
+        return "一体化课□ 基本技能实训课√"
+    return value
 
 
 def wrap_cjk_label(value: Any, width: int = 4, max_lines: int = 8) -> list[str]:
