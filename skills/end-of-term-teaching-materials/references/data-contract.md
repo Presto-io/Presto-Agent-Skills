@@ -27,7 +27,7 @@
 |-----|------|---------|-------|
 | `成绩记分册` | boolean | `true` | 一个 bundle：同时表示重新设计的成绩记分册封面和记分册正文，不拆成 cover/body 两个开关。 |
 | `成绩汇总表` | boolean | `true` | 后续 Phase 12 输出。 |
-| `成绩分析表` | boolean | `true` | 后续 Phase 12 输出。 |
+| `成绩分析表` | boolean | `true` | 输出成绩分析册封面和成绩分析表正文。 |
 | `教学日志封面` | boolean | `true` | 后续 Phase 12 输出。 |
 | `过程考核评价表封面` | boolean | `true` | 后续 Phase 12 输出。 |
 | `交接班记录封面` | boolean | `true` | 仅在 `handover_class_name` 和 `handover_teachers` 存在时输出。 |

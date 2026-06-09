@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape as xml_escape
 
-VERSION = "0.2.0"
+VERSION = "0.3.1"
 PACKAGE_ARTIFACTS = [
     "成绩记分册",
     "成绩汇总表",
@@ -377,6 +377,244 @@ def typst_cell(value: Any) -> str:
     return f"[{typst_escape(value)}]"
 
 
+def typst_body(value: Any) -> str:
+    return f"[{typst_escape(value)}]"
+
+
+def pt(value: float) -> str:
+    return f"{value:.2f}pt"
+
+
+def ptext_abs(
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    size: float,
+    body: Any,
+    *,
+    pos: str = "center + horizon",
+    weight: str = "regular",
+    clip: bool = True,
+) -> str:
+    fn = "ptext" if clip else "ptext_nc"
+    return (
+        f"#{fn}({pt(x)}, {pt(y)}, {pt(w)}, {pt(h)}, {size:g}pt, "
+        f"{typst_body(body)}, pos: {pos}, weight: \"{weight}\")"
+    )
+
+
+def hline_abs(x1: float, x2: float, y: float) -> str:
+    return f"#hline({pt(x1)}, {pt(x2)}, {pt(y)}, s: 0.580pt)"
+
+
+def vline_abs(x: float, y1: float, y2: float) -> str:
+    return f"#vline({pt(x)}, {pt(y1)}, {pt(y2)}, s: 0.580pt)"
+
+
+def diag_abs(x: float, y: float, length: float, deg: float) -> str:
+    return f"#diag({pt(x)}, {pt(y)}, {pt(length)}, {deg:.2f}deg, s: 0.580pt)"
+
+
+def pagebox_abs(lines: list[str]) -> str:
+    return "#pagebox[\n" + "\n".join(lines) + "\n]"
+
+
+def school_year_label(package: MarkdownPackage) -> str:
+    year = scalar(package.meta.get("school_year")).replace("-", "～")
+    semester = scalar(package.meta.get("semester"))
+    return f"{year}学年{semester}".strip()
+
+
+def normalized_class_label(value: Any, spaced: bool = False) -> str:
+    value = "、".join(list_value(value))
+    if not value:
+        return ""
+    if value.endswith("班"):
+        return value
+    return f"{value} 班" if spaced else f"{value}班"
+
+
+def class_label(package: MarkdownPackage, spaced: bool = False) -> str:
+    return normalized_class_label(package.meta.get("class_name"), spaced=spaced)
+
+
+def date_label(package: MarkdownPackage, spaced: bool = False) -> str:
+    value = scalar(package.meta.get("date"))
+    parts = value.split("-")
+    if len(parts) == 3 and all(part.isdigit() for part in parts):
+        year, month, day = parts[0], str(int(parts[1])), str(int(parts[2]))
+        return f"{year} 年 {month} 月 {day} 日" if spaced else f"{year}年{month}月{day}日"
+    return value
+
+
+def teacher_label(package: MarkdownPackage, sep: str = "  ") -> str:
+    return sep.join(list_value(package.meta.get("teachers")))
+
+
+def wrap_cjk_label(value: Any, width: int = 4, max_lines: int = 8) -> list[str]:
+    text = scalar(value).replace(" ", "")
+    if not text:
+        return []
+    lines: list[str] = []
+    current = ""
+    for char in text:
+        current += char
+        if len(current) >= width:
+            lines.append(current)
+            current = ""
+    if current:
+        lines.append(current)
+    return lines[:max_lines]
+
+
+def task_score(row: dict[str, str], index: int) -> str:
+    return row.get(f"任务{index}", "")
+
+
+def process_score(row: dict[str, str], task_count: int) -> str:
+    return numeric_average([row.get(f"任务{i}", "") for i in range(1, task_count + 1)])
+
+
+def spaced_cover_title(title: str) -> str:
+    raw = title.removesuffix("封面")
+    overrides = {
+        "成绩记分册": "成  绩  记  分  册",
+        "成绩分析册": "成  绩  分  析  册",
+        "教学日志": "教  学  日  志",
+        "过程考核评价表": "过 程 考 核 评 价 表",
+        "交接班记录": "交 接 班 记 录",
+    }
+    return overrides.get(raw, raw)
+
+
+def cover_title_size(title: str) -> float:
+    raw = title.removesuffix("封面")
+    if raw in {"过程考核评价表", "成绩记分册", "成绩分析册"}:
+        return 34.0
+    return 38.0
+
+
+def cover_title_block(title: str, *, y: float = 202.00) -> list[str]:
+    return [
+        ptext_abs(
+            0.00,
+            y,
+            595.30,
+            70.00,
+            cover_title_size(title),
+            spaced_cover_title(title),
+            weight="bold",
+            clip=False,
+        )
+    ]
+
+
+def cover_line_field(
+    lines: list[str],
+    y: float,
+    label: str,
+    value: Any,
+    *,
+    label_x: float = 158.00,
+    label_w: float = 60.00,
+    value_x: float = 218.00,
+    value_w: float = 228.00,
+    size: float = 16.2,
+) -> None:
+    line_y = y + 27.00
+    lines.append(ptext_abs(label_x, y, label_w, 22.00, size, f"{label}：", pos="left + horizon", clip=False))
+    lines.append(ptext_abs(value_x, y, value_w, 22.00, size, value, clip=False))
+    lines.append(hline_abs(value_x, value_x + value_w, line_y))
+
+
+def reference_cover_page(package: MarkdownPackage, title: str, *, fields: list[tuple[str, Any]] | None = None) -> str:
+    lines = cover_title_block(title)
+    cover_fields = fields or [
+        ("科目", package.meta.get("course_name", "")),
+        ("班级", class_label(package)),
+        ("教师", teacher_label(package)),
+    ]
+    y = 522.00
+    for label, value in cover_fields:
+        cover_line_field(lines, y, label, value)
+        y += 34.00
+    return pagebox_abs(lines)
+
+
+def analysis_cover_page(package: MarkdownPackage) -> str:
+    lines = cover_title_block("成绩分析册")
+    y = 504.00
+    cover_line_field(
+        lines,
+        y,
+        "科目",
+        package.meta.get("course_name", ""),
+        label_x=118.00,
+        label_w=60.00,
+        value_x=178.00,
+        value_w=338.00,
+    )
+    y += 36.00
+    cover_line_field(
+        lines,
+        y,
+        "专业",
+        package.meta.get("major_name", ""),
+        label_x=118.00,
+        label_w=60.00,
+        value_x=178.00,
+        value_w=118.00,
+        size=15.6,
+    )
+    cover_line_field(
+        lines,
+        y,
+        "班级",
+        class_label(package),
+        label_x=322.00,
+        label_w=60.00,
+        value_x=382.00,
+        value_w=134.00,
+        size=15.6,
+    )
+    y += 36.00
+    cover_line_field(
+        lines,
+        y,
+        "教师",
+        teacher_label(package),
+        label_x=118.00,
+        label_w=60.00,
+        value_x=178.00,
+        value_w=118.00,
+        size=15.6,
+    )
+    cover_line_field(
+        lines,
+        y,
+        "日期",
+        date_label(package, spaced=True),
+        label_x=322.00,
+        label_w=60.00,
+        value_x=382.00,
+        value_w=134.00,
+        size=15.6,
+    )
+    y += 36.00
+    cover_line_field(
+        lines,
+        y,
+        "学期",
+        school_year_label(package),
+        label_x=118.00,
+        label_w=60.00,
+        value_x=178.00,
+        value_w=338.00,
+    )
+    return pagebox_abs(lines)
+
+
 def meta_rows(package: MarkdownPackage, extra: dict[str, Any] | None = None) -> str:
     fields: list[tuple[str, Any]] = [
         ("专业", package.meta.get("major_name", "")),
@@ -471,189 +709,265 @@ def final_score(row: dict[str, str]) -> str:
 
 
 def excel_cover_page(package: MarkdownPackage) -> str:
-    class_name = "、".join(list_value(package.meta.get("class_name")))
-    teachers = "  ".join(list_value(package.meta.get("teachers")))
-    rows = [
-        '#align(center)[#text(size: 24pt, weight: "bold")[成  绩  记  分  册]]',
-        "#v(46mm)",
-        f'#align(center)[#text(size: 14pt)[{typst_escape(package.meta.get("school_year", ""))}{typst_escape(package.meta.get("semester", ""))}]]',
-        "#v(10mm)",
-        f'#align(center)[#text(size: 14pt)[班级  {typst_escape(class_name)}班]]',
-        "#v(10mm)",
-        f'#align(center)[#text(size: 14pt)[学科  {typst_escape(package.meta.get("course_name", ""))}]]',
-        "#v(10mm)",
-        f'#align(center)[#text(size: 14pt)[授课教师  {typst_escape(teachers)}]]',
-        "#v(16mm)",
-        f'#align(center)[#text(size: 13pt)[{typst_escape(package.meta.get("date", ""))}]]',
-    ]
-    return "#pagebreak(weak: true)\n" + "\n".join(rows)
+    return reference_cover_page(package, "成绩记分册")
 
 
 def scorebook_body_page(package: MarkdownPackage) -> str:
-    raw_widths = [11.140625, 5.640625, 13.0, 4.140625, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 11.0, 11.0, 11.0, 9.5]
-    cols = excel_scaled_widths(raw_widths)
-    data_row_count = max(54, len(package.score_rows))
-    rows = [12.0, 8.8] + [7.3] * data_row_count + [8.4, 8.4, 8.4, 8.4]
-    cells: list[str] = []
-    diag_width = sum(cols[:3])
-    diag_height = sum(rows[:2])
-    cells.append(
-        typst_table_cell(
-            f'#excel-diag({typst_mm(diag_width)}, {typst_mm(diag_height)}, [学   号], [姓   名])',
-            colspan=3,
-            rowspan=2,
-            inset="0pt",
-            raw=True,
-        )
-    )
-    cells.append(typst_table_cell("作 业 测 试 成 绩", colspan=8, align="center + horizon"))
-    cells.extend(
+    full_capacity = scorebook_row_capacity(769.17)
+    stats_capacity = scorebook_row_capacity(662.06)
+    rows = package.score_rows
+    pages: list[str] = []
+    while len(rows) > stats_capacity:
+        pages.append(scorebook_score_page(package, rows[:full_capacity], bottom_y=769.17, include_stats=False))
+        rows = rows[full_capacity:]
+        if not rows:
+            break
+    pages.append(scorebook_score_page(package, rows, bottom_y=662.06, include_stats=True))
+    return "\n#pagebreak()\n".join(pages)
+
+
+def scorebook_row_lines(bottom_y: float) -> list[float]:
+    row_lines = [72.26, 133.30]
+    y = 155.52
+    while y < bottom_y - 0.1:
+        row_lines.append(round(y, 2))
+        y += 21.98 if y != 133.30 else 22.22
+    if bottom_y - row_lines[-1] <= 1.5:
+        row_lines[-1] = bottom_y
+    elif row_lines[-1] != bottom_y:
+        row_lines.append(bottom_y)
+    return row_lines
+
+
+def scorebook_row_capacity(bottom_y: float) -> int:
+    return len(scorebook_row_lines(bottom_y)[1:-1])
+
+
+def scorebook_score_page(package: MarkdownPackage, rows: list[dict[str, str]], *, bottom_y: float, include_stats: bool) -> str:
+    lines: list[str] = []
+    for x in [52.88, 179.25, 371.59, 414.65, 457.71, 500.76, 541.95]:
+        lines.append(vline_abs(x, 72.26, bottom_y))
+    lines.append(vline_abs(115.13, 133.30, bottom_y))
+    for x in [203.11, 227.45, 251.32, 275.65, 299.52, 323.39, 347.73]:
+        lines.append(vline_abs(x, 107.58, bottom_y))
+    row_lines = scorebook_row_lines(bottom_y)
+    for y_value in row_lines:
+        lines.append(hline_abs(52.88, 541.95, y_value))
+    lines.append(hline_abs(179.25, 371.59, 107.58))
+    for x in [203.11, 227.45, 251.32, 275.65, 299.52, 323.39, 347.73]:
+        lines.append(vline_abs(x, 107.58, 133.30))
+    lines.extend(
         [
-            typst_table_cell("平时\n成绩", rowspan=2),
-            typst_table_cell("期末\n成绩", rowspan=2),
-            typst_table_cell("学期\n成绩", rowspan=2),
-            typst_table_cell("备注", rowspan=2),
+            diag_abs(52.88, 72.26, 87.18, 44.44),
+            diag_abs(52.88, 72.26, 140.34, 25.78),
+            diag_abs(138.53, 72.26, 73.38, 56.29),
+            ptext_abs(62.70, 115.80, 45.00, 17.00, 10.2, "学   号", clip=False),
+            ptext_abs(111.00, 115.80, 43.00, 17.00, 10.2, "姓 名", clip=False),
+            ptext_abs(111.00, 86.20, 43.00, 17.00, 10.2, "分 数", clip=False),
+            ptext_abs(157.00, 77.50, 20.00, 12.00, 10.2, "种", clip=False),
+            ptext_abs(157.00, 90.00, 20.00, 12.00, 10.2, "类", clip=False),
+            ptext_abs(179.25, 72.26, 192.35, 35.32, 10.2, "作 业 测 试 成 绩", clip=False),
         ]
     )
-    for i in range(1, 9):
-        cells.append(typst_table_cell(str(i)))
-    for index in range(data_row_count):
-        row = package.score_rows[index] if index < len(package.score_rows) else {}
-        task_values = [score_value(row, f"任务{i}") for i in range(1, 9)]
-        process = numeric_average([score_value(row, f"任务{i}") for i in range(1, len(package.tasks) + 1)])
-        values = [
-            row.get("学号", ""),
-            row.get("姓名", ""),
-            "",
-            *task_values,
-            process,
-            row.get("期末", ""),
-            final_score(row),
-            "",
-        ]
-        cells.append(typst_table_cell(values[0], align="center + horizon"))
-        cells.append(typst_table_cell(values[1], colspan=2, align="center + horizon"))
-        for value in values[3:]:
-            cells.append(typst_table_cell(value, align="center + horizon"))
-    footer = [
-        ("任课教师签名", 3, 1),
-        ("", 2, 1),
-        ("教研室审核", 3, 1),
-        ("", 3, 1),
-        ("系部审核", 2, 2),
-        ("", 2, 2),
-        ("日期", 3, 1),
-        (package.meta.get("date", ""), 2, 1),
-        ("", 6, 1),
-        ("", 0, 0),
-    ]
-    cells.extend(
-        [
-            typst_table_cell("任课教师签名", colspan=3),
-            typst_table_cell("", colspan=2),
-            typst_table_cell("教研室审核", colspan=3),
-            typst_table_cell("", colspan=3),
-            typst_table_cell("系部审核", colspan=2, rowspan=2),
-            typst_table_cell("", colspan=2, rowspan=2),
-            typst_table_cell("日期", colspan=3),
-            typst_table_cell(package.meta.get("date", ""), colspan=2),
-            typst_table_cell("", colspan=6),
-        ]
-    )
-    return "#pagebreak(weak: true)\n#text(size: 7.4pt)[\n" + typst_table(cols, rows, cells) + "\n]"
+    task_x = [179.25, 203.11, 227.45, 251.32, 275.65, 299.52, 323.39, 347.73]
+    task_w = [23.87, 24.34, 23.87, 24.34, 23.87, 23.87, 24.34, 23.87]
+    for i, (x, w) in enumerate(zip(task_x, task_w), start=1):
+        lines.append(ptext_abs(x, 110.38, w, 20.11, 11, str(i)))
+    for x, label in [(371.59, "平时"), (414.65, "期末"), (457.71, "学期")]:
+        lines.append(ptext_abs(x, 91.00, 43.06, 12.00, 10.6, label, clip=False))
+        lines.append(ptext_abs(x, 105.00, 43.06, 12.00, 10.6, "成绩", clip=False))
+    lines.append(ptext_abs(500.76, 93.50, 41.18, 18.00, 11, "备注"))
+
+    row_tops = row_lines[1:-1]
+    task_count = len(package.tasks)
+    for idx, top in enumerate(row_tops):
+        row = rows[idx] if idx < len(rows) else {}
+        y_text = top + 0.94
+        h = max(12.0, row_lines[idx + 2] - top - 1.87)
+        lines.append(ptext_abs(52.88, y_text, 62.24, h, 10.6, row.get("学号", "")))
+        lines.append(ptext_abs(115.13, y_text, 64.12, h, 10.6, row.get("姓名", "")))
+        for task_index, (x, w) in enumerate(zip(task_x, task_w), start=1):
+            lines.append(ptext_abs(x, y_text, w, h, 11.8, task_score(row, task_index)))
+        lines.append(ptext_abs(371.59, y_text, 43.06, h, 11.8, process_score(row, task_count)))
+        lines.append(ptext_abs(414.65, y_text, 43.06, h, 11.8, row.get("期末", "")))
+        lines.append(ptext_abs(457.71, y_text, 43.06, h, 11.8, final_score(row)))
+    if include_stats:
+        lines.extend(scorebook_stats_block(package))
+    return pagebox_abs(lines)
+
+
+def scorebook_stats_block(package: MarkdownPackage) -> list[str]:
+    lines: list[str] = []
+    xs = [52.88 + 54.34 * i for i in range(10)]
+    for x in xs:
+        lines.append(vline_abs(x, 697.84, 733.39))
+    for y in [697.84, 715.15, 733.39]:
+        lines.append(hline_abs(52.88, 541.95, y))
+    lines.append("#hline(52.70pt, 542.15pt, 697.84pt, s: 0.760pt)")
+    labels = ["分 数", "90 分以上", "80 分以上", "70 分以上", "60 分以上", "50 分以上", "40 分以上", "30 分以上", "不满 30 分"]
+    values = score_distribution(package)
+    for i, label in enumerate(labels):
+        lines.append(ptext_abs(xs[i], 697.84, 54.34, 17.31, 10.8, label))
+    lines.append(ptext_abs(xs[0], 715.15, 54.34, 18.24, 10.8, "人 数"))
+    for i, value in enumerate(values, start=1):
+        lines.append(ptext_abs(xs[i], 715.15, 54.34, 18.24, 10.8, value))
+    lines.append(ptext_abs(0.00, 672.00, 595.30, 24.00, 16.8, "学 期 成 绩 统 计 表", weight="bold"))
+    lines.append(ptext_abs(52.88, 748.36, 150.00, 14.97, 10.8, f"及格率：  {pass_rate(package)}", pos="left + horizon", clip=False))
+    lines.append(ptext_abs(215.90, 748.36, 150.00, 14.97, 10.8, "任课教师：", pos="left + horizon", clip=False))
+    lines.append(ptext_abs(378.93, 748.36, 150.00, 14.97, 10.8, "教研室主任：", pos="left + horizon", clip=False))
+    return lines
 
 
 def score_summary_page(package: MarkdownPackage) -> str:
-    raw_widths = [4.296875, 8.8515625, 7.03125, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 5.59375]
-    cols = excel_scaled_widths(raw_widths)
-    data_count = max(42, len(package.score_rows))
-    rows = [10.5, 8.0, 7.0, 15.5, 12.0, 7.0] + [6.7] * data_count
-    cells = [
-        typst_table_cell("工学一体化课程/基本技能课程考核成绩汇总表", colspan=11, align="center + horizon", raw=False),
-        typst_table_cell("专业：", colspan=2),
-        typst_table_cell(package.meta.get("major_name", ""), colspan=3),
-        typst_table_cell("班级："),
-        typst_table_cell("、".join(list_value(package.meta.get("class_name"))), colspan=2),
-        typst_table_cell(f"{package.meta.get('school_year', '')} {package.meta.get('semester', '')}", colspan=3),
-        typst_table_cell("课程名称", colspan=2),
-        typst_table_cell(package.meta.get("course_name", ""), colspan=3),
-        typst_table_cell("课程类型", colspan=2),
-        typst_table_cell("一体化课□  基本技能实训课√", colspan=4),
-        typst_table_cell(""),
-        typst_table_cell(
-            f'#excel-diag({typst_mm(sum(cols[:2]))}, {typst_mm(rows[3] + rows[4] + rows[5])}, [学生\\n姓名], [考核\\n成绩])',
-            colspan=2,
-            rowspan=3,
-            inset="0pt",
-            raw=True,
-        ),
+    lines: list[str] = [
+        ptext_abs(0.00, 89.50, 595.30, 21.04, 16.8, "工学一体化课程/基本技能课程考核成绩汇总表", weight="bold"),
+        ptext_abs(55.69, 123.80, 160.68, 21.00, 11.6, f"专业：  {package.meta.get('major_name', '')}", clip=False),
+        ptext_abs(216.37, 123.80, 160.68, 21.00, 11.6, f"班级：  {class_label(package, spaced=True)}", clip=False),
+        ptext_abs(377.05, 123.80, 160.68, 21.00, 11.6, date_label(package, spaced=True), clip=False),
     ]
-    for i in range(8):
-        task = package.tasks[i] if i < len(package.tasks) else {"task_name": "", "hours": ""}
-        cells.append(typst_table_cell(f"{task['task_name']}\n{task['hours']}", rowspan=2))
-    cells.append(typst_table_cell("总评成绩", rowspan=3))
-    for i in range(8):
-        task = package.tasks[i] if i < len(package.tasks) else {"hours": ""}
-        cells.append(typst_table_cell(str(task.get("hours", ""))))
-    for index in range(data_count):
+    for y in [142.19, 160.90, 326.00, 346.02, 366.04, 386.06, 406.08, 426.09, 446.11, 466.13, 486.15, 506.17, 526.19, 546.21, 566.22, 586.24, 606.26, 626.28, 646.30, 666.32, 686.34, 706.35, 726.37]:
+        lines.append(hline_abs(55.69, 537.74, y))
+    lines.append(hline_abs(140.40, 501.23, 305.89))
+    for x in [55.69, 140.40, 276.12, 366.45, 537.74]:
+        lines.append(vline_abs(x, 142.19, 160.90))
+    for x in [55.69, 140.40, 185.80, 230.73, 276.12, 321.05, 366.45, 411.37, 456.30, 501.23, 537.74]:
+        lines.append(vline_abs(x, 160.90, 326.00))
+    for x in [55.69, 83.30, 140.40, 185.80, 230.73, 276.12, 321.05, 366.45, 411.37, 456.30, 501.23, 537.74]:
+        lines.append(vline_abs(x, 326.00, 726.84))
+    lines.extend(
+        [
+            diag_abs(55.69, 160.90, 172.40, 73.28),
+            diag_abs(55.69, 160.90, 111.47, 40.54),
+            ptext_abs(55.69, 142.19, 84.71, 18.71, 11.8, "课程名称"),
+            ptext_abs(140.40, 142.19, 135.72, 18.71, 10.2, package.meta.get("course_name", "")),
+            ptext_abs(276.12, 142.19, 90.32, 18.71, 11.8, "课程类型"),
+            ptext_abs(366.45, 142.19, 171.29, 18.71, 11.8, "一体化课□  基本技能实训课√"),
+            ptext_abs(90.00, 164.00, 49.00, 12.00, 10.5, "任务名称", pos="right + horizon", clip=False),
+            ptext_abs(90.00, 178.00, 49.00, 12.00, 10.5, "考核权重", pos="right + horizon", clip=False),
+            ptext_abs(55.00, 286.00, 42.00, 12.00, 10.5, "学生", clip=False),
+            ptext_abs(55.00, 300.00, 42.00, 12.00, 10.5, "姓名", clip=False),
+            ptext_abs(101.00, 264.00, 36.00, 12.00, 10.5, "考核", clip=False),
+            ptext_abs(101.00, 278.00, 36.00, 12.00, 10.5, "成绩", clip=False),
+            ptext_abs(501.23, 232.00, 36.50, 12.00, 10.5, "总评", clip=False),
+            ptext_abs(501.23, 246.00, 36.50, 12.00, 10.5, "成绩", clip=False),
+        ]
+    )
+    task_cols = [(140.40, 45.40), (185.80, 44.93), (230.73, 45.40), (276.12, 44.93), (321.05, 45.40)]
+    weights = task_weights(package)
+    for index, (x, w) in enumerate(task_cols, start=1):
+        task = package.tasks[index - 1] if index <= len(package.tasks) else {"task_name": ""}
+        task_lines = wrap_cjk_label(task.get("task_name", ""), width=4, max_lines=8)
+        start_y = 192.00 if len(task_lines) <= 6 else 178.00
+        for line_index, label in enumerate(task_lines):
+            lines.append(ptext_abs(x, start_y + 14.00 * line_index, w, 13.00, 10.0 if len(task_lines) > 6 else 10.2, label, clip=False))
+        lines.append(ptext_abs(x, 305.89, w, 20.11, 10.8, weights[index - 1] if index - 1 < len(weights) else ""))
+    for index in range(20):
         row = package.score_rows[index] if index < len(package.score_rows) else {}
-        cells.append(typst_table_cell(str(index + 1) if row else ""))
-        cells.append(typst_table_cell(row.get("姓名", "")))
-        for i in range(1, 9):
-            cells.append(typst_table_cell(row.get(f"任务{i}", "")))
-        cells.append(typst_table_cell(final_score(row)))
-    return "#pagebreak(weak: true)\n#text(size: 6.9pt)[\n" + typst_table(cols, rows, cells) + "\n]"
+        top = 326.00 + 20.02 * index
+        lines.append(ptext_abs(55.69, top, 27.61, 20.02, 10.8, str(index + 1) if row else ""))
+        lines.append(ptext_abs(83.30, top, 57.10, 20.02, 10.8, row.get("姓名", "")))
+        for task_index, (x, w) in enumerate(task_cols, start=1):
+            lines.append(ptext_abs(x, top, w, 20.02, 10.8, task_score(row, task_index)))
+        lines.append(ptext_abs(501.23, top, 36.50, 20.02, 10.8, final_score(row)))
+    lines.append(ptext_abs(74.00, 758.00, 150.00, 14.00, 11.6, "教研室主任签字：", pos="left + horizon", clip=False))
+    lines.append(ptext_abs(392.00, 758.00, 120.00, 14.00, 11.6, "教师签字：", pos="left + horizon", clip=False))
+    return pagebox_abs(lines)
 
 
 def analysis_page(package: MarkdownPackage) -> str:
-    raw_widths = [8.7109375, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 15.75]
-    cols = excel_scaled_widths(raw_widths)
-    rows = [13.0, 11.0, 8.5, 9.0, 9.0, 9.0, 9.0, 8.5, 26.0, 26.0, 26.0, 26.0, 22.0]
-    cells = [
-        typst_table_cell("成   绩  分  析  表", colspan=9, align="center + horizon"),
-        typst_table_cell(f"{package.meta.get('school_year', '')}{package.meta.get('semester', '')}", colspan=4),
-        typst_table_cell("班级："),
-        typst_table_cell("、".join(list_value(package.meta.get("class_name"))), colspan=2),
-        typst_table_cell("时间："),
-        typst_table_cell(package.meta.get("date", "")),
-        typst_table_cell("课程名称", colspan=2),
-        typst_table_cell(package.meta.get("course_name", ""), colspan=5),
-        typst_table_cell("教师姓名"),
-        typst_table_cell("、".join(list_value(package.meta.get("teachers")))),
-        typst_table_cell("全班人数", rowspan=2),
-        typst_table_cell("缺考人数", rowspan=2),
-        typst_table_cell("考试成绩、分类、人数及百分比", colspan=6),
-        typst_table_cell("最高分"),
-        typst_table_cell("不及格"),
-        typst_table_cell("及格"),
-        typst_table_cell("80分以上"),
-        typst_table_cell("90分以上"),
-        typst_table_cell("平均成绩"),
-        typst_table_cell("及格率"),
-        typst_table_cell(summary_stat(package, "max")),
-        typst_table_cell(str(len(package.score_rows)), rowspan=2),
-        typst_table_cell("0", rowspan=2),
-        typst_table_cell(summary_stat(package, "lt60"), rowspan=2),
-        typst_table_cell(summary_stat(package, "gte60"), rowspan=2),
-        typst_table_cell(summary_stat(package, "gte80lt90"), rowspan=2),
-        typst_table_cell(summary_stat(package, "gte90"), rowspan=2),
-        typst_table_cell(summary_stat(package, "avg"), rowspan=2),
-        typst_table_cell(summary_stat(package, "pass_rate"), rowspan=2),
-        typst_table_cell("最低分"),
-        typst_table_cell(summary_stat(package, "min")),
-        typst_table_cell("从学生掌握基本理论、基本概念、基本技能和重点难关等方面进行分析", colspan=9),
-        typst_table_cell("试卷分析"),
-        typst_table_cell(package.analysis.get("试卷分析", "无"), colspan=8, align="left + horizon"),
-        typst_table_cell("存在问题"),
-        typst_table_cell(package.analysis.get("存在问题", "无"), colspan=8, align="left + horizon"),
-        typst_table_cell("今后改进措施"),
-        typst_table_cell(package.analysis.get("今后改进措施", "无"), colspan=8, align="left + horizon"),
-        typst_table_cell("异常情况分析"),
-        typst_table_cell(package.analysis.get("异常情况分析", "无"), colspan=8, align="left + horizon"),
-        typst_table_cell("教研室意见", colspan=5),
-        typst_table_cell("系部意见", colspan=4),
+    lines: list[str] = [
+        ptext_abs(0.00, 102.00, 595.30, 25.00, 20.0, "成  绩  分  析  表"),
+        ptext_abs(55.69, 142.66, 170.00, 16.84, 11.8, school_year_label(package), pos="left + horizon", clip=False),
+        ptext_abs(250.00, 142.66, 120.00, 16.84, 11.8, f"班级：  {class_label(package, spaced=True)}", clip=False),
+        ptext_abs(390.00, 142.66, 170.00, 16.84, 11.8, f"时间：  {date_label(package, spaced=True)}", clip=False),
     ]
-    return "#pagebreak(weak: true)\n#text(size: 7.2pt)[\n" + typst_table(cols, rows, cells) + "\n]"
+    for y in [167.44, 192.70, 217.49, 242.75, 292.79, 317.58, 407.85, 498.12, 587.93, 678.20, 758.18]:
+        lines.append(hline_abs(55.69, 537.74, y))
+    for y in [267.77]:
+        lines.append(hline_abs(448.35, 537.74, y))
+    for x, y1, y2 in [
+        (55.69, 167.44, 192.70), (153.97, 167.44, 192.70), (399.21, 167.44, 192.70),
+        (448.35, 167.44, 192.70), (537.74, 167.44, 192.70),
+        (55.69, 192.70, 217.49), (104.83, 192.70, 217.49), (153.97, 192.70, 217.49),
+        (448.35, 192.70, 217.49), (537.74, 192.70, 217.49),
+        (55.69, 217.49, 292.79), (104.83, 217.49, 292.79), (153.97, 217.49, 292.79),
+        (203.11, 217.49, 292.79), (251.79, 217.49, 292.79), (300.93, 217.49, 292.79),
+        (350.07, 217.49, 292.79), (399.21, 217.49, 292.79), (448.35, 217.49, 292.79),
+        (537.74, 217.49, 292.79),
+        (55.69, 292.79, 317.58), (537.74, 292.79, 317.58),
+        (55.69, 317.58, 407.85), (104.83, 317.58, 407.85), (537.74, 317.58, 407.85),
+        (55.69, 407.85, 498.12), (104.83, 407.85, 498.12), (537.74, 407.85, 498.12),
+        (55.69, 498.12, 587.93), (104.83, 498.12, 587.93), (537.74, 498.12, 587.93),
+        (55.69, 587.93, 678.20), (104.83, 587.93, 678.20), (537.74, 587.93, 678.20),
+        (55.69, 678.20, 758.18), (300.93, 678.20, 758.18), (537.74, 678.20, 758.18),
+    ]:
+        lines.append(vline_abs(x, y1, y2))
+    lines.extend(
+        [
+            ptext_abs(55.69, 167.44, 98.28, 25.26, 11.8, "课程名称"),
+            ptext_abs(153.97, 167.44, 245.24, 25.26, 11.8, package.meta.get("course_name", "")),
+            ptext_abs(399.21, 167.44, 49.14, 25.26, 11.8, "教师姓名"),
+            ptext_abs(448.35, 167.44, 89.39, 25.26, 11.8, teacher_label(package, sep="  ")),
+            ptext_abs(55.69, 192.70, 49.14, 24.79, 11.8, "全班人数"),
+            ptext_abs(104.83, 192.70, 49.14, 24.79, 11.8, "缺考人数"),
+            ptext_abs(153.97, 192.70, 294.38, 24.79, 11.8, "考试成绩、分类、人数及百分比"),
+            ptext_abs(448.35, 192.70, 89.39, 24.79, 11.8, "最高分"),
+            ptext_abs(153.97, 217.49, 49.14, 25.26, 11.6, "不及格"),
+            ptext_abs(203.11, 217.49, 48.67, 25.26, 11.6, "及格"),
+            ptext_abs(251.79, 217.49, 49.14, 25.26, 9.8, "80分以上", clip=False),
+            ptext_abs(300.93, 217.49, 49.14, 25.26, 9.8, "90分以上", clip=False),
+            ptext_abs(350.07, 217.49, 49.14, 25.26, 11.6, "平均成绩"),
+            ptext_abs(399.21, 217.49, 49.14, 25.26, 11.6, "及格率"),
+            ptext_abs(448.35, 217.49, 89.39, 25.26, 11.8, summary_stat(package, "max")),
+            ptext_abs(55.69, 242.75, 49.14, 50.05, 10.8, str(len(package.score_rows))),
+            ptext_abs(104.83, 242.75, 49.14, 50.05, 10.8, "0"),
+            ptext_abs(153.97, 242.75, 49.14, 50.05, 10.8, summary_stat(package, "lt60")),
+            ptext_abs(203.11, 242.75, 48.67, 50.05, 10.8, summary_stat(package, "gte60")),
+            ptext_abs(251.79, 242.75, 49.14, 50.05, 10.8, summary_stat(package, "gte80lt90")),
+            ptext_abs(300.93, 242.75, 49.14, 50.05, 10.8, summary_stat(package, "gte90")),
+            ptext_abs(350.07, 242.75, 49.14, 50.05, 10.8, summary_stat(package, "avg")),
+            ptext_abs(399.21, 242.75, 49.14, 50.05, 10.8, summary_stat(package, "pass_rate")),
+            ptext_abs(448.35, 242.75, 89.39, 24.79, 11.8, "最低分"),
+            ptext_abs(448.35, 267.77, 89.39, 24.79, 11.8, summary_stat(package, "min")),
+            ptext_abs(55.69, 292.79, 482.04, 24.79, 11.8, "从学生掌握基本理论、基本概念、基本技能和重点难关等方面进行分析"),
+        ]
+    )
+    analysis_rows = [
+        ("试卷分析", package.analysis.get("试卷分析", "无"), 317.58, 407.85, 1),
+        ("存在问题", package.analysis.get("存在问题", "无"), 407.85, 498.12, 1),
+        ("今后改进\n措施", package.analysis.get("今后改进措施", "无"), 498.12, 587.93, 2),
+        ("异常情况\n分析", package.analysis.get("异常情况分析", "无"), 587.93, 678.20, 2),
+    ]
+    for label, text, top, bottom, label_lines in analysis_rows:
+        label_parts = label.split("\n")
+        label_y = (top + bottom) / 2 - (14.0 * len(label_parts)) / 2
+        for i, part in enumerate(label_parts):
+            lines.append(ptext_abs(55.69, label_y + 14.0 * i, 49.14, 14.00, 11.6, part))
+        if scalar(text) == "无":
+            lines.append(ptext_abs(104.83, top, 432.90, bottom - top, 11.6, "无"))
+        else:
+            wrapped = wrap_analysis_text(text, max_chars=35, max_lines=4)
+            body_y = (top + bottom) / 2 - 7.0 * len(wrapped)
+            for i, part in enumerate(wrapped):
+                prefix = "　　" if i == 0 else ""
+                lines.append(ptext_abs(112.00, body_y + 14.0 * i, 420.00, 14.00, 11.2, prefix + part, pos="left + horizon", clip=False))
+    lines.append(ptext_abs(55.69, 685.20, 245.23, 24.00, 11.6, "教研室意见", pos="left + top", clip=False))
+    lines.append(ptext_abs(300.93, 685.20, 236.81, 24.00, 11.6, "系部意见", pos="left + top", clip=False))
+    return pagebox_abs(lines)
+
+
+def simple_cover_page(package: MarkdownPackage, title: str) -> str:
+    if title == "交接班记录封面":
+        return reference_cover_page(
+            package,
+            title,
+            fields=[
+                ("科目", package.meta.get("course_name", "")),
+                ("班级", normalized_class_label(package.meta.get("handover_class_name"))),
+                ("教师", "  ".join(list_value(package.meta.get("handover_teachers")))),
+            ],
+        )
+    return reference_cover_page(package, title)
 
 
 def summary_scores(package: MarkdownPackage) -> list[float]:
@@ -687,8 +1001,58 @@ def summary_stat(package: MarkdownPackage, kind: str) -> str:
     if kind == "gte90":
         return str(sum(1 for score in scores if score >= 90))
     if kind == "pass_rate":
-        return f"{sum(1 for score in scores if score >= 60) / len(scores):.0%}"
+        return f"{sum(1 for score in scores if score >= 60) / len(scores) * 100:.2f}%"
     return ""
+
+
+def pass_rate(package: MarkdownPackage) -> str:
+    return summary_stat(package, "pass_rate") or ""
+
+
+def score_distribution(package: MarkdownPackage) -> list[str]:
+    scores = summary_scores(package)
+    bins = [
+        sum(1 for score in scores if score >= 90),
+        sum(1 for score in scores if 80 <= score < 90),
+        sum(1 for score in scores if 70 <= score < 80),
+        sum(1 for score in scores if 60 <= score < 70),
+        sum(1 for score in scores if 50 <= score < 60),
+        sum(1 for score in scores if 40 <= score < 50),
+        sum(1 for score in scores if 30 <= score < 40),
+        sum(1 for score in scores if score < 30),
+    ]
+    return [str(value) for value in bins]
+
+
+def task_weights(package: MarkdownPackage) -> list[str]:
+    hours: list[float] = []
+    for task in package.tasks:
+        try:
+            hours.append(float(task.get("hours", 0)))
+        except (TypeError, ValueError):
+            hours.append(0.0)
+    total = sum(hours)
+    if total <= 0:
+        return [scalar(task.get("hours", "")) for task in package.tasks]
+    return [f"{round(value / total * 100):g}%" if value else "" for value in hours]
+
+
+def wrap_analysis_text(value: Any, max_chars: int, max_lines: int) -> list[str]:
+    text = scalar(value).replace("\n", " ").strip()
+    if not text:
+        return ["无"]
+    lines: list[str] = []
+    current = ""
+    for char in text:
+        current += char
+        if len(current) >= max_chars:
+            lines.append(current)
+            current = ""
+            if len(lines) >= max_lines:
+                break
+    if current and len(lines) < max_lines:
+        lines.append(current)
+    return lines or ["无"]
 
 
 def enabled_packages(package: MarkdownPackage) -> tuple[dict[str, bool], list[str]]:
@@ -710,31 +1074,21 @@ def generate_typst(package: MarkdownPackage, template_path: Path) -> tuple[str, 
     if flags["成绩汇总表"]:
         body.append(score_summary_page(package))
     if flags["成绩分析表"]:
+        body.append(analysis_cover_page(package))
         body.append(analysis_page(package))
     if flags["教学日志封面"]:
-        body.append(f'#cover("教学日志封面", "固定模板封面", [\n{meta_rows(package)}\n])')
+        body.append(simple_cover_page(package, "教学日志封面"))
     if flags["过程考核评价表封面"]:
-        task_lines = "\\n".join(f"{i}. {task['task_name']}（{task['hours']}课时）" for i, task in enumerate(package.tasks, 1))
-        body.append(f'#cover("过程考核评价表封面", "固定模板封面", [\n{meta_rows(package, {"过程考核任务": task_lines})}\n])')
+        body.append(simple_cover_page(package, "过程考核评价表封面"))
     if flags["交接班记录封面"]:
-        body.append(
-            '#cover("交接班记录封面", "固定模板封面", [\n'
-            + meta_rows(
-                package,
-                {
-                    "交接班级": "、".join(list_value(package.meta.get("handover_class_name"))),
-                    "交接教师": "、".join(list_value(package.meta.get("handover_teachers"))),
-                },
-            )
-            + "\n])"
-        )
+        body.append(simple_cover_page(package, "交接班记录封面"))
     template = read_text(template_path)
     document_title = f"{package.meta.get('course_name', '')} 期末教学材料包"
     document_author = "、".join(list_value(package.meta.get("teachers")))
     return (
         template.replace("{{DOCUMENT_TITLE}}", typst_string(document_title))
         .replace("{{DOCUMENT_AUTHOR}}", typst_string(document_author))
-        .replace("{{PACKAGE_BODY}}", "\n\n".join(body).strip() + "\n"),
+        .replace("{{PACKAGE_BODY}}", "\n#pagebreak()\n".join(body).strip() + "\n"),
         warnings,
         flags,
     )
@@ -919,7 +1273,7 @@ def render(markdown_path: Path, workdir: Path, skill_dir: Path, pdf: bool) -> di
         "pdf": {"status": pdf_status, "path": pdf_out.name if pdf_out.exists() else "", "message": pdf_message},
         "table_artifacts_verified": verify_table_artifacts(package, artifacts),
         "workbook_verified": (tables_dir / "scorebook.xlsx").exists(),
-        "repeatable": False,
+        "repeatable": "not_checked",
     }
     write_text(workdir / "manifest.json", stable_json(manifest))
     return manifest
