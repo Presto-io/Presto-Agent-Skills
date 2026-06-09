@@ -10,6 +10,8 @@
 #align(pos)[#text(size: size, weight: weight)[#body]]]]
 #let ptext_nc(x, y, w, h, size, body, pos: center + horizon, weight: "regular") = place(dx: x, dy: y)[#box(width: w, height: h, clip: false, inset: 0pt)[
 #align(pos)[#text(size: size, weight: weight)[#body]]]]
+#let ptitle_nc(x, y, w, h, size, body, pos: center + horizon) = place(dx: x, dy: y)[#box(width: w, height: h, clip: false, inset: 0pt)[
+#align(pos)[#text(size: size, weight: "bold", font: ("FZXiaoBiaoSong-B05", "FZXiaoBiaoSong-B05S", "SimSun", "Songti SC"))[#body]]]]
 #let hline(x1, x2, y, s: 0.580pt) = place(dx: x1, dy: y)[#line(length: x2 - x1, stroke: s)]
 #let vline(x, y1, y2, s: 0.580pt) = place(dx: x, dy: y1)[#line(length: y2 - y1, angle: 90deg, stroke: s)]
 #let diag(x1, y1, len, deg, s: 0.580pt) = place(dx: x1, dy: y1)[#line(length: len, angle: deg, stroke: s)]

@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape as xml_escape
 
-VERSION = "0.3.1"
+VERSION = "0.3.3"
 PACKAGE_ARTIFACTS = [
     "成绩记分册",
     "成绩汇总表",
@@ -141,6 +141,7 @@ def yaml_lines(meta: dict[str, Any]) -> list[str]:
         "semester",
         "major_name",
         "course_name",
+        "course_type_label",
     ]
     for key in simple_keys:
         lines.append(f"{key}: {meta.get(key, '')}")
@@ -404,8 +405,34 @@ def ptext_abs(
     )
 
 
+def ptitle_abs(
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    size: float,
+    body: Any,
+    *,
+    pos: str = "center + horizon",
+) -> str:
+    return f"#ptitle_nc({pt(x)}, {pt(y)}, {pt(w)}, {pt(h)}, {size:g}pt, {typst_body(body)}, pos: {pos})"
+
+
 def hline_abs(x1: float, x2: float, y: float) -> str:
     return f"#hline({pt(x1)}, {pt(x2)}, {pt(y)}, s: 0.580pt)"
+
+
+def hline_segment_abs(x1: float, x2: float, y: float, stroke: float = 0.58) -> str:
+    return f"#hline({pt(x1)}, {pt(x2)}, {pt(y)}, s: {stroke:.3f}pt)"
+
+
+def dashed_hline_abs(x1: float, x2: float, y: float, dash: float = 2.20, gap: float = 2.20, stroke: float = 0.58) -> list[str]:
+    lines: list[str] = []
+    x = x1
+    while x < x2 - 0.01:
+        lines.append(hline_segment_abs(x, min(x + dash, x2), y, stroke=stroke))
+        x += dash + gap
+    return lines
 
 
 def vline_abs(x: float, y1: float, y2: float) -> str:
@@ -452,6 +479,10 @@ def teacher_label(package: MarkdownPackage, sep: str = "  ") -> str:
     return sep.join(list_value(package.meta.get("teachers")))
 
 
+def course_type_label(package: MarkdownPackage) -> str:
+    return scalar(package.meta.get("course_type_label")) or "一体化课□ 基本技能实训课√"
+
+
 def wrap_cjk_label(value: Any, width: int = 4, max_lines: int = 8) -> list[str]:
     text = scalar(value).replace(" ", "")
     if not text:
@@ -489,23 +520,18 @@ def spaced_cover_title(title: str) -> str:
 
 
 def cover_title_size(title: str) -> float:
-    raw = title.removesuffix("封面")
-    if raw in {"过程考核评价表", "成绩记分册", "成绩分析册"}:
-        return 34.0
     return 38.0
 
 
 def cover_title_block(title: str, *, y: float = 202.00) -> list[str]:
     return [
-        ptext_abs(
+        ptitle_abs(
             0.00,
             y,
             595.30,
             70.00,
             cover_title_size(title),
             spaced_cover_title(title),
-            weight="bold",
-            clip=False,
         )
     ]
 
@@ -521,9 +547,11 @@ def cover_line_field(
     value_x: float = 218.00,
     value_w: float = 228.00,
     size: float = 16.2,
+    label_text: str | None = None,
+    line_offset: float = 27.00,
 ) -> None:
-    line_y = y + 27.00
-    lines.append(ptext_abs(label_x, y, label_w, 22.00, size, f"{label}：", pos="left + horizon", clip=False))
+    line_y = y + line_offset
+    lines.append(ptext_abs(label_x, y, label_w, 22.00, size, label_text or f"{label}：", pos="right + horizon", clip=False))
     lines.append(ptext_abs(value_x, y, value_w, 22.00, size, value, clip=False))
     lines.append(hline_abs(value_x, value_x + value_w, line_y))
 
@@ -542,76 +570,42 @@ def reference_cover_page(package: MarkdownPackage, title: str, *, fields: list[t
     return pagebox_abs(lines)
 
 
-def analysis_cover_page(package: MarkdownPackage) -> str:
-    lines = cover_title_block("成绩分析册")
-    y = 504.00
+def cover_center_line(lines: list[str], y: float, value: Any, *, size: float = 16.2, underline: bool = False) -> None:
+    x = 178.00
+    w = 238.00
+    lines.append(ptext_abs(x, y, w, 22.00, size, value, clip=False))
+    if underline:
+        lines.append(hline_abs(x, x + w, y + 27.00))
+
+
+def scorebook_cover_page(package: MarkdownPackage) -> str:
+    lines = cover_title_block("成绩记分册")
+    cover_center_line(lines, 500.00, school_year_label(package), size=16.6)
+    cover_center_line(lines, 542.00, class_label(package), size=16.6)
     cover_line_field(
         lines,
-        y,
-        "科目",
+        584.00,
+        "学科",
         package.meta.get("course_name", ""),
-        label_x=118.00,
-        label_w=60.00,
-        value_x=178.00,
-        value_w=338.00,
-    )
-    y += 36.00
-    cover_line_field(
-        lines,
-        y,
-        "专业",
-        package.meta.get("major_name", ""),
-        label_x=118.00,
-        label_w=60.00,
-        value_x=178.00,
-        value_w=118.00,
-        size=15.6,
+        label_x=126.00,
+        label_w=92.00,
+        value_x=218.00,
+        value_w=228.00,
+        label_text="学　　科：",
+        line_offset=22.00,
     )
     cover_line_field(
         lines,
-        y,
-        "班级",
-        class_label(package),
-        label_x=322.00,
-        label_w=60.00,
-        value_x=382.00,
-        value_w=134.00,
-        size=15.6,
-    )
-    y += 36.00
-    cover_line_field(
-        lines,
-        y,
-        "教师",
+        626.00,
+        "授课教师",
         teacher_label(package),
-        label_x=118.00,
-        label_w=60.00,
-        value_x=178.00,
-        value_w=118.00,
-        size=15.6,
+        label_x=126.00,
+        label_w=92.00,
+        value_x=218.00,
+        value_w=228.00,
+        line_offset=22.00,
     )
-    cover_line_field(
-        lines,
-        y,
-        "日期",
-        date_label(package, spaced=True),
-        label_x=322.00,
-        label_w=60.00,
-        value_x=382.00,
-        value_w=134.00,
-        size=15.6,
-    )
-    y += 36.00
-    cover_line_field(
-        lines,
-        y,
-        "学期",
-        school_year_label(package),
-        label_x=118.00,
-        label_w=60.00,
-        value_x=178.00,
-        value_w=338.00,
-    )
+    cover_center_line(lines, 668.00, date_label(package, spaced=True), size=16.6)
     return pagebox_abs(lines)
 
 
@@ -709,7 +703,7 @@ def final_score(row: dict[str, str]) -> str:
 
 
 def excel_cover_page(package: MarkdownPackage) -> str:
-    return reference_cover_page(package, "成绩记分册")
+    return scorebook_cover_page(package)
 
 
 def scorebook_body_page(package: MarkdownPackage) -> str:
@@ -841,7 +835,7 @@ def score_summary_page(package: MarkdownPackage) -> str:
             ptext_abs(55.69, 142.19, 84.71, 18.71, 11.8, "课程名称"),
             ptext_abs(140.40, 142.19, 135.72, 18.71, 10.2, package.meta.get("course_name", "")),
             ptext_abs(276.12, 142.19, 90.32, 18.71, 11.8, "课程类型"),
-            ptext_abs(366.45, 142.19, 171.29, 18.71, 11.8, "一体化课□  基本技能实训课√"),
+            ptext_abs(366.45, 142.19, 171.29, 18.71, 11.8, course_type_label(package)),
             ptext_abs(90.00, 164.00, 49.00, 12.00, 10.5, "任务名称", pos="right + horizon", clip=False),
             ptext_abs(90.00, 178.00, 49.00, 12.00, 10.5, "考核权重", pos="right + horizon", clip=False),
             ptext_abs(55.00, 286.00, 42.00, 12.00, 10.5, "学生", clip=False),
@@ -958,15 +952,18 @@ def analysis_page(package: MarkdownPackage) -> str:
 
 def simple_cover_page(package: MarkdownPackage, title: str) -> str:
     if title == "交接班记录封面":
-        return reference_cover_page(
-            package,
-            title,
-            fields=[
-                ("科目", package.meta.get("course_name", "")),
-                ("班级", normalized_class_label(package.meta.get("handover_class_name"))),
-                ("教师", "  ".join(list_value(package.meta.get("handover_teachers")))),
-            ],
-        )
+        lines = cover_title_block(title)
+        left_x = 154.00
+        right_x = 312.00
+        block_w = 126.00
+        top_y = 590.00
+        bottom_y = 624.00
+        lines.append(ptext_abs(left_x, top_y, block_w, 24.00, 16.0, class_label(package), clip=False))
+        lines.append(ptext_abs(right_x, top_y, block_w, 24.00, 16.0, teacher_label(package), clip=False))
+        lines.extend(dashed_hline_abs(150.00, 444.00, 621.00, dash=2.00, gap=2.00, stroke=0.58))
+        lines.append(ptext_abs(left_x, bottom_y, block_w, 24.00, 16.0, normalized_class_label(package.meta.get("handover_class_name")), clip=False))
+        lines.append(ptext_abs(right_x, bottom_y, block_w, 24.00, 16.0, "  ".join(list_value(package.meta.get("handover_teachers"))), clip=False))
+        return pagebox_abs(lines)
     return reference_cover_page(package, title)
 
 
@@ -1074,7 +1071,6 @@ def generate_typst(package: MarkdownPackage, template_path: Path) -> tuple[str, 
     if flags["成绩汇总表"]:
         body.append(score_summary_page(package))
     if flags["成绩分析表"]:
-        body.append(analysis_cover_page(package))
         body.append(analysis_page(package))
     if flags["教学日志封面"]:
         body.append(simple_cover_page(package, "教学日志封面"))
