@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-09 after Phase 11 end-of-term contract completion
+**Last updated:** 2026-06-09 after Phase 12 fixed-template rendering completion
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -14,7 +14,7 @@
 - **Completed: v1.4 Jiaoan Jihua Skill** - Phase 7, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.5 School Presentation Skill** - Phase 8, completed 2026-06-01. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.6 School Presentation Playback UX** - Phases 9-10, automated verification passed 2026-06-03. Requirements archive: `.planning/milestones/v1.6-REQUIREMENTS.md`
-- **Active: v1.7 End-of-Term Teaching Materials Skill** - Phase 11 complete; Phase 12 planned. Requirements: `.planning/REQUIREMENTS.md`
+- **Ready to close: v1.7 End-of-Term Teaching Materials Skill** - Phases 11-12 complete. Requirements: `.planning/REQUIREMENTS.md`
 
 ## Phases
 
@@ -170,7 +170,7 @@
 
 v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7. v1.5 adds `school-presentation` as the next concrete skill in Phase 8. v1.6 refines that skill with playback, preview, page hierarchy, ordered reveals, and classroom answer masks.
 
-v1.7 is active. Phase 11 defines the structured data contract and Markdown intermediate for the end-of-term teaching-materials skill. Phase 12 should implement fixed-template rendering and verification.
+v1.7 is ready for milestone closeout. Phase 11 defines the structured data contract and Markdown intermediate for the end-of-term teaching-materials skill. Phase 12 implements fixed-template rendering, Typst/PDF generation, deterministic table artifacts, workbook output, and verification.
 
 ## Progress
 
@@ -187,7 +187,7 @@ v1.7 is active. Phase 11 defines the structured data contract and Markdown inter
 | 9. Playback Workspace and Page Hierarchy | v1.6 | 1/1 | Complete | 2026-06-01 |
 | 10. Ordered Reveals and Classroom Answer Masks | v1.6 | 1/1 | Complete | 2026-06-03 |
 | 11. End-of-Term Data and Markdown Contract | v1.7 | 1/1 | Complete | 2026-06-09 |
-| 12. Fixed-Template Rendering and Verification | v1.7 | 0/1 | Planned | — |
+| 12. Fixed-Template Rendering and Verification | v1.7 | 1/1 | Complete | 2026-06-09 |
 
 ## Requirement Coverage
 
@@ -205,9 +205,9 @@ v1.5 tracks 9 school-presentation requirements: SP-01 through SP-09. All are map
 
 v1.6 tracks 7 school-presentation playback requirements: SP-10 through SP-16. SP-10 through SP-13 are complete in Phase 9; SP-14 through SP-16 are complete in Phase 10.
 
-v1.7 tracks 8 end-of-term teaching-materials requirements: ETM-01 through ETM-08. ETM-01 through ETM-04 are complete in Phase 11; ETM-05 through ETM-08 are mapped to Phase 12.
+v1.7 tracks 8 end-of-term teaching-materials requirements: ETM-01 through ETM-08. ETM-01 through ETM-04 are complete in Phase 11; ETM-05 through ETM-08 are complete in Phase 12.
 
 EX-01 and EX-02 were explicitly deferred as optional future example guidance, not v1 delivery requirements. See `.planning/milestones/v1.0-REQUIREMENTS.md` for the archived requirement record.
 
 ---
-*Roadmap updated: 2026-06-09 after Phase 11 contract completion*
+*Roadmap updated: 2026-06-09 after Phase 12 rendering completion*

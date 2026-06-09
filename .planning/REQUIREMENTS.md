@@ -88,10 +88,10 @@ Requirements for the end-of-term teaching-materials skill. The workflow starts f
 - [x] **ETM-02**: The skill includes a documented structured data contract for required and optional fields, including course metadata, class metadata, teacher metadata, semester metadata, teaching-hour records, assessment records, and submission metadata.
 - [x] **ETM-03**: The skill can produce a persistent Markdown intermediate that keeps each document and table section reviewable before rendering.
 - [x] **ETM-04**: The Markdown intermediate explicitly flags missing, ambiguous, or lossy teaching data instead of guessing silently.
-- [ ] **ETM-05**: The skill includes fixed templates for the semester-end teaching-materials package and keeps template-specific rules inside the skill directory.
-- [ ] **ETM-06**: The skill includes script code that converts structured data to Markdown, renders Markdown to Typst, and compiles Typst to PDF.
-- [ ] **ETM-07**: The skill can emit required table artifacts in a deterministic reviewable format alongside the PDF package.
-- [ ] **ETM-08**: The skill defines verification steps for data validation, Markdown generation, Typst generation, PDF compilation, table output, and runtime adapter compatibility across Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
+- [x] **ETM-05**: The skill includes fixed templates for the semester-end teaching-materials package and keeps template-specific rules inside the skill directory.
+- [x] **ETM-06**: The skill includes script code that converts structured data to Markdown, renders Markdown to Typst, and compiles Typst to PDF.
+- [x] **ETM-07**: The skill can emit required table artifacts in a deterministic reviewable format alongside the PDF package.
+- [x] **ETM-08**: The skill defines verification steps for data validation, Markdown generation, Typst generation, PDF compilation, table output, and runtime adapter compatibility across Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
 ## Deferred Requirements
 
@@ -168,10 +168,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ETM-02 | Phase 11 | Complete |
 | ETM-03 | Phase 11 | Complete |
 | ETM-04 | Phase 11 | Complete |
-| ETM-05 | Phase 12 | Planned |
-| ETM-06 | Phase 12 | Planned |
-| ETM-07 | Phase 12 | Planned |
-| ETM-08 | Phase 12 | Planned |
+| ETM-05 | Phase 12 | Complete |
+| ETM-06 | Phase 12 | Complete |
+| ETM-07 | Phase 12 | Complete |
+| ETM-08 | Phase 12 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 2 total
@@ -185,4 +185,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Unmapped: 0
 
 ---
-*Requirements updated: 2026-06-09 after Phase 11 contract completion*
+*Requirements updated: 2026-06-09 after Phase 12 rendering completion*
