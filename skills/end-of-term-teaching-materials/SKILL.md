@@ -30,7 +30,7 @@ structured data -> Markdown -> Typst/PDF + table artifacts
 
 ## Use When
 
-- 用户需要生成或整理期末教学提交材料、成绩相关表格、成绩分析册封面、教学日志封面、过程考核评价表封面或交接班记录封面。
+- 用户需要生成或整理期末教学提交材料、成绩相关表格、教学日志封面、过程考核评价表封面或交接班记录封面。
 - 用户提供了明确结构化数据，或提供了可整理成结构化数据的花名册、过程考核任务、成绩、平时表现、考试、分析文本和提交元数据。
 - 用户需要先检查一份 Markdown 源文件，再生成固定模板 Typst/PDF、deterministic table artifacts 和 scorebook workbook。
 
@@ -67,7 +67,7 @@ Parent directories for `--output` must already exist. `--workdir` must already e
 4. The hard export rule: `## 复核标记` must be exactly `无`. If it is anything else, `validate`, `render`, and final export readiness must fail.
 5. Render only after review is clear. The script writes `end-of-term-package.typ`, optional `end-of-term-package.pdf`, `manifest.json`, JSON/CSV table artifacts, and `tables/scorebook.xlsx`.
 6. Preserve blank score cells and declared task columns. Empty scores remain empty; declared tasks remain columns even when all cells are blank.
-7. Respect package flags. `成绩记分册` is one bundle covering the redesigned cover and score-book body. `成绩分析表` covers the score-analysis cover plus the score-analysis body table. `交接班记录封面` requires both `handover_class_name` and `handover_teachers`; otherwise the renderer skips it and records a manifest warning.
+7. Respect package flags. `成绩记分册` is one bundle covering the redesigned cover and score-book body. `交接班记录封面` requires both `handover_class_name` and `handover_teachers`; otherwise the renderer skips it and records a manifest warning.
 8. Run `verify --workdir <dir>` before delivery. PDF compilation is attempted when `typst` is installed; missing Typst is reported explicitly in the manifest instead of silently passing as a PDF success.
 
 ## Outputs

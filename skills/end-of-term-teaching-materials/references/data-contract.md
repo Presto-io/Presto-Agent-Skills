@@ -12,6 +12,7 @@
 | `semester` | yes | string | 学期，例如 `第二学期`。 |
 | `major_name` | yes | string | 专业名称。 |
 | `course_name` | yes | string | 课程名称。 |
+| `course_type_label` | no | string | 成绩汇总表的课程类型显示文本，例如 `一体化课□ 基本技能实训课√`；缺失时 renderer 使用该默认文本。 |
 | `class_name` | yes | string array | 当前教师所带班级短名称数组，例如 `示例电气2`；renderers 在目标模板需要时自行追加 `班`。 |
 | `teachers` | yes | string array | 任课教师有序数组；输出顺序跟随数组顺序，不添加 `primary_teacher`。 |
 | `handover_class_name` | no | string array | 交接班短名称数组；可表示一个或多个交接班级。 |
@@ -27,7 +28,7 @@
 |-----|------|---------|-------|
 | `成绩记分册` | boolean | `true` | 一个 bundle：同时表示重新设计的成绩记分册封面和记分册正文，不拆成 cover/body 两个开关。 |
 | `成绩汇总表` | boolean | `true` | 后续 Phase 12 输出。 |
-| `成绩分析表` | boolean | `true` | 输出成绩分析册封面和成绩分析表正文。 |
+| `成绩分析表` | boolean | `true` | 后续 Phase 12 输出。 |
 | `教学日志封面` | boolean | `true` | 后续 Phase 12 输出。 |
 | `过程考核评价表封面` | boolean | `true` | 后续 Phase 12 输出。 |
 | `交接班记录封面` | boolean | `true` | 仅在 `handover_class_name` 和 `handover_teachers` 存在时输出。 |
