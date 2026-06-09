@@ -84,10 +84,10 @@ Requirements for the end-of-term teaching-materials skill. The workflow starts f
 
 ### End-of-Term Teaching Materials Skill
 
-- [ ] **ETM-01**: A user can invoke the end-of-term teaching-materials skill when they need to generate semester-end teaching submission documents and tables from course, class, semester, teaching-record, and assessment data.
-- [ ] **ETM-02**: The skill includes a documented structured data contract for required and optional fields, including course metadata, class metadata, teacher metadata, semester metadata, teaching-hour records, assessment records, and submission metadata.
-- [ ] **ETM-03**: The skill can produce a persistent Markdown intermediate that keeps each document and table section reviewable before rendering.
-- [ ] **ETM-04**: The Markdown intermediate explicitly flags missing, ambiguous, or lossy teaching data instead of guessing silently.
+- [x] **ETM-01**: A user can invoke the end-of-term teaching-materials skill when they need to generate semester-end teaching submission documents and tables from course, class, semester, teaching-record, and assessment data.
+- [x] **ETM-02**: The skill includes a documented structured data contract for required and optional fields, including course metadata, class metadata, teacher metadata, semester metadata, teaching-hour records, assessment records, and submission metadata.
+- [x] **ETM-03**: The skill can produce a persistent Markdown intermediate that keeps each document and table section reviewable before rendering.
+- [x] **ETM-04**: The Markdown intermediate explicitly flags missing, ambiguous, or lossy teaching data instead of guessing silently.
 - [ ] **ETM-05**: The skill includes fixed templates for the semester-end teaching-materials package and keeps template-specific rules inside the skill directory.
 - [ ] **ETM-06**: The skill includes script code that converts structured data to Markdown, renders Markdown to Typst, and compiles Typst to PDF.
 - [ ] **ETM-07**: The skill can emit required table artifacts in a deterministic reviewable format alongside the PDF package.
@@ -164,10 +164,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SP-14 | Phase 10 | Complete |
 | SP-15 | Phase 10 | Complete |
 | SP-16 | Phase 10 | Complete |
-| ETM-01 | Phase 11 | Planned |
-| ETM-02 | Phase 11 | Planned |
-| ETM-03 | Phase 11 | Planned |
-| ETM-04 | Phase 11 | Planned |
+| ETM-01 | Phase 11 | Complete |
+| ETM-02 | Phase 11 | Complete |
+| ETM-03 | Phase 11 | Complete |
+| ETM-04 | Phase 11 | Complete |
 | ETM-05 | Phase 12 | Planned |
 | ETM-06 | Phase 12 | Planned |
 | ETM-07 | Phase 12 | Planned |
@@ -185,4 +185,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Unmapped: 0
 
 ---
-*Requirements updated: 2026-06-08 after v1.7 end-of-term teaching-materials roadmap creation*
+*Requirements updated: 2026-06-09 after Phase 11 contract completion*
