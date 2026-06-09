@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: End-of-Term Teaching Materials Skill
 current_phase: 11
-status: Ready to discuss or plan Phase 11
-stopped_at: Phase 11 context gathered
-last_updated: "2026-06-08T23:34:44.026Z"
-last_activity: 2026-06-08 — Milestone v1.7 roadmap created
+status: Phase 11 complete; ready to plan Phase 12
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-06-08T23:53:29Z"
+last_activity: 2026-06-09 — Phase 11 contract slice completed
 progress:
   total_phases: 9
   completed_phases: 7
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 8
+  completed_plans: 8
   percent: 100
 ---
 
@@ -19,7 +19,7 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 11
-**Status:** Ready to discuss or plan Phase 11
+**Status:** Phase 11 complete; ready to plan Phase 12
 
 ## Project Reference
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-08)
 
 ## Next Up
 
-Discuss or plan Phase 11: End-of-Term Data and Markdown Contract.
+Plan Phase 12: Fixed-Template Rendering and Verification.
 
 ## Decisions
 
@@ -77,6 +77,7 @@ Discuss or plan Phase 11: End-of-Term Data and Markdown Contract.
 - [Milestone v1.6]: Playback UX comes before marking tools. — User requested playback, thumbnail/preview/overview, hierarchy, ordered reveal, emphasis animation, and answer masks now; marking-style tools are deferred to the next milestone.
 - [Milestone v1.7]: The end-of-term teaching-materials skill should use structured data -> Markdown -> Typst -> PDF. — User requested a fixed-template workflow for semester-end submission documents and tables.
 - [Milestone v1.7]: Skip external research for this milestone. — The work follows already validated document-skill patterns in this repository.
+- [Phase 11]: The end-of-term teaching-materials skill now has a contract-only slice. — Phase 11 added the canonical skill, data contract, and Markdown intermediate while leaving rendering scripts, Excel, Typst, PDF, and deterministic table artifacts to Phase 12.
 
 ## Performance Metrics
 
@@ -92,14 +93,14 @@ Discuss or plan Phase 11: End-of-Term Data and Markdown Contract.
 | Phase 08 P01 | current session | 3 tasks | 8 files |
 | Phase 09 P01 | current session | 4 tasks | 6 files |
 | Phase 10 P01 | current session | 5 tasks | 7 files |
-| Phase 11 P01 | planned | — | — |
+| Phase 11 P01 | current session | 6 tasks | 8 files |
 | Phase 12 P01 | planned | — | — |
 
 ## Last Session
 
-- **Completed:** v1.7 milestone planning
-- **Stopped At:** Phase 11 context gathered
-- **Resume File:** .planning/phases/11-end-of-term-data-and-markdown-contract/11-CONTEXT.md
+- **Completed:** Phase 11 contract slice
+- **Stopped At:** Completed 11-01-PLAN.md
+- **Resume File:** None
 
 ## Close Notes
 
@@ -110,11 +111,11 @@ Discuss or plan Phase 11: End-of-Term Data and Markdown Contract.
 ## Current Position
 
 Phase: 11 - End-of-Term Data and Markdown Contract
-Plan: —
-Status: Ready for discussion or phase planning
-Last activity: 2026-06-08 — Milestone v1.7 roadmap created
+Plan: 01 complete
+Status: Complete
+Last activity: 2026-06-09 — Phase 11 contract slice completed
 
 ## Operator Next Steps
 
-- `/gsd:discuss-phase 11` to gather exact template and data-contract details.
-- `/gsd:plan-phase 11` to plan directly from the current roadmap.
+- `/gsd:plan-phase 12` to plan fixed-template rendering and verification.
+- `/gsd:verify-work 11` to run an independent phase verification pass if desired.
