@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: End-of-Term Teaching Materials Skill
-current_phase: 11
-status: planning
-stopped_at: Phase 12 context gathered
-last_updated: "2026-06-09T00:18:38.633Z"
-last_activity: 2026-06-09 — Phase 11 contract slice completed
+current_phase: 12
+status: complete
+stopped_at: Phase 12 complete
+last_updated: "2026-06-09T00:50:32Z"
+last_activity: 2026-06-09 — Phase 12 fixed-template rendering and verification complete
 progress:
   total_phases: 9
-  completed_phases: 8
-  total_plans: 8
-  completed_plans: 8
+  completed_phases: 9
+  total_plans: 9
+  completed_plans: 9
   percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 11
-**Status:** Phase 11 complete; ready to plan Phase 12
+**Current Phase:** 12
+**Status:** Phase 12 complete; v1.7 ready for milestone closeout
 
 ## Project Reference
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-08)
 
 ## Next Up
 
-Plan Phase 12: Fixed-Template Rendering and Verification.
+Run milestone verification or closeout for v1.7 when ready.
 
 ## Decisions
 
@@ -78,6 +78,7 @@ Plan Phase 12: Fixed-Template Rendering and Verification.
 - [Milestone v1.7]: The end-of-term teaching-materials skill should use structured data -> Markdown -> Typst -> PDF. — User requested a fixed-template workflow for semester-end submission documents and tables.
 - [Milestone v1.7]: Skip external research for this milestone. — The work follows already validated document-skill patterns in this repository.
 - [Phase 11]: The end-of-term teaching-materials skill now has a contract-only slice. — Phase 11 added the canonical skill, data contract, and Markdown intermediate while leaving rendering scripts, Excel, Typst, PDF, and deterministic table artifacts to Phase 12.
+- [Phase 12]: Fixed-template rendering is complete. — The skill now has skill-local templates, sanitized fixtures, script entry points, deterministic table artifacts, workbook output, Typst/PDF package generation, and verification while keeping OCR and arbitrary template discovery out of scope.
 
 ## Performance Metrics
 
@@ -94,13 +95,13 @@ Plan Phase 12: Fixed-Template Rendering and Verification.
 | Phase 09 P01 | current session | 4 tasks | 6 files |
 | Phase 10 P01 | current session | 5 tasks | 7 files |
 | Phase 11 P01 | current session | 6 tasks | 8 files |
-| Phase 12 P01 | planned | — | — |
+| Phase 12 P01 | current session | 7 tasks | 15 files |
 
 ## Last Session
 
-- **Completed:** Phase 11 contract slice
-- **Stopped At:** Phase 12 context gathered
-- **Resume File:** .planning/phases/12-fixed-template-rendering-and-verification/12-CONTEXT.md
+- **Completed:** Phase 12 fixed-template rendering and verification
+- **Stopped At:** v1.7 ready for milestone closeout
+- **Resume File:** .planning/phases/12-fixed-template-rendering-and-verification/12-01-SUMMARY.md
 
 ## Close Notes
 
@@ -110,12 +111,12 @@ Plan Phase 12: Fixed-Template Rendering and Verification.
 
 ## Current Position
 
-Phase: 11 - End-of-Term Data and Markdown Contract
+Phase: 12 - Fixed-Template Rendering and Verification
 Plan: 01 complete
 Status: Complete
-Last activity: 2026-06-09 — Phase 11 contract slice completed
+Last activity: 2026-06-09 — Phase 12 fixed-template rendering and verification complete
 
 ## Operator Next Steps
 
-- `/gsd:plan-phase 12` to plan fixed-template rendering and verification.
-- `/gsd:verify-work 11` to run an independent phase verification pass if desired.
+- `/gsd:verify-work 12` to run an independent phase verification pass if desired.
+- `/gsd:complete-milestone v1.7` after verification if the milestone is accepted.
