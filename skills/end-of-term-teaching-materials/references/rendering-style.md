@@ -32,5 +32,6 @@
 
 ## Deterministic Artifacts
 
-Renderer 必须在 `tables/` 下输出稳定的 `score-data.json`、`score-data.csv`、`task-map.json`、`score-summary.json` 和 `scorebook.xlsx`。JSON 使用固定缩进、稳定 key 顺序和 UTF-8；CSV 使用固定列顺序；workbook 保留同样的表头和公式占位列。
+Renderer 必须在 `tables/` 下输出稳定的 `score-data.json`、`calculated-score-data.json`、`score-data.csv`、`task-map.json`、`score-summary.json` 和 `scorebook.xlsx`。JSON 使用固定缩进、稳定 key 顺序和 UTF-8；CSV 使用固定列顺序；workbook 保留同样的表头和派生成绩列。
+`calculated-score-data.json` 是成绩显示值的审计证据；PDF、workbook 和该 JSON 必须使用同一套 renderer-calculated `平时分` 与 `学期成绩`。
 红色高亮不能只依赖人工看 PDF/workbook；renderer 还必须输出 `tables/highlight-evidence.json`，并在 manifest 中嵌入同一份 highlight evidence，用于验证 unresolved uncertain cells 和 below-60 `学期成绩`。
