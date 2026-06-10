@@ -4,9 +4,9 @@ milestone: v1.7
 milestone_name: End-of-Term Teaching Materials Skill
 current_phase: 12
 status: complete
-stopped_at: Phase 12 complete
-last_updated: "2026-06-09T00:50:32Z"
-last_activity: 2026-06-09 — Phase 12 fixed-template rendering and verification complete
+stopped_at: Phase 12 human verification passed
+last_updated: "2026-06-10T00:00:00Z"
+last_activity: 2026-06-10 — Phase 12 manual verification passed; v1.7 accepted for milestone closeout
 progress:
   total_phases: 9
   completed_phases: 9
@@ -19,7 +19,7 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 12
-**Status:** Phase 12 complete; v1.7 ready for milestone closeout
+**Status:** Phase 12 complete with manual verification passed; v1.7 accepted for milestone closeout
 
 ## Project Reference
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-08)
 
 ## Next Up
 
-Run milestone verification or closeout for v1.7 when ready.
+Run milestone closeout for v1.7 when ready.
 
 ## Decisions
 
@@ -79,6 +79,7 @@ Run milestone verification or closeout for v1.7 when ready.
 - [Milestone v1.7]: Skip external research for this milestone. — The work follows already validated document-skill patterns in this repository.
 - [Phase 11]: The end-of-term teaching-materials skill now has a contract-only slice. — Phase 11 added the canonical skill, data contract, and Markdown intermediate while leaving rendering scripts, Excel, Typst, PDF, and deterministic table artifacts to Phase 12.
 - [Phase 12]: Fixed-template rendering is complete. — The skill now has skill-local templates, sanitized fixtures, script entry points, deterministic table artifacts, workbook output, Typst/PDF package generation, and verification while keeping OCR and arbitrary template discovery out of scope.
+- [Phase 12]: Manual verification passed. — User confirmed the generated package is accepted against external reference materials on 2026-06-10.
 
 ## Performance Metrics
 
@@ -99,8 +100,8 @@ Run milestone verification or closeout for v1.7 when ready.
 
 ## Last Session
 
-- **Completed:** Phase 12 fixed-template rendering and verification
-- **Stopped At:** v1.7 ready for milestone closeout
+- **Completed:** Phase 12 fixed-template rendering and verification with manual acceptance
+- **Stopped At:** v1.7 accepted for milestone closeout
 - **Resume File:** .planning/phases/12-fixed-template-rendering-and-verification/12-01-SUMMARY.md
 
 ## Close Notes
@@ -114,9 +115,8 @@ Run milestone verification or closeout for v1.7 when ready.
 Phase: 12 - Fixed-Template Rendering and Verification
 Plan: 01 complete
 Status: Complete
-Last activity: 2026-06-09 — Phase 12 fixed-template rendering and verification complete
+Last activity: 2026-06-10 — Phase 12 manual verification passed
 
 ## Operator Next Steps
 
-- `/gsd:verify-work 12` to run an independent phase verification pass if desired.
 - `/gsd:complete-milestone v1.7` after verification if the milestone is accepted.

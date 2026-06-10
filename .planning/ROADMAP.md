@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-09 after Phase 12 fixed-template rendering completion
+**Last updated:** 2026-06-10 after Phase 12 manual verification
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -14,7 +14,7 @@
 - **Completed: v1.4 Jiaoan Jihua Skill** - Phase 7, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.5 School Presentation Skill** - Phase 8, completed 2026-06-01. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.6 School Presentation Playback UX** - Phases 9-10, automated verification passed 2026-06-03. Requirements archive: `.planning/milestones/v1.6-REQUIREMENTS.md`
-- **Ready to close: v1.7 End-of-Term Teaching Materials Skill** - Phases 11-12 complete. Requirements: `.planning/REQUIREMENTS.md`
+- **Accepted for closeout: v1.7 End-of-Term Teaching Materials Skill** - Phases 11-12 complete; Phase 12 manual verification passed 2026-06-10. Requirements: `.planning/REQUIREMENTS.md`
 
 ## Phases
 
@@ -170,7 +170,7 @@
 
 v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7. v1.5 adds `school-presentation` as the next concrete skill in Phase 8. v1.6 refines that skill with playback, preview, page hierarchy, ordered reveals, and classroom answer masks.
 
-v1.7 is ready for milestone closeout. Phase 11 defines the structured data contract and Markdown intermediate for the end-of-term teaching-materials skill. Phase 12 implements fixed-template rendering, Typst/PDF generation, deterministic table artifacts, workbook output, and verification.
+v1.7 is accepted for milestone closeout. Phase 11 defines the structured data contract and Markdown intermediate for the end-of-term teaching-materials skill. Phase 12 implements fixed-template rendering, Typst/PDF generation, deterministic table artifacts, workbook output, and verification. Manual verification passed on 2026-06-10.
 
 ## Progress
 
@@ -210,4 +210,4 @@ v1.7 tracks 8 end-of-term teaching-materials requirements: ETM-01 through ETM-08
 EX-01 and EX-02 were explicitly deferred as optional future example guidance, not v1 delivery requirements. See `.planning/milestones/v1.0-REQUIREMENTS.md` for the archived requirement record.
 
 ---
-*Roadmap updated: 2026-06-09 after Phase 12 rendering completion*
+*Roadmap updated: 2026-06-10 after Phase 12 manual verification*
