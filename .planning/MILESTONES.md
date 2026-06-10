@@ -1,5 +1,21 @@
 # Milestones
 
+## v1.7.1 End-of-Term Teaching Materials Post-Close Patch (Resolved: 2026-06-10)
+
+**Patch scope:** bug fixes after v1.7 milestone archive
+
+**Key fixes:**
+
+- Preserved uncertain score markers such as `87?` in abnormal review while using their numeric value for provisional derived-score calculation.
+- Corrected score-book and score-summary views, owned-student pagination, placeholder task display, and deterministic score-list artifacts.
+- Polished fixed-template package layout after visual review, including cover spacing, warning fills, analysis page layout, and handoff divider placement.
+
+**Record:**
+
+- Patch notes: `.planning/milestones/v1.7.1-POST-CLOSE-PATCH.md`
+
+---
+
 ## v1.7 End-of-Term Teaching Materials Skill (Shipped: 2026-06-10)
 
 **Phases completed:** 3 phases, 3 plans, automated audit passed
