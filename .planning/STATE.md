@@ -117,6 +117,7 @@ v1.7 is archived. Start the next milestone when ready.
 - Pre-close artifact audit reported Phase 01 human UAT as `resolved` with 0 pending scenarios; no actionable UAT gap remains.
 - No dedicated milestone audit file existed before close. Phase summaries and the requirements archive record the shipped v1.0 evidence; the next milestone should run `/gsd:audit-milestone` before `/gsd:complete-milestone`.
 - v1.7 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
+- v1.7.1 records post-close debug fixes for uncertain-score calculation, score views/pagination, deterministic score-list artifacts, and fixed-template layout polish without reopening the v1.7 milestone.
 - Pre-close artifact audit reported Phase 01/08/09 UAT records as `resolved` or `passed` with 0 pending scenarios; no actionable UAT gap remains.
 
 ## Current Position
