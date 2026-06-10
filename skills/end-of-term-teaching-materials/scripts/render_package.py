@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape as xml_escape
 
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 PACKAGE_ARTIFACTS = [
     "成绩记分册",
     "成绩汇总表",
@@ -85,6 +85,8 @@ def score_number(value: Any) -> float | None:
         return None
     text = scalar(value).strip()
     if text.endswith("?"):
+        text = text[:-1]
+    if not text:
         return None
     try:
         return float(text)
@@ -798,11 +800,9 @@ def score_value(row: dict[str, str], header: str) -> str:
 def numeric_average(values: list[str]) -> str:
     nums: list[float] = []
     for value in values:
-        try:
-            if value != "":
-                nums.append(float(value))
-        except ValueError:
-            pass
+        number = score_number(value)
+        if number is not None:
+            nums.append(number)
     if not nums:
         return ""
     return str(round(sum(nums) / len(nums)))
@@ -811,10 +811,11 @@ def numeric_average(values: list[str]) -> str:
 def semester_score(process_score_value: str, final_exam_value: str) -> str:
     if not process_score_value and not final_exam_value:
         return ""
-    try:
-        return str(round((float(process_score_value or 0) * 0.4) + (float(final_exam_value or 0) * 0.6)))
-    except ValueError:
+    process_number = score_number(process_score_value) or 0
+    final_number = score_number(final_exam_value) or 0
+    if score_number(process_score_value) is None and score_number(final_exam_value) is None:
         return ""
+    return str(round((process_number * 0.4) + (final_number * 0.6)))
 
 
 def derived_score_values(row: dict[str, str], task_count: int) -> dict[str, str]:
@@ -1075,8 +1076,9 @@ def analysis_page(package: MarkdownPackage) -> str:
         ptext_abs(250.00, 142.66, 120.00, 16.84, 11.8, f"班级：  {class_label(package, spaced=True)}", clip=False),
         ptext_abs(390.00, 142.66, 170.00, 16.84, 11.8, f"时间：  {date_label(package, spaced=True)}", clip=False),
     ]
-    for y in [167.44, 192.70, 217.49, 242.75, 292.79, 317.58, 407.85, 498.12, 587.93, 678.20, 758.18]:
+    for y in [167.44, 192.70, 242.75, 292.79, 317.58, 407.85, 498.12, 587.93, 678.20, 758.18]:
         lines.append(hline_abs(55.69, 537.74, y))
+    lines.append(hline_abs(153.97, 537.74, 217.49))
     for y in [267.77]:
         lines.append(hline_abs(448.35, 537.74, y))
     for x, y1, y2 in [
@@ -1102,8 +1104,8 @@ def analysis_page(package: MarkdownPackage) -> str:
             ptext_abs(153.97, 167.44, 245.24, 25.26, 11.8, package.meta.get("course_name", "")),
             ptext_abs(399.21, 167.44, 49.14, 25.26, 11.8, "教师姓名"),
             ptext_abs(448.35, 167.44, 89.39, 25.26, 11.8, teacher_label(package, sep="  ")),
-            ptext_abs(55.69, 192.70, 49.14, 24.79, 11.8, "全班人数"),
-            ptext_abs(104.83, 192.70, 49.14, 24.79, 11.8, "缺考人数"),
+            ptext_abs(55.69, 192.70, 49.14, 50.05, 11.8, "全班人数"),
+            ptext_abs(104.83, 192.70, 49.14, 50.05, 11.8, "缺考人数"),
             ptext_abs(153.97, 192.70, 294.38, 24.79, 11.8, "考试成绩、分类、人数及百分比"),
             ptext_abs(448.35, 192.70, 89.39, 24.79, 11.8, "最高分"),
             ptext_abs(153.97, 217.49, 49.14, 25.26, 11.6, "不及格"),
