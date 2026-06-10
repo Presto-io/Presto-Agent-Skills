@@ -3,7 +3,7 @@ name: "end-of-term-teaching-materials"
 description: "Use when preparing semester-end teaching submission documents and tables from explicit course, class, roster, task, score, assessment, and submission data."
 metadata:
   short-description: "期末教学材料固定模板渲染"
-  version: "0.2.0"
+  version: "0.3.0"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -82,7 +82,8 @@ Parent directories for `--output` must already exist. `--workdir` must already e
 - `tables/score-data.json`: deterministic score rows.
 - `tables/score-data.csv`: deterministic score rows in fixed column order.
 - `tables/task-map.json`: mapping from `任务1..任务N` to task names and hours.
-- `tables/score-summary.json`: student/task/blank-cell summary and formula placeholder notes.
+- `tables/calculated-score-data.json`: deterministic raw score rows plus renderer-calculated `平时分` and `学期成绩`; PDF and workbook must use the same calculated values.
+- `tables/score-summary.json`: student/task/blank-cell summary and calculation evidence notes.
 - `tables/highlight-evidence.json`: deterministic red-warning evidence for unresolved uncertain cells and below-60 `学期成绩` cells.
 - `tables/scorebook.xlsx`: teacher-facing workbook with `成绩数据`、`任务映射`、`成绩汇总` sheets.
 
@@ -104,16 +105,16 @@ PDF rendering uses the fixed Excel-style grid for the score book body, score sum
 - [ ] `bash -n skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh`
 - [ ] `python3 -m py_compile skills/end-of-term-teaching-materials/scripts/render_package.py`
 - [ ] `skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh verify --workdir <existing-dir>`
-- [ ] `manifest.json` includes `"review_cleared": true`, `"repeatable": true`, `"table_artifacts_verified": true`, and workbook verification.
+- [ ] `manifest.json` includes `"review_cleared": true`, `"repeatable": true`, `"calculated_scores_verified": true`, `"table_artifacts_verified": true`, and workbook verification.
 - [ ] Uncertain fixture generation preserves `87?`, writes `## 复核标记`, blocks normal render, and allows only explicit `--abnormal-review` output with `"final_ready": false`.
-- [ ] `tables/score-data.json`、`tables/score-data.csv`、`tables/task-map.json`、`tables/score-summary.json`、`tables/highlight-evidence.json` and `tables/scorebook.xlsx` exist.
+- [ ] `tables/score-data.json`、`tables/calculated-score-data.json`、`tables/score-data.csv`、`tables/task-map.json`、`tables/score-summary.json`、`tables/highlight-evidence.json` and `tables/scorebook.xlsx` exist.
 - [ ] Runtime adapter notes mention Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
 ## Success Criteria
 
 - 技能能指导 agent 产出一份可审阅、可手工编辑、可后续渲染的期末教学材料 Markdown intermediate。
 - 脚本能从结构化 JSON 生成 Markdown，从 Markdown 生成 Typst，并在 Typst 可用时编译 merged PDF package。
-- Renderer 能稳定输出 deterministic table artifacts 和 teacher-facing workbook。
+- Renderer 能稳定输出 deterministic table artifacts、calculated score evidence 和 teacher-facing workbook，且 PDF 显示值与 calculated score evidence 一致。
 - 复核未清除时不会声称最终导出、打印或提交材料已经完成。
 - 异常预览产物必须被报告为 `abnormal_review`，并带有 red/highlight evidence；它只支持教师检查，不能替代最终件。
 - OpenClaw 与 Hermes Agent 的脚本权限、写入权限、fixture verification 和 fallback 行为有明确 adapter notes。
