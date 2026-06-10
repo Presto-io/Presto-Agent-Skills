@@ -1,6 +1,7 @@
 # Phase 10 Summary: Ordered Reveals and Classroom Answer Masks
 
 **Completed:** 2026-06-03
+**Human UAT:** passed 2026-06-11
 **Milestone:** v1.6 School Presentation Playback UX
 
 ## Delivered
@@ -23,7 +24,8 @@
 - `skills/school-presentation/scripts/school-presentation.sh verify --workdir /tmp/school-presentation-phase10-verify2`
 - Verification manifest passed with `repeatable_html: true`, `hierarchy_verified: true`, `workspace_verified: true`, `reveal_verified: true`, `thumbnail_ratio_verified: true`, and `flat_slide_compat_verified: true`.
 - `git diff --check` passed.
+- Human visual UAT passed on 2026-06-11 after the v1.6 visual-fix pass.
 
 ## Residual Risk
 
-- Human visual UAT has not been run for Phase 10 animation polish. The automated gate proves DOM/manifest behavior and deterministic rendering.
+- Deferred hover/peek, SmartArt/timeline/cards/gallery, automatic semantic icons, sort reordering, generic body animation, section-divider toggles, and export/print controls remain out of scope for v1.6.
