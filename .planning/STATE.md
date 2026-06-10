@@ -1,32 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.7
-milestone_name: End-of-Term Teaching Materials Skill
-current_phase: 13
-status: completed
-stopped_at: Phase 13 complete
-last_updated: "2026-06-10T05:57:36.453Z"
-last_activity: 2026-06-10 — Milestone v1.7 completed and archived
+milestone: v1.8
+milestone_name: School Presentation Continuation
+current_phase: 14
+status: planned
+last_updated: "2026-06-11T02:25:00+08:00"
+last_activity: 2026-06-11
 progress:
   total_phases: 3
-  completed_phases: 3
+  completed_phases: 0
   total_plans: 3
-  completed_plans: 3
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 13
-**Status:** v1.7 milestone complete
+**Current Phase:** 14
+**Status:** v1.8 requirements and roadmap defined
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-10)
+See: `.planning/PROJECT.md` (updated 2026-06-11)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.7 is archived; next milestone is not started yet.
+**Current focus:** v1.8 continues `school-presentation` with presenter markup, deferred classroom interaction extensions, structured layout helpers, and print/export review behavior.
 
 ## Workflow Preferences
 
@@ -50,13 +49,14 @@ See: `.planning/PROJECT.md` (updated 2026-06-10)
 
 ## Next Up
 
-v1.7 is archived. Start the next milestone when ready.
+Discuss or plan Phase 14: Presenter Markup Tools.
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
 - Phase 13 completed: Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores reach Markdown review while final export remains strict
+- Milestone v1.8 started: Continue official-school presentation development from the Phase 10 deferred scope.
 
 ## Decisions
 
@@ -82,6 +82,7 @@ v1.7 is archived. Start the next milestone when ready.
 - [Milestone v1.5]: User images should preserve their original aspect ratio. — Images should be scaled and placed without cropping by default.
 - [Milestone v1.6]: Playback UX comes before marking tools. — User requested playback, thumbnail/preview/overview, hierarchy, ordered reveal, emphasis animation, and answer masks now; marking-style tools are deferred to the next milestone.
 - [Milestone v1.6]: Phase 10 visual UAT passed. — User reported display defects on 2026-06-10; after the visual-fix pass, user confirmed Phase 10 manual visual acceptance passed on 2026-06-11.
+- [Milestone v1.8]: The next `school-presentation` milestone resumes deferred presenter markup, classroom interaction extensions, structured layouts, and print/export review behavior. — User requested v1.8 continue official template presentation development and read previous undeveloped phases.
 - [Milestone v1.7]: The end-of-term teaching-materials skill should use structured data -> Markdown -> Typst -> PDF. — User requested a fixed-template workflow for semester-end submission documents and tables.
 - [Milestone v1.7]: Skip external research for this milestone. — The work follows already validated document-skill patterns in this repository.
 - [Phase 11]: The end-of-term teaching-materials skill now has a contract-only slice. — Phase 11 added the canonical skill, data contract, and Markdown intermediate while leaving rendering scripts, Excel, Typst, PDF, and deterministic table artifacts to Phase 12.
@@ -108,9 +109,9 @@ v1.7 is archived. Start the next milestone when ready.
 
 ## Last Session
 
-- **Completed:** Phase 13 uncertain-score review closure with abnormal preview verification
-- **Stopped At:** Phase 13 complete
-- **Resume File:** .planning/phases/13-close-gap-etm-04-etm-06-etm-08-uncertain-scores-must-reach-m/13-01-SUMMARY.md
+- **Completed:** v1.8 milestone kickoff, requirement definition, and roadmap creation
+- **Stopped At:** Phase 14 ready for discussion or planning
+- **Resume File:** .planning/ROADMAP.md
 
 ## Close Notes
 
@@ -120,15 +121,17 @@ v1.7 is archived. Start the next milestone when ready.
 - v1.7 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 - v1.7.1 records post-close debug fixes for uncertain-score calculation, score views/pagination, deterministic score-list artifacts, and fixed-template layout polish without reopening the v1.7 milestone.
 - Pre-close artifact audit reported Phase 01/08/09 UAT records as `resolved` or `passed` with 0 pending scenarios; no actionable UAT gap remains.
-- v1.6 Phase 10 visual UAT passed on 2026-06-11; v1.6 is ready for milestone closeout after current artifacts are reviewed and committed.
+- v1.6 Phase 10 visual UAT passed on 2026-06-11 and is recorded as shipped in `.planning/MILESTONES.md`.
+- v1.8 starts from Phase 10 deferred scope rather than reopening completed playback/reveal work.
 
 ## Current Position
 
-Phase: Milestone v1.7 complete
+Phase: 14 - Presenter Markup Tools
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-10 — Milestone v1.7 completed and archived
+Status: Ready for phase discussion or planning
+Last activity: 2026-06-11 — Milestone v1.8 requirements and roadmap created
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run `/gsd:discuss-phase 14` to gather implementation context for presenter markup tools.
+- Or run `/gsd:plan-phase 14` to skip directly to a task plan.
