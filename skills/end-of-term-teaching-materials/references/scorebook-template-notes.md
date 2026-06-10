@@ -14,7 +14,7 @@
 - 空成绩单元格必须继续为空白。
 - 任务列必须存在，即使所有学生在该任务下都为空。
 - 不确定值不得被 workbook 自动清洗；普通 renderer 应在最终输出前用复核标记阻断。
-- 只有用户明确要求 abnormal review preview 时，workbook 才能保留 `87?` 这类未解决值，并用 red warning fill 标出对应单元格。manifest 和 `tables/highlight-evidence.json` 必须记录这些 highlighted cells。
+- 只有用户明确要求 abnormal review preview 时，workbook 才能保留 `87?` 这类未解决值，并用 red warning fill 标出对应单元格；派生成绩计算临时使用数值部分 `87`。manifest 和 `tables/highlight-evidence.json` 必须记录这些 highlighted cells。
 - workbook 中显示的衍生 `学期成绩` 低于 60 时也必须使用 red warning fill，并写入 highlight evidence。
 - workbook、PDF 和 `tables/calculated-score-data.json` 必须使用同一套 renderer-calculated `平时分` 与 `学期成绩` 显示值；不要求 workbook 单元格保留 Excel 公式。
 

@@ -3,7 +3,7 @@ name: "end-of-term-teaching-materials"
 description: "Use when preparing semester-end teaching submission documents and tables from explicit course, class, roster, task, score, assessment, and submission data."
 metadata:
   short-description: "期末教学材料固定模板渲染"
-  version: "0.3.0"
+  version: "0.5.1"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -18,7 +18,7 @@ metadata:
 
 ## Objective
 
-把期末提交材料需要的课程、班级、教师、学期、过程考核、成绩、分析和交接信息整理成一份可复核的 `end-of-term-full.md` Markdown intermediate，再通过固定 skill-local 模板生成 Typst/PDF、manifest、确定性 JSON/CSV 表格产物和 teacher-facing workbook。
+把期末提交材料需要的课程、班级、教师、学期、过程考核、成绩、分析和交接信息整理成一份可复核的 `end-of-term-full.md` Markdown intermediate，再通过固定 skill-local 模板生成 Typst/PDF、manifest、确定性 JSON/CSV 表格产物、calculated score evidence 和 teacher-facing workbook。
 
 固定流程是：
 
@@ -71,7 +71,8 @@ Parent directories for `--output` must already exist. `--workdir` must already e
 6. Preserve blank score cells and declared task columns. Empty scores remain empty; declared tasks remain columns even when all cells are blank.
 7. Respect package flags. `成绩记分册` is one bundle covering the redesigned cover and score-book body. `交接班记录封面` requires both `handover_class_name` and `handover_teachers`; otherwise the renderer skips it and records a manifest warning.
 8. Run `verify --workdir <dir>` before delivery. PDF compilation is attempted when `typst` is installed; missing Typst is reported explicitly in the manifest instead of silently passing as a PDF success.
-9. In abnormal review artifacts, unresolved uncertain score cells are marked with red warning styling. Derived `学期成绩` cells below 60 are also marked red where the workbook or PDF-visible score-book output shows that field.
+9. In abnormal review artifacts, unresolved uncertain score cells are marked with red warning styling. Values such as `87?` keep the visible `?` in raw score cells, but their numeric portion is used provisionally for calculated `平时分` and `学期成绩`. Derived `学期成绩` cells below 60 are also marked red where the workbook or PDF-visible score-book output shows that field.
+10. Preserve fixed-template merged cells in the `成绩分析表`; `全班人数` and `缺考人数` labels each span the upper two statistic rows and remain centered above their values.
 
 ## Outputs
 
@@ -87,7 +88,7 @@ Parent directories for `--output` must already exist. `--workdir` must already e
 - `tables/highlight-evidence.json`: deterministic red-warning evidence for unresolved uncertain cells and below-60 `学期成绩` cells.
 - `tables/scorebook.xlsx`: teacher-facing workbook with `成绩数据`、`任务映射`、`成绩汇总` sheets.
 
-PDF rendering uses the fixed Excel-style grid for the score book body, score summary, and analysis sheet: column proportions, row rhythm, thin borders, merged headers, and diagonal header cells are encoded in the skill-local renderer.
+PDF rendering uses the fixed Excel-style grid for the score book body, score summary, and analysis sheet: column proportions, row rhythm, thin borders, merged headers, merged statistic cells, and diagonal header cells are encoded in the skill-local renderer.
 
 ## Runtime Adapter Notes
 
