@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.7 End-of-Term Teaching Materials Skill (Shipped: 2026-06-10)
+
+**Phases completed:** 3 phases, 3 plans, automated audit passed
+
+**Key accomplishments:**
+
+- Added `end-of-term-teaching-materials`, with a structured teaching-data contract and one teacher-editable Markdown source of truth.
+- Implemented fixed-template Typst/PDF package rendering, deterministic JSON/CSV table artifacts, and `scorebook.xlsx` output.
+- Closed the uncertain-score review gap: values such as `87?` now reach Markdown review with explicit markers, while normal final export remains strict.
+- Passed milestone audit for ETM-01 through ETM-08 across Phases 11-13.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.7-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.7-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.7-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.6 School Presentation Playback UX (Verified: 2026-06-03)
 
 **Phases completed:** 2 phases, 2 plans, automated verification passed

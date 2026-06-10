@@ -5,13 +5,13 @@ milestone_name: End-of-Term Teaching Materials Skill
 current_phase: 13
 status: completed
 stopped_at: Phase 13 complete
-last_updated: "2026-06-10T13:34:54+08:00"
-last_activity: 2026-06-10 — Phase 13 completed
+last_updated: "2026-06-10T05:57:36.453Z"
+last_activity: 2026-06-10 — Milestone v1.7 completed and archived
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
   percent: 100
 ---
 
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 13
-**Status:** Phase 13 complete; v1.7 uncertain-score review gap closed
+**Status:** v1.7 milestone complete
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-08)
+See: `.planning/PROJECT.md` (updated 2026-06-10)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.7 End-of-Term Teaching Materials Skill - structured data, Markdown intermediate, fixed-template Typst/PDF, table artifacts, and verification
+**Current focus:** v1.7 is archived; next milestone is not started yet.
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-08)
 
 ## Next Up
 
-Phase 13 is complete; review and commit the v1.7 closure artifacts when ready.
+v1.7 is archived. Start the next milestone when ready.
 
 ## Accumulated Context
 
@@ -116,14 +116,16 @@ Phase 13 is complete; review and commit the v1.7 closure artifacts when ready.
 - v1.0 archived ROADMAP and REQUIREMENTS under `.planning/milestones/`.
 - Pre-close artifact audit reported Phase 01 human UAT as `resolved` with 0 pending scenarios; no actionable UAT gap remains.
 - No dedicated milestone audit file existed before close. Phase summaries and the requirements archive record the shipped v1.0 evidence; the next milestone should run `/gsd:audit-milestone` before `/gsd:complete-milestone`.
+- v1.7 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
+- Pre-close artifact audit reported Phase 01/08/09 UAT records as `resolved` or `passed` with 0 pending scenarios; no actionable UAT gap remains.
 
 ## Current Position
 
-Phase: 13 - Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores must reach Markdown review
-Plan: 13-01 Uncertain scores must reach Markdown review
-Status: Complete
-Last activity: 2026-06-10 — Phase 13 completed
+Phase: Milestone v1.7 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-10 — Milestone v1.7 completed and archived
 
 ## Operator Next Steps
 
-- Review Phase 13 artifacts and commit the closure when ready.
+- Start the next milestone with /gsd-new-milestone
