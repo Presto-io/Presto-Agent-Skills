@@ -35,20 +35,22 @@
 
 ---
 
-## v1.6 School Presentation Playback UX (Verified: 2026-06-03)
+## v1.6 School Presentation Playback UX (Shipped: 2026-06-11)
 
-**Phases completed:** 2 phases, 2 plans, automated verification passed
+**Phases completed:** 2 phases, 2 plans, automated verification passed, human visual UAT passed
 
 **Key accomplishments:**
 
 - Added playback mode, thumbnail rail, large preview, and tiled overview for generated `school-presentation` HTML decks.
 - Documented and rendered page hierarchy across logical slides, physical pages, sections, and reveal steps.
 - Added ordered reveals, restrained emphasis animation, and classroom answer masks controlled from Markdown.
+- Closed the Phase 10 visual UAT gate after agenda, cover, media fallback, alert icon, spacing, list pagination, and playback fit fixes.
 
 **Archives:**
 
 - Roadmap: `.planning/milestones/v1.6-ROADMAP.md`
 - Requirements: `.planning/milestones/v1.6-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.6-MILESTONE-AUDIT.md`
 
 ---
 
