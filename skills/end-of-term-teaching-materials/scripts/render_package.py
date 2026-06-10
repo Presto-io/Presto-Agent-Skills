@@ -7,6 +7,7 @@ import argparse
 import csv
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -16,7 +17,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape as xml_escape
 
-VERSION = "0.5.1"
+VERSION = "0.5.3"
 PACKAGE_ARTIFACTS = [
     "成绩记分册",
     "成绩汇总表",
@@ -27,7 +28,9 @@ PACKAGE_ARTIFACTS = [
 ]
 BASE_SCORE_COLUMNS = ["学号", "姓名"]
 TRAILING_SCORE_COLUMNS = ["考勤", "作业", "期末"]
-DERIVED_SCORE_COLUMNS = ["平时分", "学期成绩"]
+DERIVED_SCORE_COLUMNS = ["平时分", "期末分", "学期成绩"]
+SCORE_LIST_COLUMNS = ["姓名", "学号", "平时成绩", "期末成绩"]
+MAX_TASKS = 8
 WARNING_FILL = "rgb(\"#ffe0e0\")"
 
 
@@ -198,6 +201,8 @@ def validate_source_data(data: dict[str, Any], export_ready: bool = True) -> lis
     tasks = data.get("tasks") or []
     if not isinstance(tasks, list) or not tasks:
         errors.append("tasks must be a non-empty array")
+    if len(tasks) > MAX_TASKS:
+        errors.append(f"tasks must not exceed {MAX_TASKS}; fixed score-summary template only renders 任务1..任务{MAX_TASKS}")
     for index, task in enumerate(tasks, start=1):
         if not task.get("task_name"):
             errors.append(f"task {index} missing task_name")
@@ -436,6 +441,8 @@ def validate_markdown(package: MarkdownPackage, export_ready: bool = True) -> li
             errors.append(f"missing required metadata: {key}")
     if package.meta.get("template") != "end-of-term-teaching-materials":
         errors.append("template must be end-of-term-teaching-materials")
+    if len(package.tasks) > MAX_TASKS:
+        errors.append(f"task count must not exceed {MAX_TASKS}; fixed score-summary template only renders 任务1..任务{MAX_TASKS}")
     expected_task_headers = [f"任务{i}" for i in range(1, len(package.tasks) + 1)]
     expected_headers = BASE_SCORE_COLUMNS + expected_task_headers + TRAILING_SCORE_COLUMNS
     if package.score_headers != expected_headers:
@@ -619,12 +626,59 @@ def wrap_cjk_label(value: Any, width: int = 4, max_lines: int = 8) -> list[str]:
     return lines[:max_lines]
 
 
+def task_display_name(task: dict[str, Any]) -> str:
+    name = scalar(task.get("task_name")).strip()
+    hours = score_number(task.get("hours"))
+    if hours == 0 or name.startswith("预留任务"):
+        return ""
+    return name
+
+
+def task_name_cells(x: float, y: float, w: float, h: float, task: dict[str, Any]) -> list[str]:
+    task_lines = wrap_cjk_label(task_display_name(task), width=4, max_lines=8)
+    if not task_lines:
+        return []
+    line_h = 14.0
+    total_h = len(task_lines) * line_h
+    start_y = y + max(0.0, (h - total_h) / 2)
+    size = 10.0 if len(task_lines) > 6 else 10.2
+    return [
+        ptext_abs(x, start_y + line_h * line_index, w, line_h, size, label, clip=False)
+        for line_index, label in enumerate(task_lines)
+    ]
+
+
 def task_score(row: dict[str, str], index: int) -> str:
     return row.get(f"任务{index}", "")
 
 
-def process_score(row: dict[str, str], task_count: int) -> str:
-    return numeric_average([row.get(f"任务{i}", "") for i in range(1, task_count + 1)])
+def scorebook_source_values(row: dict[str, str]) -> list[str]:
+    return [row.get(header, "") for header in TRAILING_SCORE_COLUMNS]
+
+
+def student_identity_values(value: str) -> set[str]:
+    text = value.strip()
+    if not text:
+        return set()
+    parts = text.split(None, 1)
+    values = {text}
+    if len(parts) == 2:
+        values.update(parts)
+    return values
+
+
+def owned_score_rows(package: MarkdownPackage) -> list[dict[str, str]]:
+    owned = set()
+    for student in package.students:
+        owned.update(student_identity_values(student))
+    if not owned:
+        return package.score_rows
+    result = []
+    for row in package.score_rows:
+        row_values = {row.get("学号", "").strip(), row.get("姓名", "").strip(), f"{row.get('学号', '').strip()} {row.get('姓名', '').strip()}".strip()}
+        if owned.intersection(row_values):
+            result.append(row)
+    return result
 
 
 def spaced_cover_title(title: str) -> str:
@@ -797,6 +851,10 @@ def score_value(row: dict[str, str], header: str) -> str:
     return row.get(header, "")
 
 
+def rounded_score(value: float) -> str:
+    return str(round(value))
+
+
 def numeric_average(values: list[str]) -> str:
     nums: list[float] = []
     for value in values:
@@ -805,42 +863,88 @@ def numeric_average(values: list[str]) -> str:
             nums.append(number)
     if not nums:
         return ""
-    return str(round(sum(nums) / len(nums)))
+    return rounded_score(sum(nums) / len(nums))
 
 
-def semester_score(process_score_value: str, final_exam_value: str) -> str:
-    if not process_score_value and not final_exam_value:
+def weighted_task_score(row: dict[str, str], tasks: list[dict[str, Any]]) -> str:
+    weighted_total = 0.0
+    weight_total = 0.0
+    for index, task in enumerate(tasks, start=1):
+        score = score_number(task_score(row, index))
+        hours = score_number(task.get("hours"))
+        if score is None or hours is None:
+            continue
+        weighted_total += score * hours
+        weight_total += hours
+    if weight_total == 0:
+        return ""
+    return rounded_score(weighted_total / weight_total)
+
+
+def process_score(row: dict[str, str]) -> str:
+    attendance = score_number(row.get("考勤", ""))
+    homework = score_number(row.get("作业", ""))
+    final_test = score_number(row.get("期末", ""))
+    if final_test is not None:
+        return rounded_score((attendance or 0) * 0.3 + (homework or 0) * 0.4 + final_test * 0.3)
+    if attendance is None and homework is None:
+        return ""
+    return rounded_score((attendance or 0) * 0.5 + (homework or 0) * 0.5)
+
+
+def semester_score(process_score_value: str, final_score_value: str) -> str:
+    if not process_score_value and not final_score_value:
         return ""
     process_number = score_number(process_score_value) or 0
-    final_number = score_number(final_exam_value) or 0
-    if score_number(process_score_value) is None and score_number(final_exam_value) is None:
+    final_number = score_number(final_score_value) or 0
+    if score_number(process_score_value) is None and score_number(final_score_value) is None:
         return ""
-    return str(round((process_number * 0.4) + (final_number * 0.6)))
+    return rounded_score((process_number * 0.4) + (final_number * 0.6))
 
 
-def derived_score_values(row: dict[str, str], task_count: int) -> dict[str, str]:
-    process = process_score(row, task_count)
-    final = row.get("期末", "")
+def derived_score_values(row: dict[str, str], tasks: list[dict[str, Any]]) -> dict[str, str]:
+    process = process_score(row)
+    final = weighted_task_score(row, tasks)
     return {
         "平时分": process,
+        "期末分": final,
         "学期成绩": semester_score(process, final),
     }
 
 
-def final_score(row: dict[str, str], task_count: int | None = None) -> str:
-    if task_count is None:
-        task_count = sum(1 for key in row if key.startswith("任务"))
-    return derived_score_values(row, task_count)["学期成绩"]
+def final_score(row: dict[str, str], tasks: list[dict[str, Any]] | None = None) -> str:
+    if tasks is None:
+        tasks = [{"hours": 1} for key in row if key.startswith("任务")]
+    return derived_score_values(row, tasks)["学期成绩"]
 
 
 def calculated_score_rows(package: MarkdownPackage) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
-    task_count = len(package.tasks)
     for row in package.score_rows:
         item = {header: row.get(header, "") for header in package.score_headers}
-        item.update(derived_score_values(row, task_count))
+        item.update(derived_score_values(row, package.tasks))
         rows.append(item)
     return rows
+
+
+def student_id_sort_key(value: Any) -> tuple[tuple[int, Any], ...]:
+    text = scalar(value)
+    parts = re.split(r"(\d+)", text)
+    return tuple((0, int(part)) if part.isdigit() else (1, part) for part in parts)
+
+
+def score_list_rows(package: MarkdownPackage, calculated_rows: list[dict[str, str]] | None = None) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for row in calculated_rows or calculated_score_rows(package):
+        rows.append(
+            {
+                "姓名": row.get("姓名", ""),
+                "学号": row.get("学号", ""),
+                "平时成绩": row.get("平时分", ""),
+                "期末成绩": row.get("期末分", ""),
+            }
+        )
+    return sorted(rows, key=lambda item: student_id_sort_key(item["学号"]))
 
 
 def is_below_60(value: Any) -> bool:
@@ -856,6 +960,12 @@ def highlight_records(package: MarkdownPackage) -> list[dict[str, str]]:
         for header in package.score_headers[2:]:
             value = row.get(header, "")
             if "?" in value:
+                in_scorebook_workbook = header in TRAILING_SCORE_COLUMNS
+                pdf_surface = (
+                    "scorebook and score-summary cells use red warning fill in abnormal preview"
+                    if in_scorebook_workbook
+                    else "score-summary task cells use red warning fill in abnormal preview"
+                )
                 records.append(
                     {
                         "kind": "unresolved_uncertain_score",
@@ -864,12 +974,14 @@ def highlight_records(package: MarkdownPackage) -> list[dict[str, str]]:
                         "field": header,
                         "value": value,
                         "markdown_location": f"成绩数据 / {student} / {header}",
-                        "workbook_sheet": "成绩数据",
-                        "workbook_cell": f"{column_name(package.score_headers.index(header) + 1)}{row_index + 1}",
-                        "pdf_visible": "scorebook and score-summary cells use red warning fill in abnormal preview",
+                        "workbook_sheet": "成绩数据" if in_scorebook_workbook else "",
+                        "workbook_cell": f"{column_name((BASE_SCORE_COLUMNS + TRAILING_SCORE_COLUMNS).index(header) + 1)}{row_index + 1}"
+                        if in_scorebook_workbook
+                        else "",
+                        "pdf_visible": pdf_surface,
                     }
                 )
-        semester_score = final_score(row, len(package.tasks))
+        semester_score = final_score(row, package.tasks)
         if is_below_60(semester_score):
             records.append(
                 {
@@ -880,8 +992,8 @@ def highlight_records(package: MarkdownPackage) -> list[dict[str, str]]:
                     "value": semester_score,
                     "markdown_location": f"成绩数据 / {student} / derived 学期成绩",
                     "workbook_sheet": "成绩数据",
-                    "workbook_cell": f"{column_name(len(package.score_headers) + 2)}{row_index + 1}",
-                    "pdf_visible": "scorebook and score-summary 学期成绩 cells use red warning fill",
+                    "workbook_cell": f"{column_name(len(BASE_SCORE_COLUMNS + TRAILING_SCORE_COLUMNS) + DERIVED_SCORE_COLUMNS.index('学期成绩') + 1)}{row_index + 1}",
+                    "pdf_visible": "scorebook 学期成绩 cells use red warning fill",
                 }
             )
     return records
@@ -950,8 +1062,8 @@ def scorebook_score_page(package: MarkdownPackage, rows: list[dict[str, str]], *
     )
     task_x = [179.25, 203.11, 227.45, 251.32, 275.65, 299.52, 323.39, 347.73]
     task_w = [23.87, 24.34, 23.87, 24.34, 23.87, 23.87, 24.34, 23.87]
-    for i, (x, w) in enumerate(zip(task_x, task_w), start=1):
-        lines.append(ptext_abs(x, 110.38, w, 20.11, 11, str(i)))
+    for index, (x, w) in enumerate(zip(task_x, task_w), start=1):
+        lines.append(ptext_abs(x, 110.38, w, 20.11, 11, str(index)))
     for x, label in [(371.59, "平时"), (414.65, "期末"), (457.71, "学期")]:
         lines.append(ptext_abs(x, 91.00, 43.06, 12.00, 10.6, label, clip=False))
         lines.append(ptext_abs(x, 105.00, 43.06, 12.00, 10.6, "成绩", clip=False))
@@ -965,17 +1077,13 @@ def scorebook_score_page(package: MarkdownPackage, rows: list[dict[str, str]], *
         h = max(12.0, row_lines[idx + 2] - top - 1.87)
         lines.append(ptext_abs(52.88, y_text, 62.24, h, 10.6, row.get("学号", "")))
         lines.append(ptext_abs(115.13, y_text, 64.12, h, 10.6, row.get("姓名", "")))
-        for task_index, (x, w) in enumerate(zip(task_x, task_w), start=1):
-            value = task_score(row, task_index)
+        for value, x, w in zip(scorebook_source_values(row) + [""] * (len(task_x) - len(TRAILING_SCORE_COLUMNS)), task_x, task_w):
             if "?" in value:
                 lines.append(warning_rect_abs(x, y_text, w, h))
             lines.append(ptext_abs(x, y_text, w, h, 11.8, value))
-        derived = derived_score_values(row, task_count)
+        derived = derived_score_values(row, package.tasks)
         lines.append(ptext_abs(371.59, y_text, 43.06, h, 11.8, derived["平时分"]))
-        final_exam = row.get("期末", "")
-        if "?" in final_exam:
-            lines.append(warning_rect_abs(414.65, y_text, 43.06, h))
-        lines.append(ptext_abs(414.65, y_text, 43.06, h, 11.8, final_exam))
+        lines.append(ptext_abs(414.65, y_text, 43.06, h, 11.8, derived["期末分"]))
         semester_score = derived["学期成绩"]
         if is_below_60(semester_score):
             lines.append(warning_rect_abs(457.71, y_text, 43.06, h))
@@ -1007,7 +1115,7 @@ def scorebook_stats_block(package: MarkdownPackage) -> list[str]:
     return lines
 
 
-def score_summary_page(package: MarkdownPackage) -> str:
+def score_summary_page(package: MarkdownPackage, rows: list[dict[str, str]], *, start_index: int = 1) -> str:
     lines: list[str] = [
         ptext_abs(0.00, 89.50, 595.30, 21.04, 16.8, "工学一体化课程/基本技能课程考核成绩汇总表", weight="bold"),
         ptext_abs(55.69, 123.80, 160.68, 21.00, 11.6, f"专业：  {package.meta.get('major_name', '')}", clip=False),
@@ -1041,32 +1149,46 @@ def score_summary_page(package: MarkdownPackage) -> str:
             ptext_abs(501.23, 246.00, 36.50, 12.00, 10.5, "成绩", clip=False),
         ]
     )
-    task_cols = [(140.40, 45.40), (185.80, 44.93), (230.73, 45.40), (276.12, 44.93), (321.05, 45.40)]
+    task_cols = [
+        (140.40, 45.40),
+        (185.80, 44.93),
+        (230.73, 45.40),
+        (276.12, 44.93),
+        (321.05, 45.40),
+        (366.45, 44.92),
+        (411.37, 44.93),
+        (456.30, 44.93),
+    ]
     weights = task_weights(package)
     for index, (x, w) in enumerate(task_cols, start=1):
         task = package.tasks[index - 1] if index <= len(package.tasks) else {"task_name": ""}
-        task_lines = wrap_cjk_label(task.get("task_name", ""), width=4, max_lines=8)
-        start_y = 192.00 if len(task_lines) <= 6 else 178.00
-        for line_index, label in enumerate(task_lines):
-            lines.append(ptext_abs(x, start_y + 14.00 * line_index, w, 13.00, 10.0 if len(task_lines) > 6 else 10.2, label, clip=False))
+        lines.extend(task_name_cells(x, 160.90, w, 144.99, task))
         lines.append(ptext_abs(x, 305.89, w, 20.11, 10.8, weights[index - 1] if index - 1 < len(weights) else ""))
     for index in range(20):
-        row = package.score_rows[index] if index < len(package.score_rows) else {}
+        row = rows[index] if index < len(rows) else {}
         top = 326.00 + 20.02 * index
-        lines.append(ptext_abs(55.69, top, 27.61, 20.02, 10.8, str(index + 1) if row else ""))
+        lines.append(ptext_abs(55.69, top, 27.61, 20.02, 10.8, str(start_index + index) if row else ""))
         lines.append(ptext_abs(83.30, top, 57.10, 20.02, 10.8, row.get("姓名", "")))
         for task_index, (x, w) in enumerate(task_cols, start=1):
             value = task_score(row, task_index)
             if "?" in value:
                 lines.append(warning_rect_abs(x, top, w, 20.02))
             lines.append(ptext_abs(x, top, w, 20.02, 10.8, value))
-        semester_score = final_score(row, len(package.tasks))
-        if is_below_60(semester_score):
+        summary_score = weighted_task_score(row, package.tasks)
+        if is_below_60(summary_score):
             lines.append(warning_rect_abs(501.23, top, 36.50, 20.02))
-        lines.append(ptext_abs(501.23, top, 36.50, 20.02, 10.8, semester_score))
+        lines.append(ptext_abs(501.23, top, 36.50, 20.02, 10.8, summary_score))
     lines.append(ptext_abs(74.00, 758.00, 150.00, 14.00, 11.6, "教研室主任签字：", pos="left + horizon", clip=False))
     lines.append(ptext_abs(392.00, 758.00, 120.00, 14.00, 11.6, "教师签字：", pos="left + horizon", clip=False))
     return pagebox_abs(lines)
+
+
+def score_summary_pages(package: MarkdownPackage) -> str:
+    rows = owned_score_rows(package)
+    pages = []
+    for start in range(0, max(len(rows), 1), 20):
+        pages.append(score_summary_page(package, rows[start : start + 20], start_index=start + 1))
+    return "\n#pagebreak()\n".join(pages)
 
 
 def analysis_page(package: MarkdownPackage) -> str:
@@ -1169,10 +1291,20 @@ def simple_cover_page(package: MarkdownPackage, title: str) -> str:
     return reference_cover_page(package, title)
 
 
-def summary_scores(package: MarkdownPackage) -> list[float]:
+def scorebook_scores(package: MarkdownPackage) -> list[float]:
     values: list[float] = []
     for row in package.score_rows:
-        score = final_score(row, len(package.tasks))
+        score = final_score(row, package.tasks)
+        number = score_number(score)
+        if number is not None:
+            values.append(number)
+    return values
+
+
+def summary_scores(package: MarkdownPackage) -> list[float]:
+    values: list[float] = []
+    for row in owned_score_rows(package):
+        score = weighted_task_score(row, package.tasks)
         try:
             if score != "":
                 values.append(float(score))
@@ -1204,12 +1336,21 @@ def summary_stat(package: MarkdownPackage, kind: str) -> str:
     return ""
 
 
+def scorebook_summary_stat(package: MarkdownPackage, kind: str) -> str:
+    scores = scorebook_scores(package)
+    if not scores:
+        return ""
+    if kind == "pass_rate":
+        return f"{sum(1 for score in scores if score >= 60) / len(scores) * 100:.2f}%"
+    return ""
+
+
 def pass_rate(package: MarkdownPackage) -> str:
-    return summary_stat(package, "pass_rate") or ""
+    return scorebook_summary_stat(package, "pass_rate") or ""
 
 
 def score_distribution(package: MarkdownPackage) -> list[str]:
-    scores = summary_scores(package)
+    scores = scorebook_scores(package)
     bins = [
         sum(1 for score in scores if score >= 90),
         sum(1 for score in scores if 80 <= score < 90),
@@ -1271,7 +1412,7 @@ def generate_typst(package: MarkdownPackage, template_path: Path) -> tuple[str, 
         body.append(excel_cover_page(package))
         body.append(scorebook_body_page(package))
     if flags["成绩汇总表"]:
-        body.append(score_summary_page(package))
+        body.append(score_summary_pages(package))
     if flags["成绩分析表"]:
         body.append(analysis_page(package))
     if flags["教学日志封面"]:
@@ -1295,8 +1436,10 @@ def generate_typst(package: MarkdownPackage, template_path: Path) -> tuple[str, 
 def score_summary_rows(package: MarkdownPackage) -> list[list[str]]:
     blank_cells = 0
     numeric_values: list[float] = []
-    for row in package.score_rows:
-        for header in package.score_headers[2:]:
+    task_headers = [f"任务{i}" for i in range(1, len(package.tasks) + 1)]
+    rows = owned_score_rows(package)
+    for row in rows:
+        for header in task_headers:
             value = row.get(header, "")
             if value == "":
                 blank_cells += 1
@@ -1307,11 +1450,11 @@ def score_summary_rows(package: MarkdownPackage) -> list[list[str]]:
                     pass
     average = "" if not numeric_values else f"{sum(numeric_values) / len(numeric_values):.2f}"
     return [
-        ["学生数", str(len(package.score_rows))],
+        ["学生数", str(len(rows))],
         ["过程考核任务数", str(len(package.tasks))],
-        ["空白成绩单元格数", str(blank_cells)],
-        ["已填成绩均值", average],
-        ["计算说明", "PDF、workbook 和 calculated-score-data.json 使用同一套派生成绩结果"],
+        ["任务成绩空白单元格数", str(blank_cells)],
+        ["已填任务成绩均值", average],
+        ["计算说明", "成绩汇总表只使用任务成绩；总评成绩等于按课时加权的期末分"],
     ]
 
 
@@ -1329,12 +1472,13 @@ def build_table_artifacts(package: MarkdownPackage) -> dict[str, Any]:
     return {
         "score_data": score_data,
         "calculated_score_data": calculated_score_data,
+        "score_list": score_list_rows(package, calculated_score_data),
         "task_map": task_map,
         "highlight_evidence": highlight_records(package),
         "score_summary": {
-            "student_count": len(package.score_rows),
+            "student_count": len(owned_score_rows(package)),
             "task_count": len(task_headers),
-            "blank_score_cells": sum(1 for row in package.score_rows for header in package.score_headers[2:] if row.get(header, "") == ""),
+            "blank_score_cells": sum(1 for row in owned_score_rows(package) for header in task_headers if row.get(header, "") == ""),
             "summary_rows": score_summary_rows(package),
         },
     }
@@ -1346,6 +1490,17 @@ def write_csv(path: Path, headers: list[str], rows: list[dict[str, str]]) -> Non
         writer.writeheader()
         for row in rows:
             writer.writerow({header: row.get(header, "") for header in headers})
+
+
+def markdown_cell(value: Any) -> str:
+    return scalar(value).replace("|", "\\|").replace("\n", "<br>")
+
+
+def write_markdown_table(path: Path, headers: list[str], rows: list[dict[str, str]]) -> None:
+    lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * len(headers)) + " |"]
+    for row in rows:
+        lines.append("| " + " | ".join(markdown_cell(row.get(header, "")) for header in headers) + " |")
+    write_text(path, "\n".join(lines) + "\n")
 
 
 def column_name(index: int) -> str:
@@ -1374,19 +1529,60 @@ def worksheet_xml(rows: list[list[Any]], highlighted_cells: set[tuple[int, int]]
     )
 
 
+def write_single_sheet_xlsx(path: Path, sheet_name: str, headers: list[str], rows: list[dict[str, str]]) -> None:
+    sheet_rows = [headers]
+    sheet_rows.extend([[row.get(header, "") for header in headers] for row in rows])
+    files = {
+        "[Content_Types].xml": (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            '<Default Extension="xml" ContentType="application/xml"/>'
+            '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+            '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+            "</Types>"
+        ),
+        "_rels/.rels": (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            "</Relationships>"
+        ),
+        "xl/_rels/workbook.xml.rels": (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+            "</Relationships>"
+        ),
+        "xl/workbook.xml": (
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            f'<sheets><sheet name="{xml_escape(sheet_name)}" sheetId="1" r:id="rId1"/></sheets></workbook>'
+        ),
+        "xl/worksheets/sheet1.xml": worksheet_xml(sheet_rows),
+    }
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for name in sorted(files):
+            info = zipfile.ZipInfo(name)
+            info.date_time = (1980, 1, 1, 0, 0, 0)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, files[name])
+
+
 def write_xlsx(path: Path, package: MarkdownPackage, artifacts: dict[str, Any]) -> None:
-    score_headers = package.score_headers + DERIVED_SCORE_COLUMNS + ["备注"]
+    score_headers = BASE_SCORE_COLUMNS + TRAILING_SCORE_COLUMNS + DERIVED_SCORE_COLUMNS + ["备注"]
     score_rows = [score_headers]
     highlighted_cells: set[tuple[int, int]] = set()
     for row_index, row in enumerate(package.score_rows, start=2):
         calculated = artifacts["calculated_score_data"][row_index - 2]
-        values = [calculated.get(header, "") for header in package.score_headers + DERIVED_SCORE_COLUMNS]
+        values = [calculated.get(header, "") for header in BASE_SCORE_COLUMNS + TRAILING_SCORE_COLUMNS + DERIVED_SCORE_COLUMNS]
         values.append("")
         score_rows.append(values)
-        for col_index, header in enumerate(package.score_headers, start=1):
+        for col_index, header in enumerate(BASE_SCORE_COLUMNS + TRAILING_SCORE_COLUMNS, start=1):
             if "?" in row.get(header, ""):
                 highlighted_cells.add((row_index, col_index))
-        semester_score_col = len(package.score_headers) + 2
+        semester_score_col = score_headers.index("学期成绩") + 1
         if is_below_60(calculated.get("学期成绩", "")):
             highlighted_cells.add((row_index, semester_score_col))
     task_rows = [["任务列", "任务名称", "课时"]]
@@ -1493,6 +1689,8 @@ def render(markdown_path: Path, workdir: Path, skill_dir: Path, pdf: bool, abnor
     write_text(tables_dir / "score-summary.json", stable_json(artifacts["score_summary"]))
     write_text(tables_dir / "highlight-evidence.json", stable_json(artifacts["highlight_evidence"]))
     write_csv(tables_dir / "score-data.csv", package.score_headers, artifacts["score_data"])
+    write_markdown_table(tables_dir / "score-list.md", SCORE_LIST_COLUMNS, artifacts["score_list"])
+    write_single_sheet_xlsx(tables_dir / "score-list.xlsx", "成绩清单", SCORE_LIST_COLUMNS, artifacts["score_list"])
     write_xlsx(tables_dir / "scorebook.xlsx", package, artifacts)
 
     pdf_status = "not_requested"
@@ -1516,8 +1714,10 @@ def render(markdown_path: Path, workdir: Path, skill_dir: Path, pdf: bool, abnor
         "typst": str(typ_out.name),
         "pdf": {"status": pdf_status, "path": pdf_out.name if pdf_out.exists() else "", "message": pdf_message},
         "highlight_evidence": artifacts["highlight_evidence"],
+        "score_list": {"markdown": "tables/score-list.md", "xlsx": "tables/score-list.xlsx"},
         "calculated_scores_verified": calculated_scores_verified,
         "table_artifacts_verified": verify_table_artifacts(package, artifacts),
+        "score_list_verified": verify_score_list_artifacts(artifacts),
         "workbook_verified": (tables_dir / "scorebook.xlsx").exists(),
         "repeatable": "not_checked",
     }
@@ -1539,6 +1739,13 @@ def verify_table_artifacts(package: MarkdownPackage, artifacts: dict[str, Any]) 
             if source.get(header, "") != emitted.get(header, ""):
                 return False
     return True
+
+
+def verify_score_list_artifacts(artifacts: dict[str, Any]) -> bool:
+    rows = artifacts.get("score_list") or []
+    if any(list(row.keys()) != SCORE_LIST_COLUMNS for row in rows):
+        return False
+    return rows == sorted(rows, key=lambda item: student_id_sort_key(item.get("学号", "")))
 
 
 def verify_calculated_scores(package: MarkdownPackage, artifacts: dict[str, Any], typst_text: str) -> bool:
@@ -1571,6 +1778,8 @@ def repeatability_hashes(workdir: Path) -> dict[str, str]:
         workdir / "tables/task-map.json",
         workdir / "tables/score-summary.json",
         workdir / "tables/highlight-evidence.json",
+        workdir / "tables/score-list.md",
+        workdir / "tables/score-list.xlsx",
         workdir / "tables/scorebook.xlsx",
     ]
     return {str(path.relative_to(workdir)): hash_file(path) for path in paths}
@@ -1701,6 +1910,8 @@ def cmd_manifest(args: argparse.Namespace) -> None:
                     "tables/task-map.json",
                     "tables/score-summary.json",
                     "tables/highlight-evidence.json",
+                    "tables/score-list.md",
+                    "tables/score-list.xlsx",
                     "tables/scorebook.xlsx",
                 ],
             }
