@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: End-of-Term Teaching Materials Skill
 current_phase: 13
-status: planning
-stopped_at: Phase 13 context gathered
-last_updated: "2026-06-10T05:12:37.953Z"
-last_activity: 2026-06-10 — Phase 13 added to roadmap
+status: completed
+stopped_at: Phase 13 complete
+last_updated: "2026-06-10T13:34:54+08:00"
+last_activity: 2026-06-10 — Phase 13 completed
 progress:
   total_phases: 10
-  completed_phases: 9
-  total_plans: 9
-  completed_plans: 9
+  completed_phases: 10
+  total_plans: 10
+  completed_plans: 10
   percent: 100
 ---
 
@@ -19,7 +19,7 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 13
-**Status:** Phase 13 added; pending planning
+**Status:** Phase 13 complete; v1.7 uncertain-score review gap closed
 
 ## Project Reference
 
@@ -50,13 +50,13 @@ See: `.planning/PROJECT.md` (updated 2026-06-08)
 
 ## Next Up
 
-Run `/gsd:plan-phase 13` when ready.
+Phase 13 is complete; review and commit the v1.7 closure artifacts when ready.
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
-- Phase 13 added: Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores must reach Markdown review
+- Phase 13 completed: Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores reach Markdown review while final export remains strict
 
 ## Decisions
 
@@ -86,6 +86,7 @@ Run `/gsd:plan-phase 13` when ready.
 - [Phase 11]: The end-of-term teaching-materials skill now has a contract-only slice. — Phase 11 added the canonical skill, data contract, and Markdown intermediate while leaving rendering scripts, Excel, Typst, PDF, and deterministic table artifacts to Phase 12.
 - [Phase 12]: Fixed-template rendering is complete. — The skill now has skill-local templates, sanitized fixtures, script entry points, deterministic table artifacts, workbook output, Typst/PDF package generation, and verification while keeping OCR and arbitrary template discovery out of scope.
 - [Phase 12]: Manual verification passed. — User confirmed the generated package is accepted against external reference materials on 2026-06-10.
+- [Phase 13]: Uncertain-score review closure is complete. — Structured `87?` values can reach Markdown review with matching markers, normal final export remains strict, and explicit abnormal preview artifacts record non-final status plus red highlight evidence.
 
 ## Performance Metrics
 
@@ -106,9 +107,9 @@ Run `/gsd:plan-phase 13` when ready.
 
 ## Last Session
 
-- **Completed:** Phase 12 fixed-template rendering and verification with manual acceptance
-- **Stopped At:** Phase 13 context gathered
-- **Resume File:** .planning/phases/13-close-gap-etm-04-etm-06-etm-08-uncertain-scores-must-reach-m/13-CONTEXT.md
+- **Completed:** Phase 13 uncertain-score review closure with abnormal preview verification
+- **Stopped At:** Phase 13 complete
+- **Resume File:** .planning/phases/13-close-gap-etm-04-etm-06-etm-08-uncertain-scores-must-reach-m/13-01-SUMMARY.md
 
 ## Close Notes
 
@@ -119,10 +120,10 @@ Run `/gsd:plan-phase 13` when ready.
 ## Current Position
 
 Phase: 13 - Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores must reach Markdown review
-Plan: Not planned yet
-Status: Added to roadmap
-Last activity: 2026-06-10 — Phase 13 added to roadmap
+Plan: 13-01 Uncertain scores must reach Markdown review
+Status: Complete
+Last activity: 2026-06-10 — Phase 13 completed
 
 ## Operator Next Steps
 
-- `/gsd:plan-phase 13` to break down the new urgent phase.
+- Review Phase 13 artifacts and commit the closure when ready.

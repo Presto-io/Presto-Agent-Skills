@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-10 after Phase 12 manual verification
+**Last updated:** 2026-06-10 after Phase 13 completion
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -14,7 +14,7 @@
 - **Completed: v1.4 Jiaoan Jihua Skill** - Phase 7, completed 2026-05-31. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.5 School Presentation Skill** - Phase 8, completed 2026-06-01. Requirements: `.planning/REQUIREMENTS.md`
 - **Completed: v1.6 School Presentation Playback UX** - Phases 9-10, automated verification passed 2026-06-03. Requirements archive: `.planning/milestones/v1.6-REQUIREMENTS.md`
-- **Accepted for closeout: v1.7 End-of-Term Teaching Materials Skill** - Phases 11-12 complete; Phase 12 manual verification passed 2026-06-10. Requirements: `.planning/REQUIREMENTS.md`
+- **Completed: v1.7 End-of-Term Teaching Materials Skill** - Phases 11-13 complete; Phase 13 verification passed 2026-06-10. Requirements: `.planning/REQUIREMENTS.md`
 
 ## Phases
 
@@ -170,7 +170,7 @@
 
 v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7. v1.5 adds `school-presentation` as the next concrete skill in Phase 8. v1.6 refines that skill with playback, preview, page hierarchy, ordered reveals, and classroom answer masks.
 
-v1.7 is accepted for milestone closeout. Phase 11 defines the structured data contract and Markdown intermediate for the end-of-term teaching-materials skill. Phase 12 implements fixed-template rendering, Typst/PDF generation, deterministic table artifacts, workbook output, and verification. Manual verification passed on 2026-06-10.
+v1.7 is complete after an urgent follow-up phase closed the uncertain-score review gap. Phase 11 defines the structured data contract and Markdown intermediate for the end-of-term teaching-materials skill. Phase 12 implements fixed-template rendering, Typst/PDF generation, deterministic table artifacts, workbook output, and verification. Phase 13 lets `87?` reach Markdown review while keeping final export readiness strict and abnormal preview artifacts clearly labeled.
 
 ## Progress
 
@@ -188,6 +188,7 @@ v1.7 is accepted for milestone closeout. Phase 11 defines the structured data co
 | 10. Ordered Reveals and Classroom Answer Masks | v1.6 | 1/1 | Complete | 2026-06-03 |
 | 11. End-of-Term Data and Markdown Contract | v1.7 | 1/1 | Complete | 2026-06-09 |
 | 12. Fixed-Template Rendering and Verification | v1.7 | 1/1 | Complete | 2026-06-09 |
+| 13. Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores must reach Markdown review | v1.7 | 1/1 | Complete | 2026-06-10 |
 
 ## Requirement Coverage
 
@@ -209,5 +210,24 @@ v1.7 tracks 8 end-of-term teaching-materials requirements: ETM-01 through ETM-08
 
 EX-01 and EX-02 were explicitly deferred as optional future example guidance, not v1 delivery requirements. See `.planning/milestones/v1.0-REQUIREMENTS.md` for the archived requirement record.
 
+### Phase 13: Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores must reach Markdown review
+
+**Goal:** As an end-of-term teaching-materials author, I want uncertain structured scores such as `87?` to reach the Markdown review checkpoint with clear review markers, while normal final export readiness remains strict and abnormal preview artifacts are explicitly labeled.
+**Mode:** mvp
+
+**Depends on:** Phase 12
+
+**Requirements:** ETM-04, ETM-06, ETM-08
+
+**Success Criteria:**
+1. Structured JSON containing `87?` can generate `end-of-term-full.md` with the inline value and a matching `## 复核标记` row.
+2. Normal final export/render readiness still fails while unresolved `?` scores or review markers remain.
+3. An explicitly requested abnormal preview path can produce review artifacts with manifest status showing they are not final-ready.
+4. Unresolved uncertain score cells and below-60 `学期成绩` cells are highlighted red or equivalently surfaced in teacher-facing workbook/PDF outputs.
+5. Verification covers the uncertain-score flow, final-export blocker, abnormal preview path, highlight evidence, runtime adapter notes, and v1.7 audit metadata closure.
+
+Plans:
+- [x] 13-01 Uncertain scores must reach Markdown review
+
 ---
-*Roadmap updated: 2026-06-10 after Phase 12 manual verification*
+*Roadmap updated: 2026-06-10 after Phase 13 completion*
