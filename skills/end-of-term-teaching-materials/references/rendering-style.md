@@ -20,10 +20,11 @@
 
 ## Score Table Behavior
 
-- `成绩记分册正文` 按源 Excel 的 A:O 列比例、前两行组合表头、固定行高节奏和细边框网格渲染；左上角使用斜线表头表达 `学号 / 姓名`。
-- `成绩汇总表` 按源 Excel 的 A:K 列比例、标题行、元数据行、任务权重区和 `学生姓名 / 考核成绩` 斜线表头渲染。
+- `成绩记分册正文` 按源 Excel 的 A:O 列比例、前两行组合表头、固定行高节奏和细边框网格渲染；左上角使用斜线表头表达 `学号 / 姓名`。它显示所有 `## 成绩数据` 行，来源列为 `考勤`、`作业`、`期末` 测试。
+- `成绩汇总表` 按源 Excel 的 A:K 列比例、标题行、元数据行、任务权重区和 `学生姓名 / 考核成绩` 斜线表头渲染。它只显示 `## 我带的学生`，来源列为 `任务1..任务N`，`总评成绩` 等于按课时加权计算的 `期末分`。
 - `成绩分析表` 按源 Excel 的 A:I 列比例、合并单元格、统计区和四个分析大文本区渲染；`全班人数` 和 `缺考人数` 两个标签单元格必须纵向合并并居中，下面的人数值也各自居中显示。
-- `## 过程考核任务` 的顺序决定 `任务1..任务N` 列顺序。
+- `## 过程考核任务` 的顺序决定 `任务1..任务N` 列顺序；固定 `成绩汇总表` PDF grid 最多渲染 8 个任务列。
+- `成绩汇总表` 的任务名称必须在各自任务名单元格内水平、垂直居中；0 课时或 `预留任务*` 不显示任务名称。
 - 声明过的任务列必须保留，即使整列为空。
 - 空成绩单元格保持空白；不能写成 `0`、`-1`、`—` 或自动复核项。
 - 带 `?` 的不确定成绩会阻断最终 export readiness，除非 `## 复核标记` 正文已经准确清除为 `无` 且表格值也已修正。
@@ -33,6 +34,7 @@
 
 ## Deterministic Artifacts
 
-Renderer 必须在 `tables/` 下输出稳定的 `score-data.json`、`calculated-score-data.json`、`score-data.csv`、`task-map.json`、`score-summary.json` 和 `scorebook.xlsx`。JSON 使用固定缩进、稳定 key 顺序和 UTF-8；CSV 使用固定列顺序；workbook 保留同样的表头和派生成绩列。
-`calculated-score-data.json` 是成绩显示值的审计证据；PDF、workbook 和该 JSON 必须使用同一套 renderer-calculated `平时分` 与 `学期成绩`。
+Renderer 必须在 `tables/` 下输出稳定的 `score-data.json`、`calculated-score-data.json`、`score-data.csv`、`task-map.json`、`score-summary.json`、`score-list.md`、`score-list.xlsx` 和 `scorebook.xlsx`。JSON 使用固定缩进、稳定 key 顺序和 UTF-8；CSV 使用固定列顺序；workbook 保留同样的表头和派生成绩列。
+`calculated-score-data.json` 是成绩显示值的审计证据；PDF、workbook 和该 JSON 必须使用同一套 renderer-calculated `平时分`、`期末分` 与 `学期成绩`。`平时分` 来自 `考勤`、`作业` 和 Markdown `期末` 测试列；`期末分` 来自 `任务1..任务N` 按课时加权平均。`score-summary.json` 只统计 `## 我带的学生` 的任务成绩。
+`score-list.md` 和 `score-list.xlsx` 是从成绩记分册派生的 4 列清单，列为 `姓名`、`学号`、`平时成绩`、`期末成绩`，并按学号递增排序。
 红色高亮不能只依赖人工看 PDF/workbook；renderer 还必须输出 `tables/highlight-evidence.json`，并在 manifest 中嵌入同一份 highlight evidence，用于验证 unresolved uncertain cells 和 below-60 `学期成绩`。
