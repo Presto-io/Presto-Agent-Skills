@@ -10,10 +10,10 @@ Requirements for continuing the official-school presentation skill from the prev
 
 ### Presenter Markup
 
-- [ ] **SP-17**: A presenter can enable playback-local marking tools, including pointer, pen, highlighter, eraser, and clear/reset controls.
-- [ ] **SP-18**: A presenter can mark over the current physical page without mutating the Markdown source, manifest hierarchy, preview workspace content, or deterministic review output.
-- [ ] **SP-19**: Annotation state is scoped to the active deck session and page, remains usable with keyboard/mouse/touch playback navigation, and can be safely cleared.
-- [ ] **SP-20**: The verification fixture demonstrates presenter marking controls without breaking playback navigation, ordered reveals, emphasis animation, or answer masks.
+- [x] **SP-17**: A presenter can enable playback-local marking tools, including pointer, pen, highlighter, eraser, and clear/reset controls.
+- [x] **SP-18**: A presenter can mark over the current physical page without mutating the Markdown source, manifest hierarchy, preview workspace content, or deterministic review output.
+- [x] **SP-19**: Annotation state is scoped to the active deck session and page, remains usable with keyboard/mouse/touch playback navigation, and can be safely cleared.
+- [x] **SP-20**: The verification fixture demonstrates presenter marking controls without breaking playback navigation, ordered reveals, emphasis animation, or answer masks.
 
 ### Classroom Interaction Extensions
 
@@ -56,10 +56,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SP-17 | Phase 14 | Pending |
-| SP-18 | Phase 14 | Pending |
-| SP-19 | Phase 14 | Pending |
-| SP-20 | Phase 14 | Pending |
+| SP-17 | Phase 14 | Complete |
+| SP-18 | Phase 14 | Complete |
+| SP-19 | Phase 14 | Complete |
+| SP-20 | Phase 14 | Complete |
 | SP-21 | Phase 15 | Pending |
 | SP-22 | Phase 15 | Pending |
 | SP-23 | Phase 15 | Pending |
