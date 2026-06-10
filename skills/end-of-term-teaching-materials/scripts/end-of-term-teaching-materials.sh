@@ -14,7 +14,7 @@ Usage:
   end-of-term-teaching-materials.sh example --output <source.json>
   end-of-term-teaching-materials.sh validate --input <source.json|markdown.md>
   end-of-term-teaching-materials.sh markdown --input <source.json> --output <end-of-term-full.md>
-  end-of-term-teaching-materials.sh render --input <end-of-term-full.md> --workdir <dir> [--pdf]
+  end-of-term-teaching-materials.sh render --input <end-of-term-full.md> --workdir <dir> [--pdf] [--abnormal-review]
   end-of-term-teaching-materials.sh verify --workdir <dir>
   end-of-term-teaching-materials.sh manifest
   end-of-term-teaching-materials.sh info
@@ -98,11 +98,13 @@ case "$cmd" in
     input=""
     workdir=""
     pdf=false
+    abnormal_review=false
     while [[ $# -gt 0 ]]; do
       case "$1" in
         --input) input="${2:-}"; shift 2 ;;
         --workdir) workdir="${2:-}"; shift 2 ;;
         --pdf) pdf=true; shift ;;
+        --abnormal-review) abnormal_review=true; shift ;;
         *) die "unknown argument for render: $1" ;;
       esac
     done
@@ -110,11 +112,10 @@ case "$cmd" in
     [[ -n "$workdir" ]] || die "render requires --workdir"
     need_file "$input"
     need_workdir "$workdir"
-    if [[ "$pdf" == true ]]; then
-      python3 "$PY_HELPER" render --skill-dir "$SKILL_DIR" --input "$input" --workdir "$workdir" --pdf
-    else
-      python3 "$PY_HELPER" render --skill-dir "$SKILL_DIR" --input "$input" --workdir "$workdir"
-    fi
+    args=(render --skill-dir "$SKILL_DIR" --input "$input" --workdir "$workdir")
+    [[ "$pdf" == true ]] && args+=(--pdf)
+    [[ "$abnormal_review" == true ]] && args+=(--abnormal-review)
+    python3 "$PY_HELPER" "${args[@]}"
     ;;
   verify)
     workdir=""
