@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: End-of-Term Teaching Materials Skill
-current_phase: 12
-status: complete
-stopped_at: Phase 12 human verification passed
-last_updated: "2026-06-10T00:00:00Z"
-last_activity: 2026-06-10 — Phase 12 manual verification passed; v1.7 accepted for milestone closeout
+current_phase: 13
+status: planning
+stopped_at: Phase 13 context gathered
+last_updated: "2026-06-10T05:12:37.953Z"
+last_activity: 2026-06-10 — Phase 13 added to roadmap
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 9
   total_plans: 9
   completed_plans: 9
@@ -18,8 +18,8 @@ progress:
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 12
-**Status:** Phase 12 complete with manual verification passed; v1.7 accepted for milestone closeout
+**Current Phase:** 13
+**Status:** Phase 13 added; pending planning
 
 ## Project Reference
 
@@ -50,7 +50,13 @@ See: `.planning/PROJECT.md` (updated 2026-06-08)
 
 ## Next Up
 
-Run milestone closeout for v1.7 when ready.
+Run `/gsd:plan-phase 13` when ready.
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 13 added: Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores must reach Markdown review
 
 ## Decisions
 
@@ -101,8 +107,8 @@ Run milestone closeout for v1.7 when ready.
 ## Last Session
 
 - **Completed:** Phase 12 fixed-template rendering and verification with manual acceptance
-- **Stopped At:** v1.7 accepted for milestone closeout
-- **Resume File:** .planning/phases/12-fixed-template-rendering-and-verification/12-01-SUMMARY.md
+- **Stopped At:** Phase 13 context gathered
+- **Resume File:** .planning/phases/13-close-gap-etm-04-etm-06-etm-08-uncertain-scores-must-reach-m/13-CONTEXT.md
 
 ## Close Notes
 
@@ -112,11 +118,11 @@ Run milestone closeout for v1.7 when ready.
 
 ## Current Position
 
-Phase: 12 - Fixed-Template Rendering and Verification
-Plan: 01 complete
-Status: Complete
-Last activity: 2026-06-10 — Phase 12 manual verification passed
+Phase: 13 - Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores must reach Markdown review
+Plan: Not planned yet
+Status: Added to roadmap
+Last activity: 2026-06-10 — Phase 13 added to roadmap
 
 ## Operator Next Steps
 
-- `/gsd:complete-milestone v1.7` after verification if the milestone is accepted.
+- `/gsd:plan-phase 13` to break down the new urgent phase.
