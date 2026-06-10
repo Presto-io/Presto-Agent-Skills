@@ -59,8 +59,9 @@ metadata:
 8. 生成 Markdown 后，运行 `skills/school-presentation/scripts/school-presentation.sh render` 输出离线 HTML。生成结果默认打开 preview workspace：左侧 thumbnail rail 按章节和逻辑页分组，右侧 preview stage 显示当前物理页的真实 slide DOM；同一个单文件 HTML 内还包含 playback 和 overview。Preview workspace 显示全内容和最终揭示状态；playback 才按 reveal step 隐藏、遮罩或强调内容。
 9. slide 内部必须保持固定设计画布尺寸。不要在 slide 内容、字体、图片高度、图文栅格中使用 viewport-dependent CSS，例如 `vh`、`vw` 或基于视口的 `clamp()`；不同预览尺寸和浏览器缩放比例下，只允许外层 stage scale 改变，slide 内部元素相对关系必须像图片缩放一样保持不变。
 10. playback 支持键盘方向键、Space、PageUp/PageDown、鼠标左/中/右点击区域、触摸滑动、`Esc` 返回 workspace、URL hash 当前页与 step 同步和顶部蓝绿色进度条。右方向/Space/右侧或中部点击先推进当前页 reveal step，当前页完成后才翻页；左方向/左侧点击先撤回当前页上一步。跨页切换时，旧页按当前已揭示状态淡出，新切入页面一律从 step0 原始遮罩状态开始。最后一页全部完成后继续前进会退出放映模式。
-11. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook，并写出 verification manifest。
-12. 对来源不确定、素材缺失、视频过大或内容无法稳定呈现的片段，就近写入合适级别的强调块或渲染 manifest，不要静默删除。
+11. playback 内置 presenter markup palette：pointer、pen、highlighter、eraser、clear/reset 和位置切换控件只作用于当前浏览器放映会话。pen/highlighter/eraser 的标注按 physical page 做 page-scoped session state，翻页后返回仍保留，直到用户清除当前页；pointer 只显示现场指示，不生成持久标注。标注层只挂在 playback shell，不能写回 Markdown、`.page-source`、preview workspace、overview、thumbnail、manifest 或 deterministic review artifacts。绘制/擦除时会压住播放点击区，键盘导航、reveal、mask、emphasis 和 hover/peek 在非绘制状态下继续按原规则工作。
+12. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook、presenter markup 控件与 annotation layer hook，并写出 verification manifest。`presenter_markup_verified` 必须为 `true`，且 manifest 不得包含 annotation state、markup palette 或 stroke 数据。
+13. 对来源不确定、素材缺失、视频过大或内容无法稳定呈现的片段，就近写入合适级别的强调块或渲染 manifest，不要静默删除。
 
 ## Script Usage
 
@@ -102,6 +103,7 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 - [ ] manifest 包含 `sections -> logical_slides -> physical_pages -> reveal_steps` 层级，每个物理页带 `data-section-index`、`data-logical-index`、`data-physical-index`、`data-global-index` 和 `data-page-id` 对应信息。
 - [ ] 输出 HTML 包含 preview workspace、thumbnail rail、preview stage、playback、overview、hash 同步、键盘/鼠标/触摸导航和当前页同步逻辑。
 - [ ] 输出 HTML 包含有序 reveal、答案遮罩和正确项强调；preview 显示全内容和最终揭示状态，playback 按 step 控制。
+- [ ] 输出 HTML 包含 playback-local pointer、pen、highlighter、eraser、clear/reset 与 page-scoped annotation layer；`verify` 记录 `presenter_markup_verified: true`，manifest 与 Markdown source 不包含标注状态。
 - [ ] 封面只包含每行最多 10 个中文字符且最多 2 行的主标题、最多 24 个中文字符的可选副标题和固定信息栏；信息栏只显示可选单位值、汇报人值和日期值，封面正文、额外副标题、自定义 `cover_*` 信息、地点或更多内容卡片不会进入首页。
 - [ ] 公式内容必须保持数学公式样式；被遮罩或揭示的公式/公式片段不能降级为普通字符。
 - [ ] manifest 显示 HTML 输出小于或等于 50 MB；若视频或媒体过大，记录 fallback 而不是强行内嵌。
@@ -113,12 +115,12 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 - 技能在触发词 `school-presentation` 下能指导 agent 产出学校风格演示文稿 Markdown intermediate。
 - 脚本能从 Markdown 生成稳定、离线、蓝绿色学校视觉识别明确的 HTML deck。
 - 渲染器保持图片等比 contain 放置，并能按 frontmatter 中的 `page_ratio` 把过长逻辑页拆成多个等尺寸物理 HTML 页。
-- 输出 deck 能在同一个离线 HTML 中完成 preview workspace、playback 和 overview 导航，并暴露章节、逻辑页、物理页和真实 reveal-step 层级。
+- 输出 deck 能在同一个离线 HTML 中完成 preview workspace、playback、overview 导航和 playback-local presenter markup，并暴露章节、逻辑页、物理页和真实 reveal-step 层级。
 - 技能保持 canonical 单文件语义源，不引入 runtime-specific wrapper。
 
 ## Deferred Scope
 
-hover/peek 指针交互、SmartArt/时间轴/卡片等结构化版式、自动语义图标、排序题重排、正文逐段动画、章节封面显示开关和导出/打印专项能力不属于 Phase 10 的 SP-14/SP-15/SP-16 最小交付；后续如需要，应单独规划需求、模板 fixture 和黑盒验证。
+SmartArt/时间轴/卡片等结构化版式、自动语义图标、排序题重排、正文逐段动画、章节封面显示开关、导出/打印专项能力、多人同步和持久保存标注不属于 Phase 14 presenter markup 最小交付；后续如需要，应单独规划需求、模板 fixture 和黑盒验证。
 
 ## Safety
 
