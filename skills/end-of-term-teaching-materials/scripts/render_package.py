@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape as xml_escape
 
-VERSION = "0.5.3"
+VERSION = "0.5.4"
 PACKAGE_ARTIFACTS = [
     "成绩记分册",
     "成绩汇总表",
@@ -531,6 +531,23 @@ def ptitle_abs(
     return f"#ptitle_nc({pt(x)}, {pt(y)}, {pt(w)}, {pt(h)}, {size:g}pt, {typst_body(body)}, pos: {pos})"
 
 
+def ppara_abs(
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    size: float,
+    body: Any,
+    *,
+    first_indent_em: float = 0.0,
+    pos: str = "center + horizon",
+) -> str:
+    return (
+        f"#ppara_nc({pt(x)}, {pt(y)}, {pt(w)}, {pt(h)}, {size:g}pt, "
+        f"{typst_body(body)}, first-indent: {first_indent_em:g}em, pos: {pos})"
+    )
+
+
 def hline_abs(x1: float, x2: float, y: float) -> str:
     return f"#hline({pt(x1)}, {pt(x2)}, {pt(y)}, s: 0.580pt)"
 
@@ -722,7 +739,7 @@ def cover_line_field(
     value_w: float = 228.00,
     size: float = 16.2,
     label_text: str | None = None,
-    line_offset: float = 27.00,
+    line_offset: float = 22.00,
 ) -> None:
     line_y = y + line_offset
     lines.append(ptext_abs(label_x, y, label_w, 22.00, size, label_text or f"{label}：", pos="right + horizon", clip=False))
@@ -1035,6 +1052,7 @@ def scorebook_row_capacity(bottom_y: float) -> int:
 
 
 def scorebook_score_page(package: MarkdownPackage, rows: list[dict[str, str]], *, bottom_y: float, include_stats: bool) -> str:
+    fills: list[str] = []
     lines: list[str] = []
     for x in [52.88, 179.25, 371.59, 414.65, 457.71, 500.76, 541.95]:
         lines.append(vline_abs(x, 72.26, bottom_y))
@@ -1075,22 +1093,23 @@ def scorebook_score_page(package: MarkdownPackage, rows: list[dict[str, str]], *
         row = rows[idx] if idx < len(rows) else {}
         y_text = top + 0.94
         h = max(12.0, row_lines[idx + 2] - top - 1.87)
+        cell_h = row_lines[idx + 2] - top
         lines.append(ptext_abs(52.88, y_text, 62.24, h, 10.6, row.get("学号", "")))
         lines.append(ptext_abs(115.13, y_text, 64.12, h, 10.6, row.get("姓名", "")))
         for value, x, w in zip(scorebook_source_values(row) + [""] * (len(task_x) - len(TRAILING_SCORE_COLUMNS)), task_x, task_w):
             if "?" in value:
-                lines.append(warning_rect_abs(x, y_text, w, h))
+                fills.append(warning_rect_abs(x, top, w, cell_h))
             lines.append(ptext_abs(x, y_text, w, h, 11.8, value))
         derived = derived_score_values(row, package.tasks)
         lines.append(ptext_abs(371.59, y_text, 43.06, h, 11.8, derived["平时分"]))
         lines.append(ptext_abs(414.65, y_text, 43.06, h, 11.8, derived["期末分"]))
         semester_score = derived["学期成绩"]
         if is_below_60(semester_score):
-            lines.append(warning_rect_abs(457.71, y_text, 43.06, h))
+            fills.append(warning_rect_abs(457.71, top, 43.06, cell_h))
         lines.append(ptext_abs(457.71, y_text, 43.06, h, 11.8, semester_score))
     if include_stats:
         lines.extend(scorebook_stats_block(package))
-    return pagebox_abs(lines)
+    return pagebox_abs(fills + lines)
 
 
 def scorebook_stats_block(package: MarkdownPackage) -> list[str]:
@@ -1116,10 +1135,11 @@ def scorebook_stats_block(package: MarkdownPackage) -> list[str]:
 
 
 def score_summary_page(package: MarkdownPackage, rows: list[dict[str, str]], *, start_index: int = 1) -> str:
+    fills: list[str] = []
     lines: list[str] = [
         ptext_abs(0.00, 89.50, 595.30, 21.04, 16.8, "工学一体化课程/基本技能课程考核成绩汇总表", weight="bold"),
         ptext_abs(55.69, 123.80, 160.68, 21.00, 11.6, f"专业：  {package.meta.get('major_name', '')}", clip=False),
-        ptext_abs(216.37, 123.80, 160.68, 21.00, 11.6, f"班级：  {class_label(package, spaced=True)}", clip=False),
+        ptext_abs(216.37, 123.80, 160.68, 21.00, 11.6, f"班级：  {class_label(package)}", clip=False),
         ptext_abs(377.05, 123.80, 160.68, 21.00, 11.6, date_label(package, spaced=True), clip=False),
     ]
     for y in [142.19, 160.90, 326.00, 346.02, 366.04, 386.06, 406.08, 426.09, 446.11, 466.13, 486.15, 506.17, 526.19, 546.21, 566.22, 586.24, 606.26, 626.28, 646.30, 666.32, 686.34, 706.35, 726.37]:
@@ -1172,15 +1192,15 @@ def score_summary_page(package: MarkdownPackage, rows: list[dict[str, str]], *, 
         for task_index, (x, w) in enumerate(task_cols, start=1):
             value = task_score(row, task_index)
             if "?" in value:
-                lines.append(warning_rect_abs(x, top, w, 20.02))
+                fills.append(warning_rect_abs(x, top, w, 20.02))
             lines.append(ptext_abs(x, top, w, 20.02, 10.8, value))
         summary_score = weighted_task_score(row, package.tasks)
         if is_below_60(summary_score):
-            lines.append(warning_rect_abs(501.23, top, 36.50, 20.02))
+            fills.append(warning_rect_abs(501.23, top, 36.50, 20.02))
         lines.append(ptext_abs(501.23, top, 36.50, 20.02, 10.8, summary_score))
     lines.append(ptext_abs(74.00, 758.00, 150.00, 14.00, 11.6, "教研室主任签字：", pos="left + horizon", clip=False))
     lines.append(ptext_abs(392.00, 758.00, 120.00, 14.00, 11.6, "教师签字：", pos="left + horizon", clip=False))
-    return pagebox_abs(lines)
+    return pagebox_abs(fills + lines)
 
 
 def score_summary_pages(package: MarkdownPackage) -> str:
@@ -1194,9 +1214,9 @@ def score_summary_pages(package: MarkdownPackage) -> str:
 def analysis_page(package: MarkdownPackage) -> str:
     lines: list[str] = [
         ptext_abs(0.00, 102.00, 595.30, 25.00, 20.0, "成  绩  分  析  表"),
-        ptext_abs(55.69, 142.66, 170.00, 16.84, 11.8, school_year_label(package), pos="left + horizon", clip=False),
-        ptext_abs(250.00, 142.66, 120.00, 16.84, 11.8, f"班级：  {class_label(package, spaced=True)}", clip=False),
-        ptext_abs(390.00, 142.66, 170.00, 16.84, 11.8, f"时间：  {date_label(package, spaced=True)}", clip=False),
+        ptext_abs(55.69, 142.66, 160.68, 16.84, 11.6, school_year_label(package), clip=False),
+        ptext_abs(216.37, 142.66, 160.68, 16.84, 11.6, f"班级：  {class_label(package)}", clip=False),
+        ptext_abs(377.05, 142.66, 160.68, 16.84, 11.6, date_label(package, spaced=True), clip=False),
     ]
     for y in [167.44, 192.70, 242.75, 292.79, 317.58, 407.85, 498.12, 587.93, 678.20, 758.18]:
         lines.append(hline_abs(55.69, 537.74, y))
@@ -1256,19 +1276,17 @@ def analysis_page(package: MarkdownPackage) -> str:
         ("今后改进\n措施", package.analysis.get("今后改进措施", "无"), 498.12, 587.93, 2),
         ("异常情况\n分析", package.analysis.get("异常情况分析", "无"), 587.93, 678.20, 2),
     ]
+    body_x = 104.83
+    body_w = 432.90
     for label, text, top, bottom, label_lines in analysis_rows:
         label_parts = label.split("\n")
         label_y = (top + bottom) / 2 - (14.0 * len(label_parts)) / 2
         for i, part in enumerate(label_parts):
             lines.append(ptext_abs(55.69, label_y + 14.0 * i, 49.14, 14.00, 11.6, part))
         if scalar(text) == "无":
-            lines.append(ptext_abs(104.83, top, 432.90, bottom - top, 11.6, "无"))
+            lines.append(ptext_abs(body_x, top, body_w, bottom - top, 11.6, "无"))
         else:
-            wrapped = wrap_analysis_text(text, max_chars=35, max_lines=4)
-            body_y = (top + bottom) / 2 - 7.0 * len(wrapped)
-            for i, part in enumerate(wrapped):
-                prefix = "　　" if i == 0 else ""
-                lines.append(ptext_abs(112.00, body_y + 14.0 * i, 420.00, 14.00, 11.2, prefix + part, pos="left + horizon", clip=False))
+            lines.append(ppara_abs(body_x, top, body_w, bottom - top, 11.2, text, first_indent_em=2.0))
     lines.append(ptext_abs(55.69, 685.20, 245.23, 24.00, 11.6, "教研室意见", pos="left + top", clip=False))
     lines.append(ptext_abs(300.93, 685.20, 236.81, 24.00, 11.6, "系部意见", pos="left + top", clip=False))
     return pagebox_abs(lines)
@@ -1282,9 +1300,10 @@ def simple_cover_page(package: MarkdownPackage, title: str) -> str:
         block_w = 126.00
         top_y = 590.00
         bottom_y = 624.00
+        divider_y = (top_y + 24.00 + bottom_y) / 2
         lines.append(ptext_abs(left_x, top_y, block_w, 24.00, 16.0, class_label(package), clip=False))
         lines.append(ptext_abs(right_x, top_y, block_w, 24.00, 16.0, teacher_label(package), clip=False))
-        lines.extend(dashed_hline_abs(150.00, 444.00, 621.00, dash=2.00, gap=2.00, stroke=0.58))
+        lines.extend(dashed_hline_abs(150.00, 444.00, divider_y, dash=2.00, gap=2.00, stroke=0.58))
         lines.append(ptext_abs(left_x, bottom_y, block_w, 24.00, 16.0, normalized_class_label(package.meta.get("handover_class_name")), clip=False))
         lines.append(ptext_abs(right_x, bottom_y, block_w, 24.00, 16.0, "  ".join(list_value(package.meta.get("handover_teachers"))), clip=False))
         return pagebox_abs(lines)
@@ -1375,24 +1394,6 @@ def task_weights(package: MarkdownPackage) -> list[str]:
     if total <= 0:
         return [scalar(task.get("hours", "")) for task in package.tasks]
     return [f"{round(value / total * 100):g}%" if value else "" for value in hours]
-
-
-def wrap_analysis_text(value: Any, max_chars: int, max_lines: int) -> list[str]:
-    text = scalar(value).replace("\n", " ").strip()
-    if not text:
-        return ["无"]
-    lines: list[str] = []
-    current = ""
-    for char in text:
-        current += char
-        if len(current) >= max_chars:
-            lines.append(current)
-            current = ""
-            if len(lines) >= max_lines:
-                break
-    if current and len(lines) < max_lines:
-        lines.append(current)
-    return lines or ["无"]
 
 
 def enabled_packages(package: MarkdownPackage) -> tuple[dict[str, bool], list[str]]:
