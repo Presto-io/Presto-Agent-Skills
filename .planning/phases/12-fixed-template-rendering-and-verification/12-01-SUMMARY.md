@@ -50,6 +50,8 @@ git diff --check
 
 The black-box verifier covers data validation, Markdown generation, unresolved-review blocking, Typst generation, optional PDF compilation, deterministic JSON/CSV outputs, workbook smoke checks, and repeatability checks.
 
+Human verification passed on 2026-06-10. The generated end-of-term package was manually accepted against the user's external reference materials.
+
 ## Deviations from Plan
 
 None - plan executed exactly as written.
