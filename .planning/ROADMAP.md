@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-11 after v1.8 milestone start
+**Last updated:** 2026-06-11 after Phase 14 completion
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -36,6 +36,7 @@ Previous milestone summaries are preserved in `.planning/milestones/` and the re
 | 11. End-of-Term Data and Markdown Contract | v1.7 | Complete | 2026-06-09 |
 | 12. Fixed-Template Rendering and Verification | v1.7 | Complete | 2026-06-09 |
 | 13. Close gap: uncertain scores reach Markdown review | v1.7 | Complete | 2026-06-10 |
+| 14. Presenter Markup Tools | v1.8 | Complete | 2026-06-11 |
 
 ## Active Phases
 
@@ -43,6 +44,7 @@ Previous milestone summaries are preserved in `.planning/milestones/` and the re
 
 **Goal:** As a presenter, I want playback-local pointer, pen, highlighter, eraser, and clear/reset tools, so I can mark up a class presentation live without changing the Markdown source or deterministic deck review artifacts.
 **Mode:** mvp
+**Status:** Complete
 
 **Depends on:** Phase 10
 
@@ -95,7 +97,7 @@ v1.8 is active and continues the `school-presentation` line. It starts from the 
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 14. Presenter Markup Tools | v1.8 | 0/1 | Not Started | - |
+| 14. Presenter Markup Tools | v1.8 | 1/1 | Complete | 2026-06-11 |
 | 15. Classroom Interaction and Structured Layout Extensions | v1.8 | 0/1 | Not Started | - |
 | 16. Print Export Review and v1.8 Regression Gate | v1.8 | 0/1 | Not Started | - |
 
@@ -105,10 +107,10 @@ v1.8 tracks 11 school-presentation continuation requirements: SP-17 through SP-2
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SP-17 | Phase 14 | Pending |
-| SP-18 | Phase 14 | Pending |
-| SP-19 | Phase 14 | Pending |
-| SP-20 | Phase 14 | Pending |
+| SP-17 | Phase 14 | Complete |
+| SP-18 | Phase 14 | Complete |
+| SP-19 | Phase 14 | Complete |
+| SP-20 | Phase 14 | Complete |
 | SP-21 | Phase 15 | Pending |
 | SP-22 | Phase 15 | Pending |
 | SP-23 | Phase 15 | Pending |
@@ -123,4 +125,4 @@ v1.8 tracks 11 school-presentation continuation requirements: SP-17 through SP-2
 - Unmapped: 0
 
 ---
-*Roadmap updated: 2026-06-11 after v1.8 school-presentation milestone start*
+*Roadmap updated: 2026-06-11 after Phase 14 presenter markup completion*

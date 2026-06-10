@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: School Presentation Continuation
-current_phase: 14
-status: v1.8 requirements and roadmap defined
-stopped_at: Phase 14 context gathered
-last_updated: "2026-06-10T18:48:22.807Z"
-last_activity: 2026-06-11 — Milestone v1.8 requirements and roadmap created
+current_phase: 15
+status: Phase 14 complete
+stopped_at: Phase 14 executed and verified
+last_updated: "2026-06-10T19:13:52Z"
+last_activity: 2026-06-11 — Phase 14 presenter markup tools executed and verified
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 33
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 14
-**Status:** v1.8 requirements and roadmap defined
+**Current Phase:** 15
+**Status:** Phase 14 complete
 
 ## Project Reference
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-11)
 
 ## Next Up
 
-Discuss or plan Phase 14: Presenter Markup Tools.
+Plan Phase 15: Classroom Interaction and Structured Layout Extensions.
 
 ## Accumulated Context
 
@@ -58,6 +58,7 @@ Discuss or plan Phase 14: Presenter Markup Tools.
 
 - Phase 13 completed: Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores reach Markdown review while final export remains strict
 - Milestone v1.8 started: Continue official-school presentation development from the Phase 10 deferred scope.
+- Phase 14 completed: Playback-local presenter markup tools now cover pointer, pen, highlighter, eraser, clear current page, page-scoped session state, and deterministic verification without mutating authored artifacts.
 
 ## Decisions
 
@@ -90,6 +91,7 @@ Discuss or plan Phase 14: Presenter Markup Tools.
 - [Phase 12]: Fixed-template rendering is complete. — The skill now has skill-local templates, sanitized fixtures, script entry points, deterministic table artifacts, workbook output, Typst/PDF package generation, and verification while keeping OCR and arbitrary template discovery out of scope.
 - [Phase 12]: Manual verification passed. — User confirmed the generated package is accepted against external reference materials on 2026-06-10.
 - [Phase 13]: Uncertain-score review closure is complete. — Structured `87?` values can reach Markdown review with matching markers, normal final export remains strict, and explicit abnormal preview artifacts record non-final status plus red highlight evidence.
+- [Phase 14]: Presenter markup is playback-local session state only. — Pointer, pen, highlighter, eraser, and clear current page live in the generated playback UI; Markdown, `.page-source`, preview workspace, overview, thumbnails, and manifests stay annotation-free.
 
 ## Performance Metrics
 
@@ -107,12 +109,13 @@ Discuss or plan Phase 14: Presenter Markup Tools.
 | Phase 10 P01 | current session | 5 tasks | 7 files |
 | Phase 11 P01 | current session | 6 tasks | 8 files |
 | Phase 12 P01 | current session | 7 tasks | 15 files |
+| Phase 14 P01 | current session | 6 tasks | 7 files |
 
 ## Last Session
 
-- **Completed:** v1.8 milestone kickoff, requirement definition, and roadmap creation
-- **Stopped At:** Phase 14 context gathered
-- **Resume File:** .planning/phases/14-presenter-markup-tools/14-CONTEXT.md
+- **Completed:** Phase 14 presenter markup implementation, deterministic verification, and Chrome playback smoke test
+- **Stopped At:** Phase 14 executed and verified
+- **Resume File:** .planning/phases/14-presenter-markup-tools/14-01-SUMMARY.md
 
 ## Close Notes
 
@@ -127,12 +130,12 @@ Discuss or plan Phase 14: Presenter Markup Tools.
 
 ## Current Position
 
-Phase: 14 - Presenter Markup Tools
+Phase: 15 - Classroom Interaction and Structured Layout Extensions
 Plan: —
-Status: Ready for phase discussion or planning
-Last activity: 2026-06-11 — Milestone v1.8 requirements and roadmap created
+Status: Ready for discussion or planning
+Last activity: 2026-06-11 — Phase 14 presenter markup tools executed and verified
 
 ## Operator Next Steps
 
-- Run `/gsd:discuss-phase 14` to gather implementation context for presenter markup tools.
-- Or run `/gsd:plan-phase 14` to skip directly to a task plan.
+- Run `/gsd:plan-phase 15` to plan classroom interaction and structured layout extensions.
+- Or run `/gsd:discuss-phase 15` to gather context before planning.
