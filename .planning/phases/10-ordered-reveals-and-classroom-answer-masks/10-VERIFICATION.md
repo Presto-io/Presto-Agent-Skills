@@ -7,7 +7,8 @@ requirements_completed:
   - SP-14
   - SP-15
   - SP-16
-human_verification: []
+human_verification:
+  - 10-HUMAN-UAT.md
 ---
 
 # Phase 10 Verification
@@ -57,3 +58,4 @@ git diff --check
 
 - Existing missing-media fixture warnings remain expected: missing image and missing video fallback.
 - `git diff --check` passed with no whitespace errors.
+- Human visual UAT passed on 2026-06-11; see `10-HUMAN-UAT.md`.

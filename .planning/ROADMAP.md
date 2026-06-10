@@ -13,7 +13,7 @@
 - **Completed: v1.3 Jiaoan Shicao Skill** - Phase 6, completed 2026-05-31. Requirements archive: `.planning/milestones/v1.3-REQUIREMENTS.md`
 - **Completed: v1.4 Jiaoan Jihua Skill** - Phase 7, completed 2026-05-31. Requirements archive: `.planning/milestones/v1.4-REQUIREMENTS.md`
 - **Completed: v1.5 School Presentation Skill** - Phase 8, completed 2026-06-01. Requirements archive: `.planning/milestones/v1.5-REQUIREMENTS.md`
-- **Completed: v1.6 School Presentation Playback UX** - Phases 9-10, automated verification passed 2026-06-03. Requirements archive: `.planning/milestones/v1.6-REQUIREMENTS.md`
+- **Shipped: v1.6 School Presentation Playback UX** - Phases 9-10, automated verification passed 2026-06-03; Phase 10 visual UAT passed 2026-06-11. Requirements archive: `.planning/milestones/v1.6-REQUIREMENTS.md`
 - **Shipped: v1.7 End-of-Term Teaching Materials Skill** - Phases 11-13, shipped 2026-06-10. Requirements archive: `.planning/milestones/v1.7-REQUIREMENTS.md`
 
 ## Phases
@@ -150,6 +150,8 @@ Full archive: `.planning/milestones/v1.7-ROADMAP.md`
 ## Current Position
 
 v1.0 is complete. v1.1 contains the Markdown normalization contract from Phase 4. v1.2 adds the first concrete `gongwen` skill in Phase 5. v1.3 adds `jiaoan-shicao` as the second concrete skill in Phase 6. v1.4 adds `jiaoan-jihua` as the next concrete skill in Phase 7. v1.5 adds `school-presentation` as the next concrete skill in Phase 8. v1.6 refines that skill with playback, preview, page hierarchy, ordered reveals, and classroom answer masks.
+
+v1.6 Phase 10 visual UAT passed on 2026-06-11 after display defects in agenda layout, cover constraints, media fallback, alert icons, spacing, list splitting, and playback fit were fixed.
 
 v1.7 shipped on 2026-06-10 after an urgent follow-up phase closed the uncertain-score review gap. Phase 11 defines the structured data contract and Markdown intermediate for the end-of-term teaching-materials skill. Phase 12 implements fixed-template rendering, Typst/PDF generation, deterministic table artifacts, workbook output, and verification. Phase 13 lets `87?` reach Markdown review while keeping final export readiness strict and abnormal preview artifacts clearly labeled.
 

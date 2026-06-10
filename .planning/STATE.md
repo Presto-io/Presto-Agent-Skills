@@ -81,6 +81,7 @@ v1.7 is archived. Start the next milestone when ready.
 - [Milestone v1.5]: Markdown pages are logical slides, not necessarily physical pages. — If a logical slide contains too much content, the renderer should split it into multiple physical HTML pages while keeping the Markdown easy to edit.
 - [Milestone v1.5]: User images should preserve their original aspect ratio. — Images should be scaled and placed without cropping by default.
 - [Milestone v1.6]: Playback UX comes before marking tools. — User requested playback, thumbnail/preview/overview, hierarchy, ordered reveal, emphasis animation, and answer masks now; marking-style tools are deferred to the next milestone.
+- [Milestone v1.6]: Phase 10 visual UAT passed. — User reported display defects on 2026-06-10; after the visual-fix pass, user confirmed Phase 10 manual visual acceptance passed on 2026-06-11.
 - [Milestone v1.7]: The end-of-term teaching-materials skill should use structured data -> Markdown -> Typst -> PDF. — User requested a fixed-template workflow for semester-end submission documents and tables.
 - [Milestone v1.7]: Skip external research for this milestone. — The work follows already validated document-skill patterns in this repository.
 - [Phase 11]: The end-of-term teaching-materials skill now has a contract-only slice. — Phase 11 added the canonical skill, data contract, and Markdown intermediate while leaving rendering scripts, Excel, Typst, PDF, and deterministic table artifacts to Phase 12.
@@ -119,6 +120,7 @@ v1.7 is archived. Start the next milestone when ready.
 - v1.7 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 - v1.7.1 records post-close debug fixes for uncertain-score calculation, score views/pagination, deterministic score-list artifacts, and fixed-template layout polish without reopening the v1.7 milestone.
 - Pre-close artifact audit reported Phase 01/08/09 UAT records as `resolved` or `passed` with 0 pending scenarios; no actionable UAT gap remains.
+- v1.6 Phase 10 visual UAT passed on 2026-06-11; v1.6 is ready for milestone closeout after current artifacts are reviewed and committed.
 
 ## Current Position
 
