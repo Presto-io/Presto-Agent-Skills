@@ -27,7 +27,10 @@
 - 声明过的任务列必须保留，即使整列为空。
 - 空成绩单元格保持空白；不能写成 `0`、`-1`、`—` 或自动复核项。
 - 带 `?` 的不确定成绩会阻断最终 export readiness，除非 `## 复核标记` 正文已经准确清除为 `无` 且表格值也已修正。
+- 如果用户明确要求检查未清除复核项，可使用 abnormal review preview 路径生成非最终件。manifest 必须写出 `artifact_kind: abnormal_review`、`final_ready: false`、`review_cleared: false` 和 warnings，普通 `render` 仍必须阻断。
+- Abnormal review 输出中，未解决的不确定成绩单元格使用 red warning fill。`成绩记分册` 和 `成绩汇总表` 中显示的衍生 `学期成绩` 如果低于 60，也使用 red warning fill，便于教师检查。
 
 ## Deterministic Artifacts
 
 Renderer 必须在 `tables/` 下输出稳定的 `score-data.json`、`score-data.csv`、`task-map.json`、`score-summary.json` 和 `scorebook.xlsx`。JSON 使用固定缩进、稳定 key 顺序和 UTF-8；CSV 使用固定列顺序；workbook 保留同样的表头和公式占位列。
+红色高亮不能只依赖人工看 PDF/workbook；renderer 还必须输出 `tables/highlight-evidence.json`，并在 manifest 中嵌入同一份 highlight evidence，用于验证 unresolved uncertain cells 和 below-60 `学期成绩`。

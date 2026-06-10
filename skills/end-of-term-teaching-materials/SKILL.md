@@ -47,12 +47,14 @@ structured data -> Markdown -> Typst/PDF + table artifacts
 skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh example --output /tmp/end-of-term-source.json
 skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh markdown --input /tmp/end-of-term-source.json --output /tmp/end-of-term-full.md
 skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh render --input /tmp/end-of-term-full.md --workdir /tmp/end-of-term-output --pdf
+skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh render --input /tmp/end-of-term-full.md --workdir /tmp/end-of-term-preview --pdf --abnormal-review
 skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh verify --workdir /tmp/end-of-term-verify
 ```
 
 Additional commands:
 
 - `validate --input <source.json|markdown.md>` checks required metadata, task/score consistency, package flags, and export readiness.
+- `render --abnormal-review` is only for explicitly requested unresolved-review inspection artifacts. It keeps `final_ready=false` and must not be treated as a final submission package.
 - `manifest` prints machine-readable command/output metadata.
 - `info` prints a short workflow summary.
 - `version` prints the script version.
@@ -63,12 +65,13 @@ Parent directories for `--output` must already exist. `--workdir` must already e
 
 1. Normalize source material into explicit structured JSON following `references/data-contract.md`.
 2. Generate or update `end-of-term-full.md`; keep `YAML frontmatter + body` and the reviewable sections `## 我带的学生`、`## 过程考核任务`、`## 成绩数据`、`## 分析` and `## 复核标记`.
-3. Review the Markdown with the teacher. Uncertain values such as `87?` must be fixed in the table and removed from `## 复核标记`.
+3. Review the Markdown with the teacher. Uncertain values such as `87?` may be generated into `## 成绩数据` for review, and every unresolved value must have a matching `## 复核标记` row. Ask one item at a time, edit the Markdown value after teacher confirmation or correction, and remove the matching marker.
 4. The hard export rule: `## 复核标记` must be exactly `无`. If it is anything else, `validate`, `render`, and final export readiness must fail.
-5. Render only after review is clear. The script writes `end-of-term-package.typ`, optional `end-of-term-package.pdf`, `manifest.json`, JSON/CSV table artifacts, and `tables/scorebook.xlsx`.
+5. Render normally only after review is clear. If unresolved items remain and the user explicitly wants inspection artifacts, explain the unresolved items first, ask whether to generate an abnormal preview, then use `render --abnormal-review`; manifest fields must include `artifact_kind: abnormal_review`, `final_ready: false`, and `review_cleared: false`.
 6. Preserve blank score cells and declared task columns. Empty scores remain empty; declared tasks remain columns even when all cells are blank.
 7. Respect package flags. `成绩记分册` is one bundle covering the redesigned cover and score-book body. `交接班记录封面` requires both `handover_class_name` and `handover_teachers`; otherwise the renderer skips it and records a manifest warning.
 8. Run `verify --workdir <dir>` before delivery. PDF compilation is attempted when `typst` is installed; missing Typst is reported explicitly in the manifest instead of silently passing as a PDF success.
+9. In abnormal review artifacts, unresolved uncertain score cells are marked with red warning styling. Derived `学期成绩` cells below 60 are also marked red where the workbook or PDF-visible score-book output shows that field.
 
 ## Outputs
 
@@ -80,6 +83,7 @@ Parent directories for `--output` must already exist. `--workdir` must already e
 - `tables/score-data.csv`: deterministic score rows in fixed column order.
 - `tables/task-map.json`: mapping from `任务1..任务N` to task names and hours.
 - `tables/score-summary.json`: student/task/blank-cell summary and formula placeholder notes.
+- `tables/highlight-evidence.json`: deterministic red-warning evidence for unresolved uncertain cells and below-60 `学期成绩` cells.
 - `tables/scorebook.xlsx`: teacher-facing workbook with `成绩数据`、`任务映射`、`成绩汇总` sheets.
 
 PDF rendering uses the fixed Excel-style grid for the score book body, score summary, and analysis sheet: column proportions, row rhythm, thin borders, merged headers, and diagonal header cells are encoded in the skill-local renderer.
@@ -101,7 +105,8 @@ PDF rendering uses the fixed Excel-style grid for the score book body, score sum
 - [ ] `python3 -m py_compile skills/end-of-term-teaching-materials/scripts/render_package.py`
 - [ ] `skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh verify --workdir <existing-dir>`
 - [ ] `manifest.json` includes `"review_cleared": true`, `"repeatable": true`, `"table_artifacts_verified": true`, and workbook verification.
-- [ ] `tables/score-data.json`、`tables/score-data.csv`、`tables/task-map.json`、`tables/score-summary.json` and `tables/scorebook.xlsx` exist.
+- [ ] Uncertain fixture generation preserves `87?`, writes `## 复核标记`, blocks normal render, and allows only explicit `--abnormal-review` output with `"final_ready": false`.
+- [ ] `tables/score-data.json`、`tables/score-data.csv`、`tables/task-map.json`、`tables/score-summary.json`、`tables/highlight-evidence.json` and `tables/scorebook.xlsx` exist.
 - [ ] Runtime adapter notes mention Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
 ## Success Criteria
@@ -110,6 +115,7 @@ PDF rendering uses the fixed Excel-style grid for the score book body, score sum
 - 脚本能从结构化 JSON 生成 Markdown，从 Markdown 生成 Typst，并在 Typst 可用时编译 merged PDF package。
 - Renderer 能稳定输出 deterministic table artifacts 和 teacher-facing workbook。
 - 复核未清除时不会声称最终导出、打印或提交材料已经完成。
+- 异常预览产物必须被报告为 `abnormal_review`，并带有 red/highlight evidence；它只支持教师检查，不能替代最终件。
 - OpenClaw 与 Hermes Agent 的脚本权限、写入权限、fixture verification 和 fallback 行为有明确 adapter notes。
 
 ## Safety
