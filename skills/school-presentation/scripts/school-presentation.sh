@@ -1782,7 +1782,7 @@ def render_deck(input_path: Path, max_size_mb: int) -> tuple[str, dict[str, obje
 *{box-sizing:border-box}body{margin:0;background:#eef3f5;color:var(--deep);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",Arial,sans-serif;letter-spacing:0;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 button{font:inherit;color:inherit}.app{height:100vh;display:grid;grid-template-rows:auto 1fr}.app[data-view="playback"]{display:block}.app[data-view="playback"] .app-top{display:none}.app-top{height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(10px);overflow:hidden}.brand-lockup{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:12px;min-width:0;max-width:min(620px,calc(100vw - 360px));height:100%}.brand-lockup img{width:42px;max-height:38px;object-fit:contain;box-shadow:none;border-radius:0;background:transparent}.brand-text{min-width:0;display:grid;gap:2px}.brand-title{display:block;color:#0056A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;font-size:15px}.brand-context{display:block;min-width:0;font-size:11px;line-height:1.2;color:#58717c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.icon-btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:7px 12px;cursor:pointer}.icon-btn.primary{background:linear-gradient(90deg,var(--green),var(--blue));color:#fff;border:0}.icon-btn.print-toggle[aria-pressed="false"]{background:#f6fafb;color:#60757e}.current-page-chip{min-width:78px;text-align:center;color:#0056A8;font-weight:700}
 .view{min-height:0}.view[hidden]{display:none!important}.workspace{display:grid;grid-template-columns:var(--rail-width) var(--resizer-width) minmax(0,1fr);height:calc(100vh - 56px);min-height:0}.thumbnail-rail{border-right:1px solid var(--line);background:#f8fbfc;overflow:auto;padding:12px}.rail-resizer{position:relative;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);background:linear-gradient(180deg,#f7fbfc,#edf4f6);cursor:col-resize;padding:0}.rail-resizer::before{content:"";position:absolute;left:50%;top:50%;width:3px;height:52px;border-radius:99px;background:linear-gradient(180deg,var(--green),var(--blue));transform:translate(-50%,-50%);opacity:.55}.rail-resizer:hover::before,.rail-resizer.is-dragging::before{opacity:1}.drawer-handle{display:none}.rail-section{margin:0 0 16px;min-width:0}.rail-section-title{margin:0 0 8px;font-size:12px;color:#0056A8;text-transform:none}.rail-logical-title{margin:10px 0 6px;font-size:13px;color:#466;font-weight:700}.rail-pages{display:grid;gap:10px;min-width:0}.thumb-item{position:relative;display:block;width:100%;min-width:0;max-width:100%;overflow:visible;border:0;background:transparent;border-radius:6px;padding:0;text-align:left;cursor:pointer}.thumb-item[aria-current="true"],.thumb-item.is-active{outline:2px solid var(--blue);outline-offset:2px;background:#fff;box-shadow:0 8px 20px rgba(0,132,204,.12)}html.hide-section-dividers [data-section-divider-entry="true"]{display:none!important}.thumb-label{position:absolute;left:5px;top:5px;z-index:4;min-width:42px;font-size:11px;font-weight:800;color:#fff;background:var(--green);border-radius:4px;text-align:center;padding:4px 6px;box-shadow:0 2px 6px rgba(14,40,65,.18)}.thumb-real{position:relative;display:grid;place-items:center;width:100%;min-width:0;max-width:100%;aspect-ratio:var(--slide-aspect);overflow:hidden;border:1px solid var(--line);border-radius:5px;background:#fff;pointer-events:none}.thumb-real .slide-scale-shell,.overview-tile .slide-scale-shell{max-width:100%;max-height:100%;overflow:hidden}.thumb-real .slide,.overview-tile .slide{overflow:hidden}.thumb-card{display:none;aspect-ratio:var(--slide-aspect);border:1px solid var(--line);border-radius:5px;background:linear-gradient(135deg,#fff,#edf7fb);padding:8px;overflow:hidden;pointer-events:none}.thumb-card span{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:var(--blue);border-radius:3px;padding:2px 6px}.thumb-card strong{display:block;margin-top:8px;font-size:12px;line-height:1.22;color:#0056A8}.thumb-card em{display:block;margin-top:4px;font-style:normal;font-size:10px;color:#60757e}.thumb-card i{display:block;margin-top:8px;height:5px;background:linear-gradient(90deg,var(--green),var(--blue),var(--gold));border-radius:99px}.layout-cover.thumb-card,.layout-section.thumb-card{background:linear-gradient(135deg,var(--green),var(--blue));color:#fff}.layout-cover.thumb-card strong,.layout-cover.thumb-card em,.layout-section.thumb-card strong,.layout-section.thumb-card em{color:#fff}.layout-agenda.thumb-card{background:linear-gradient(135deg,#fff 0 68%,#edf8f6 68%);color:var(--deep);border-top:4px solid var(--blue)}.layout-agenda.thumb-card span{background:var(--green)}.layout-agenda.thumb-card strong{color:#0056A8}.layout-agenda.thumb-card em{color:#60757e}.layout-table.thumb-card{background:repeating-linear-gradient(180deg,#fff 0 17px,#e9f4f7 17px 18px)}.layout-chart.thumb-card i{height:22px;background:linear-gradient(90deg,var(--green) 68%,#e4f0f4 68%)}.layout-media-right.thumb-card,.layout-media-left.thumb-card{background:linear-gradient(90deg,#fff 0 54%,#dfeff4 54%)}.layout-quote.thumb-card{background:linear-gradient(135deg,#fff 0 76%,#f9e9a8 76%)}.layout-closing.thumb-card{background:linear-gradient(135deg,#fff 0 45%,var(--blue) 45%,var(--green) 72%,#fff 72%)}
-.preview-pane{min-width:0;display:grid;grid-template-rows:1fr auto;padding:18px;gap:12px;overflow:hidden}.preview-stage{place-self:stretch;width:100%;height:100%;min-height:0;display:grid;place-items:center;overflow:hidden}.preview-stage,.playback-stage{position:relative}.slide-scale-shell{position:relative;width:var(--scaled-slide-width,var(--slide-design-width));height:var(--scaled-slide-height,var(--slide-design-height));overflow:hidden;background:#fff;contain:paint}.preview-stage .slide-scale-shell,.playback-stage .slide-scale-shell{box-shadow:var(--shadow);outline:1px solid rgba(14,40,65,.18);outline-offset:0}.thumb-real .slide-scale-shell{outline:0;box-shadow:none}.preview-stage.is-transitioning .slide-scale-shell,.playback-stage.is-transitioning .slide-scale-shell{transition:opacity .18s ease}.preview-stage.is-fade-out .slide-scale-shell,.playback-stage.is-fade-out .slide-scale-shell{opacity:.82}.preview-stage.is-fade-in .slide-scale-shell,.playback-stage.is-fade-in .slide-scale-shell{animation:stageFadeIn .18s ease both}@keyframes stageFadeIn{from{opacity:.82}to{opacity:1}}.slide-scale-shell .slide{position:absolute;left:0;top:0;width:var(--slide-design-width);height:var(--slide-design-height);max-width:none;transform:scale(var(--stage-scale,1));transform-origin:top left;pointer-events:none}.preview-meta{display:flex;align-items:center;justify-content:space-between;color:#4f6874;font-size:13px}.overview{height:calc(100vh - 56px);overflow:auto;padding:20px 24px;background:#f4f8fa}.overview-toolbar{display:flex;align-items:center;justify-content:space-between;margin:0 0 18px}.overview-grid{display:grid;gap:22px}.section-group{border-top:4px solid var(--blue);background:#fff;padding:14px;border-radius:8px;box-shadow:0 10px 28px rgba(14,40,65,.08)}.section-title{margin:0 0 12px;color:#0056A8}.overview-pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:14px}.overview-tile{display:grid;grid-template-columns:1fr;grid-template-rows:auto auto auto;align-content:start;gap:7px;border:1px solid #d8e6ec;border-radius:8px;background:#fff;padding:10px;text-align:left;cursor:pointer;box-shadow:0 8px 20px rgba(14,40,65,.06)}.overview-tile.section-first{border-top:4px solid var(--green)}.overview-tile[aria-current="true"],.overview-tile.is-active{border-color:var(--blue);box-shadow:0 10px 28px rgba(0,132,204,.15)}.overview-tile>.thumb-label{display:none}.overview-tile .thumb-real{width:100%;border-radius:6px;border-color:#cfe2ea;background:#f8fbfc}.overview-tile b{display:block;min-width:0;margin-top:1px;font-size:13px;line-height:1.22;color:#0056A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.overview-tile>span:not(.thumb-label){display:block;font-size:11px;line-height:1.15;color:#60757e}.playback{position:fixed;inset:0;z-index:50;height:100vh;background:#071923;display:grid;place-items:center;cursor:none}.playback-stage{width:100vw;height:100vh;display:grid;place-items:center;overflow:hidden;pointer-events:none}.progress{position:fixed;left:0;right:0;top:0;height:4px;background:rgba(255,255,255,.18);z-index:80}.progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--green),var(--blue));transition:width .2s}.playback-zone{position:fixed;top:0;bottom:0;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:transparent!important;appearance:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;cursor:pointer;z-index:60}.playback-zone:focus,.playback-zone:focus-visible,.playback-zone:active{border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:transparent!important}.playback-zone.prev{left:0;width:25vw}.playback-zone.center{left:25vw;width:50vw}.playback-zone.next{right:0;width:25vw}.playback-toolbar{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,10px) scale(.96);display:flex;align-items:center;gap:6px;padding:7px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(8,25,35,.72);backdrop-filter:blur(18px) saturate(140%);box-shadow:0 18px 48px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.18);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:85}.playback-control,.playback-exit,.playback-page-pill{height:38px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}.playback-control{width:38px;display:grid;place-items:center;padding:0;font-size:24px;line-height:1;cursor:pointer}.playback-control:hover,.playback-exit:hover{background:rgba(255,255,255,.18)}.playback-page-pill{display:grid;place-items:center;min-width:64px;padding:0 14px;font-weight:800;color:#fff;background:linear-gradient(90deg,rgba(87,158,64,.86),rgba(0,132,204,.86));letter-spacing:0}.playback-exit{padding:0 14px;font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer}.playback.show-ui{cursor:default}.playback.show-ui .playback-toolbar{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}
+.preview-pane{min-width:0;display:grid;grid-template-rows:1fr auto;padding:18px;gap:12px;overflow:hidden}.preview-stage{place-self:stretch;width:100%;height:100%;min-height:0;display:grid;place-items:center;overflow:hidden}.preview-stage,.playback-stage{position:relative}.slide-scale-shell{position:relative;width:var(--scaled-slide-width,var(--slide-design-width));height:var(--scaled-slide-height,var(--slide-design-height));overflow:hidden;background:#fff;contain:paint}.preview-stage .slide-scale-shell,.playback-stage .slide-scale-shell{box-shadow:var(--shadow);outline:1px solid rgba(14,40,65,.18);outline-offset:0}.thumb-real .slide-scale-shell{outline:0;box-shadow:none}.preview-stage.is-transitioning .slide-scale-shell,.playback-stage.is-transitioning .slide-scale-shell{transition:opacity .18s ease}.preview-stage.is-fade-out .slide-scale-shell,.playback-stage.is-fade-out .slide-scale-shell{opacity:.82}.preview-stage.is-fade-in .slide-scale-shell,.playback-stage.is-fade-in .slide-scale-shell{animation:stageFadeIn .18s ease both}@keyframes stageFadeIn{from{opacity:.82}to{opacity:1}}.slide-scale-shell .slide,.annotation-layer{position:absolute;left:0;top:0;width:var(--slide-design-width);height:var(--slide-design-height);max-width:none;transform:scale(var(--stage-scale,1));transform-origin:top left}.slide-scale-shell .slide{pointer-events:none}.annotation-layer{z-index:9;overflow:visible;pointer-events:none}.annotation-layer path{fill:none;stroke-linecap:round;stroke-linejoin:round}.markup-live-pointer{position:fixed;left:0;top:0;z-index:95;width:22px;height:22px;border:3px solid rgba(242,186,2,.96);border-radius:50%;box-shadow:0 0 0 5px rgba(242,186,2,.2),0 8px 22px rgba(0,0,0,.28);pointer-events:none;opacity:0;transform:translate(-50%,-50%) scale(.82);transition:opacity .12s,transform .12s}.markup-live-pointer.is-visible{opacity:1;transform:translate(-50%,-50%) scale(1)}.preview-meta{display:flex;align-items:center;justify-content:space-between;color:#4f6874;font-size:13px}.overview{height:calc(100vh - 56px);overflow:auto;padding:20px 24px;background:#f4f8fa}.overview-toolbar{display:flex;align-items:center;justify-content:space-between;margin:0 0 18px}.overview-grid{display:grid;gap:22px}.section-group{border-top:4px solid var(--blue);background:#fff;padding:14px;border-radius:8px;box-shadow:0 10px 28px rgba(14,40,65,.08)}.section-title{margin:0 0 12px;color:#0056A8}.overview-pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:14px}.overview-tile{display:grid;grid-template-columns:1fr;grid-template-rows:auto auto auto;align-content:start;gap:7px;border:1px solid #d8e6ec;border-radius:8px;background:#fff;padding:10px;text-align:left;cursor:pointer;box-shadow:0 8px 20px rgba(14,40,65,.06)}.overview-tile.section-first{border-top:4px solid var(--green)}.overview-tile[aria-current="true"],.overview-tile.is-active{border-color:var(--blue);box-shadow:0 10px 28px rgba(0,132,204,.15)}.overview-tile>.thumb-label{display:none}.overview-tile .thumb-real{width:100%;border-radius:6px;border-color:#cfe2ea;background:#f8fbfc}.overview-tile b{display:block;min-width:0;margin-top:1px;font-size:13px;line-height:1.22;color:#0056A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.overview-tile>span:not(.thumb-label){display:block;font-size:11px;line-height:1.15;color:#60757e}.playback{position:fixed;inset:0;z-index:50;height:100vh;background:#071923;display:grid;place-items:center;cursor:none}.playback-stage{width:100vw;height:100vh;display:grid;place-items:center;overflow:hidden;pointer-events:none}.playback.markup-drawing .playback-stage{pointer-events:auto}.playback.markup-drawing .playback-zone{pointer-events:none}.progress{position:fixed;left:0;right:0;top:0;height:4px;background:rgba(255,255,255,.18);z-index:80}.progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--green),var(--blue));transition:width .2s}.playback-zone{position:fixed;top:0;bottom:0;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:transparent!important;appearance:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;cursor:pointer;z-index:60}.playback-zone:focus,.playback-zone:focus-visible,.playback-zone:active{border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:transparent!important}.playback-zone.prev{left:0;width:25vw}.playback-zone.center{left:25vw;width:50vw}.playback-zone.next{right:0;width:25vw}.playback-toolbar{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,10px) scale(.96);display:flex;align-items:center;gap:6px;padding:7px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(8,25,35,.72);backdrop-filter:blur(18px) saturate(140%);box-shadow:0 18px 48px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.18);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:85}.playback-control,.playback-exit,.playback-page-pill{height:38px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}.playback-control{width:38px;display:grid;place-items:center;padding:0;font-size:24px;line-height:1;cursor:pointer}.playback-control:hover,.playback-exit:hover{background:rgba(255,255,255,.18)}.playback-page-pill{display:grid;place-items:center;min-width:64px;padding:0 14px;font-weight:800;color:#fff;background:linear-gradient(90deg,rgba(87,158,64,.86),rgba(0,132,204,.86));letter-spacing:0}.playback-exit{padding:0 14px;font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer}.playback.show-ui{cursor:default}.playback.show-ui .playback-toolbar{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}.markup-palette{position:fixed;z-index:90;display:flex;align-items:center;gap:6px;padding:7px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(8,25,35,.76);backdrop-filter:blur(18px) saturate(140%);box-shadow:0 18px 48px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.18);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}.playback.show-ui .markup-palette,.markup-palette:focus-within{opacity:1;pointer-events:auto}.markup-palette[data-placement="lower-left"]{left:max(22px,env(safe-area-inset-left));bottom:max(22px,env(safe-area-inset-bottom));transform:translateY(10px)}.markup-palette[data-placement="lower-right"]{right:max(22px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));transform:translateY(10px)}.markup-palette[data-placement="left-side"]{left:max(16px,env(safe-area-inset-left));top:50%;flex-direction:column;transform:translate(-8px,-50%)}.markup-palette[data-placement="right-side"]{right:max(16px,env(safe-area-inset-right));top:50%;flex-direction:column;transform:translate(8px,-50%)}.playback.show-ui .markup-palette[data-placement="lower-left"],.playback.show-ui .markup-palette[data-placement="lower-right"],.markup-palette[data-placement="lower-left"]:focus-within,.markup-palette[data-placement="lower-right"]:focus-within{transform:translateY(0)}.playback.show-ui .markup-palette[data-placement="left-side"],.playback.show-ui .markup-palette[data-placement="right-side"],.markup-palette[data-placement="left-side"]:focus-within,.markup-palette[data-placement="right-side"]:focus-within{transform:translate(0,-50%)}.markup-tool,.markup-clear-page,.markup-placement{width:36px;height:36px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font-size:17px;line-height:1;cursor:pointer}.markup-tool:hover,.markup-clear-page:hover,.markup-placement:hover,.markup-tool[aria-pressed="true"]{background:rgba(255,255,255,.22)}.markup-tool-pen[aria-pressed="true"]{box-shadow:inset 0 -3px 0 #ff5a5f}.markup-tool-highlighter[aria-pressed="true"]{box-shadow:inset 0 -3px 0 #F2BA02}.markup-tool-eraser[aria-pressed="true"]{box-shadow:inset 0 -3px 0 #fff}.markup-divider{width:1px;height:24px;background:rgba(255,255,255,.18)}.markup-palette[data-placement="left-side"] .markup-divider,.markup-palette[data-placement="right-side"] .markup-divider{width:24px;height:1px}
 .page-source{display:none}.deck{width:100%;display:grid;justify-items:center;gap:28px;padding:28px 0}.slide{position:relative;width:min(calc(100vw - 32px),calc((100vh - 56px) * var(--slide-ratio)),var(--slide-max-width));aspect-ratio:var(--slide-aspect);height:auto;padding:4.3% 6% 8.2%;display:grid;grid-template-rows:auto auto 1fr;overflow:hidden;isolation:isolate;background:linear-gradient(115deg,#ffffff 0%,#ffffff 58%,#edf7fb 100%);-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .slide::before{content:"";position:absolute;left:0;top:0;width:16px;height:100%;background:linear-gradient(180deg,var(--green),var(--blue));z-index:0}.slide::after{content:"";position:absolute;right:4%;top:2.8%;width:48%;height:8%;background:url("__WAVE_TOP__") right top/contain no-repeat;opacity:.22;z-index:0;pointer-events:none}.slide>*{position:relative;z-index:1}
 .brand-logo{width:min(18%,180px);height:auto;object-fit:contain;align-self:flex-start;box-shadow:none;border-radius:0;background:transparent}.slide-title{position:relative;display:flex;align-items:end;justify-content:space-between;gap:24px;margin:1.5% 0 2%;border-bottom:3px solid var(--blue);padding-bottom:10px}
@@ -1868,6 +1868,15 @@ let toolbarTimer = null;
 let transitionSerial = 0;
 let manualRevealKeys = new Set();
 let showSectionDividers = true;
+let activeMarkupTool = 'none';
+let markupPalettePlacement = 'lower-right';
+let activeAnnotationStroke = null;
+let markupPointerId = null;
+const annotationState = new Map();
+const markupToolDefaults = {{
+  pen: {{color:'#ff3b30', width:4, opacity:.95}},
+  highlighter: {{color:'#F2BA02', width:18, opacity:.38}},
+}};
 
 function sourcePage(page) {{
   return document.querySelector('.page-source [data-page-id=\"' + page.page_id + '\"]');
@@ -1982,6 +1991,145 @@ function stageScaleFor(element) {{
   return Number.isFinite(scale) && scale > 0 ? scale : 1;
 }}
 
+function annotationBucket(page = pages[currentPageIndex]) {{
+  const pageId = page?.page_id;
+  if (!pageId) return null;
+  if (!annotationState.has(pageId)) annotationState.set(pageId, []);
+  return annotationState.get(pageId);
+}}
+
+function currentPlaybackShell() {{
+  return document.querySelector('#playback-stage .slide-scale-shell');
+}}
+
+function clientPointToSlidePoint(event) {{
+  const shell = currentPlaybackShell();
+  if (!shell) return null;
+  const rect = shell.getBoundingClientRect();
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return null;
+  const scale = stageScaleFor(shell);
+  return {{
+    x: Math.max(0, Math.min(SLIDE_DESIGN_WIDTH, (event.clientX - rect.left) / scale)),
+    y: Math.max(0, Math.min(SLIDE_DESIGN_HEIGHT, (event.clientY - rect.top) / scale)),
+  }};
+}}
+
+function pointsToPath(points) {{
+  if (!Array.isArray(points) || !points.length) return '';
+  if (points.length === 1) {{
+    const p = points[0];
+    return 'M ' + p.x.toFixed(1) + ' ' + p.y.toFixed(1) + ' l .1 .1';
+  }}
+  return points.map((point, index) => (index ? 'L ' : 'M ') + point.x.toFixed(1) + ' ' + point.y.toFixed(1)).join(' ');
+}}
+
+function ensureAnnotationLayer(shell, page) {{
+  if (!shell || !page) return null;
+  let layer = shell.querySelector(':scope > .annotation-layer');
+  if (!layer) {{
+    layer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    layer.classList.add('annotation-layer');
+    layer.setAttribute('viewBox', '0 0 ' + SLIDE_DESIGN_WIDTH + ' ' + SLIDE_DESIGN_HEIGHT);
+    layer.setAttribute('width', String(SLIDE_DESIGN_WIDTH));
+    layer.setAttribute('height', String(SLIDE_DESIGN_HEIGHT));
+    layer.setAttribute('aria-hidden', 'true');
+    layer.dataset.annotationPageId = page.page_id;
+    shell.appendChild(layer);
+  }}
+  return layer;
+}}
+
+function renderAnnotationLayer(page = pages[currentPageIndex]) {{
+  const shell = currentPlaybackShell();
+  const layer = ensureAnnotationLayer(shell, page);
+  if (!layer) return;
+  layer.dataset.annotationPageId = page.page_id;
+  const strokes = annotationBucket(page) || [];
+  layer.replaceChildren();
+  strokes.forEach((stroke) => {{
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', pointsToPath(stroke.points));
+    path.setAttribute('stroke', stroke.color);
+    path.setAttribute('stroke-width', String(stroke.width));
+    path.setAttribute('stroke-opacity', String(stroke.opacity));
+    path.setAttribute('data-markup-tool', stroke.tool);
+    layer.appendChild(path);
+  }});
+}}
+
+function distanceToSegment(point, start, end) {{
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  if (dx === 0 && dy === 0) return Math.hypot(point.x - start.x, point.y - start.y);
+  const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
+}}
+
+function strokeNearPoint(stroke, point, radius = 22) {{
+  const points = stroke.points || [];
+  if (!points.length) return false;
+  if (points.length === 1) return Math.hypot(points[0].x - point.x, points[0].y - point.y) <= radius;
+  for (let i = 1; i < points.length; i += 1) {{
+    if (distanceToSegment(point, points[i - 1], points[i]) <= radius + Number(stroke.width || 0) / 2) return true;
+  }}
+  return false;
+}}
+
+function eraseAnnotationAt(point) {{
+  const page = pages[currentPageIndex];
+  const bucket = annotationBucket(page);
+  if (!bucket) return;
+  const next = bucket.filter((stroke) => !strokeNearPoint(stroke, point));
+  annotationState.set(page.page_id, next);
+  renderAnnotationLayer(page);
+}}
+
+function isMarkupDrawingTool(tool = activeMarkupTool) {{
+  return tool === 'pen' || tool === 'highlighter' || tool === 'eraser';
+}}
+
+function updateMarkupPaletteState() {{
+  const playback = document.getElementById('playback');
+  playback?.classList.toggle('markup-drawing', isMarkupDrawingTool());
+  document.querySelectorAll('[data-markup-tool]').forEach((button) => {{
+    button.setAttribute('aria-pressed', button.dataset.markupTool === activeMarkupTool ? 'true' : 'false');
+  }});
+  const palette = document.getElementById('markup-palette');
+  if (palette) palette.dataset.placement = markupPalettePlacement;
+}}
+
+function setMarkupTool(tool) {{
+  activeMarkupTool = activeMarkupTool === tool ? 'none' : tool;
+  updateMarkupPaletteState();
+  revealPlaybackToolbar();
+}}
+
+function cycleMarkupPlacement() {{
+  const placements = ['lower-right','right-side','lower-left','left-side'];
+  const current = Math.max(0, placements.indexOf(markupPalettePlacement));
+  markupPalettePlacement = placements[(current + 1) % placements.length];
+  updateMarkupPaletteState();
+  revealPlaybackToolbar();
+}}
+
+function clearCurrentPageAnnotations() {{
+  const page = pages[currentPageIndex];
+  if (!page) return;
+  annotationState.set(page.page_id, []);
+  renderAnnotationLayer(page);
+  revealPlaybackToolbar();
+}}
+
+function updateLiveMarkupPointer(event, visible = activeMarkupTool === 'pointer') {{
+  const pointer = document.getElementById('markup-live-pointer');
+  if (!pointer) return;
+  pointer.classList.toggle('is-visible', visible && viewMode === 'playback');
+  if (visible) {{
+    pointer.style.left = event.clientX + 'px';
+    pointer.style.top = event.clientY + 'px';
+  }}
+}}
+
 function animateSortFinal(list, beforeRects) {{
   const items = [...list.querySelectorAll(':scope > .sort-item')];
   const moving = [];
@@ -2070,6 +2218,7 @@ function clonePageInto(stageId, page, animate = false, options = {{}}) {{
   const showAll = options.showAll ?? stageId !== 'playback-stage';
   const shell = buildStageShell(page, options.step ?? (showAll ? maxRevealStep(page) : 0), showAll, options);
   if (!stage || !shell) return;
+  if (stageId === 'playback-stage') ensureAnnotationLayer(shell, page);
   const oldShells = [...stage.querySelectorAll('.slide-scale-shell')];
   const oldShell = oldShells.at(-1);
   oldShells.slice(0, -1).forEach((item) => item.remove());
@@ -2078,6 +2227,7 @@ function clonePageInto(stageId, page, animate = false, options = {{}}) {{
     clearStageTransition(stage);
     stage.replaceChildren(shell);
     fitStage(stage);
+    if (stageId === 'playback-stage') renderAnnotationLayer(page);
     return;
   }}
   clearStageTransition(stage);
@@ -2089,6 +2239,7 @@ function clonePageInto(stageId, page, animate = false, options = {{}}) {{
     if (stage.dataset.transitionToken !== token) return;
     stage.replaceChildren(shell);
     fitStage(stage);
+    if (stageId === 'playback-stage') renderAnnotationLayer(page);
     stage.classList.remove('is-fade-out');
     stage.classList.add('is-fade-in');
     const doneTimer = window.setTimeout(() => {{
@@ -2184,6 +2335,7 @@ function maskTargetAtPoint(clientX, clientY) {{
 
 function revealMaskAtPoint(event) {{
   if (viewMode !== 'playback') return false;
+  if (isMarkupDrawingTool()) return false;
   const target = maskTargetAtPoint(event.clientX, event.clientY);
   if (!target) return false;
   const stage = document.getElementById('playback-stage');
@@ -2194,6 +2346,69 @@ function revealMaskAtPoint(event) {{
   applyRevealState('playback-stage', page, currentRevealStep);
   revealPlaybackToolbar();
   return true;
+}}
+
+function beginMarkupStroke(event) {{
+  if (viewMode !== 'playback' || !isMarkupDrawingTool()) return false;
+  if (event.target.closest?.('.markup-palette,.playback-toolbar')) return false;
+  const point = clientPointToSlidePoint(event);
+  if (!point) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  closePeek();
+  revealPlaybackToolbar();
+  markupPointerId = event.pointerId;
+  const playback = document.getElementById('playback');
+  try {{ playback?.setPointerCapture?.(event.pointerId); }} catch (error) {{}}
+  if (activeMarkupTool === 'eraser') {{
+    eraseAnnotationAt(point);
+    activeAnnotationStroke = {{tool:'eraser', points:[point]}};
+    return true;
+  }}
+  const defaults = markupToolDefaults[activeMarkupTool] || markupToolDefaults.pen;
+  activeAnnotationStroke = {{
+    tool: activeMarkupTool,
+    color: defaults.color,
+    width: defaults.width,
+    opacity: defaults.opacity,
+    points: [point],
+  }};
+  const bucket = annotationBucket(pages[currentPageIndex]);
+  bucket?.push(activeAnnotationStroke);
+  renderAnnotationLayer();
+  return true;
+}}
+
+function moveMarkupStroke(event) {{
+  if (viewMode !== 'playback') return;
+  updateLiveMarkupPointer(event);
+  if (!activeAnnotationStroke || markupPointerId !== event.pointerId) return;
+  const point = clientPointToSlidePoint(event);
+  if (!point) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (activeAnnotationStroke.tool === 'eraser') {{
+    eraseAnnotationAt(point);
+    activeAnnotationStroke.points.push(point);
+    return;
+  }}
+  const points = activeAnnotationStroke.points;
+  const last = points.at(-1);
+  if (!last || Math.hypot(point.x - last.x, point.y - last.y) >= 1.5) {{
+    points.push(point);
+    renderAnnotationLayer();
+  }}
+}}
+
+function endMarkupStroke(event) {{
+  if (markupPointerId !== null && markupPointerId === event.pointerId) {{
+    event.preventDefault();
+    event.stopPropagation();
+    const playback = document.getElementById('playback');
+    try {{ playback?.releasePointerCapture?.(event.pointerId); }} catch (error) {{}}
+  }}
+  activeAnnotationStroke = null;
+  markupPointerId = null;
 }}
 
 let peekHoverTimer = null;
@@ -2560,6 +2775,8 @@ document.addEventListener('pointerover', (event) => {{
 
 document.addEventListener('pointermove', (event) => {{
   if (viewMode !== 'playback') return;
+  if (isMarkupDrawingTool()) return;
+  updateLiveMarkupPointer(event);
   const trigger = peekTriggerAtPoint(event.clientX, event.clientY);
   if (trigger === playbackHoverTrigger) return;
   window.clearTimeout(peekHoverTimer);
@@ -2582,6 +2799,7 @@ document.addEventListener('pointerout', (event) => {{
 }});
 
 document.addEventListener('click', (event) => {{
+  if (isMarkupDrawingTool()) return;
   const trigger = peekTriggerFromEvent(event);
   if (trigger && peekAllows(trigger, 'click')) {{
     event.preventDefault();
@@ -2669,19 +2887,39 @@ document.addEventListener('click', (event) => {{
 	document.addEventListener('keydown', (event) => {{
 	  if (event.target.closest?.('[data-peek-trigger]')) return;
 	  if (event.target.closest?.('[data-agenda-section-index]')) return;
+	  if (event.target.closest?.('.markup-palette,.playback-toolbar') && (event.key === ' ' || event.key === 'Enter')) return;
 	  if (event.key === 'Escape' && viewMode === 'playback') {{ event.preventDefault(); showWorkspace(); return; }}
 	  if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') {{ event.preventDefault(); nextAction(); }}
 	  if (event.key === 'ArrowLeft' || event.key === 'PageUp') {{ event.preventDefault(); previousAction(); }}
 	}});
 
-document.querySelector('.playback-zone.prev')?.addEventListener('click', previousAction);
-document.querySelector('.playback-zone.center')?.addEventListener('click', nextAction);
-document.querySelector('.playback-zone.next')?.addEventListener('click', nextAction);
+const playbackRoot = document.getElementById('playback');
+playbackRoot?.addEventListener('pointerdown', beginMarkupStroke, true);
+playbackRoot?.addEventListener('pointermove', moveMarkupStroke, true);
+playbackRoot?.addEventListener('pointerup', endMarkupStroke, true);
+playbackRoot?.addEventListener('pointercancel', endMarkupStroke, true);
+playbackRoot?.addEventListener('pointerleave', (event) => updateLiveMarkupPointer(event, false));
+document.querySelector('.playback-zone.prev')?.addEventListener('click', (event) => {{
+  if (isMarkupDrawingTool()) {{ event.preventDefault(); return; }}
+  previousAction();
+}});
+document.querySelector('.playback-zone.center')?.addEventListener('click', (event) => {{
+  if (isMarkupDrawingTool()) {{ event.preventDefault(); return; }}
+  nextAction();
+}});
+document.querySelector('.playback-zone.next')?.addEventListener('click', (event) => {{
+  if (isMarkupDrawingTool()) {{ event.preventDefault(); return; }}
+  nextAction();
+}});
 document.getElementById('playback')?.addEventListener('mousemove', revealPlaybackToolbar);
 document.getElementById('playback')?.addEventListener('touchstart', revealPlaybackToolbar, {{passive:true}});
 let touchStartX = null;
-document.getElementById('playback')?.addEventListener('touchstart', (event) => {{ touchStartX = event.changedTouches[0]?.clientX ?? null; }}, {{passive:true}});
+document.getElementById('playback')?.addEventListener('touchstart', (event) => {{
+  if (isMarkupDrawingTool()) {{ touchStartX = null; return; }}
+  touchStartX = event.changedTouches[0]?.clientX ?? null;
+}}, {{passive:true}});
 document.getElementById('playback')?.addEventListener('touchend', (event) => {{
+  if (isMarkupDrawingTool()) {{ touchStartX = null; return; }}
   if (touchStartX === null) return;
   const dx = (event.changedTouches[0]?.clientX ?? touchStartX) - touchStartX;
   if (Math.abs(dx) > 42) (dx < 0 ? nextAction : previousAction)();
@@ -2692,6 +2930,7 @@ window.addEventListener('hashchange', selectFromHash);
 renderThumbnailClones();
 initRailControls();
 initSectionDividerControls();
+updateMarkupPaletteState();
 window.addEventListener('resize', () => {{
   if (!isMobileRailMode()) closeRailDrawer();
   fitVisibleStages();
@@ -2722,7 +2961,18 @@ fitVisibleStages();
         "<section id=\"playback\" class=\"playback view\" hidden>"
         "<div class=\"progress\" aria-hidden=\"true\"><i id=\"playback-progress\"></i></div>"
         "<button class=\"playback-zone prev\" type=\"button\" aria-label=\"previous page\"></button><button class=\"playback-zone center\" type=\"button\" aria-label=\"next page\"></button><button class=\"playback-zone next\" type=\"button\" aria-label=\"next page\"></button>"
-        "<div id=\"playback-stage\" class=\"playback-stage\"></div><div class=\"playback-toolbar\" aria-label=\"playback controls\"><button class=\"playback-control\" type=\"button\" onclick=\"previousAction()\" aria-label=\"上一步\"><span aria-hidden=\"true\">‹</span></button><span class=\"playback-page-pill\" data-current-page-label></span><button class=\"playback-control\" type=\"button\" onclick=\"nextAction()\" aria-label=\"下一步\"><span aria-hidden=\"true\">›</span></button><button class=\"playback-exit\" type=\"button\" onclick=\"showWorkspace()\" aria-label=\"退出播放\">Esc</button></div>"
+        "<div id=\"playback-stage\" class=\"playback-stage\"></div>"
+        "<div id=\"markup-live-pointer\" class=\"markup-live-pointer\" aria-hidden=\"true\"></div>"
+        "<div id=\"markup-palette\" class=\"markup-palette\" data-placement=\"lower-right\" aria-label=\"presenter markup tools\">"
+        "<button class=\"markup-tool markup-tool-pointer\" type=\"button\" data-markup-tool=\"pointer\" onclick=\"setMarkupTool('pointer')\" aria-label=\"指针\" aria-pressed=\"false\" title=\"指针\"><span aria-hidden=\"true\">•</span></button>"
+        "<button class=\"markup-tool markup-tool-pen\" type=\"button\" data-markup-tool=\"pen\" onclick=\"setMarkupTool('pen')\" aria-label=\"画笔\" aria-pressed=\"false\" title=\"画笔\"><span aria-hidden=\"true\">✎</span></button>"
+        "<button class=\"markup-tool markup-tool-highlighter\" type=\"button\" data-markup-tool=\"highlighter\" onclick=\"setMarkupTool('highlighter')\" aria-label=\"荧光笔\" aria-pressed=\"false\" title=\"荧光笔\"><span aria-hidden=\"true\">▰</span></button>"
+        "<button class=\"markup-tool markup-tool-eraser\" type=\"button\" data-markup-tool=\"eraser\" onclick=\"setMarkupTool('eraser')\" aria-label=\"橡皮擦\" aria-pressed=\"false\" title=\"橡皮擦\"><span aria-hidden=\"true\">⌫</span></button>"
+        "<span class=\"markup-divider\" aria-hidden=\"true\"></span>"
+        "<button class=\"markup-clear-page\" type=\"button\" onclick=\"clearCurrentPageAnnotations()\" aria-label=\"清除当前页标注\" title=\"清除当前页标注\"><span aria-hidden=\"true\">⌧</span></button>"
+        "<button class=\"markup-placement\" type=\"button\" onclick=\"cycleMarkupPlacement()\" aria-label=\"切换标注工具位置\" title=\"切换位置\"><span aria-hidden=\"true\">↗</span></button>"
+        "</div>"
+        "<div class=\"playback-toolbar\" aria-label=\"playback controls\"><button class=\"playback-control\" type=\"button\" onclick=\"previousAction()\" aria-label=\"上一步\"><span aria-hidden=\"true\">‹</span></button><span class=\"playback-page-pill\" data-current-page-label></span><button class=\"playback-control\" type=\"button\" onclick=\"nextAction()\" aria-label=\"下一步\"><span aria-hidden=\"true\">›</span></button><button class=\"playback-exit\" type=\"button\" onclick=\"showWorkspace()\" aria-label=\"退出播放\">Esc</button></div>"
         "</section>"
         "<div class=\"page-source\" hidden>" + "".join(page_sections) + "</div>"
         f"<script>{js}</script></div></body></html>"
@@ -2910,9 +3160,40 @@ def cmd_verify(args: argparse.Namespace) -> None:
         "reveal-kind-reveal",
         "nextAction",
         "previousAction",
+        "revealMaskAtPoint",
         "URLSearchParams",
     ]
     workspace_verified = all(token in first_html for token in required_html_tokens)
+    presenter_markup_tokens = [
+        "markup-palette",
+        "markup-tool-pointer",
+        "markup-tool-pen",
+        "markup-tool-highlighter",
+        "markup-tool-eraser",
+        "markup-clear-page",
+        "markup-placement",
+        "lower-left",
+        "lower-right",
+        "left-side",
+        "right-side",
+        "annotation-layer",
+        "annotationState",
+        "activeMarkupTool",
+        "setMarkupTool",
+        "clearCurrentPageAnnotations",
+        "beginMarkupStroke",
+        "moveMarkupStroke",
+        "eraseAnnotationAt",
+        "clientPointToSlidePoint",
+        "stageScaleFor",
+    ]
+    manifest_annotation_tokens = ["annotationState", "annotation-layer", "markup-palette", "markup-tool"]
+    first_manifest_text = first_manifest.read_text(encoding="utf-8")
+    second_manifest_text = second_manifest.read_text(encoding="utf-8")
+    presenter_markup_verified = (
+        all(token in first_html for token in presenter_markup_tokens)
+        and not any(token in first_manifest_text or token in second_manifest_text for token in manifest_annotation_tokens)
+    )
     thumbnail_ratio_verified = (
         ".thumb-item{position:relative;display:block;width:100%" in first_html
         and "aspect-ratio:var(--slide-aspect)" in first_html
@@ -2969,6 +3250,7 @@ split: auto
         and hierarchy_verified
         and reveal_verified
         and workspace_verified
+        and presenter_markup_verified
         and thumbnail_ratio_verified
         and flat_slide_compat_verified
     )
@@ -2978,6 +3260,7 @@ split: auto
         "hierarchy_verified": hierarchy_verified,
         "reveal_verified": reveal_verified,
         "workspace_verified": workspace_verified,
+        "presenter_markup_verified": presenter_markup_verified,
         "thumbnail_ratio_verified": thumbnail_ratio_verified,
         "flat_slide_compat_verified": flat_slide_compat_verified,
         "first_sha256": m1.get("html_sha256"),
