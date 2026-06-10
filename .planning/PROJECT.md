@@ -1,21 +1,16 @@
 # Presto Agent Skills
 
-## Current Milestone: v1.7 End-of-Term Teaching Materials Skill
+## Current State: v1.7 End-of-Term Teaching Materials Skill Shipped
 
-**Goal:** Add a fixed-template teaching-materials skill for end-of-term submission packages, using a data to Markdown to Typst to PDF workflow with reviewable document and table outputs.
+**Shipped:** 2026-06-10
 
-**Target features:**
-- Structured teaching data input for course, class, semester, hours, teaching records, assessment, and submission metadata
-- Persistent Markdown intermediate that keeps all generated documents and tables reviewable before rendering
-- Fixed-template Typst/PDF generation for end-of-term teaching-material deliverables
-- Scripted verification for Markdown, Typst, PDF, and table artifacts
-- Runtime adapter notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent
+v1.7 added a fixed-template teaching-materials skill for end-of-term submission packages, using a structured-data to Markdown to Typst/PDF workflow with reviewable document, table, workbook, and verification outputs.
 
-## Current State
+## Milestone History
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 now returns to the document workflow family for an end-of-term teaching-materials submission package built from fixed templates.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates.
 
 ## What This Is
 
@@ -43,12 +38,11 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Add the `jiaoan-jihua` skill with trigger wording, canonical workflow, script code, and black-box Typst/PDF verification path. - v1.4 Phase 7
 - [x] Add the `school-presentation` skill with a Markdown logical-slide intermediate, school identity assets, offline HTML rendering, overflow splitting, and human-accepted visual output. - v1.5 Phase 8
 - [x] Refine `school-presentation` playback with preview workspace, page hierarchy, ordered reveals, emphasis animation, and answer masks. - v1.6 Phases 9-10
+- [x] Add the `end-of-term-teaching-materials` skill with structured data input, teacher-reviewable Markdown, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict review gates. - v1.7 Phases 11-13
 
 ### Active
 
-- Add a new end-of-term teaching-materials skill for fixed-template submission documents and tables.
-- Normalize structured teaching data into a persistent Markdown intermediate before Typst/PDF rendering.
-- Provide deterministic scripts, templates, sample data, and verification for Markdown, Typst, PDF, and table outputs.
+- No active milestone requirements. Start the next milestone with `/gsd:new-milestone`.
 
 ### Out of Scope
 
@@ -76,14 +70,13 @@ v1.2 adds the first concrete skill using that pattern: `skills/gongwen`, backed 
 
 v1.5 added `skills/school-presentation`, backed by extracted official-school visual assets and a Markdown-to-HTML presentation renderer. The milestone deliberately avoids PPTX generation and treats HTML as the primary stable output. v1.6 added playback and classroom interaction controls to that HTML deck.
 
-v1.7 starts a new concrete document workflow skill for end-of-term teaching-materials submission. The skill should reuse the proven data/Markdown/Typst/PDF shape from `gongwen`, `jiaoan-shicao`, and `jiaoan-jihua`, but target a package of fixed-template documents and tables rather than a single document type.
+v1.7 shipped a concrete document workflow skill for end-of-term teaching-materials submission. It reuses the proven data/Markdown/Typst/PDF shape from `gongwen`, `jiaoan-shicao`, and `jiaoan-jihua`, but targets a package of fixed-template documents, deterministic tables, and workbook output rather than a single document type.
 
 ## Next Milestone Goals
 
-v1.7 should add an end-of-term teaching-materials skill: the generated package should start from explicit structured teaching data, produce a reviewable Markdown intermediate, render fixed-template Typst/PDF artifacts, include table outputs where required, and provide verification steps that are usable across supported runtimes.
+Not defined yet. The next milestone should start with fresh requirements and keep the repository's canonical `SKILL.md` plus runtime-adapter discipline intact.
 
 ## Constraints
-
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
 - **Source of truth**: Prefer one canonical skill source plus embedded runtime adapter notes - this reduces drift across agents.
 - **Scope discipline**: Keep the document workflow centered on a Markdown intermediate; add automation only after the contract is stable.
@@ -110,9 +103,10 @@ v1.7 should add an end-of-term teaching-materials skill: the generated package s
 | Add `school-presentation` as a school-style HTML presentation skill | User rejected unstable PPTX output and prefers Markdown-controlled, single-file HTML presentations with fixed layouts and school visual identity | Good - shipped in v1.5 Phase 8 |
 | Treat logical slides and physical pages separately | Users should edit one Markdown logical slide while the renderer splits overflow into additional HTML pages automatically | Good - shipped in v1.5 Phase 8 |
 | Defer marking and annotation tools from playback UX | The current milestone should focus on slide playback, preview, hierarchy, reveals, and answer masks before adding presenter markup controls | Good - shipped in v1.6 |
-| Add an end-of-term teaching-materials skill | User requested a new skill for fixed-template teaching documents and tables submitted at semester end | Planned - v1.7 |
-| Use data to Markdown to Typst to PDF for v1.7 | This preserves the repository's reviewable Markdown-first document workflow while supporting fixed templates and verification | Planned - v1.7 |
-| Skip external research for v1.7 planning | The target follows already validated local document-skill patterns, so requirements can be defined from project context and the user's confirmed scope | Planned - v1.7 |
+| Add an end-of-term teaching-materials skill | User requested a new skill for fixed-template teaching documents and tables submitted at semester end | Good - shipped in v1.7 |
+| Use data to Markdown to Typst to PDF for v1.7 | This preserves the repository's reviewable Markdown-first document workflow while supporting fixed templates and verification | Good - shipped in v1.7 |
+| Skip external research for v1.7 planning | The target follows already validated local document-skill patterns, so requirements can be defined from project context and the user's confirmed scope | Good - shipped in v1.7 |
+| Keep uncertain scores reviewable before final export | The audit found that `87?` must reach Markdown review while final delivery stays strict | Good - closed in v1.7 Phase 13 |
 
 ## Evolution
 
@@ -132,4 +126,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-08 after v1.7 end-of-term teaching-materials milestone start*
+*Last updated: 2026-06-10 after v1.7 end-of-term teaching-materials milestone archive*
