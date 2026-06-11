@@ -55,11 +55,12 @@ metadata:
    - 块级揭示：`::: reveal order=1 ... :::`，可包住列表、段落、公式、图表、图片等常见块。
    - 答案遮罩：`::: mask order=1 ... :::` 或行内 `{{mask order=1}}答案{{/mask}}`；播放态遮住答案但不显示“点击揭示”等提示文字。
    - 正确项强调：`::: emphasis order=1 ... :::` 或行内 `{{emphasis order=1}}正确项{{/emphasis}}`；选择题选项常显，正确项按 order 变成强调状态。默认强调包含下划线，打印或静态审阅时仍可见。强调入场动画只在该 step 首次出现时播放，已经强调过的内容保持静态高亮，不随后续 step 重播动画。
+   - 自动逐条展示：在 slide 注释中写 `animate: step`，普通段落、列表条目和表格行会自动生成播放步骤；排序练习可用 `::: sort final_order=4 ... :::` 与条目 `[order=1]` 控制排序编号和最终重排。
    - `order` 是播放优先级，允许小数插入；渲染器按数值排序并在 manifest 中归一成连续 `step_index`。相同 `order` 的元素同时出现。
 8. 生成 Markdown 后，运行 `skills/school-presentation/scripts/school-presentation.sh render` 输出离线 HTML。生成结果默认打开 preview workspace：左侧 thumbnail rail 按章节和逻辑页分组，右侧 preview stage 显示当前物理页的真实 slide DOM；同一个单文件 HTML 内还包含 playback 和 overview。Preview workspace 显示全内容和最终揭示状态；playback 才按 reveal step 隐藏、遮罩或强调内容。
 9. slide 内部必须保持固定设计画布尺寸。不要在 slide 内容、字体、图片高度、图文栅格中使用 viewport-dependent CSS，例如 `vh`、`vw` 或基于视口的 `clamp()`；不同预览尺寸和浏览器缩放比例下，只允许外层 stage scale 改变，slide 内部元素相对关系必须像图片缩放一样保持不变。
 10. playback 支持键盘方向键、Space、PageUp/PageDown、鼠标左/中/右点击区域、触摸滑动、`Esc` 返回 workspace、URL hash 当前页与 step 同步和顶部蓝绿色进度条。右方向/Space/右侧或中部点击先推进当前页 reveal step，当前页完成后才翻页；左方向/左侧点击先撤回当前页上一步。跨页切换时，旧页按当前已揭示状态淡出，新切入页面一律从 step0 原始遮罩状态开始。最后一页全部完成后继续前进会退出放映模式。
-11. playback 内置 presenter markup palette：pointer、pen、highlighter、eraser、clear/reset 和位置切换控件只作用于当前浏览器放映会话。pen/highlighter/eraser 的标注按 physical page 做 page-scoped session state，翻页后返回仍保留，直到用户清除当前页；pointer 只显示现场指示，不生成持久标注。标注层只挂在 playback shell，不能写回 Markdown、`.page-source`、preview workspace、overview、thumbnail、manifest 或 deterministic review artifacts。绘制/擦除时会压住播放点击区，键盘导航、reveal、mask、emphasis 和 hover/peek 在非绘制状态下继续按原规则工作。
+11. playback 内置 presenter markup palette：激光笔、画笔、荧光笔、橡皮擦和清除当前页控件只作用于当前浏览器放映会话；浮窗根据鼠标或触控边缘意图自动停靠。pen/highlighter/eraser 的标注按 physical page 做 page-scoped session state，翻页后返回仍保留，直到用户清除当前页；激光笔按住拖动时显示临时红色轨迹，抬笔后约 2 秒开始淡出，不生成持久标注。标注层只挂在 playback shell，不能写回 Markdown、`.page-source`、preview workspace、overview、thumbnail、manifest 或 deterministic review artifacts。绘制/擦除时会压住播放点击区，键盘导航、reveal、mask、emphasis 和 hover/peek 在非绘制状态下继续按原规则工作。
 12. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook、presenter markup 控件与 annotation layer hook，并写出 verification manifest。`presenter_markup_verified` 必须为 `true`，且 manifest 不得包含 annotation state、markup palette 或 stroke 数据。
 13. 对来源不确定、素材缺失、视频过大或内容无法稳定呈现的片段，就近写入合适级别的强调块或渲染 manifest，不要静默删除。
 
