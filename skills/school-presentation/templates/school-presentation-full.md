@@ -425,7 +425,7 @@ icon: none
 <!-- slide
 layout: content
 intent: demonstrate vertical and horizontal timeline directives
-split: false
+split: auto
 -->
 
 ::: timeline variant=vertical
@@ -445,7 +445,7 @@ split: false
 <!-- slide
 layout: content
 intent: demonstrate cards and gallery directives
-split: false
+split: auto
 -->
 
 ::: cards columns=3
@@ -465,7 +465,7 @@ split: false
 <!-- slide
 layout: content
 intent: demonstrate process and cycle smartart directives
-split: false
+split: auto
 -->
 
 ::: smartart type=process variant=chevron
@@ -482,12 +482,12 @@ split: false
 - [title="复测"] 验证结果。
 :::
 
-### Slide: 层级、金字塔与图片 SmartArt
+### Slide: 层级与金字塔 SmartArt
 
 <!-- slide
 layout: content
-intent: demonstrate hierarchy pyramid and picture smartart directives
-split: false
+intent: demonstrate hierarchy and pyramid smartart directives
+split: auto
 -->
 
 ::: smartart type=hierarchy variant=layers
@@ -500,12 +500,6 @@ split: false
 - [title="底层：安全"] 先保护人身和设备。
 - [title="中层：规范"] 再保证工艺和记录。
 - [title="顶层：迁移"] 最后迁移到综合任务。
-:::
-
-::: smartart type=picture variant=strip
-- [title="现场" image="media/风景.webp"] 实训环境。
-- [title="作品" image="media/猫猫.png"] 作品证据。
-- [title="讲解" image="media/AI人像.jpg"] 汇报素材。
 :::
 
 ### Slide: 多个答案按 order 推进
