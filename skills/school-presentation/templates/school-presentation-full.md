@@ -341,6 +341,54 @@ $$U = I \times R$$
 说明段落也可以作为一个整体 reveal；如果内容太多，渲染器继续按物理页拆分，不靠隐藏内容硬塞进一页。
 :::
 
+### Slide: 列表逐条展示示例
+
+<!-- slide
+layout: content
+intent: demonstrate automatic step-by-step list animation
+split: false
+animate: step
+-->
+
+下面的普通 Markdown 列表不写 `order`，渲染器会在播放态按条目自动逐步出现。
+
+- 第一步：确认实训任务和安全边界。
+- 第二步：检查工具、元件和图纸是否一致。
+- 第三步：完成接线后先自检，再请教师复核。
+- 第四步：通电观察动作，并记录异常现象。
+
+### Slide: 表格逐行展示示例
+
+<!-- slide
+layout: table
+intent: demonstrate automatic row-by-row table animation
+split: false
+animate: step
+-->
+
+| 环节 | 学生动作 | 教师观察 |
+|---|---|---|
+| 任务导入 | 复述任务目标 | 是否理解安全前提 |
+| 元件检测 | 测量触点和线圈 | 是否会先断电检测 |
+| 线路安装 | 按图接线并整理线号 | 是否有端子松动 |
+| 联机调试 | 观察动作顺序 | 是否能解释故障路径 |
+
+### Slide: 排序列表展示示例
+
+<!-- slide
+layout: content
+intent: demonstrate sorted list reveal animation
+split: false
+-->
+
+下面的排序列表先展示候选项，再在播放步骤中显示顺序编号，最后按顺序重排。
+
+::: sort final_order=4
+- [order=2] 完成绝缘测试。
+- [order=1] 检查急停和保护接地。
+- [order=3] 空载试车并观察动作。
+:::
+
 ### Slide: 多个答案按 order 推进
 
 <!-- slide

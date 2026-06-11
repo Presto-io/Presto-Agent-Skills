@@ -69,7 +69,25 @@ Two interaction defects were found during browser smoke testing and fixed before
 - Keyboard navigation was initially blocked while focus remained on the active markup tool button. Fixed by allowing Arrow/Page navigation from toolbar focus while preserving Space/Enter button activation.
 - Clear current page was initially intercepted by the active drawing handler when the palette overlapped the slide shell. Fixed by exempting markup and playback controls from stroke capture.
 
-**Total deviations:** 2 auto-fixed. **Impact:** Positive; both fixes directly strengthen SP-19/SP-20 behavior.
+Post-smoke manual review found presenter-toolbar animation defects and they were fixed before final acceptance:
+
+- Restored slide/page transitions to the original fade behavior after a toolbar-side-switch request was accidentally applied to page transitions.
+- Reworked the collapsed toolbar into a true single circular bubble instead of a shifted expanded toolbar.
+- Restricted presenter palette placement to lower-left/lower-right and removed side-toolbar/drawer-shift leftovers from the generated review artifact.
+- Fixed lower-left/lower-right switching so the toolbar slides out through the current screen edge and enters from the opposite edge.
+- Fixed the switch-animation restart jitter by locking the current target placement and letting WAAPI own `transform` while the switch is running.
+
+**Total deviations:** 7 auto-fixed. **Impact:** Positive; fixes directly strengthen SP-17/SP-20 presenter usability while keeping annotations playback-local.
+
+## Human UAT
+
+Passed on 2026-06-11 in the in-app browser against:
+
+```text
+generated/phase14-presenter-markup-review/school-presentation-first.html
+```
+
+Final user acceptance note: "人工验收通过".
 
 ## Requirement Status
 
