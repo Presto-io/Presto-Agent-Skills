@@ -5,8 +5,8 @@ milestone_name: School Presentation Continuation
 current_phase: 15
 status: Phase 14 complete
 stopped_at: Phase 14 executed and verified
-last_updated: "2026-06-10T19:13:52Z"
-last_activity: 2026-06-11 — Phase 14 presenter markup tools executed and verified
+last_updated: "2026-06-11T04:04:55Z"
+last_activity: 2026-06-11 — Phase 14 presenter markup manual UAT passed and toolbar animation debug resolved
 progress:
   total_phases: 3
   completed_phases: 1
@@ -58,7 +58,7 @@ Plan Phase 15: Classroom Interaction and Structured Layout Extensions.
 
 - Phase 13 completed: Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores reach Markdown review while final export remains strict
 - Milestone v1.8 started: Continue official-school presentation development from the Phase 10 deferred scope.
-- Phase 14 completed: Playback-local presenter markup tools now cover pointer, pen, highlighter, eraser, clear current page, page-scoped session state, and deterministic verification without mutating authored artifacts.
+- Phase 14 completed: Playback-local presenter markup tools now cover pointer, pen, highlighter, eraser, clear current page, page-scoped session state, deterministic verification, and manual UAT without mutating authored artifacts.
 
 ## Decisions
 
@@ -113,8 +113,8 @@ Plan Phase 15: Classroom Interaction and Structured Layout Extensions.
 
 ## Last Session
 
-- **Completed:** Phase 14 presenter markup implementation, deterministic verification, and Chrome playback smoke test
-- **Stopped At:** Phase 14 executed and verified
+- **Completed:** Phase 14 presenter markup implementation, deterministic verification, toolbar animation debug, and manual UAT
+- **Stopped At:** Phase 14 accepted by manual UAT
 - **Resume File:** .planning/phases/14-presenter-markup-tools/14-01-SUMMARY.md
 
 ## Close Notes
@@ -133,7 +133,7 @@ Plan Phase 15: Classroom Interaction and Structured Layout Extensions.
 Phase: 15 - Classroom Interaction and Structured Layout Extensions
 Plan: —
 Status: Ready for discussion or planning
-Last activity: 2026-06-11 — Phase 14 presenter markup tools executed and verified
+Last activity: 2026-06-11 — Phase 14 presenter markup manual UAT passed and toolbar animation debug resolved
 
 ## Operator Next Steps
 
