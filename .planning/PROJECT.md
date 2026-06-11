@@ -1,21 +1,23 @@
 # Presto Agent Skills
 
-## Current Milestone: v1.8 School Presentation Continuation
+## Current State
 
-**Started:** 2026-06-11
+**Latest shipped milestone:** v1.8 School Presentation Continuation
 
-**Goal:** Continue the official-school presentation skill by turning the Phase 10 deferred classroom and delivery features into a scoped, verifiable milestone.
+**Shipped:** 2026-06-11
 
-**Target features:**
+**Status:** v1.8 is archived. There is no active milestone; the next milestone should start with fresh requirements.
+
+**Delivered in v1.8:**
 - Presenter marking and annotation tools for playback, including pointer, pen, highlighter, eraser, and clear/reset controls.
-- Classroom interaction extensions that were deferred from Phase 10, such as hover/peek, sorting/reordering exercises, and restrained body-step animation.
-- Structured school-style layout helpers plus print/export review behavior that preserve the existing Markdown-first, offline HTML-first model.
+- Classroom interaction extensions from the Phase 10 deferred scope, including hover/peek, sorting/reordering exercises, and restrained body-step animation.
+- Structured school-style layout helpers, section controls, print/export review behavior, and one-click final PDF export while preserving the Markdown-first, offline HTML-first model.
 
 ## Milestone History
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumes the `school-presentation` line by implementing the deferred presenter markup, classroom interaction extensions, structured layout helpers, and print/export review behavior without reopening PPTX/Keynote output.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output.
 
 ## What This Is
 
@@ -44,12 +46,13 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Add the `school-presentation` skill with a Markdown logical-slide intermediate, school identity assets, offline HTML rendering, overflow splitting, and human-accepted visual output. - v1.5 Phase 8
 - [x] Refine `school-presentation` playback with preview workspace, page hierarchy, ordered reveals, emphasis animation, and answer masks. - v1.6 Phases 9-10
 - [x] Add the `end-of-term-teaching-materials` skill with structured data input, teacher-reviewable Markdown, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict review gates. - v1.7 Phases 11-13
+- [x] Add presenter-facing marking tools to the `school-presentation` playback UI while keeping annotations separate from Markdown source content. - v1.8 Phase 14
+- [x] Add deterministic classroom interaction extensions compatible with reveal/mask playback. - v1.8 Phase 15
+- [x] Add structured layout helpers, print/export review behavior, and one-click final PDF export without breaking the offline single-file HTML model or fixed slide canvas constraints. - v1.8 Phases 15-16
 
 ### Active
 
-- [ ] Add presenter-facing marking tools to the `school-presentation` playback UI while keeping annotations separate from Markdown source content.
-- [ ] Add the deferred classroom interaction extensions only where they can remain deterministic, inspectable, and compatible with reveal/mask playback.
-- [ ] Add structured layout helpers and print/export review behavior without breaking the offline single-file HTML model or fixed slide canvas constraints.
+(None. Define the next milestone with fresh requirements.)
 
 ### Out of Scope
 
@@ -79,13 +82,13 @@ v1.5 added `skills/school-presentation`, backed by extracted official-school vis
 
 v1.7 shipped a concrete document workflow skill for end-of-term teaching-materials submission. It reuses the proven data/Markdown/Typst/PDF shape from `gongwen`, `jiaoan-shicao`, and `jiaoan-jihua`, but targets a package of fixed-template documents, deterministic tables, and workbook output rather than a single document type.
 
-v1.8 continues the official-school presentation path from v1.5 and v1.6. The immediate legacy source is the Phase 10 deferred scope: hover/peek pointer interaction, SmartArt/timeline/cards/gallery-style layout helpers, automatic semantic icons, sort reordering, body animation, section-cover controls, presenter marking tools, and export/print controls. The milestone should implement these as scoped Markdown/rendering/playback capabilities, not as freeform HTML editing or office-suite automation.
+v1.8 completed the official-school presentation continuation path from v1.5 and v1.6. It closed the Phase 10 deferred scope through scoped Markdown/rendering/playback capabilities: playback-local presenter markup, peek and sorting exercises, restrained body animation, SmartArt/timeline/cards/gallery-style layout helpers, semantic icons, section controls, print/export review behavior, and one-click final PDF export. The milestone kept freeform HTML editing, hosted collaboration, and office-suite automation out of scope.
 
 ## Next Milestone Goals
 
-- Ship v1.8 as the next `school-presentation` improvement milestone.
-- Keep the existing Markdown logical-slide intermediate as the source of truth.
-- Preserve offline single-file HTML as the primary runtime output.
+- Define fresh requirements before opening the next milestone.
+- Keep the existing Markdown logical-slide intermediate as the source of truth for presentation work.
+- Preserve offline single-file HTML as the primary `school-presentation` runtime output unless a future milestone explicitly changes that contract.
 - Treat presenter annotations as playback-local state unless a later requirement explicitly asks for saved annotation artifacts.
 
 ## Constraints
@@ -116,7 +119,10 @@ v1.8 continues the official-school presentation path from v1.5 and v1.6. The imm
 | Add `school-presentation` as a school-style HTML presentation skill | User rejected unstable PPTX output and prefers Markdown-controlled, single-file HTML presentations with fixed layouts and school visual identity | Good - shipped in v1.5 Phase 8 |
 | Treat logical slides and physical pages separately | Users should edit one Markdown logical slide while the renderer splits overflow into additional HTML pages automatically | Good - shipped in v1.5 Phase 8 |
 | Defer marking and annotation tools from playback UX | The current milestone should focus on slide playback, preview, hierarchy, reveals, and answer masks before adding presenter markup controls | Good - shipped in v1.6 |
-| Resume `school-presentation` with deferred interaction and delivery features in v1.8 | The Phase 10 deferred scope is now the user's requested continuation path, and the v1.6 playback base has passed visual UAT | Pending |
+| Resume `school-presentation` with deferred interaction and delivery features in v1.8 | The Phase 10 deferred scope was the user's requested continuation path, and the v1.6 playback base had passed visual UAT | Good - shipped in v1.8 |
+| Keep presenter markup playback-local | Saved annotations would mutate the Markdown source and deterministic review artifacts, while the accepted v1.8 scope was live delivery support | Good - shipped in v1.8 Phase 14 |
+| Keep structured classroom syntax teacher-facing | `peek`, `timeline`, `cards`, `gallery`, and `smartart` are easier to edit and review than raw HTML or internal renderer names | Good - shipped in v1.8 Phase 15 |
+| Add one-click final PDF export inside the generated deck | Browser print alone could not reliably produce the accepted final artifact with outline/bookmarks and agenda links | Good - shipped in v1.8 Phase 16 |
 | Add an end-of-term teaching-materials skill | User requested a new skill for fixed-template teaching documents and tables submitted at semester end | Good - shipped in v1.7 |
 | Use data to Markdown to Typst to PDF for v1.7 | This preserves the repository's reviewable Markdown-first document workflow while supporting fixed templates and verification | Good - shipped in v1.7 |
 | Skip external research for v1.7 planning | The target follows already validated local document-skill patterns, so requirements can be defined from project context and the user's confirmed scope | Good - shipped in v1.7 |
@@ -140,4 +146,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-11 after v1.8 school-presentation milestone start*
+*Last updated: 2026-06-11 after v1.8 milestone archive*

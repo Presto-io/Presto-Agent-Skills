@@ -88,6 +88,48 @@
 
 ---
 
+## Milestone: v1.8 - School Presentation Continuation
+
+**Shipped:** 2026-06-11
+**Phases:** 3 | **Plans:** 3 | **Sessions:** 6+
+
+### What Was Built
+
+- Playback-local presenter markup tools with pointer, pen, highlighter, eraser, clear current page, page-scoped session state, and deterministic annotation exclusion.
+- Classroom interaction and structured layout helpers for peek, sorting, restrained body-step animation, timeline, cards, gallery, SmartArt-like process layouts, semantic icons, and section controls.
+- Print/export review behavior plus one-click final PDF export with expanded review states, reader outline/bookmarks, agenda links, section-page include/skip behavior, and v1.8 regression verification.
+
+### What Worked
+
+- Continuing from the Phase 10 deferred scope kept the milestone focused.
+- Browser/manual UAT gates were useful for live playback and final PDF control polish where manifest checks alone were not enough.
+- The existing `verify` command absorbed new regression checks without introducing a separate renderer or screenshot-first gate.
+
+### What Was Inefficient
+
+- The automatic `milestone.complete` summary under-counted v1.8 because the active roadmap had already been partially collapsed.
+- The final PDF path needed an extra product pass after browser print proved too indirect for the desired one-click workflow.
+- UI polish for the presenter and top controls needed manual visual acceptance, so code completion and phase close had to stay separate.
+
+### Patterns Established
+
+- Presenter annotations remain playback-local and page-scoped; authored Markdown, manifests, preview, overview, thumbnails, and deterministic review artifacts stay annotation-free.
+- Teacher-facing structured presentation syntax should stay readable and deterministic rather than exposing raw HTML.
+- Final PDF export can live inside the generated offline HTML deck while keeping PPTX/Keynote export out of scope.
+
+### Key Lessons
+
+1. Treat live UI phases as complete only after explicit human visual UAT.
+2. Re-run closeout archive outputs against the known phase range before trusting generated milestone statistics.
+3. Keep print/export review on the same offline HTML pipeline unless a future milestone explicitly changes the output contract.
+
+### Cost Observations
+
+- Model mix: balanced profile.
+- Notable: Most work stayed in one renderer and one deterministic verification command, but UI/PDF acceptance required several manual review loops.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -96,6 +138,7 @@
 |-----------|----------|--------|------------|
 | v1.0 | 3 | 3 | Established canonical-template-first documentation and deferred unused examples. |
 | v1.7 | 3+ | 3 | Added fixed-template document package generation with strict review gates and audit-driven closure. |
+| v1.8 | 6+ | 3 | Extended the school-presentation renderer through live markup, classroom structures, and one-click PDF export while preserving HTML-first delivery. |
 
 ### Cumulative Quality
 
@@ -103,9 +146,11 @@
 |-----------|-------|----------|-------------------|
 | v1.0 | Local Markdown and artifact checks | 9/9 v1 requirements shipped | 0 runtime dependencies added |
 | v1.7 | Script verifier, Typst/PDF compile when available, table/workbook repeatability, milestone audit | 8/8 ETM requirements shipped | Reused standard shell/Python workflow |
+| v1.8 | Script verifier, manifest checks, browser/manual UAT, PDF artifact sanity, milestone audit | 11/11 SP requirements shipped | Reused the existing shell/Python/HTML renderer path |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. Canonical source first, runtime notes second.
 2. Keep optional artifacts out until they have a real user.
 3. Preserve a reviewable Markdown checkpoint before final document exports.
+4. Keep live presentation UI closeout tied to explicit visual UAT, not only code or state-file completion.
