@@ -970,7 +970,7 @@ def render_gallery_block(block: dict[str, str], input_dir: Path, media_warnings:
         if not media:
             media = f'<div class="gallery-icon-panel">{structure_icon_html(item, title, "media")}</div>'
         cards.append(
-            '<article class="gallery-item">'
+            '<article class="gallery-item" data-print-review="gallery-card">'
             f'{media}<div class="gallery-copy"><h3>{inline_markdown(title)}</h3><p>{inline_markdown(item.get("body", ""))}</p></div></article>'
         )
     return f'<div class="structure-block gallery gallery-{variant}">{"".join(cards)}</div>'
@@ -1131,7 +1131,8 @@ def render_sort_block(block: dict[str, str]) -> str:
         )
     return (
         f'<div class="sort-list reveal-target reveal-kind-sort-final" '
-        f'data-reveal-order="{html.escape(final_order, quote=True)}" data-reveal-kind="sort-final">'
+        f'data-reveal-order="{html.escape(final_order, quote=True)}" '
+        f'data-reveal-kind="sort-final" data-print-sort-state="final">'
         + "".join(rows)
         + "</div>"
     )
@@ -1634,7 +1635,7 @@ def render_deck(input_path: Path, max_size_mb: int) -> tuple[str, dict[str, obje
             "logical_slides": [],
         }
         slides = section["slides"] if isinstance(section["slides"], list) else []
-        section_divider_inserted = True
+        section_divider_inserted = False
         for slide in slides:
             if not isinstance(slide, dict):
                 continue
@@ -1809,7 +1810,7 @@ def render_deck(input_path: Path, max_size_mb: int) -> tuple[str, dict[str, obje
     css = """
 :root{__RATIO_CSS__;--slide-design-width:1280px;--slide-design-height:calc(1280px / var(--slide-ratio));--slide-max-width:1280px;--rail-width:260px;--resizer-width:8px;--green:#579E40;--teal:#549183;--blue:#0084CC;--deep:#0E2841;--paper:#fff;--soft:#E8E8E8;--gold:#F2BA02;--line:#d8e6ec;--shadow:0 18px 42px rgba(14,40,65,.16)}
 *{box-sizing:border-box}body{margin:0;background:#eef3f5;color:var(--deep);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",Arial,sans-serif;letter-spacing:0;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-button{font:inherit;color:inherit}.app{height:100vh;display:grid;grid-template-rows:auto 1fr}.app[data-view="playback"]{display:block}.app[data-view="playback"] .app-top{display:none}.app-top{height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(10px);overflow:hidden}.brand-lockup{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:12px;min-width:0;max-width:min(620px,calc(100vw - 360px));height:100%}.brand-lockup img{width:42px;max-height:38px;object-fit:contain;box-shadow:none;border-radius:0;background:transparent}.brand-text{min-width:0;display:grid;gap:2px}.brand-title{display:block;color:#0056A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;font-size:15px}.brand-context{display:block;min-width:0;font-size:11px;line-height:1.2;color:#58717c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.icon-btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:7px 12px;cursor:pointer}.icon-btn.primary{background:linear-gradient(90deg,var(--green),var(--blue));color:#fff;border:0}.icon-btn.print-toggle[aria-pressed="false"]{background:#f6fafb;color:#60757e}.current-page-chip{min-width:78px;text-align:center;color:#0056A8;font-weight:700}
+button{font:inherit;color:inherit}.app{height:100vh;display:grid;grid-template-rows:auto 1fr}.app[data-view="playback"]{display:block}.app[data-view="playback"] .app-top{display:none}.app-top{height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(10px);overflow:hidden}.brand-lockup{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:12px;min-width:0;max-width:min(620px,calc(100vw - 520px));height:100%}.brand-lockup img{width:42px;max-height:38px;object-fit:contain;box-shadow:none;border-radius:0;background:transparent}.brand-text{min-width:0;display:grid;gap:2px}.brand-title{display:block;color:#0056A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;font-size:15px}.brand-context{display:block;min-width:0;font-size:11px;line-height:1.2;color:#58717c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.icon-btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:7px 12px;cursor:pointer}.icon-btn.primary{background:linear-gradient(90deg,var(--green),var(--blue));color:#fff;border:0}.icon-btn.print-toggle[aria-pressed="false"]{background:#f6fafb;color:#60757e}.icon-btn.print-review-mode[aria-pressed="true"]{border-color:rgba(0,132,204,.52);background:#eef8fc;color:#0056A8;box-shadow:inset 0 -3px 0 var(--blue)}.current-page-chip{min-width:78px;text-align:center;color:#0056A8;font-weight:700}
 .view{min-height:0}.view[hidden]{display:none!important}.workspace{display:grid;grid-template-columns:var(--rail-width) var(--resizer-width) minmax(0,1fr);height:calc(100vh - 56px);min-height:0}.thumbnail-rail{border-right:1px solid var(--line);background:#f8fbfc;overflow:auto;padding:12px}.rail-resizer{position:relative;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);background:linear-gradient(180deg,#f7fbfc,#edf4f6);cursor:col-resize;padding:0}.rail-resizer::before{content:"";position:absolute;left:50%;top:50%;width:3px;height:52px;border-radius:99px;background:linear-gradient(180deg,var(--green),var(--blue));transform:translate(-50%,-50%);opacity:.55}.rail-resizer:hover::before,.rail-resizer.is-dragging::before{opacity:1}.drawer-handle{display:none}.rail-section{margin:0 0 16px;min-width:0}.rail-section-title{margin:0 0 8px;font-size:12px;color:#0056A8;text-transform:none}.rail-logical-title{margin:10px 0 6px;font-size:13px;color:#466;font-weight:700}.rail-pages{display:grid;gap:10px;min-width:0}.thumb-item{position:relative;display:block;width:100%;min-width:0;max-width:100%;overflow:visible;border:0;background:transparent;border-radius:6px;padding:0;text-align:left;cursor:pointer}.thumb-item[aria-current="true"],.thumb-item.is-active{outline:2px solid var(--blue);outline-offset:2px;background:#fff;box-shadow:0 8px 20px rgba(0,132,204,.12)}html.hide-section-dividers [data-section-divider-entry="true"]{display:none!important}.thumb-label{position:absolute;left:5px;top:5px;z-index:4;min-width:42px;font-size:11px;font-weight:800;color:#fff;background:var(--green);border-radius:4px;text-align:center;padding:4px 6px;box-shadow:0 2px 6px rgba(14,40,65,.18)}.thumb-real{position:relative;display:grid;place-items:center;width:100%;min-width:0;max-width:100%;aspect-ratio:var(--slide-aspect);overflow:hidden;border:1px solid var(--line);border-radius:5px;background:#fff;pointer-events:none}.thumb-real .slide-scale-shell,.overview-tile .slide-scale-shell{max-width:100%;max-height:100%;overflow:hidden}.thumb-real .slide,.overview-tile .slide{overflow:hidden}.thumb-card{display:none;aspect-ratio:var(--slide-aspect);border:1px solid var(--line);border-radius:5px;background:linear-gradient(135deg,#fff,#edf7fb);padding:8px;overflow:hidden;pointer-events:none}.thumb-card span{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:var(--blue);border-radius:3px;padding:2px 6px}.thumb-card strong{display:block;margin-top:8px;font-size:12px;line-height:1.22;color:#0056A8}.thumb-card em{display:block;margin-top:4px;font-style:normal;font-size:10px;color:#60757e}.thumb-card i{display:block;margin-top:8px;height:5px;background:linear-gradient(90deg,var(--green),var(--blue),var(--gold));border-radius:99px}.layout-cover.thumb-card,.layout-section.thumb-card{background:linear-gradient(135deg,var(--green),var(--blue));color:#fff}.layout-cover.thumb-card strong,.layout-cover.thumb-card em,.layout-section.thumb-card strong,.layout-section.thumb-card em{color:#fff}.layout-agenda.thumb-card{background:linear-gradient(135deg,#fff 0 68%,#edf8f6 68%);color:var(--deep);border-top:4px solid var(--blue)}.layout-agenda.thumb-card span{background:var(--green)}.layout-agenda.thumb-card strong{color:#0056A8}.layout-agenda.thumb-card em{color:#60757e}.layout-table.thumb-card{background:repeating-linear-gradient(180deg,#fff 0 17px,#e9f4f7 17px 18px)}.layout-chart.thumb-card i{height:22px;background:linear-gradient(90deg,var(--green) 68%,#e4f0f4 68%)}.layout-media-right.thumb-card,.layout-media-left.thumb-card{background:linear-gradient(90deg,#fff 0 54%,#dfeff4 54%)}.layout-quote.thumb-card{background:linear-gradient(135deg,#fff 0 76%,#f9e9a8 76%)}.layout-closing.thumb-card{background:linear-gradient(135deg,#fff 0 45%,var(--blue) 45%,var(--green) 72%,#fff 72%)}
 .preview-pane{min-width:0;display:grid;grid-template-rows:1fr auto;padding:18px;gap:12px;overflow:hidden}.preview-stage{place-self:stretch;width:100%;height:100%;min-height:0;display:grid;place-items:center;overflow:hidden}.preview-stage,.playback-stage{position:relative}.slide-scale-shell{position:relative;width:var(--scaled-slide-width,var(--slide-design-width));height:var(--scaled-slide-height,var(--slide-design-height));overflow:hidden;background:#fff;contain:paint}.preview-stage .slide-scale-shell,.playback-stage .slide-scale-shell{box-shadow:var(--shadow);outline:1px solid rgba(14,40,65,.18);outline-offset:0}.thumb-real .slide-scale-shell{outline:0;box-shadow:none}.preview-stage.is-transitioning .slide-scale-shell,.playback-stage.is-transitioning .slide-scale-shell{transition:opacity .18s ease}.preview-stage.is-fade-out .slide-scale-shell,.playback-stage.is-fade-out .slide-scale-shell{opacity:.82}.preview-stage.is-fade-in .slide-scale-shell,.playback-stage.is-fade-in .slide-scale-shell{animation:stageFadeIn .18s ease both}@keyframes stageFadeIn{from{opacity:.82}to{opacity:1}}.slide-scale-shell .slide,.annotation-layer{position:absolute;left:0;top:0;width:var(--slide-design-width);height:var(--slide-design-height);max-width:none;transform:scale(var(--stage-scale,1));transform-origin:top left}.slide-scale-shell .slide{pointer-events:none}.annotation-layer{z-index:9;overflow:visible;pointer-events:none}.annotation-layer path{fill:none;stroke-linecap:round;stroke-linejoin:round}.markup-live-pointer{position:fixed;left:0;top:0;z-index:95;width:11px;height:11px;border:0;border-radius:50%;background:#ff2d2d;box-shadow:0 0 0 6px rgba(255,45,45,.22),0 0 24px 8px rgba(255,45,45,.55),0 8px 22px rgba(0,0,0,.28);pointer-events:none;opacity:0;transform:translate(-50%,-50%) scale(.74);transition:opacity .08s,transform .08s}.markup-live-pointer.is-visible{opacity:1;transform:translate(-50%,-50%) scale(1)}.preview-meta{display:flex;align-items:center;justify-content:space-between;color:#4f6874;font-size:13px}.overview{height:calc(100vh - 56px);overflow:auto;padding:20px 24px;background:#f4f8fa}.overview-toolbar{display:flex;align-items:center;justify-content:space-between;margin:0 0 18px}.overview-grid{display:grid;gap:22px}.section-group{border-top:4px solid var(--blue);background:#fff;padding:14px;border-radius:8px;box-shadow:0 10px 28px rgba(14,40,65,.08)}.section-title{margin:0 0 12px;color:#0056A8}.overview-pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:14px}.overview-tile{display:grid;grid-template-columns:1fr;grid-template-rows:auto auto auto;align-content:start;gap:7px;border:1px solid #d8e6ec;border-radius:8px;background:#fff;padding:10px;text-align:left;cursor:pointer;box-shadow:0 8px 20px rgba(14,40,65,.06)}.overview-tile.section-first{border-top:4px solid var(--green)}.overview-tile[aria-current="true"],.overview-tile.is-active{border-color:var(--blue);box-shadow:0 10px 28px rgba(0,132,204,.15)}.overview-tile>.thumb-label{display:none}.overview-tile .thumb-real{width:100%;border-radius:6px;border-color:#cfe2ea;background:#f8fbfc}.overview-tile b{display:block;min-width:0;margin-top:1px;font-size:13px;line-height:1.22;color:#0056A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.overview-tile>span:not(.thumb-label){display:block;font-size:11px;line-height:1.15;color:#60757e}.playback{position:fixed;inset:0;z-index:50;height:100vh;background:#071923;display:grid;place-items:center;cursor:none}.playback-stage{width:100vw;height:100vh;display:grid;place-items:center;overflow:hidden;pointer-events:none}.playback.markup-drawing .playback-stage{pointer-events:auto}.playback.markup-drawing .playback-zone{pointer-events:none}.progress{position:fixed;left:0;right:0;top:0;height:4px;background:rgba(255,255,255,.18);z-index:80}.progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--green),var(--blue));transition:width .2s}.playback-zone{position:fixed;top:0;bottom:0;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:transparent!important;appearance:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;cursor:pointer;z-index:60}.playback-zone:focus,.playback-zone:focus-visible,.playback-zone:active{border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:transparent!important}.playback-zone.prev{left:0;width:25vw}.playback-zone.center{left:25vw;width:50vw}.playback-zone.next{right:0;width:25vw}.playback-toolbar{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-50%,10px) scale(.96);display:flex;align-items:center;gap:6px;padding:7px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(8,25,35,.72);backdrop-filter:blur(18px) saturate(140%);box-shadow:0 18px 48px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.18);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:85}.playback-control,.playback-exit,.playback-page-pill{height:38px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}.playback-control{width:38px;display:grid;place-items:center;padding:0;font-size:24px;line-height:1;cursor:pointer}.playback-control:hover,.playback-exit:hover{background:rgba(255,255,255,.18)}.playback-page-pill{display:grid;place-items:center;min-width:64px;padding:0 14px;font-weight:800;color:#fff;background:linear-gradient(90deg,rgba(87,158,64,.86),rgba(0,132,204,.86));letter-spacing:0}.playback-exit{padding:0 14px;font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer}.playback.show-ui{cursor:default}.playback.show-ui .playback-toolbar{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}.markup-palette{position:fixed;z-index:90;display:flex;align-items:center;gap:7px;width:auto;max-width:340px;min-width:52px;min-height:52px;overflow:visible;padding:8px;border:1px solid rgba(255,255,255,.34);border-radius:999px;background:linear-gradient(135deg,rgba(255,255,255,.24),rgba(255,255,255,.08)),rgba(18,28,36,.48);backdrop-filter:blur(24px) saturate(180%);box-shadow:0 20px 54px rgba(0,0,0,.34),0 0 0 1px rgba(255,255,255,.1),inset 0 1px 1px rgba(255,255,255,.42),inset 0 -10px 22px rgba(255,255,255,.07);opacity:0;pointer-events:none;transition:opacity .18s ease,transform .2s cubic-bezier(.22,1,.36,1),max-width .24s cubic-bezier(.22,1,.36,1),min-width .24s cubic-bezier(.22,1,.36,1),padding .24s cubic-bezier(.22,1,.36,1),gap .24s cubic-bezier(.22,1,.36,1);transform-origin:50% 100%;will-change:max-width,min-width,transform,opacity}.markup-palette.is-switching{transition:opacity .18s ease,max-width .24s cubic-bezier(.22,1,.36,1),min-width .24s cubic-bezier(.22,1,.36,1),padding .24s cubic-bezier(.22,1,.36,1),gap .24s cubic-bezier(.22,1,.36,1)}.playback.show-ui .markup-palette,.markup-palette:focus-within,.markup-palette.is-settling{opacity:1;pointer-events:auto}.markup-palette[data-placement="lower-left"]{left:max(22px,env(safe-area-inset-left));bottom:max(22px,env(safe-area-inset-bottom));transform:translate(-8px,8px)}.markup-palette[data-placement="lower-right"]{right:max(22px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));transform:translate(8px,8px)}.playback.show-ui .markup-palette[data-placement="lower-left"],.playback.show-ui .markup-palette[data-placement="lower-right"],.markup-palette[data-placement="lower-left"]:focus-within,.markup-palette[data-placement="lower-right"]:focus-within{transform:translate(0,0)}.markup-tool,.markup-clear-page{width:36px;height:36px;min-width:36px;flex:0 0 36px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);border-radius:50%;background:rgba(255,255,255,.1);color:#fff;font-size:17px;line-height:1;cursor:pointer;transition:opacity .18s ease,transform .22s cubic-bezier(.22,1,.36,1),background .16s ease,box-shadow .16s ease}.markup-tool:hover,.markup-clear-page:hover,.markup-tool[aria-pressed="true"]{background:rgba(255,255,255,.22)}.markup-tool-pointer[aria-pressed="true"]{box-shadow:inset 0 -3px 0 #ff2d2d}.markup-tool-pen[aria-pressed="true"]{box-shadow:inset 0 -3px 0 #ff5a5f}.markup-tool-highlighter[aria-pressed="true"]{box-shadow:inset 0 -3px 0 #F2BA02}.markup-tool-eraser[aria-pressed="true"]{box-shadow:inset 0 -3px 0 #fff}.markup-divider{width:1px;min-width:1px;flex:0 0 1px;height:24px;background:rgba(255,255,255,.18);transition:opacity .18s ease,transform .22s cubic-bezier(.22,1,.36,1)}
 .playback.agenda-interactive .playback-stage{pointer-events:auto}.playback.agenda-interactive .playback-zone{pointer-events:none}.playback.agenda-interactive .slide-scale-shell .slide{pointer-events:auto}.playback.agenda-interactive .agenda-list li{pointer-events:auto}
@@ -1862,9 +1863,11 @@ figure{margin:24px 0;max-width:100%;display:grid;justify-items:center;align-cont
 .gallery-compare{display:block;column-count:4;column-gap:12px;max-height:500px;overflow-y:auto;overflow-x:hidden;padding:2px 8px 8px 2px;scrollbar-gutter:stable;background:linear-gradient(180deg,rgba(238,247,251,.55),rgba(255,255,255,0));border-radius:7px}.gallery-compare .gallery-item{display:inline-block;width:100%;margin:0 0 12px;break-inside:avoid;page-break-inside:avoid}.gallery-compare .structure-media,.gallery-compare .gallery-icon-panel{height:118px}.gallery-compare .gallery-copy{padding:10px 12px}.gallery-compare h3{font-size:20px!important;line-height:1.08;margin-bottom:4px!important}.gallery-compare p{font-size:16px;line-height:1.18}
 .gallery-compare .gallery-item{grid-template-rows:auto minmax(0,auto);overflow:visible}.gallery-compare .structure-media{position:static!important;display:block;height:auto!important;min-height:0!important;overflow:visible!important;background:#eef7fb;border-bottom:1px solid #dceaf0}.gallery-compare .structure-media img{position:static!important;inset:auto!important;display:block;width:100%!important;height:auto!important;max-width:100%!important;max-height:none!important;object-fit:contain!important;padding:0!important}.gallery-compare .gallery-icon-panel{height:auto;min-height:118px}
 .slide-footer{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:2;pointer-events:none}.slide-footer::before{content:"";position:absolute;left:16px;right:0;top:-2px;height:2px;background:linear-gradient(90deg,rgba(87,158,64,.85),rgba(0,132,204,.45),transparent)}.footer-band{display:block;width:100%;height:auto;max-height:none;object-fit:fill;box-shadow:none;border-radius:0;background:transparent}.footer-logo{position:absolute;left:3.4%;bottom:12%;width:13.5%;min-width:118px;max-width:178px;height:auto;box-shadow:none;border-radius:0;background:transparent}
-@media print{body{overflow:visible}.app-top,.thumbnail-rail,.rail-resizer,.drawer-handle,.preview-meta,.overview,.playback,.page-source{display:none!important}.workspace{display:block;height:auto}.preview-stage{width:100%;display:block}.slide-scale-shell{width:100%;height:auto}.slide-scale-shell .slide{position:relative;transform:none}.preview-stage .slide{page-break-after:always;width:100%;height:auto;box-shadow:none}html.skip-section-dividers .slide[data-section-divider="true"]{display:none!important}}@media(max-width:1040px){:root{--rail-width:230px}.preview-pane{padding:14px}.brand-lockup{max-width:calc(100vw - 230px);grid-template-columns:38px minmax(0,1fr)}.brand-lockup img{width:38px;max-height:34px}.brand-context{display:none}.top-actions .icon-btn{padding:7px 10px}.thumb-label{font-size:11px}}@media(max-width:680px){body{overflow:hidden}.app-top{position:sticky;top:0;z-index:40;padding:0 10px}.workspace{grid-template-columns:1fr;height:calc(100vh - 56px);overflow:hidden}.thumbnail-rail{position:fixed;left:0;top:56px;bottom:0;width:min(84vw,330px);max-width:calc(100vw - 44px);z-index:45;border-right:1px solid var(--line);border-bottom:0;box-shadow:18px 0 46px rgba(14,40,65,.22);transform:translateX(calc(-100% - 2px));transition:transform .24s cubic-bezier(.22,1,.36,1);max-height:none}.app.rail-open .thumbnail-rail{transform:translateX(0)}.rail-resizer{display:none}.drawer-handle{position:fixed;left:0;top:50%;z-index:46;display:grid;place-items:center;width:34px;height:76px;border:1px solid rgba(0,132,204,.28);border-left:0;border-radius:0 16px 16px 0;background:linear-gradient(180deg,var(--green),var(--blue));color:#fff;font-weight:850;box-shadow:0 10px 28px rgba(14,40,65,.24);transform:translateY(-50%);cursor:pointer}.drawer-handle::before{content:"☰";font-size:20px;line-height:1}.app.rail-open .drawer-handle{left:min(84vw,330px);transform:translate(-34px,-50%);border-radius:16px;background:rgba(14,40,65,.86);backdrop-filter:blur(12px)}.preview-pane{height:100%;min-height:0;padding:12px 10px 10px}.preview-meta{font-size:12px}.thumb-real{display:none}.thumb-card{display:block}.overview{height:auto}.brand-title{font-size:13px}.current-page-chip{min-width:46px}.top-actions{gap:5px}.top-actions .icon-btn{padding:7px 8px}}
+html.print-review-mode .annotation-layer,html.print-review-mode .markup-palette,html.print-review-mode .markup-live-pointer,html.print-review-mode .laser-trail-layer{display:none!important}html.print-review-mode .reveal-kind-reveal,html.print-review-mode .reveal-kind-animate{visibility:visible!important}html.print-review-mode .reveal-kind-mask>.reveal-content,html.print-review-mode .reveal-kind-reveal>.reveal-content{visibility:visible!important}html.print-review-mode .reveal-kind-mask::after,html.print-review-mode .reveal-kind-reveal::after{display:none!important}html.print-review-mode .reveal-kind-emphasis,html.print-review-mode .emphasis-underline{text-decoration:underline;text-decoration-thickness:5px;text-decoration-color:rgba(242,186,2,.88);text-underline-offset:7px;background:rgba(87,158,64,.08);border-radius:4px}html.print-review-mode .sort-list[data-print-sort-state="final"] .sort-item{order:var(--sort-order);background:#f4fbf2;border-color:rgba(87,158,64,.62)}html.print-review-mode .gallery-item{break-inside:avoid;page-break-inside:avoid}.print-review-mode-hint{display:none;margin:0 0 10px;padding:8px 12px;border:1px solid rgba(0,132,204,.24);border-left:5px solid var(--blue);border-radius:6px;background:#eef8fc;color:#00506f;font-size:13px;line-height:1.25}html.print-review-mode .print-review-mode-hint{display:block}
+@media print{@page{size:__PRINT_PAGE_WIDTH_IN__in 9in;margin:0}body{overflow:visible;background:#fff}.app-top,.thumbnail-rail,.rail-resizer,.drawer-handle,.preview-meta,.overview,.playback,.workspace,.preview-stage,.annotation-layer,.markup-palette,.markup-live-pointer,.laser-trail-layer{display:none!important}.page-source,.page-source[hidden]{display:block!important}.page-source .slide{position:relative;display:grid!important;width:100%;max-width:none;aspect-ratio:var(--slide-aspect);height:auto;min-height:0;overflow:hidden;box-shadow:none;page-break-after:always;break-after:page}.page-source .slide:last-child{page-break-after:auto;break-after:auto}.page-source .reveal-kind-reveal,.page-source .reveal-kind-animate{visibility:visible!important}.page-source .reveal-kind-mask>.reveal-content,.page-source .reveal-kind-reveal>.reveal-content{visibility:visible!important}.page-source .reveal-kind-mask::after,.page-source .reveal-kind-reveal::after{display:none!important}.page-source .reveal-kind-emphasis,.page-source .emphasis-underline{text-decoration:underline!important;text-decoration-thickness:5px;text-decoration-color:rgba(242,186,2,.9);text-underline-offset:7px;background:rgba(87,158,64,.08);border-radius:4px}.page-source .sort-list[data-print-sort-state="final"] .sort-item{order:var(--sort-order);background:#f4fbf2;border-color:rgba(87,158,64,.62)}.page-source .gallery,.page-source .gallery-compare{max-height:none;overflow:visible}.page-source .gallery-item,.page-source .board-card,.page-source .timeline-card,.page-source .smartart-item{break-inside:avoid;page-break-inside:avoid}html.skip-section-dividers .page-source .slide[data-section-divider="true"]{display:none!important}}@media(max-width:1040px){:root{--rail-width:230px}.preview-pane{padding:14px}.brand-lockup{max-width:calc(100vw - 230px);grid-template-columns:38px minmax(0,1fr)}.brand-lockup img{width:38px;max-height:34px}.brand-context{display:none}.top-actions .icon-btn{padding:7px 10px}.thumb-label{font-size:11px}}@media(max-width:680px){body{overflow:hidden}.app-top{position:sticky;top:0;z-index:40;padding:0 10px}.workspace{grid-template-columns:1fr;height:calc(100vh - 56px);overflow:hidden}.thumbnail-rail{position:fixed;left:0;top:56px;bottom:0;width:min(84vw,330px);max-width:calc(100vw - 44px);z-index:45;border-right:1px solid var(--line);border-bottom:0;box-shadow:18px 0 46px rgba(14,40,65,.22);transform:translateX(calc(-100% - 2px));transition:transform .24s cubic-bezier(.22,1,.36,1);max-height:none}.app.rail-open .thumbnail-rail{transform:translateX(0)}.rail-resizer{display:none}.drawer-handle{position:fixed;left:0;top:50%;z-index:46;display:grid;place-items:center;width:34px;height:76px;border:1px solid rgba(0,132,204,.28);border-left:0;border-radius:0 16px 16px 0;background:linear-gradient(180deg,var(--green),var(--blue));color:#fff;font-weight:850;box-shadow:0 10px 28px rgba(14,40,65,.24);transform:translateY(-50%);cursor:pointer}.drawer-handle::before{content:"☰";font-size:20px;line-height:1}.app.rail-open .drawer-handle{left:min(84vw,330px);transform:translate(-34px,-50%);border-radius:16px;background:rgba(14,40,65,.86);backdrop-filter:blur(12px)}.preview-pane{height:100%;min-height:0;padding:12px 10px 10px}.preview-meta{font-size:12px}.thumb-real{display:none}.thumb-card{display:block}.overview{height:auto}.brand-title{font-size:13px}.current-page-chip{min-width:46px}.top-actions{gap:5px}.top-actions .icon-btn{padding:7px 8px}}
 """
     css = css.replace("__RATIO_CSS__", f"--slide-aspect:{page_ratio_width} / {page_ratio_height};--slide-ratio:{page_ratio_value:.8f}")
+    css = css.replace("__PRINT_PAGE_WIDTH_IN__", f"{9 * page_ratio_value:.6g}")
     css = css.replace("__CLOSING_BG__", closing_bg_uri)
     css = css.replace("__WAVE_TOP__", wave_top_uri)
     rail_parts: list[str] = []
@@ -1912,6 +1915,8 @@ let transitionSerial = 0;
 let manualRevealKeys = new Set();
 let revealActionHistory = new Map();
 let showSectionDividers = true;
+let printReviewMode = false;
+let includePrintSectionDividers = true;
 let activeMarkupTool = 'none';
 let markupPalettePlacement = 'lower-right';
 let markupPaletteCollapsed = false;
@@ -2967,8 +2972,34 @@ function initRailControls() {{
   document.getElementById('drawer-handle')?.addEventListener('click', toggleRailDrawer);
 }}
 
+function setPrintReviewMode(enabled) {{
+  printReviewMode = Boolean(enabled);
+  document.documentElement.classList.toggle('print-review-mode', printReviewMode);
+  document.documentElement.dataset.printReviewMode = printReviewMode ? 'enabled' : 'disabled';
+  const button = document.getElementById('review-print-toggle');
+  if (button) {{
+    button.setAttribute('aria-pressed', printReviewMode ? 'true' : 'false');
+    button.textContent = printReviewMode ? '退出审阅' : '打印审阅';
+  }}
+  fitVisibleStages();
+}}
+
+function togglePrintReviewMode() {{
+  setPrintReviewMode(!printReviewMode);
+}}
+
 function setPrintSectionDividers(include) {{
-  document.documentElement.classList.toggle('skip-section-dividers', !include);
+  includePrintSectionDividers = Boolean(include);
+  document.documentElement.classList.toggle('skip-section-dividers', !includePrintSectionDividers);
+  const button = document.getElementById('print-section-divider-toggle');
+  if (button) {{
+    button.setAttribute('aria-pressed', includePrintSectionDividers ? 'true' : 'false');
+    button.textContent = includePrintSectionDividers ? '打印含章节页' : '打印跳过章节页';
+  }}
+}}
+
+function togglePrintSectionDividers() {{
+  setPrintSectionDividers(!includePrintSectionDividers);
 }}
 
 function setSectionDividersVisible(visible, persist = true) {{
@@ -3002,6 +3033,11 @@ function initSectionDividerControls() {{
     if (stored === '0') visible = false;
   }} catch (error) {{}}
   setSectionDividersVisible(visible, false);
+}}
+
+function initPrintReviewControls() {{
+  setPrintReviewMode(false);
+  setPrintSectionDividers(true);
 }}
 
 function setActiveState(page) {{
@@ -3407,6 +3443,7 @@ window.addEventListener('hashchange', selectFromHash);
 renderThumbnailClones();
 initRailControls();
 initSectionDividerControls();
+initPrintReviewControls();
 updateMarkupPaletteState();
 window.addEventListener('resize', () => {{
   if (!isMobileRailMode()) closeRailDrawer();
@@ -3448,6 +3485,9 @@ fitVisibleStages();
         "<header class=\"app-top\">"
         f"<div class=\"brand-lockup\"><img src=\"{header_icon_uri}\" alt=\"school emblem\"><div class=\"brand-text\"><strong class=\"brand-title\">{html.escape(title)}</strong><span class=\"brand-context\"><span data-current-section-title></span> / <span data-current-logical-title></span></span></div></div>"
         "<div class=\"top-actions\"><span class=\"current-page-chip\" data-current-page-label></span>"
+        "<button id=\"review-print-toggle\" class=\"icon-btn print-toggle print-review-mode\" type=\"button\" onclick=\"togglePrintReviewMode()\" aria-pressed=\"false\">打印审阅</button>"
+        "<button id=\"print-section-divider-toggle\" class=\"icon-btn print-toggle\" type=\"button\" onclick=\"togglePrintSectionDividers()\" aria-pressed=\"true\" data-print-control=\"include-section-dividers skip-section-dividers\">打印含章节页</button>"
+        "<button id=\"section-divider-toggle\" class=\"icon-btn print-toggle\" type=\"button\" onclick=\"toggleSectionDividers()\" aria-pressed=\"true\">隐藏章节页</button>"
         "<button class=\"icon-btn\" type=\"button\" onclick=\"showOverview()\">预览</button>"
         "<button class=\"icon-btn primary\" type=\"button\" onclick=\"showPlayback()\">放映</button></div>"
         "</header>"
@@ -3455,7 +3495,7 @@ fitVisibleStages();
         "<aside class=\"thumbnail-rail\" aria-label=\"thumbnail rail\">" + "".join(rail_parts) + "</aside>"
         "<button id=\"rail-resizer\" class=\"rail-resizer\" type=\"button\" aria-label=\"拖动调整缩略图栏宽度\"></button>"
         "<button id=\"drawer-handle\" class=\"drawer-handle\" type=\"button\" aria-label=\"打开或收起缩略图栏\"></button>"
-        "<section class=\"preview-pane\"><div id=\"preview-stage\" class=\"preview-stage\" aria-live=\"polite\"></div><div class=\"preview-meta\"><span data-current-section-title></span><strong data-current-page-label></strong></div></section>"
+        "<section class=\"preview-pane\"><div class=\"print-review-mode-hint\" role=\"status\">打印审阅模式会在浏览器打印或导出 PDF 时展开揭示、显示遮罩答案、保留下划线强调、使用排序最终顺序，并默认排除放映标注。</div><div id=\"preview-stage\" class=\"preview-stage\" aria-live=\"polite\"></div><div class=\"preview-meta\"><span data-current-section-title></span><strong data-current-page-label></strong></div></section>"
         "</main>"
         "<section id=\"overview\" class=\"overview view\" hidden><div class=\"overview-toolbar\"><h1>预览</h1><button class=\"icon-btn\" type=\"button\" onclick=\"showWorkspace()\">返回</button></div><div class=\"overview-grid\">"
         + "".join(overview_parts) + "</div></section>"
@@ -3564,6 +3604,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
     m2 = cmd_render(argparse.Namespace(input=str(sample), html=str(second), manifest=str(second_manifest), max_size_mb=args.max_size_mb))
     stable = first.read_bytes() == second.read_bytes()
     first_html = first.read_text(encoding="utf-8")
+    sample_text = sample.read_text(encoding="utf-8")
 
     hierarchy_verified = False
     reveal_verified = False
@@ -3755,11 +3796,48 @@ def cmd_verify(args: argparse.Namespace) -> None:
         "activePeek",
         "playbackHoverTrigger",
         "spaceHoldTrigger",
+        "reviewPrintRuntimeState",
     ]
     classroom_structure_verified = (
         all(token in first_html for token in classroom_structure_tokens)
-        and all(term in sample.read_text(encoding="utf-8") for term in classroom_fixture_terms)
+        and all(term in sample_text for term in classroom_fixture_terms)
         and not any(token in first_manifest_text or token in second_manifest_text for token in runtime_state_tokens)
+    )
+    print_review_tokens = [
+        "review-print-toggle",
+        "print-review-mode",
+        "data-print-control=\"include-section-dividers skip-section-dividers\"",
+        "skip-section-dividers",
+        "section-divider-toggle",
+        "data-print-optional",
+        "@media print",
+        ".page-source,.page-source[hidden]",
+        ".page-source .reveal-kind-mask>.reveal-content",
+        ".page-source .reveal-kind-emphasis",
+        "data-print-sort-state=\"final\"",
+        ".page-source .sort-list[data-print-sort-state=\"final\"] .sort-item",
+        "data-print-review=\"gallery-card\"",
+        "break-inside:avoid",
+        "page-break-inside:avoid",
+    ]
+    print_fixture_terms = [
+        "打印或静态审阅",
+        "排序列表展示示例",
+        "过长内容自动拆页示例",
+        "::: gallery variant=compare",
+    ]
+    offline_single_file_verified = (
+        "<style>" in first_html
+        and "<script>" in first_html
+        and "src=\"http" not in first_html
+        and "href=\"http" not in first_html
+        and "cdn." not in first_html.lower()
+    )
+    print_review_verified = (
+        all(token in first_html for token in print_review_tokens)
+        and all(term in sample_text for term in print_fixture_terms)
+        and not any(token in first_manifest_text or token in second_manifest_text for token in runtime_state_tokens)
+        and offline_single_file_verified
     )
     thumbnail_ratio_verified = (
         ".thumb-item{position:relative;display:block;width:100%" in first_html
@@ -3810,6 +3888,20 @@ split: auto
         and len(flat_sections[0].get("logical_slides", [])) == 2
     )
 
+    ratio43_sample = workdir / "school-presentation-4x3.md"
+    ratio43_html = workdir / "school-presentation-4x3.html"
+    ratio43_manifest_path = workdir / "school-presentation-4x3.manifest.json"
+    write_text(ratio43_sample, sample_text.replace('page_ratio: "16:9"', 'page_ratio: "4:3"', 1))
+    ratio43_manifest = cmd_render(argparse.Namespace(input=str(ratio43_sample), html=str(ratio43_html), manifest=str(ratio43_manifest_path), max_size_mb=args.max_size_mb))
+    ratio43_html_text = ratio43_html.read_text(encoding="utf-8")
+    ratio43_verified = (
+        ratio43_manifest.get("page_ratio") == "4:3"
+        and "--slide-aspect:4 / 3;--slide-ratio:1.33333333" in ratio43_html_text
+        and "aspect-ratio:var(--slide-aspect)" in ratio43_html_text
+        and all(token in ratio43_html_text for token in print_review_tokens)
+        and bool(ratio43_manifest.get("under_size_cap"))
+    )
+
     passed = (
         stable
         and bool(m1.get("under_size_cap"))
@@ -3819,6 +3911,9 @@ split: auto
         and workspace_verified
         and presenter_markup_verified
         and classroom_structure_verified
+        and print_review_verified
+        and ratio43_verified
+        and offline_single_file_verified
         and thumbnail_ratio_verified
         and flat_slide_compat_verified
     )
@@ -3830,6 +3925,9 @@ split: auto
         "workspace_verified": workspace_verified,
         "presenter_markup_verified": presenter_markup_verified,
         "classroom_structure_verified": classroom_structure_verified,
+        "print_review_verified": print_review_verified,
+        "ratio_4x3_verified": ratio43_verified,
+        "offline_single_file_verified": offline_single_file_verified,
         "thumbnail_ratio_verified": thumbnail_ratio_verified,
         "flat_slide_compat_verified": flat_slide_compat_verified,
         "first_sha256": m1.get("html_sha256"),
@@ -3848,6 +3946,9 @@ split: auto
             str(flat_sample),
             str(flat_html),
             str(flat_manifest_path),
+            str(ratio43_sample),
+            str(ratio43_html),
+            str(ratio43_manifest_path),
         ],
     }
     write_text(workdir / "verification-manifest.json", json.dumps(verification, ensure_ascii=False, indent=2) + "\n")

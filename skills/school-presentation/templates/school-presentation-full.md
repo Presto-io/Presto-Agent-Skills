@@ -389,6 +389,32 @@ split: false
 - [order=3] 空载试车并观察动作。
 :::
 
+### Slide: 打印审阅风险页
+
+<!-- slide
+layout: content
+intent: expose print review reveal mask emphasis and final sort behavior
+split: auto
+icon: review
+-->
+
+这一页专门用于浏览器打印或 PDF 审阅：打印审阅模式应展开 reveal、显示遮罩答案、保留下划线强调，并按最终顺序呈现排序练习。
+
+::: reveal order=1
+审阅者应能直接看到本段 reveal 内容，而不是只看到播放态占位。
+:::
+
+关键结论：{{mask order=2}}通电前必须先完成安全复核{{/mask}}。
+
+- {{emphasis order=3}}正确做法：先复核急停、接地和绝缘测试。{{/emphasis}}
+- 干扰项：只看设备指示灯。
+
+::: sort final_order=4
+- [order=3] 教师复核后空载试车。
+- [order=1] 检查急停和保护接地。
+- [order=2] 完成绝缘测试并记录结果。
+:::
+
 ### Slide: 教师提示 Peek 卡片
 
 <!-- slide
@@ -458,6 +484,9 @@ split: auto
 - [title="环境照片" image="media/风景.webp"] 观察工位布局和通道留白。
 - [title="作品局部" image="media/猫猫.png"] 检查主体是否按 contain 方式完整呈现。
 - [title="讲解素材" image="media/AI人像.jpg" icon=none] 验证 item-level `icon=none` 不生成结构图标。
+- [title="过程记录" image="media/风景.webp"] 用重复素材验证 gallery 卡片级打印分页。
+- [title="复核样张" image="media/猫猫.png"] 确认单张卡片不会被 PDF 分页截断。
+- [title="归档封面" image="media/AI人像.jpg"] 保留标题、图片和说明在同一卡片内。
 :::
 
 ### Slide: 过程 SmartArt 版式
