@@ -59,7 +59,7 @@ completed: 2026-06-11
 
 - Connected `::: peek :::`, `::: timeline :::`, `::: cards :::`, `::: gallery :::`, and `::: smartart type=... :::` to existing renderer helpers.
 - Preserved sorting, reveal, mask, emphasis, presenter markup, and click-based playback behavior while keeping peek as supplemental hover/click content.
-- Added fixture coverage for peek, sorting, `animate: step`, timeline, cards, gallery compare, five smartart types, title icons, item icons, and `icon=none`.
+- Added fixture coverage for peek, sorting, `animate: step`, timeline, cards, gallery compare, four smartart types, title icons, item icons, and `icon=none`.
 - Extended `verify` to write `classroom_structure_verified: true` only when rendered HTML contains Phase 15 tokens and manifests omit runtime-only peek/markup state.
 - Updated canonical skill documentation with syntax, defaults, verification expectations, runtime-neutral boundaries, and deferred Phase 16 scope.
 
@@ -104,7 +104,7 @@ The generated verification manifest reports:
 - `classroom_structure_verified: true`
 - repeatable HTML hashes across two renders
 
-Manual artifact review is still recommended for the generated deck at `/tmp/school-presentation-phase15-verify/school-presentation-first.html`, especially peek hover/click feel and fixed-canvas readability of structured layouts.
+Manual artifact review passed for `/tmp/school-presentation-phase15-verify/school-presentation-first.html` on 2026-06-11 after visual polish for semantic icons, dense structured pages, split SmartArt/timeline layouts, and the 4-column scrollable gallery.
 
 ## Decisions Made
 
@@ -138,7 +138,7 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-Phase 16 can build on the completed live classroom/structure surface to add print/export-friendly review behavior and final v1.8 regression packaging. The main residual need is human visual inspection of `/tmp/school-presentation-phase15-verify/school-presentation-first.html` for classroom display polish.
+Phase 16 can build on the completed live classroom/structure surface to add print/export-friendly review behavior and final v1.8 regression packaging. The Phase 15 classroom display polish has passed human visual inspection.
 
 ---
 *Phase: 15-classroom-interaction-and-structured-layout-extensions*
