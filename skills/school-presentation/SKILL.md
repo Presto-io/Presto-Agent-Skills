@@ -59,14 +59,16 @@ metadata:
    - Peek 补充提示：`::: peek title="教师提示" trigger=both target="查看教师提示" ... :::` 会生成卡片式提示；`trigger` 可为 `hover`、`click` 或默认 `both`。Peek 是补充查看，不替代 click-based reveal，也不写入 manifest 的运行时 pinned/hover 状态。
    - 结构化版式：`::: timeline variant=vertical|horizontal ... :::`、`::: cards columns=3 ... :::`、`::: gallery variant=compare|album|strip ... :::`、`::: smartart type=process|cycle|hierarchy|pyramid ... :::` 使用 Markdown 列表项和 `[title="..." image="..." icon=...]` 属性表达内容；图片集合统一使用 `gallery`，不要写 raw HTML，也不要新增 `::: process :::`，流程图统一写作 `::: smartart type=process :::`。
    - 语义图标：普通内容页默认 `icon=auto`，渲染器根据标题、intent 和正文选择克制的 school identity CSS 图标；slide 注释可写 `icon=none` 关闭标题图标，或写 `icon=safety|risk|formula|chart|table|media|reveal|review|process|target` 指定。封面、封底和章节页不自动添加标题图标。结构化条目也支持 `icon=none` 关闭条目图标。
-   - 章节分隔页：渲染器会为章节生成可选显示的 section divider；播放/预览侧栏提供显示控制，打印专项策略留到后续 print/export review 阶段，不在 Markdown 中写 raw HTML 控制。
+   - 章节分隔页：渲染器会为每个非默认章节生成可选显示的 section divider；播放/预览侧栏提供显示控制，打印审阅模式提供是否包含章节页的生成 deck 控件，不在 Markdown 中写 raw HTML 控制。
    - `order` 是播放优先级，允许小数插入；渲染器按数值排序并在 manifest 中归一成连续 `step_index`。相同 `order` 的元素同时出现。
 8. 生成 Markdown 后，运行 `skills/school-presentation/scripts/school-presentation.sh render` 输出离线 HTML。生成结果默认打开 preview workspace：左侧 thumbnail rail 按章节和逻辑页分组，右侧 preview stage 显示当前物理页的真实 slide DOM；同一个单文件 HTML 内还包含 playback 和 overview。Preview workspace 显示全内容和最终揭示状态；playback 才按 reveal step 隐藏、遮罩或强调内容。
 9. slide 内部必须保持固定设计画布尺寸。不要在 slide 内容、字体、图片高度、图文栅格中使用 viewport-dependent CSS，例如 `vh`、`vw` 或基于视口的 `clamp()`；不同预览尺寸和浏览器缩放比例下，只允许外层 stage scale 改变，slide 内部元素相对关系必须像图片缩放一样保持不变。
 10. playback 支持键盘方向键、Space、PageUp/PageDown、鼠标左/中/右点击区域、触摸滑动、`Esc` 返回 workspace、URL hash 当前页与 step 同步和顶部蓝绿色进度条。右方向/Space/右侧或中部点击先推进当前页 reveal step，当前页完成后才翻页；左方向/左侧点击先撤回当前页上一步。跨页切换时，旧页按当前已揭示状态淡出，新切入页面一律从 step0 原始遮罩状态开始。最后一页全部完成后继续前进会退出放映模式。
 11. playback 内置 presenter markup palette：激光笔、画笔、荧光笔、橡皮擦和清除当前页控件只作用于当前浏览器放映会话；浮窗根据鼠标或触控边缘意图自动停靠。pen/highlighter/eraser 的标注按 physical page 做 page-scoped session state，翻页后返回仍保留，直到用户清除当前页；激光笔按住拖动时显示临时红色轨迹，抬笔后约 2 秒开始淡出，不生成持久标注。标注层只挂在 playback shell，不能写回 Markdown、`.page-source`、preview workspace、overview、thumbnail、manifest 或 deterministic review artifacts。绘制/擦除时会压住播放点击区，键盘导航、reveal、mask、emphasis 和 hover/peek 在非绘制状态下继续按原规则工作。
-12. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook、peek、排序、结构化版式、语义图标、section divider、presenter markup 控件与 annotation layer hook，并写出 verification manifest。`presenter_markup_verified` 和 `classroom_structure_verified` 必须为 `true`，且 manifest 不得包含 annotation state、markup palette、stroke 数据、pinned peek 或 hover peek 状态。
-13. 对来源不确定、素材缺失、视频过大或内容无法稳定呈现的片段，就近写入合适级别的强调块或渲染 manifest，不要静默删除。
+12. 生成 deck 内置打印审阅控件：`打印审阅` 用于标记当前 HTML 进入 print/export review mode，浏览器打印或导出 PDF 时从 `.page-source` 按 manifest physical page 顺序输出全量页面；reveal 内容展开、mask 答案可见、emphasis 保留下划线、排序练习使用最终顺序，gallery/card/timeline/smartart 尽量按卡片级分页。`打印含章节页` 控件决定 PDF review 是否包含 section divider；该状态只属于生成 deck UI，不写入 Markdown 或 manifest。默认排除 presenter annotation layer、markup palette、laser trail、pinned peek、hover state 和其他运行时状态。
+13. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook、peek、排序、结构化版式、语义图标、section divider、presenter markup 控件、annotation layer hook、print/export review tokens、离线单文件边界，以及 `16:9` / `4:3` 固定画布样例，并写出 verification manifest。`presenter_markup_verified`、`classroom_structure_verified`、`print_review_verified`、`ratio_4x3_verified` 和 `offline_single_file_verified` 必须为 `true`，且 manifest 不得包含 annotation state、markup palette、stroke 数据、pinned peek、hover peek 或 print control runtime state。
+14. PDF 人工 UAT 使用浏览器从离线 HTML 的打印审阅模式导出，不引入默认 Playwright/screenshot/PDF 自动化 gate。人工检查至少覆盖：reveal 已展开、mask 答案可见、emphasis 下划线可见、排序为最终顺序、章节页可包含/跳过且不重排后续页、自动插入页和拆分页顺序正确、gallery 卡片不被截断、presenter annotations 默认不进入 PDF、`16:9` 与 `4:3` 样例保持固定画布比例。
+15. 对来源不确定、素材缺失、视频过大或内容无法稳定呈现的片段，就近写入合适级别的强调块或渲染 manifest，不要静默删除。
 
 ## Script Usage
 
@@ -110,10 +112,11 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 - [ ] 输出 HTML 包含有序 reveal、答案遮罩和正确项强调；preview 显示全内容和最终揭示状态，playback 按 step 控制。
 - [ ] 输出 HTML 包含 peek 卡片、排序编号/最终重排、`animate: step` 普通正文动画、timeline、cards、gallery、smartart、语义图标和 section divider 控件；`verify` 记录 `classroom_structure_verified: true`。
 - [ ] 输出 HTML 包含 playback-local pointer、pen、highlighter、eraser、clear/reset 与 page-scoped annotation layer；`verify` 记录 `presenter_markup_verified: true`，manifest 与 Markdown source 不包含标注状态。
+- [ ] 输出 HTML 包含 `打印审阅` 和章节页打印包含/跳过控件；浏览器打印/PDF review 使用全量 physical pages，展开 reveal/mask/emphasis/sort，排除 presenter annotations；`verify` 记录 `print_review_verified: true`。
 - [ ] 封面只包含每行最多 10 个中文字符且最多 2 行的主标题、最多 24 个中文字符的可选副标题和固定信息栏；信息栏只显示可选单位值、汇报人值和日期值，封面正文、额外副标题、自定义 `cover_*` 信息、地点或更多内容卡片不会进入首页。
 - [ ] 公式内容必须保持数学公式样式；被遮罩或揭示的公式/公式片段不能降级为普通字符。
 - [ ] manifest 显示 HTML 输出小于或等于 50 MB；若视频或媒体过大，记录 fallback 而不是强行内嵌。
-- [ ] 输出 deck 覆盖固定 `16:9`/`4:3` 页面比例、封面后自动目录页、公式、表格、图表、图片、视频 fallback、speaker notes、四类强调块和自动物理页拆分。
+- [ ] 输出 deck 覆盖固定 `16:9`/`4:3` 页面比例、封面后自动目录页、公式、表格、图表、图片、视频 fallback、speaker notes、四类强调块、自动物理页拆分和 PDF review 样例；`verify` 记录 `ratio_4x3_verified: true` 与 `offline_single_file_verified: true`。
 - [ ] OpenClaw 与 Hermes Agent 的运行时差异保留在 adapter notes 中，没有写入 canonical 主流程。
 
 ## Success Criteria
@@ -121,12 +124,12 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 - 技能在触发词 `school-presentation` 下能指导 agent 产出学校风格演示文稿 Markdown intermediate。
 - 脚本能从 Markdown 生成稳定、离线、蓝绿色学校视觉识别明确的 HTML deck。
 - 渲染器保持图片等比 contain 放置，并能按 frontmatter 中的 `page_ratio` 把过长逻辑页拆成多个等尺寸物理 HTML 页。
-- 输出 deck 能在同一个离线 HTML 中完成 preview workspace、playback、overview 导航和 playback-local presenter markup，并暴露章节、逻辑页、物理页和真实 reveal-step 层级。
+- 输出 deck 能在同一个离线 HTML 中完成 preview workspace、playback、overview 导航、playback-local presenter markup 和 print/export review，并暴露章节、逻辑页、物理页和真实 reveal-step 层级。
 - 技能保持 canonical 单文件语义源，不引入 runtime-specific wrapper。
 
 ## Deferred Scope
 
-导出/打印专项能力、多人同步、远程互动、拖拽排序和持久保存标注不属于 Phase 15 classroom/structure 交付；后续如需要，应单独规划需求、模板 fixture 和黑盒验证。Phase 15 已包含 Markdown-first 的 peek、排序、正文逐步动画、结构化版式、语义图标和章节分隔显示控制。
+PPTX、Keynote、可编辑 PowerPoint、自动浏览器截图 gate、托管分享、多人同步、远程互动、拖拽排序、持久保存标注和 annotation flattening 不属于 v1.8 print/export review 交付；后续如需要，应单独规划需求、模板 fixture 和黑盒验证。
 
 ## Safety
 
