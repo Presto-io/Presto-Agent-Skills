@@ -17,14 +17,14 @@ Requirements for continuing the official-school presentation skill from the prev
 
 ### Classroom Interaction Extensions
 
-- [ ] **SP-21**: A Markdown author can define hover/peek content for supplementary hints or explanations while keeping click-based reveal order deterministic.
-- [ ] **SP-22**: A Markdown author can define sorting or reordering classroom exercises with a stable initial state, answer state, and playback reveal behavior.
-- [ ] **SP-23**: A Markdown author can request restrained body-step animation for selected content blocks while keeping preview, static review, and print-friendly output readable.
+- [x] **SP-21**: A Markdown author can define hover/peek content for supplementary hints or explanations while keeping click-based reveal order deterministic.
+- [x] **SP-22**: A Markdown author can define sorting or reordering classroom exercises with a stable initial state, answer state, and playback reveal behavior.
+- [x] **SP-23**: A Markdown author can request restrained body-step animation for selected content blocks while keeping preview, static review, and print-friendly output readable.
 
 ### Structured Layout and Delivery
 
-- [ ] **SP-24**: A Markdown author can request structured school-style layout intents such as timeline, card grid, gallery/compare, or process/SmartArt-like sections without writing raw HTML.
-- [ ] **SP-25**: The renderer can apply optional semantic icons and section-divider or section-cover display controls while preserving the established school identity system.
+- [x] **SP-24**: A Markdown author can request structured school-style layout intents such as timeline, card grid, gallery/compare, or process/SmartArt-like sections without writing raw HTML.
+- [x] **SP-25**: The renderer can apply optional semantic icons and section-divider or section-cover display controls while preserving the established school identity system.
 - [ ] **SP-26**: A presenter can generate a print/export-friendly review view where reveal and mask states are inspectable and presenter-local annotations are excluded or flattened deterministically.
 - [ ] **SP-27**: The verification path covers v1.8 markup, classroom interactions, structured layouts, print/export review behavior, offline single-file boundaries, and fixed `16:9`/`4:3` slide-canvas stability.
 
@@ -60,11 +60,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SP-18 | Phase 14 | Complete |
 | SP-19 | Phase 14 | Complete |
 | SP-20 | Phase 14 | Complete |
-| SP-21 | Phase 15 | Pending |
-| SP-22 | Phase 15 | Pending |
-| SP-23 | Phase 15 | Pending |
-| SP-24 | Phase 15 | Pending |
-| SP-25 | Phase 15 | Pending |
+| SP-21 | Phase 15 | Complete |
+| SP-22 | Phase 15 | Complete |
+| SP-23 | Phase 15 | Complete |
+| SP-24 | Phase 15 | Complete |
+| SP-25 | Phase 15 | Complete |
 | SP-26 | Phase 16 | Pending |
 | SP-27 | Phase 16 | Pending |
 
