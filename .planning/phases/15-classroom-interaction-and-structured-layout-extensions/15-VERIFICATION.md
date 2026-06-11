@@ -12,6 +12,10 @@ artifacts:
   - /tmp/school-presentation-phase15-verify/verification-manifest.json
   - /tmp/school-presentation-phase15-verify/school-presentation-first.html
   - /tmp/school-presentation-unknown-directive.html
+manual_review:
+  status: passed
+  date: 2026-06-11
+  artifact: /tmp/school-presentation-phase15-verify/school-presentation-first.html
 ---
 
 # Phase 15 Verification
@@ -53,6 +57,17 @@ gsd-sdk query init.execute-phase 15
 `init.execute-phase 15` reports `incomplete_count: 0`.
 
 Unsupported directive fallback was also checked with a smoke render. The HTML preserved both `::: process` and the body text `这里是不支持的旧写法，但正文不能被静默丢弃。`
+
+## Manual Visual Review
+
+Passed on 2026-06-11 against `/tmp/school-presentation-phase15-verify/school-presentation-first.html`.
+
+Follow-up polish completed during review:
+
+- Semantic icons render as stable CSS/SVG marks without rotated or drifting internal glyphs.
+- Dense timeline and SmartArt examples are split across physical pages instead of being compressed into one page.
+- Gallery compare uses a 4-column scrollable layout, and images are width-constrained with natural height.
+- Picture SmartArt was removed from the authoring fixture and documentation because gallery mode now owns picture collections.
 
 ## Result
 

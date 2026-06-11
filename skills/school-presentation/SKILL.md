@@ -57,7 +57,7 @@ metadata:
    - 正确项强调：`::: emphasis order=1 ... :::` 或行内 `{{emphasis order=1}}正确项{{/emphasis}}`；选择题选项常显，正确项按 order 变成强调状态。默认强调包含下划线，打印或静态审阅时仍可见。强调入场动画只在该 step 首次出现时播放，已经强调过的内容保持静态高亮，不随后续 step 重播动画。
    - 自动逐条展示：在 slide 注释中写 `animate: step`，普通段落、列表条目和表格行会自动生成播放步骤；排序练习可用 `::: sort final_order=4 ... :::` 与条目 `[order=1]` 控制排序编号和最终重排。
    - Peek 补充提示：`::: peek title="教师提示" trigger=both target="查看教师提示" ... :::` 会生成卡片式提示；`trigger` 可为 `hover`、`click` 或默认 `both`。Peek 是补充查看，不替代 click-based reveal，也不写入 manifest 的运行时 pinned/hover 状态。
-   - 结构化版式：`::: timeline variant=vertical|horizontal ... :::`、`::: cards columns=3 ... :::`、`::: gallery variant=compare|album|strip ... :::`、`::: smartart type=process|cycle|hierarchy|pyramid|picture ... :::` 使用 Markdown 列表项和 `[title="..." image="..." icon=...]` 属性表达内容；不要写 raw HTML，也不要新增 `::: process :::`，流程图统一写作 `::: smartart type=process :::`。
+   - 结构化版式：`::: timeline variant=vertical|horizontal ... :::`、`::: cards columns=3 ... :::`、`::: gallery variant=compare|album|strip ... :::`、`::: smartart type=process|cycle|hierarchy|pyramid ... :::` 使用 Markdown 列表项和 `[title="..." image="..." icon=...]` 属性表达内容；图片集合统一使用 `gallery`，不要写 raw HTML，也不要新增 `::: process :::`，流程图统一写作 `::: smartart type=process :::`。
    - 语义图标：普通内容页默认 `icon=auto`，渲染器根据标题、intent 和正文选择克制的 school identity CSS 图标；slide 注释可写 `icon=none` 关闭标题图标，或写 `icon=safety|risk|formula|chart|table|media|reveal|review|process|target` 指定。封面、封底和章节页不自动添加标题图标。结构化条目也支持 `icon=none` 关闭条目图标。
    - 章节分隔页：渲染器会为章节生成可选显示的 section divider；播放/预览侧栏提供显示控制，打印专项策略留到后续 print/export review 阶段，不在 Markdown 中写 raw HTML 控制。
    - `order` 是播放优先级，允许小数插入；渲染器按数值排序并在 manifest 中归一成连续 `step_index`。相同 `order` 的元素同时出现。
