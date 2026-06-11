@@ -153,7 +153,7 @@ def normalize_alert_type(raw: str) -> str | None:
 
 
 INTERACTION_KINDS = {"reveal", "mask", "emphasis"}
-STRUCTURE_KINDS: set[str] = {"sort"}
+STRUCTURE_KINDS: set[str] = {"sort", "peek", "timeline", "cards", "gallery", "smartart"}
 
 
 def parse_attrs(raw: str) -> dict[str, str]:
@@ -426,6 +426,8 @@ def block_score(block: dict[str, str]) -> int:
         return max(8, len([line for line in text.splitlines() if line.strip()]) * 2)
     if kind in STRUCTURE_KINDS:
         item_count = len([line for line in text.splitlines() if re.match(r"^\s*[-*]\s+", line)])
+        if kind == "peek":
+            return 7
         if kind == "timeline":
             return max(12, item_count * 5)
         if kind == "gallery":
@@ -1020,7 +1022,7 @@ def render_blocks(
 ) -> str:
     parts: list[str] = []
     for block in blocks:
-        if animation_mode == "step" and block["type"] not in INTERACTION_KINDS:
+        if animation_mode == "step" and block["type"] in {"paragraph", "list", "table"}:
             parts.append(render_auto_animated_block(block, input_dir, media_warnings, section_index, formula_counters, animation_state))
         else:
             parts.append(render_block(block, input_dir, media_warnings, section_index, formula_counters))
@@ -1158,6 +1160,16 @@ def render_block(
         return render_interaction_block(kind, block, input_dir, media_warnings, section_index, formula_counters)
     if kind == "sort":
         return render_sort_block(block)
+    if kind == "peek":
+        return render_peek_block(block, input_dir, media_warnings)
+    if kind == "timeline":
+        return render_timeline_block(block, input_dir, media_warnings)
+    if kind == "cards":
+        return render_cards_block(block)
+    if kind == "gallery":
+        return render_gallery_block(block, input_dir, media_warnings)
+    if kind == "smartart":
+        return render_smartart_block(block, input_dir, media_warnings)
     return f"<p>{inline_markdown(text)}</p>"
 
 
@@ -1422,7 +1434,7 @@ def render_page_section(
     section_number = int(record["section_index"])
     animation_start = order_number(normalize_order(slide_meta.get("animate_order") if isinstance(slide_meta, dict) else None, "1")) or 1.0
     animation_state = {"next": animation_start}
-    semantic_icon = ""
+    semantic_icon = semantic_icon_for_slide(slide, layout, chunk)
     rendered_blocks = render_blocks(
         chunk,
         input_dir,
@@ -1436,7 +1448,8 @@ def render_page_section(
     warnings = "".join(f"<aside class=\"warning\">{inline_markdown(w)}</aside>" for w in slide["warnings"])
     notes = "".join(f"<details class=\"notes\"><summary>Speaker notes</summary><p>{inline_markdown(n)}</p></details>" for n in slide["notes"])
     page_marker = f"<span class=\"page-marker\">{html.escape(str(record['page_label']))}</span>"
-    title_lockup = f"<div class=\"title-lockup\"><h2>{page_title}</h2></div>"
+    title_icon = render_semantic_icon(semantic_icon, "title-icon") if semantic_icon else ""
+    title_lockup = f"<div class=\"title-lockup\">{title_icon}<h2>{page_title}</h2></div>"
     return (
         f"<section class=\"{classes}\" {attrs}>"
         f"<div class=\"slide-title\">{title_lockup}{page_marker}</div>"
@@ -3666,6 +3679,55 @@ def cmd_verify(args: argparse.Namespace) -> None:
         all(token in first_html for token in presenter_markup_tokens)
         and not any(token in first_manifest_text or token in second_manifest_text for token in manifest_annotation_tokens)
     )
+    classroom_structure_tokens = [
+        "peek-trigger-card",
+        "peek-popover",
+        "data-peek-trigger",
+        "peekTriggerAtPoint",
+        "togglePinnedPeek",
+        "isMarkupInputTool",
+        "revealMaskAtPoint",
+        "reveal-kind-sort-rank",
+        "reveal-kind-sort-final",
+        "reveal-kind-animate",
+        "sort-list",
+        "is-sorted",
+        "structure-block timeline",
+        "card-board",
+        "gallery",
+        "smartart",
+        "semantic-icon",
+        "title-icon",
+        "section-divider-toggle",
+        "data-section-divider",
+    ]
+    classroom_fixture_terms = [
+        "::: peek",
+        "::: timeline",
+        "::: cards",
+        "::: gallery",
+        "::: smartart type=process",
+        "::: smartart type=cycle",
+        "::: smartart type=hierarchy",
+        "::: smartart type=pyramid",
+        "::: smartart type=picture",
+        "icon=none",
+    ]
+    runtime_state_tokens = [
+        "annotationState",
+        "annotation-layer",
+        "markup-palette",
+        "markup-tool",
+        "pinnedPeek",
+        "activePeek",
+        "playbackHoverTrigger",
+        "spaceHoldTrigger",
+    ]
+    classroom_structure_verified = (
+        all(token in first_html for token in classroom_structure_tokens)
+        and all(term in sample.read_text(encoding="utf-8") for term in classroom_fixture_terms)
+        and not any(token in first_manifest_text or token in second_manifest_text for token in runtime_state_tokens)
+    )
     thumbnail_ratio_verified = (
         ".thumb-item{position:relative;display:block;width:100%" in first_html
         and "aspect-ratio:var(--slide-aspect)" in first_html
@@ -3723,6 +3785,7 @@ split: auto
         and reveal_verified
         and workspace_verified
         and presenter_markup_verified
+        and classroom_structure_verified
         and thumbnail_ratio_verified
         and flat_slide_compat_verified
     )
@@ -3733,6 +3796,7 @@ split: auto
         "reveal_verified": reveal_verified,
         "workspace_verified": workspace_verified,
         "presenter_markup_verified": presenter_markup_verified,
+        "classroom_structure_verified": classroom_structure_verified,
         "thumbnail_ratio_verified": thumbnail_ratio_verified,
         "flat_slide_compat_verified": flat_slide_compat_verified,
         "first_sha256": m1.get("html_sha256"),
