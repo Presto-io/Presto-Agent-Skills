@@ -1,3 +1,24 @@
+---
+phase: 14-presenter-markup-tools
+plan: 01
+subsystem: presentation-renderer
+tags: [school-presentation, playback, presenter-markup, annotations]
+requires:
+  - phase: 10-ordered-reveals-and-classroom-answer-masks
+    provides: playback workspace, reveal/mask behavior, and navigation event boundaries
+provides:
+  - playback-local presenter markup controls
+  - page-scoped runtime annotation state excluded from authored artifacts
+  - deterministic verification for presenter markup boundaries
+affects: [school-presentation, v1.8, phase-15-classroom-interaction]
+requirements-completed:
+  - SP-17
+  - SP-18
+  - SP-19
+  - SP-20
+completed: 2026-06-11
+---
+
 # Phase 14 Plan 01 Summary: Presenter Markup Tools
 
 ## Result

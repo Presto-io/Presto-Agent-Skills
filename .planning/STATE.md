@@ -5,8 +5,8 @@ milestone_name: School Presentation Continuation
 current_phase: 16
 status: complete
 stopped_at: Phase 16 complete
-last_updated: "2026-06-11T07:30:00Z"
-last_activity: 2026-06-11 — Phase 16 print/export review and v1.8 regression gate completed
+last_updated: "2026-06-12T00:00:00+08:00"
+last_activity: 2026-06-12 — Phase 16 final top/playback control visual UAT passed; current phase ended
 progress:
   total_phases: 3
   completed_phases: 3
@@ -61,7 +61,7 @@ v1.8 is complete. Next step is milestone audit or a new milestone if more presen
 - Phase 14 completed: Playback-local presenter markup tools now cover pointer, pen, highlighter, eraser, clear current page, page-scoped session state, deterministic verification, and manual UAT without mutating authored artifacts.
 - Phase 15 completed: Classroom interaction and structured layout extensions connect peek, sort, restrained body-step animation, timeline/cards/gallery/smartart directives, semantic icons, section-divider controls, and deterministic verification.
 - Phase 16 planned: Print/export review will formalize same-HTML review mode, browser PDF UAT, section-title print controls, annotation exclusion, gallery pagination, and the full v1.8 regression gate.
-- Phase 16 completed: The offline HTML deck now includes generated print review controls, full physical-page PDF review output, section-divider print inclusion/exclusion, expanded reveal/mask/emphasis/sort review semantics, annotation exclusion, gallery card pagination hooks, 16:9 and 4:3 ratio checks, and deterministic `print_review_verified` regression evidence.
+- Phase 16 completed: The offline HTML deck now includes generated print review controls, full physical-page PDF review output, section-divider print inclusion/exclusion, expanded reveal/mask/emphasis/sort review semantics, annotation exclusion, gallery card pagination hooks, 16:9 and 4:3 ratio checks, deterministic `print_review_verified` regression evidence, one-click final PDF export, and the user-accepted floating capsule top/playback control design.
 
 ## Decisions
 
@@ -118,7 +118,7 @@ v1.8 is complete. Next step is milestone audit or a new milestone if more presen
 
 ## Last Session
 
-- **Completed:** Phase 16 implementation, deterministic verification, Chrome-generated PDF review artifact, and planning closeout
+- **Completed:** Phase 16 implementation, deterministic verification, Chrome-generated PDF review artifact, final control visual UAT, and planning closeout
 - **Stopped At:** Phase 16 complete
 - **Resume File:** .planning/phases/16-print-export-review-and-v1-8-regression-gate/16-01-SUMMARY.md
 
@@ -138,7 +138,7 @@ v1.8 is complete. Next step is milestone audit or a new milestone if more presen
 Phase: 16 - Print Export Review and v1.8 Regression Gate
 Plan: 16-01
 Status: Complete
-Last activity: 2026-06-11 — Phase 16 print/export review and v1.8 regression gate completed
+Last activity: 2026-06-12 — Phase 16 final top/playback control visual UAT passed; current phase ended
 
 ## Operator Next Steps
 

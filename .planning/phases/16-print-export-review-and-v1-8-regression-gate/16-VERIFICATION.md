@@ -29,28 +29,39 @@ Verification manifest:
 - `physical_pages`: `51`
 - `sections`: `5`
 
-## PDF Review Artifact
+## One-Click Final PDF Artifact
 
 Command:
 
 ```bash
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --disable-gpu --no-sandbox --print-to-pdf=/tmp/school-presentation-phase16-verify/school-presentation-review.pdf file:///tmp/school-presentation-phase16-verify/school-presentation-first.html
+node /tmp/school-presentation-export-verify.cjs
 ```
 
 Artifact evidence:
 
-- PDF: `/tmp/school-presentation-phase16-verify/school-presentation-review.pdf`
-- PNG sanity render: `/tmp/school-presentation-phase16-verify/school-presentation-review-page1.png`
-- PDF SHA-256: `9761c12f4fd4024dc1576e59d8c70250c614cd7d8a157823ce8b60d0a7ac4ce7`
-- PNG SHA-256: `309d5dbb821f50d1c76a94e6f0b04148392dbb32b967eb3a9a785d252243d8f1`
-- PDF page tree final `/Count`: `51`
+- PDF: `/tmp/school-presentation-phase16-verify/downloads/智能制造实训基地建设汇报.pdf`
+- PNG sanity renders:
+  - `/tmp/school-presentation-phase16-verify/pdf-preview/page-01.png`
+  - `/tmp/school-presentation-phase16-verify/pdf-preview/page-02.png`
+  - `/tmp/school-presentation-phase16-verify/pdf-preview/page-03.png`
+  - `/tmp/school-presentation-phase16-verify/pdf-preview/page-10.png`
+  - `/tmp/school-presentation-phase16-verify/pdf-preview/page-41.png`
+- PDF pages: `51`
 - File type: PDF document, version 1.4
-- First-page PNG visual sanity: nonblank, 16:9 canvas fills the PDF page, school cover text and identity assets visible.
+- File size: `3.7M`
+- Page size: `1280 x 720 pts`
+- Page mode: `/UseOutlines`
+- Outline top-level entries: `12`
+- Agenda page link annotations: `5`
+- Visual sanity: cover, agenda, section divider, body, and gallery pages are nonblank, full 16:9 canvas, and not visibly misaligned or clipped.
 
-## Manual PDF UAT Checklist
+## PDF UAT Checklist
 
-The generated PDF artifact is ready for human visual review. The following checks are the required manual scope:
+The generated PDF artifact is produced by clicking `导出最终PDF` once in the offline HTML. The required review scope is:
 
+- The button downloads the final PDF directly without opening the system print dialog.
+- PDF reader outline/bookmarks are present and open by default.
+- Agenda page links jump to the corresponding sections.
 - Reveal content is opened in the PDF.
 - Masked answers are visible in the PDF.
 - Emphasis/correct-answer marks remain visibly underlined.
@@ -65,5 +76,26 @@ The generated PDF artifact is ready for human visual review. The following check
 ## Notes
 
 - The default script gate remains deterministic and does not require Playwright, screenshot checks, or PDF generation.
-- The PDF artifact was generated separately as manual UAT evidence using the already rendered offline HTML deck.
+- The one-click PDF artifact was generated separately as UAT evidence by opening the already rendered offline HTML deck in Chrome and clicking the generated `导出最终PDF` button.
+- The final PDF uses rasterized slide canvases for speed and one-click reliability on low-performance devices; selectable live text is not part of this one-click export contract.
 - The first PDF export attempt exposed default browser portrait/letter whitespace. Phase 16 fixed this by generating ratio-specific `@page` sizes: `16in 9in` for `16:9` and `12in 9in` for `4:3`.
+
+## Final Human Visual UAT
+
+Date: 2026-06-12.
+
+Manual review artifacts:
+
+- `/tmp/school-presentation-phase16-manual-review/school-presentation-first.html`
+- `/tmp/school-presentation-phase16-manual-review/school-presentation-4x3.html`
+
+Result: passed.
+
+Reviewer note: 人工验证通过，结束当前阶段。
+
+Accepted scope:
+
+- Top action area uses the finalized floating capsule button design.
+- The one-click final PDF, section-page toggle, overview, and playback buttons use icon-first controls with the accepted hover/press capsule behavior.
+- Playback toolbar, selected markup tools, and tool-size switches use the same visual language, with selected controls represented by the blue-green theme background.
+- The generated `4:3` review sample remained usable for final manual inspection.

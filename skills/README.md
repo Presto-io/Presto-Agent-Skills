@@ -8,7 +8,7 @@ Current skills:
 - `gongwen`: 类公文 Markdown intermediate 到 Presto gongwen Typst/PDF 的工作流。
 - `jiaoan-jihua`: 授课进度计划 Markdown intermediate 到 Presto jiaoan-jihua Typst/PDF 的工作流。
 - `jiaoan-shicao`: 实操教案 Markdown intermediate 到 Presto jiaoan-shicao Typst/PDF 的工作流。
-- `school-presentation`: 学校正式汇报、课程展示、培训课件、招生宣讲或项目答辩材料的 Markdown logical-slide intermediate 到离线 HTML 演示文稿的工作流。
+- `school-presentation`: 学校正式汇报、课程展示、培训课件、招生宣讲或项目答辩材料的 Markdown logical-slide intermediate 到离线 HTML 演示文稿的工作流；生成物内置 preview、overview、playback、presenter markup、课堂交互/结构化版式和一键最终 PDF 导出。
 
 Expected layout:
 
