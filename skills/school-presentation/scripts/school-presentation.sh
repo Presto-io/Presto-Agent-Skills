@@ -872,12 +872,14 @@ def parse_structured_items(text: str) -> list[dict[str, str]]:
     return items
 
 
-def structure_icon_html(item: dict[str, str], fallback_text: str = "") -> str:
+def structure_icon_html(item: dict[str, str], fallback_text: str = "", default_icon: str = "target") -> str:
     raw_icon = item.get("icon")
     icon = normalize_icon_name(raw_icon)
     if icon == "":
         return ""
-    if not raw_icon or icon == "auto":
+    if not raw_icon:
+        icon = default_icon
+    elif icon == "auto":
         icon = semantic_icon_for_text(" ".join([item.get("title", ""), item.get("body", ""), fallback_text]), "target")
     return render_semantic_icon(icon or "target", "mini")
 
@@ -908,7 +910,7 @@ def render_timeline_block(block: dict[str, str], input_dir: Path, media_warnings
         title = item.get("title") or f"节点 {idx}"
         time_label = item.get("time") or item.get("date") or str(idx)
         media = structure_media_html(item, input_dir, media_warnings, title)
-        icon = structure_icon_html(item, title)
+        icon = structure_icon_html(item, title, "process")
         has_media = has_media or bool(media)
         item_class = " has-media" if media else ""
         media_class = " has-media" if media and variant != "horizontal" else ""
@@ -952,7 +954,7 @@ def render_cards_block(block: dict[str, str]) -> str:
         status_html = f'<small>{inline_markdown(status)}</small>' if status else ""
         cards.append(
             '<article class="board-card">'
-            f'{structure_icon_html(item, title)}<div><h3>{inline_markdown(title)}</h3>'
+            f'{structure_icon_html(item, title, "target")}<div><h3>{inline_markdown(title)}</h3>'
             f'{status_html}<p>{inline_markdown(item.get("body", ""))}</p></div></article>'
         )
     return f'<div class="structure-block card-board card-board-{variant}" style="--card-columns:{column_count}">{"".join(cards)}</div>'
@@ -966,7 +968,7 @@ def render_gallery_block(block: dict[str, str], input_dir: Path, media_warnings:
         title = item.get("title") or f"画册 {idx}"
         media = structure_media_html(item, input_dir, media_warnings, title)
         if not media:
-            media = f'<div class="gallery-icon-panel">{structure_icon_html(item, title)}</div>'
+            media = f'<div class="gallery-icon-panel">{structure_icon_html(item, title, "media")}</div>'
         cards.append(
             '<article class="gallery-item">'
             f'{media}<div class="gallery-copy"><h3>{inline_markdown(title)}</h3><p>{inline_markdown(item.get("body", ""))}</p></div></article>'
@@ -987,7 +989,7 @@ def render_smartart_block(block: dict[str, str], input_dir: Path, media_warnings
         style = f"--item-index:{idx};--item-count:{max(1, len(items))};--pyramid-width:{pyramid_width}%;--layer-width:{layer_width}%"
         parts.append(
             f'<article class="smartart-item" style="{style}">'
-            f'<span class="smartart-index">{idx}</span>{media}{structure_icon_html(item, title)}'
+            f'<span class="smartart-index">{idx}</span>{media}{structure_icon_html(item, title, "process")}'
             f'<div><h3>{inline_markdown(title)}</h3><p>{inline_markdown(item.get("body", ""))}</p></div></article>'
         )
     return f'<div class="structure-block smartart smartart-{smart_type} smartart-{smart_type}-{variant}">{"".join(parts)}</div>'
@@ -1287,6 +1289,13 @@ def semantic_icon_for_slide(slide: dict[str, object], layout: str, blocks: list[
         return "chart"
     if layout.startswith("media"):
         return "media"
+    block_kinds = {block["type"] for block in blocks}
+    if "sort" in block_kinds or block_kinds & {"reveal", "mask", "emphasis"}:
+        return "reveal"
+    if "gallery" in block_kinds:
+        return "media"
+    if block_kinds & {"timeline", "cards", "smartart"}:
+        return "process"
     text_parts = [str(slide.get("title", ""))]
     if isinstance(meta, dict):
         text_parts.append(str(meta.get("intent", "")))
@@ -1844,6 +1853,7 @@ figure{margin:24px 0;max-width:100%;display:grid;justify-items:center;align-cont
 .playback .reveal-kind-animate.is-newly-hidden,.playback .reveal-kind-reveal.is-newly-hidden{visibility:visible}.playback .reveal-kind-mask.is-newly-hidden>.reveal-content,.playback .reveal-kind-reveal.is-newly-hidden>.reveal-content{visibility:visible;animation:bodyExit .2s cubic-bezier(.25,1,.5,1) both}.playback .reveal-kind-animate.is-newly-hidden{animation:bodyExit .2s cubic-bezier(.25,1,.5,1) both}.playback .reveal-kind-mask.is-newly-hidden::after,.playback .reveal-kind-reveal.is-newly-hidden::after{content:"";position:absolute;inset:-4px -7px;border-radius:6px;background:linear-gradient(90deg,#e8f2f5,#dbecef);border:1px solid rgba(0,132,204,.22);z-index:2;pointer-events:none;animation:maskRestore .2s cubic-bezier(.25,1,.5,1) both}.playback .reveal-kind-mask:not(.inline-reveal).is-newly-hidden::after,.playback .reveal-kind-reveal:not(.inline-reveal).is-newly-hidden::after{left:0;right:0;box-sizing:border-box}@keyframes bodyExit{from{opacity:1;transform:translateY(0)}to{opacity:.3;transform:translateY(7px)}}@keyframes maskRestore{from{opacity:0;clip-path:inset(0 0 0 100%)}to{opacity:1;clip-path:inset(0 0 0 0)}}
 @media(prefers-reduced-motion:reduce){.playback .reveal-kind-animate.is-newly-hidden,.playback .reveal-kind-mask.is-newly-hidden>.reveal-content,.playback .reveal-kind-reveal.is-newly-hidden>.reveal-content,.playback .reveal-kind-mask.is-newly-hidden::after,.playback .reveal-kind-reveal.is-newly-hidden::after{animation:none}}
 .timeline-media{display:none}.timeline-horizontal.timeline-with-media{grid-template-columns:1fr;gap:12px}.timeline-horizontal.timeline-with-media .timeline-track{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.timeline-horizontal.timeline-with-media .timeline-item{grid-template-columns:1fr;gap:8px}.timeline-horizontal.timeline-with-media .timeline-item::before{left:50%;right:-56%;top:37px;bottom:auto;width:auto;height:2px}.timeline-horizontal.timeline-with-media .timeline-item:last-child::before{display:none}.timeline-horizontal.timeline-with-media .timeline-card{min-height:118px;padding:11px 14px;border-left:1px solid var(--line);border-top:6px solid var(--blue)}.timeline-horizontal.timeline-with-media .timeline-item.has-media .timeline-card{border-top-color:var(--green);background:linear-gradient(180deg,#fff,#f5fbf7)}.timeline-horizontal.timeline-with-media .timeline-card h3{font-size:22px!important;line-height:1.08;margin-bottom:4px!important}.timeline-horizontal.timeline-with-media .timeline-card p{font-size:17px;line-height:1.18}.timeline-feature-panel{display:grid;gap:12px;min-width:0}.timeline-feature-card{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:16px;align-items:stretch;min-height:300px;padding:12px;border:1px solid #d8e6ec;border-radius:7px;background:linear-gradient(180deg,#fff,#f7fbfc);box-shadow:0 10px 24px rgba(14,40,65,.08)}.timeline-feature-card .structure-media{position:relative;height:100%;min-height:276px;margin:0!important;overflow:hidden;border-radius:6px;background:#eef7fb;border:1px solid #dceaf0}.timeline-feature-card .structure-media img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;box-shadow:none}.timeline-feature-caption{display:grid;align-content:center;gap:8px;min-width:0;padding:14px 18px;border-left:5px solid var(--green);background:rgba(238,248,245,.72);border-radius:5px}.timeline-feature-caption small{color:var(--green);font-size:19px;line-height:1;font-weight:850}.timeline-feature-caption strong{color:#0056A8;font-size:30px;line-height:1.12}.timeline-feature-caption span{color:#304d5a;font-size:21px;line-height:1.32}.timeline:not(.timeline-horizontal) .timeline-card.has-media{grid-template-columns:174px minmax(0,1fr);grid-template-rows:auto}.timeline:not(.timeline-horizontal) .timeline-card.has-media .structure-media{height:118px}
+.icon-chart::before,.icon-chart::after{border:0;box-shadow:none}.icon-chart::before{left:50%;top:50%;width:28px;height:24px;border-radius:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 28'%3E%3Cpath d='M4 24h24' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3Crect x='6' y='13' width='5' height='11' rx='1.4' fill='%23fff'/%3E%3Crect x='14' y='7' width='5' height='17' rx='1.4' fill='%23fff'/%3E%3Crect x='22' y='3' width='5' height='21' rx='1.4' fill='%23fff'/%3E%3C/svg%3E") center/contain no-repeat;transform:translate(-50%,-50%)}.icon-chart::after{display:none}.semantic-icon.mini.icon-chart::before{width:20px;height:18px}.timeline-point .semantic-icon.mini{--icon-size:34px;border:2px solid #fff;background:linear-gradient(135deg,#2f7f2e,#006eb0);box-shadow:0 0 0 2px rgba(0,132,204,.28),0 8px 18px rgba(14,40,65,.18),inset 0 1px 0 rgba(255,255,255,.34)}.timeline-point>span:first-child{background:#fff;border-color:rgba(0,132,204,.22);box-shadow:0 4px 12px rgba(14,40,65,.08)}.smartart + .smartart{margin-top:6px}.smartart-process{gap:8px}.smartart-process .smartart-item{min-height:132px;padding:11px 12px}.smartart-process .smartart-item h3{font-size:20px!important;line-height:1.08}.smartart-process .smartart-item p{font-size:16px;line-height:1.2}.smartart-cycle{min-height:246px;padding:0 14px;margin-top:0}.smartart-cycle::before{width:274px;height:158px;border-width:5px}.smartart-cycle::after{width:42px;height:42px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.8),0 0 0 7px rgba(255,255,255,.38)}.smartart-cycle .smartart-item{width:208px;min-height:70px;padding:8px 10px;grid-template-columns:27px 27px minmax(0,1fr);gap:7px}.smartart-cycle .smartart-index{width:25px;height:25px;font-size:13px}.smartart-cycle .semantic-icon.mini{--icon-size:25px;border-radius:7px}.smartart-cycle .smartart-item h3{font-size:18px!important;line-height:1.05}.smartart-cycle .smartart-item p{font-size:14px;line-height:1.18}.smartart-cycle .smartart-item::after{display:none}.smartart-hierarchy-layers{gap:6px}.smartart-hierarchy-layers .smartart-item{min-height:62px;padding:8px 12px;grid-template-columns:28px 28px minmax(0,1fr);gap:8px}.smartart-hierarchy-layers .smartart-index,.smartart-pyramid .smartart-index{width:26px;height:26px;font-size:13px}.smartart-hierarchy-layers .semantic-icon.mini,.smartart-pyramid .semantic-icon.mini{--icon-size:26px;border-radius:8px}.smartart-hierarchy-layers h3,.smartart-pyramid h3{font-size:18px!important;line-height:1.06}.smartart-hierarchy-layers p,.smartart-pyramid p{font-size:14px;line-height:1.18}.smartart-pyramid{gap:5px}.smartart-pyramid .smartart-item{min-height:48px;padding:7px 12px;grid-template-columns:28px 26px minmax(0,1fr);gap:8px}.smartart-picture-strip{gap:10px}.smartart-picture-strip .smartart-item{grid-template-rows:78px minmax(56px,auto)}.smartart-picture-strip .structure-media{height:78px}.smartart-picture-strip .smartart-item>div{padding:8px 10px}.smartart-picture-strip .smartart-item h3{font-size:17px!important;line-height:1.05}.smartart-picture-strip .smartart-item p{font-size:13px;line-height:1.16}
 .slide-footer{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:2;pointer-events:none}.slide-footer::before{content:"";position:absolute;left:16px;right:0;top:-2px;height:2px;background:linear-gradient(90deg,rgba(87,158,64,.85),rgba(0,132,204,.45),transparent)}.footer-band{display:block;width:100%;height:auto;max-height:none;object-fit:fill;box-shadow:none;border-radius:0;background:transparent}.footer-logo{position:absolute;left:3.4%;bottom:12%;width:13.5%;min-width:118px;max-width:178px;height:auto;box-shadow:none;border-radius:0;background:transparent}
 @media print{body{overflow:visible}.app-top,.thumbnail-rail,.rail-resizer,.drawer-handle,.preview-meta,.overview,.playback,.page-source{display:none!important}.workspace{display:block;height:auto}.preview-stage{width:100%;display:block}.slide-scale-shell{width:100%;height:auto}.slide-scale-shell .slide{position:relative;transform:none}.preview-stage .slide{page-break-after:always;width:100%;height:auto;box-shadow:none}html.skip-section-dividers .slide[data-section-divider="true"]{display:none!important}}@media(max-width:1040px){:root{--rail-width:230px}.preview-pane{padding:14px}.brand-lockup{max-width:calc(100vw - 230px);grid-template-columns:38px minmax(0,1fr)}.brand-lockup img{width:38px;max-height:34px}.brand-context{display:none}.top-actions .icon-btn{padding:7px 10px}.thumb-label{font-size:11px}}@media(max-width:680px){body{overflow:hidden}.app-top{position:sticky;top:0;z-index:40;padding:0 10px}.workspace{grid-template-columns:1fr;height:calc(100vh - 56px);overflow:hidden}.thumbnail-rail{position:fixed;left:0;top:56px;bottom:0;width:min(84vw,330px);max-width:calc(100vw - 44px);z-index:45;border-right:1px solid var(--line);border-bottom:0;box-shadow:18px 0 46px rgba(14,40,65,.22);transform:translateX(calc(-100% - 2px));transition:transform .24s cubic-bezier(.22,1,.36,1);max-height:none}.app.rail-open .thumbnail-rail{transform:translateX(0)}.rail-resizer{display:none}.drawer-handle{position:fixed;left:0;top:50%;z-index:46;display:grid;place-items:center;width:34px;height:76px;border:1px solid rgba(0,132,204,.28);border-left:0;border-radius:0 16px 16px 0;background:linear-gradient(180deg,var(--green),var(--blue));color:#fff;font-weight:850;box-shadow:0 10px 28px rgba(14,40,65,.24);transform:translateY(-50%);cursor:pointer}.drawer-handle::before{content:"☰";font-size:20px;line-height:1}.app.rail-open .drawer-handle{left:min(84vw,330px);transform:translate(-34px,-50%);border-radius:16px;background:rgba(14,40,65,.86);backdrop-filter:blur(12px)}.preview-pane{height:100%;min-height:0;padding:12px 10px 10px}.preview-meta{font-size:12px}.thumb-real{display:none}.thumb-card{display:block}.overview{height:auto}.brand-title{font-size:13px}.current-page-chip{min-width:46px}.top-actions{gap:5px}.top-actions .icon-btn{padding:7px 8px}}
 """
