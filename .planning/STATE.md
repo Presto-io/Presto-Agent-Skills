@@ -3,30 +3,30 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: School Presentation Continuation
 current_phase: 16
-status: planning
-stopped_at: Phase 16 context gathered
-last_updated: "2026-06-11T06:56:57.870Z"
-last_activity: 2026-06-11 — Phase 15 classroom interaction and structured layout execution completed
+status: complete
+stopped_at: Phase 16 complete
+last_updated: "2026-06-11T07:30:00Z"
+last_activity: 2026-06-11 — Phase 16 print/export review and v1.8 regression gate completed
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 3
-  completed_plans: 2
-  percent: 67
+  completed_plans: 3
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 16
-**Status:** Ready to plan
+**Status:** v1.8 complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-11)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.8 continues `school-presentation` with presenter markup, deferred classroom interaction extensions, structured layout helpers, and print/export review behavior.
+**Current focus:** v1.8 completed `school-presentation` presenter markup, classroom interaction extensions, structured layout helpers, and print/export review behavior.
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-11)
 
 ## Next Up
 
-Plan Phase 16: Print Export Review and v1.8 Regression Gate.
+v1.8 is complete. Next step is milestone audit or a new milestone if more presentation capabilities are needed.
 
 ## Accumulated Context
 
@@ -60,6 +60,8 @@ Plan Phase 16: Print Export Review and v1.8 Regression Gate.
 - Milestone v1.8 started: Continue official-school presentation development from the Phase 10 deferred scope.
 - Phase 14 completed: Playback-local presenter markup tools now cover pointer, pen, highlighter, eraser, clear current page, page-scoped session state, deterministic verification, and manual UAT without mutating authored artifacts.
 - Phase 15 completed: Classroom interaction and structured layout extensions connect peek, sort, restrained body-step animation, timeline/cards/gallery/smartart directives, semantic icons, section-divider controls, and deterministic verification.
+- Phase 16 planned: Print/export review will formalize same-HTML review mode, browser PDF UAT, section-title print controls, annotation exclusion, gallery pagination, and the full v1.8 regression gate.
+- Phase 16 completed: The offline HTML deck now includes generated print review controls, full physical-page PDF review output, section-divider print inclusion/exclusion, expanded reveal/mask/emphasis/sort review semantics, annotation exclusion, gallery card pagination hooks, 16:9 and 4:3 ratio checks, and deterministic `print_review_verified` regression evidence.
 
 ## Decisions
 
@@ -116,9 +118,9 @@ Plan Phase 16: Print Export Review and v1.8 Regression Gate.
 
 ## Last Session
 
-- **Completed:** Phase 15 classroom interaction and structured layout execution, deterministic verification, review, and completion metadata
-- **Stopped At:** Phase 16 context gathered
-- **Resume File:** .planning/phases/16-print-export-review-and-v1-8-regression-gate/16-CONTEXT.md
+- **Completed:** Phase 16 implementation, deterministic verification, Chrome-generated PDF review artifact, and planning closeout
+- **Stopped At:** Phase 16 complete
+- **Resume File:** .planning/phases/16-print-export-review-and-v1-8-regression-gate/16-01-SUMMARY.md
 
 ## Close Notes
 
@@ -134,10 +136,10 @@ Plan Phase 16: Print Export Review and v1.8 Regression Gate.
 ## Current Position
 
 Phase: 16 - Print Export Review and v1.8 Regression Gate
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-06-11 — Phase 15 classroom interaction and structured layout execution completed
+Plan: 16-01
+Status: Complete
+Last activity: 2026-06-11 — Phase 16 print/export review and v1.8 regression gate completed
 
 ## Operator Next Steps
 
-- Run `/gsd:plan-phase 16` to plan print/export review and the v1.8 regression gate.
+- Run `/gsd:audit-milestone` before archiving v1.8, or start the next milestone from the completed `school-presentation` continuation baseline.

@@ -25,8 +25,8 @@ Requirements for continuing the official-school presentation skill from the prev
 
 - [x] **SP-24**: A Markdown author can request structured school-style layout intents such as timeline, card grid, gallery/compare, or process/SmartArt-like sections without writing raw HTML.
 - [x] **SP-25**: The renderer can apply optional semantic icons and section-divider or section-cover display controls while preserving the established school identity system.
-- [ ] **SP-26**: A presenter can generate a print/export-friendly review view where reveal and mask states are inspectable and presenter-local annotations are excluded or flattened deterministically.
-- [ ] **SP-27**: The verification path covers v1.8 markup, classroom interactions, structured layouts, print/export review behavior, offline single-file boundaries, and fixed `16:9`/`4:3` slide-canvas stability.
+- [x] **SP-26**: A presenter can generate a print/export-friendly review view where reveal and mask states are inspectable and presenter-local annotations are excluded or flattened deterministically.
+- [x] **SP-27**: The verification path covers v1.8 markup, classroom interactions, structured layouts, print/export review behavior, offline single-file boundaries, and fixed `16:9`/`4:3` slide-canvas stability.
 
 ## Future Requirements
 
@@ -65,8 +65,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SP-23 | Phase 15 | Complete |
 | SP-24 | Phase 15 | Complete |
 | SP-25 | Phase 15 | Complete |
-| SP-26 | Phase 16 | Pending |
-| SP-27 | Phase 16 | Pending |
+| SP-26 | Phase 16 | Complete |
+| SP-27 | Phase 16 | Complete |
 
 **Coverage:**
 - v1.8 requirements: 11 total

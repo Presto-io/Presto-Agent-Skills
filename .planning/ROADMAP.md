@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-11 after Phase 15 completion
+**Last updated:** 2026-06-11 after Phase 16 completion
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -15,7 +15,7 @@
 - **Completed: v1.5 School Presentation Skill** - Phase 8, completed 2026-06-01. Requirements archive: `.planning/milestones/v1.5-REQUIREMENTS.md`
 - **Shipped: v1.6 School Presentation Playback UX** - Phases 9-10, automated verification passed 2026-06-03; Phase 10 visual UAT passed 2026-06-11. Requirements archive: `.planning/milestones/v1.6-REQUIREMENTS.md`
 - **Shipped: v1.7 End-of-Term Teaching Materials Skill** - Phases 11-13, shipped 2026-06-10. Requirements archive: `.planning/milestones/v1.7-REQUIREMENTS.md`
-- **Active: v1.8 School Presentation Continuation** - Phases 14-16, started 2026-06-11.
+- **Completed: v1.8 School Presentation Continuation** - Phases 14-16, completed 2026-06-11.
 
 ## Completed Phase Archive
 
@@ -78,6 +78,7 @@ Previous milestone summaries are preserved in `.planning/milestones/` and the re
 
 **Goal:** As a presenter or reviewer, I want a print/export-friendly deck review view and full regression gate, so v1.8 additions can be checked outside live playback while preserving offline single-file output and fixed slide-canvas stability.
 **Mode:** mvp
+**Status:** Complete
 
 **Depends on:** Phase 15
 
@@ -92,7 +93,7 @@ Previous milestone summaries are preserved in `.planning/milestones/` and the re
 
 ## Current Position
 
-v1.8 is active and continues the `school-presentation` line. Phase 15 is complete; the next slice is Phase 16 print/export review and the v1.8 regression gate.
+v1.8 completed the `school-presentation` continuation line through print/export review and the full regression gate. The generated deck now has an explicit browser PDF review path with deterministic verification evidence.
 
 ## Progress
 
@@ -100,7 +101,7 @@ v1.8 is active and continues the `school-presentation` line. Phase 15 is complet
 |-------|-----------|----------------|--------|-----------|
 | 14. Presenter Markup Tools | v1.8 | 1/1 | Complete | 2026-06-11 |
 | 15. Classroom Interaction and Structured Layout Extensions | v1.8 | 1/1 | Complete | 2026-06-11 |
-| 16. Print Export Review and v1.8 Regression Gate | v1.8 | 0/1 | Not Started | - |
+| 16. Print Export Review and v1.8 Regression Gate | v1.8 | 1/1 | Complete | 2026-06-11 |
 
 ## Requirement Coverage
 
@@ -117,8 +118,8 @@ v1.8 tracks 11 school-presentation continuation requirements: SP-17 through SP-2
 | SP-23 | Phase 15 | Complete |
 | SP-24 | Phase 15 | Complete |
 | SP-25 | Phase 15 | Complete |
-| SP-26 | Phase 16 | Pending |
-| SP-27 | Phase 16 | Pending |
+| SP-26 | Phase 16 | Complete |
+| SP-27 | Phase 16 | Complete |
 
 **Coverage:**
 - v1.8 requirements: 11 total
@@ -126,4 +127,4 @@ v1.8 tracks 11 school-presentation continuation requirements: SP-17 through SP-2
 - Unmapped: 0
 
 ---
-*Roadmap updated: 2026-06-11 after Phase 15 classroom interaction and structured layout completion*
+*Roadmap updated: 2026-06-11 after Phase 16 print/export review completion*
