@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: School Presentation Continuation
 current_phase: 16
-status: complete
+status: completed
 stopped_at: Phase 16 complete
-last_updated: "2026-06-12T00:00:00+08:00"
-last_activity: 2026-06-12 — Phase 16 final top/playback control visual UAT passed; current phase ended
+last_updated: "2026-06-11T19:35:38.977Z"
+last_activity: 2026-06-11 — Milestone v1.8 completed and archived
 progress:
   total_phases: 3
   completed_phases: 3
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 16
-**Status:** v1.8 complete
+**Status:** v1.8 milestone complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-11)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.8 completed `school-presentation` presenter markup, classroom interaction extensions, structured layout helpers, and print/export review behavior.
+**Current focus:** v1.8 is archived. Next work should start from a fresh milestone and requirements file.
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-11)
 
 ## Next Up
 
-v1.8 is complete. Next step is milestone audit or a new milestone if more presentation capabilities are needed.
+v1.8 is complete and archived. Next step is a new milestone if more skill capabilities are needed.
 
 ## Accumulated Context
 
@@ -62,6 +62,7 @@ v1.8 is complete. Next step is milestone audit or a new milestone if more presen
 - Phase 15 completed: Classroom interaction and structured layout extensions connect peek, sort, restrained body-step animation, timeline/cards/gallery/smartart directives, semantic icons, section-divider controls, and deterministic verification.
 - Phase 16 planned: Print/export review will formalize same-HTML review mode, browser PDF UAT, section-title print controls, annotation exclusion, gallery pagination, and the full v1.8 regression gate.
 - Phase 16 completed: The offline HTML deck now includes generated print review controls, full physical-page PDF review output, section-divider print inclusion/exclusion, expanded reveal/mask/emphasis/sort review semantics, annotation exclusion, gallery card pagination hooks, 16:9 and 4:3 ratio checks, deterministic `print_review_verified` regression evidence, one-click final PDF export, and the user-accepted floating capsule top/playback control design.
+- Milestone v1.8 archived: ROADMAP, REQUIREMENTS, and passed milestone audit are preserved under `.planning/milestones/`.
 
 ## Decisions
 
@@ -132,14 +133,15 @@ v1.8 is complete. Next step is milestone audit or a new milestone if more presen
 - Pre-close artifact audit reported Phase 01/08/09 UAT records as `resolved` or `passed` with 0 pending scenarios; no actionable UAT gap remains.
 - v1.6 Phase 10 visual UAT passed on 2026-06-11 and is recorded as shipped in `.planning/MILESTONES.md`.
 - v1.8 starts from Phase 10 deferred scope rather than reopening completed playback/reveal work.
+- v1.8 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 
 ## Current Position
 
-Phase: 16 - Print Export Review and v1.8 Regression Gate
-Plan: 16-01
-Status: Complete
-Last activity: 2026-06-12 — Phase 16 final top/playback control visual UAT passed; current phase ended
+Phase: Milestone v1.8 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-11 — Milestone v1.8 completed and archived
 
 ## Operator Next Steps
 
-- Run `/gsd:audit-milestone` before archiving v1.8, or start the next milestone from the completed `school-presentation` continuation baseline.
+- Start the next milestone with `/gsd:new-milestone`

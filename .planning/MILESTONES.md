@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.8 School Presentation Continuation (Shipped: 2026-06-11)
+
+**Phases completed:** 3 phases, 3 plans, automated audit passed
+
+**Key accomplishments:**
+
+- Added playback-local presenter markup tools: pointer, pen, highlighter, eraser, clear current page, and page-scoped session annotations that do not mutate Markdown, manifests, preview, or review artifacts.
+- Added deterministic classroom interaction and structured layout authoring for peek hints, sorting/reordering, restrained body-step animation, timelines, cards, galleries, SmartArt-like process layouts, semantic icons, and section controls.
+- Added print/export review behavior plus one-click final PDF export with expanded reveal/mask/emphasis/sort states, reader outline/bookmarks, agenda links, section-page include/skip behavior, and annotation exclusion.
+- Passed the v1.8 milestone audit for SP-17 through SP-27 across Phases 14-16.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.8-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.8-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.8-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.7.1 End-of-Term Teaching Materials Post-Close Patch (Resolved: 2026-06-10)
 
 **Patch scope:** bug fixes after v1.7 milestone archive
