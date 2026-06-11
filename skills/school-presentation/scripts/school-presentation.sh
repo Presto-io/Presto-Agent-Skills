@@ -333,6 +333,7 @@ def split_blocks(raw: str) -> list[dict[str, str]]:
             while i < len(lines) and not re.match(r"^:::\s*$", lines[i].strip()):
                 body.append(lines[i])
                 i += 1
+            has_closing_fence = i < len(lines)
             if i < len(lines):
                 i += 1
             body_text = "\n".join(body).strip()
@@ -345,6 +346,11 @@ def split_blocks(raw: str) -> list[dict[str, str]]:
             if alert_type:
                 blocks.append({"type": "alert", "alert_type": alert_type, "text": body_text})
                 continue
+            fallback_lines = [line] + body
+            if has_closing_fence:
+                fallback_lines.append(":::")
+            blocks.append({"type": "paragraph", "text": "\n".join(fallback_lines).strip()})
+            continue
         github_alert_match = re.match(r"^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$", line.strip(), flags=re.I)
         if github_alert_match:
             alert_type = normalize_alert_type(github_alert_match.group(1))
