@@ -389,6 +389,125 @@ split: false
 - [order=3] 空载试车并观察动作。
 :::
 
+### Slide: 教师提示 Peek 卡片
+
+<!-- slide
+layout: content
+intent: demonstrate hover and click peek cards
+split: false
+-->
+
+课堂讲解时可以把教师补充说明收进 peek 卡片。预览态显示卡片和完整内容，放映态支持悬停临时查看，也支持点击固定或取消固定。
+
+::: peek title="教师提示" trigger=both target="查看教师提示"
+先让学生说出判断依据，再揭示标准答案。若学生只说“不能通电”，追问保护接地、绝缘测试和急停回路各自防止什么风险。
+
+- 追问顺序：现象、风险、依据、处置。
+- 板书时只保留关键词，避免替学生完成完整推理。
+:::
+
+### Slide: 语义图标 opt-out 示例
+
+<!-- slide
+layout: content
+intent: demonstrate slide-level icon opt-out
+split: false
+icon: none
+-->
+
+这一页显式使用 `icon=none`，用于验证普通内容页可以关闭自动语义图标。
+
+- 页面仍保留学校风格标题、页码和页脚。
+- 只关闭标题图标，不影响正文中的结构化布局图标。
+
+### Slide: 项目推进时间轴
+
+<!-- slide
+layout: content
+intent: demonstrate vertical and horizontal timeline directives
+split: false
+-->
+
+::: timeline variant=vertical
+- [time="第1周" title="任务导入" icon=process] 明确课程项目、作品要求和安全边界。
+- [time="第2周" title="线路安装" icon=safety image="media/风景.webp"] 完成元件检测、接线和自检记录。
+- [time="第3周" title="联机调试" icon=review] 完成 PLC 下载、动作观察和问题复盘。
+:::
+
+::: timeline variant=horizontal
+- [time="课前" title="准备"] 分发图纸、工具和评价表。
+- [time="课中" title="实施"] 巡回观察关键动作并记录证据。
+- [time="课后" title="复盘"] 汇总典型错误并更新资源包。
+:::
+
+### Slide: 任务卡片与对比画廊
+
+<!-- slide
+layout: content
+intent: demonstrate cards and gallery directives
+split: false
+-->
+
+::: cards columns=3
+- [title="安全员" status="课前" icon=safety] 检查急停、接地和工位清理。
+- [title="接线员" status="课中" icon=process] 按图接线并完成线号整理。
+- [title="记录员" status="课后" icon=review] 汇总照片、评分表和整改结论。
+:::
+
+::: gallery variant=compare
+- [title="环境照片" image="media/风景.webp"] 观察工位布局和通道留白。
+- [title="作品局部" image="media/猫猫.png"] 检查主体是否按 contain 方式完整呈现。
+- [title="讲解素材" image="media/AI人像.jpg" icon=none] 验证 item-level `icon=none` 不生成结构图标。
+:::
+
+### Slide: 过程 SmartArt 版式
+
+<!-- slide
+layout: content
+intent: demonstrate process and cycle smartart directives
+split: false
+-->
+
+::: smartart type=process variant=chevron
+- [title="识读图纸" icon=review] 先确认主电路、控制电路和 I/O 地址。
+- [title="元件检测" icon=safety] 检测触点、线圈和保护器件状态。
+- [title="安装接线" icon=process] 按图接线、整理线号并完成自检。
+- [title="通电复核" icon=target] 教师复核后再进行空载试车。
+:::
+
+::: smartart type=cycle variant=segments
+- [title="观察"] 记录现象。
+- [title="判断"] 定位故障。
+- [title="修复"] 执行处置。
+- [title="复测"] 验证结果。
+:::
+
+### Slide: 层级、金字塔与图片 SmartArt
+
+<!-- slide
+layout: content
+intent: demonstrate hierarchy pyramid and picture smartart directives
+split: false
+-->
+
+::: smartart type=hierarchy variant=layers
+- [title="课程目标"] 安全规范、工艺质量、故障分析。
+- [title="学习任务"] 元件检测、线路安装、PLC 联调。
+- [title="证据材料"] 作品照片、评分表、复盘记录。
+:::
+
+::: smartart type=pyramid
+- [title="底层：安全"] 先保护人身和设备。
+- [title="中层：规范"] 再保证工艺和记录。
+- [title="顶层：迁移"] 最后迁移到综合任务。
+:::
+
+::: smartart type=picture variant=strip
+- [title="现场" image="media/风景.webp"] 实训环境。
+- [title="作品" image="media/猫猫.png"] 作品证据。
+- [title="讲解" image="media/AI人像.jpg"] 汇报素材。
+:::
+
 ### Slide: 多个答案按 order 推进
 
 <!-- slide
