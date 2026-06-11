@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: School Presentation Continuation
-current_phase: 15
-status: completed
-stopped_at: Phase 15 context gathered
-last_updated: "2026-06-11T04:25:15.057Z"
-last_activity: 2026-06-11 — Phase 14 presenter markup manual UAT passed and toolbar animation debug resolved
+current_phase: 16
+status: ready_to_plan
+stopped_at: Phase 15 completed
+last_updated: "2026-06-11T04:54:48Z"
+last_activity: 2026-06-11 — Phase 15 classroom interaction and structured layout execution completed
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 15
-**Status:** Phase 14 complete
+**Current Phase:** 16
+**Status:** Ready to plan
 
 ## Project Reference
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-11)
 
 ## Next Up
 
-Plan Phase 15: Classroom Interaction and Structured Layout Extensions.
+Plan Phase 16: Print Export Review and v1.8 Regression Gate.
 
 ## Accumulated Context
 
@@ -59,6 +59,7 @@ Plan Phase 15: Classroom Interaction and Structured Layout Extensions.
 - Phase 13 completed: Close gap: ETM-04/ETM-06/ETM-08 — uncertain scores reach Markdown review while final export remains strict
 - Milestone v1.8 started: Continue official-school presentation development from the Phase 10 deferred scope.
 - Phase 14 completed: Playback-local presenter markup tools now cover pointer, pen, highlighter, eraser, clear current page, page-scoped session state, deterministic verification, and manual UAT without mutating authored artifacts.
+- Phase 15 completed: Classroom interaction and structured layout extensions connect peek, sort, restrained body-step animation, timeline/cards/gallery/smartart directives, semantic icons, section-divider controls, and deterministic verification.
 
 ## Decisions
 
@@ -92,6 +93,7 @@ Plan Phase 15: Classroom Interaction and Structured Layout Extensions.
 - [Phase 12]: Manual verification passed. — User confirmed the generated package is accepted against external reference materials on 2026-06-10.
 - [Phase 13]: Uncertain-score review closure is complete. — Structured `87?` values can reach Markdown review with matching markers, normal final export remains strict, and explicit abnormal preview artifacts record non-final status plus red highlight evidence.
 - [Phase 14]: Presenter markup is playback-local session state only. — Pointer, pen, highlighter, eraser, and clear current page live in the generated playback UI; Markdown, `.page-source`, preview workspace, overview, thumbnails, and manifests stay annotation-free.
+- [Phase 15]: Classroom interaction and structured layout execution is complete. — The renderer connects teacher-facing Markdown directives to deterministic offline HTML, verifies real fixture rendering, preserves unknown directive content, and marks SP-21 through SP-25 complete.
 
 ## Performance Metrics
 
@@ -110,12 +112,13 @@ Plan Phase 15: Classroom Interaction and Structured Layout Extensions.
 | Phase 11 P01 | current session | 6 tasks | 8 files |
 | Phase 12 P01 | current session | 7 tasks | 15 files |
 | Phase 14 P01 | current session | 6 tasks | 7 files |
+| Phase 15 P01 | current session | 6 tasks | 6 files |
 
 ## Last Session
 
-- **Completed:** Phase 14 presenter markup implementation, deterministic verification, toolbar animation debug, and manual UAT
-- **Stopped At:** Phase 15 context gathered
-- **Resume File:** .planning/phases/15-classroom-interaction-and-structured-layout-extensions/15-CONTEXT.md
+- **Completed:** Phase 15 classroom interaction and structured layout execution, deterministic verification, review, and completion metadata
+- **Stopped At:** Phase 15 completed; Phase 16 ready to plan
+- **Resume File:** None
 
 ## Close Notes
 
@@ -130,12 +133,11 @@ Plan Phase 15: Classroom Interaction and Structured Layout Extensions.
 
 ## Current Position
 
-Phase: 15 - Classroom Interaction and Structured Layout Extensions
-Plan: —
-Status: Ready for discussion or planning
-Last activity: 2026-06-11 — Phase 14 presenter markup manual UAT passed and toolbar animation debug resolved
+Phase: 16 - Print Export Review and v1.8 Regression Gate
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-06-11 — Phase 15 classroom interaction and structured layout execution completed
 
 ## Operator Next Steps
 
-- Run `/gsd:plan-phase 15` to plan classroom interaction and structured layout extensions.
-- Or run `/gsd:discuss-phase 15` to gather context before planning.
+- Run `/gsd:plan-phase 16` to plan print/export review and the v1.8 regression gate.

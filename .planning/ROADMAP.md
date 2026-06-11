@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-11 after Phase 14 completion
+**Last updated:** 2026-06-11 after Phase 15 completion
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -61,6 +61,7 @@ Previous milestone summaries are preserved in `.planning/milestones/` and the re
 
 **Goal:** As a Markdown author, I want the Phase 10 deferred classroom interaction and structured layout helpers, so lessons can include hover/peek hints, sorting exercises, restrained body steps, timelines, cards, gallery/compare pages, and school-style process layouts without raw HTML.
 **Mode:** mvp
+**Status:** Complete
 
 **Depends on:** Phase 14
 
@@ -91,14 +92,14 @@ Previous milestone summaries are preserved in `.planning/milestones/` and the re
 
 ## Current Position
 
-v1.8 is active and continues the `school-presentation` line. It starts from the Phase 10 deferred scope after v1.6 visual UAT passed on 2026-06-11 and keeps the established Markdown-first, offline HTML-first presentation model.
+v1.8 is active and continues the `school-presentation` line. Phase 15 is complete; the next slice is Phase 16 print/export review and the v1.8 regression gate.
 
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 14. Presenter Markup Tools | v1.8 | 1/1 | Complete | 2026-06-11 |
-| 15. Classroom Interaction and Structured Layout Extensions | v1.8 | 0/1 | Not Started | - |
+| 15. Classroom Interaction and Structured Layout Extensions | v1.8 | 1/1 | Complete | 2026-06-11 |
 | 16. Print Export Review and v1.8 Regression Gate | v1.8 | 0/1 | Not Started | - |
 
 ## Requirement Coverage
@@ -111,11 +112,11 @@ v1.8 tracks 11 school-presentation continuation requirements: SP-17 through SP-2
 | SP-18 | Phase 14 | Complete |
 | SP-19 | Phase 14 | Complete |
 | SP-20 | Phase 14 | Complete |
-| SP-21 | Phase 15 | Pending |
-| SP-22 | Phase 15 | Pending |
-| SP-23 | Phase 15 | Pending |
-| SP-24 | Phase 15 | Pending |
-| SP-25 | Phase 15 | Pending |
+| SP-21 | Phase 15 | Complete |
+| SP-22 | Phase 15 | Complete |
+| SP-23 | Phase 15 | Complete |
+| SP-24 | Phase 15 | Complete |
+| SP-25 | Phase 15 | Complete |
 | SP-26 | Phase 16 | Pending |
 | SP-27 | Phase 16 | Pending |
 
@@ -125,4 +126,4 @@ v1.8 tracks 11 school-presentation continuation requirements: SP-17 through SP-2
 - Unmapped: 0
 
 ---
-*Roadmap updated: 2026-06-11 after Phase 14 presenter markup completion*
+*Roadmap updated: 2026-06-11 after Phase 15 classroom interaction and structured layout completion*
