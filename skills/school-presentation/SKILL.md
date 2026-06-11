@@ -56,12 +56,16 @@ metadata:
    - 答案遮罩：`::: mask order=1 ... :::` 或行内 `{{mask order=1}}答案{{/mask}}`；播放态遮住答案但不显示“点击揭示”等提示文字。
    - 正确项强调：`::: emphasis order=1 ... :::` 或行内 `{{emphasis order=1}}正确项{{/emphasis}}`；选择题选项常显，正确项按 order 变成强调状态。默认强调包含下划线，打印或静态审阅时仍可见。强调入场动画只在该 step 首次出现时播放，已经强调过的内容保持静态高亮，不随后续 step 重播动画。
    - 自动逐条展示：在 slide 注释中写 `animate: step`，普通段落、列表条目和表格行会自动生成播放步骤；排序练习可用 `::: sort final_order=4 ... :::` 与条目 `[order=1]` 控制排序编号和最终重排。
+   - Peek 补充提示：`::: peek title="教师提示" trigger=both target="查看教师提示" ... :::` 会生成卡片式提示；`trigger` 可为 `hover`、`click` 或默认 `both`。Peek 是补充查看，不替代 click-based reveal，也不写入 manifest 的运行时 pinned/hover 状态。
+   - 结构化版式：`::: timeline variant=vertical|horizontal ... :::`、`::: cards columns=3 ... :::`、`::: gallery variant=compare|album|strip ... :::`、`::: smartart type=process|cycle|hierarchy|pyramid|picture ... :::` 使用 Markdown 列表项和 `[title="..." image="..." icon=...]` 属性表达内容；不要写 raw HTML，也不要新增 `::: process :::`，流程图统一写作 `::: smartart type=process :::`。
+   - 语义图标：普通内容页默认 `icon=auto`，渲染器根据标题、intent 和正文选择克制的 school identity CSS 图标；slide 注释可写 `icon=none` 关闭标题图标，或写 `icon=safety|risk|formula|chart|table|media|reveal|review|process|target` 指定。封面、封底和章节页不自动添加标题图标。结构化条目也支持 `icon=none` 关闭条目图标。
+   - 章节分隔页：渲染器会为章节生成可选显示的 section divider；播放/预览侧栏提供显示控制，打印专项策略留到后续 print/export review 阶段，不在 Markdown 中写 raw HTML 控制。
    - `order` 是播放优先级，允许小数插入；渲染器按数值排序并在 manifest 中归一成连续 `step_index`。相同 `order` 的元素同时出现。
 8. 生成 Markdown 后，运行 `skills/school-presentation/scripts/school-presentation.sh render` 输出离线 HTML。生成结果默认打开 preview workspace：左侧 thumbnail rail 按章节和逻辑页分组，右侧 preview stage 显示当前物理页的真实 slide DOM；同一个单文件 HTML 内还包含 playback 和 overview。Preview workspace 显示全内容和最终揭示状态；playback 才按 reveal step 隐藏、遮罩或强调内容。
 9. slide 内部必须保持固定设计画布尺寸。不要在 slide 内容、字体、图片高度、图文栅格中使用 viewport-dependent CSS，例如 `vh`、`vw` 或基于视口的 `clamp()`；不同预览尺寸和浏览器缩放比例下，只允许外层 stage scale 改变，slide 内部元素相对关系必须像图片缩放一样保持不变。
 10. playback 支持键盘方向键、Space、PageUp/PageDown、鼠标左/中/右点击区域、触摸滑动、`Esc` 返回 workspace、URL hash 当前页与 step 同步和顶部蓝绿色进度条。右方向/Space/右侧或中部点击先推进当前页 reveal step，当前页完成后才翻页；左方向/左侧点击先撤回当前页上一步。跨页切换时，旧页按当前已揭示状态淡出，新切入页面一律从 step0 原始遮罩状态开始。最后一页全部完成后继续前进会退出放映模式。
 11. playback 内置 presenter markup palette：激光笔、画笔、荧光笔、橡皮擦和清除当前页控件只作用于当前浏览器放映会话；浮窗根据鼠标或触控边缘意图自动停靠。pen/highlighter/eraser 的标注按 physical page 做 page-scoped session state，翻页后返回仍保留，直到用户清除当前页；激光笔按住拖动时显示临时红色轨迹，抬笔后约 2 秒开始淡出，不生成持久标注。标注层只挂在 playback shell，不能写回 Markdown、`.page-source`、preview workspace、overview、thumbnail、manifest 或 deterministic review artifacts。绘制/擦除时会压住播放点击区，键盘导航、reveal、mask、emphasis 和 hover/peek 在非绘制状态下继续按原规则工作。
-12. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook、presenter markup 控件与 annotation layer hook，并写出 verification manifest。`presenter_markup_verified` 必须为 `true`，且 manifest 不得包含 annotation state、markup palette 或 stroke 数据。
+12. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook、peek、排序、结构化版式、语义图标、section divider、presenter markup 控件与 annotation layer hook，并写出 verification manifest。`presenter_markup_verified` 和 `classroom_structure_verified` 必须为 `true`，且 manifest 不得包含 annotation state、markup palette、stroke 数据、pinned peek 或 hover peek 状态。
 13. 对来源不确定、素材缺失、视频过大或内容无法稳定呈现的片段，就近写入合适级别的强调块或渲染 manifest，不要静默删除。
 
 ## Script Usage
@@ -104,6 +108,7 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 - [ ] manifest 包含 `sections -> logical_slides -> physical_pages -> reveal_steps` 层级，每个物理页带 `data-section-index`、`data-logical-index`、`data-physical-index`、`data-global-index` 和 `data-page-id` 对应信息。
 - [ ] 输出 HTML 包含 preview workspace、thumbnail rail、preview stage、playback、overview、hash 同步、键盘/鼠标/触摸导航和当前页同步逻辑。
 - [ ] 输出 HTML 包含有序 reveal、答案遮罩和正确项强调；preview 显示全内容和最终揭示状态，playback 按 step 控制。
+- [ ] 输出 HTML 包含 peek 卡片、排序编号/最终重排、`animate: step` 普通正文动画、timeline、cards、gallery、smartart、语义图标和 section divider 控件；`verify` 记录 `classroom_structure_verified: true`。
 - [ ] 输出 HTML 包含 playback-local pointer、pen、highlighter、eraser、clear/reset 与 page-scoped annotation layer；`verify` 记录 `presenter_markup_verified: true`，manifest 与 Markdown source 不包含标注状态。
 - [ ] 封面只包含每行最多 10 个中文字符且最多 2 行的主标题、最多 24 个中文字符的可选副标题和固定信息栏；信息栏只显示可选单位值、汇报人值和日期值，封面正文、额外副标题、自定义 `cover_*` 信息、地点或更多内容卡片不会进入首页。
 - [ ] 公式内容必须保持数学公式样式；被遮罩或揭示的公式/公式片段不能降级为普通字符。
@@ -121,7 +126,7 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 
 ## Deferred Scope
 
-SmartArt/时间轴/卡片等结构化版式、自动语义图标、排序题重排、正文逐段动画、章节封面显示开关、导出/打印专项能力、多人同步和持久保存标注不属于 Phase 14 presenter markup 最小交付；后续如需要，应单独规划需求、模板 fixture 和黑盒验证。
+导出/打印专项能力、多人同步、远程互动、拖拽排序和持久保存标注不属于 Phase 15 classroom/structure 交付；后续如需要，应单独规划需求、模板 fixture 和黑盒验证。Phase 15 已包含 Markdown-first 的 peek、排序、正文逐步动画、结构化版式、语义图标和章节分隔显示控制。
 
 ## Safety
 
