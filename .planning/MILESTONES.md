@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.9 Skill Decomposition and Entry Slimming (Shipped: 2026-06-13)
+
+**Phases completed:** 3 phases, 3 plans, 12 tasks, automated audit passed
+
+**Key accomplishments:**
+
+- Slimmed current canonical `SKILL.md` entries by moving long examples, renderer notes, artifact details, and operational guidance into skill-local `references/`.
+- Split the largest script entry points behind stable public command surfaces while preserving common flags, generated artifacts, manifest keys, and Markdown intermediate contracts.
+- Updated README, skills index, directory specification, compatibility matrix, and skill template so future skills follow the lightweight-entry and skill-local module pattern.
+- Passed the v1.9 milestone audit for SD-01 through SD-12 across Phases 17-19.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.9-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.9-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.9-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.8 School Presentation Continuation (Shipped: 2026-06-11)
 
 **Phases completed:** 3 phases, 3 plans, automated audit passed
