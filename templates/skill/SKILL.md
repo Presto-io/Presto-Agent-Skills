@@ -31,6 +31,7 @@ metadata:
 - `<input-name>`: <Expected input, constraints, and default behavior>
 - `<context-file-or-folder>`: <Optional supporting context the agent should read before acting>
 - `references/<reference-name>.md`: <Long format rules, examples, renderer notes, or operational details to read only when needed>
+- `templates/<intermediate-or-output-template>.md`: <Copyable Markdown intermediate or output scaffold, if this workflow creates files>
 
 ## Process
 
@@ -38,7 +39,7 @@ metadata:
 2. <Step two>
 3. <Step three>
 
-Keep `SKILL.md` as the semantic entry point: trigger intent, objective, required inputs, high-level process, outputs, verification, safety, and runtime adapter notes must remain visible here. Put long examples, detailed format rules, renderer notes, troubleshooting, fixture explanations, and operational edge cases in `references/`. Put helper commands in `scripts/`. Put output scaffolds or copyable artifact templates in `templates/`.
+Keep `SKILL.md` as the semantic entry point: trigger intent, objective, required inputs, high-level process, Markdown intermediate or artifact contract pointers, outputs, verification, safety, and runtime adapter notes must remain visible here. Put long examples, detailed format rules, renderer notes, troubleshooting, fixture explanations, UAT lists, and operational edge cases in `references/`. Put public helper commands and responsibility-based internal modules in `scripts/`. Put output scaffolds or copyable artifact templates in `templates/`.
 
 For document workflow skills, normalize source material into the Markdown intermediate described in `docs/markdown-normalization-contract.md` before generating Typst, HTML, or other target outputs.
 
@@ -48,12 +49,12 @@ Use this table for concise compatibility notes. Do not duplicate the skill proce
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | <How Codex should discover, invoke, or approximate this skill; map unavailable tools to Codex equivalents> |
-| Claude Code | <Claude Code skill path, frontmatter, tool allowlist, and subagent notes> |
-| Gemini CLI | <GEMINI.md or project-context bridge notes that tell Gemini how to find and follow this SKILL.md> |
-| OpenCode | <OpenCode skill path/loading notes and any Claude-compatible fallback path> |
-| OpenClaw | <OpenClaw path, conservative frontmatter, allowlist, sandbox, and security-review notes to verify> |
-| Hermes Agent | <Hermes path/loading/script-discovery behavior to verify in the installed runtime> |
+| Codex | <How Codex should discover, invoke, or approximate this skill; map unavailable tools to Codex equivalents; verify references/templates/scripts paths and write boundaries> |
+| Claude Code | <Claude Code skill folder, frontmatter, tool allowlist, progressive disclosure, and subagent notes> |
+| Gemini CLI | <GEMINI.md or project-context bridge notes that tell Gemini how to find and follow this SKILL.md and support folders> |
+| OpenCode | <OpenCode skill path/loading notes, support-folder preservation, and any Claude-compatible fallback path> |
+| OpenClaw | <OpenClaw path, conservative frontmatter, allowlist, sandbox, reference/template/script discovery, and security-review notes to verify> |
+| Hermes Agent | <Hermes path/loading/reference-template-script discovery behavior to verify in the installed runtime> |
 
 ## Outputs
 

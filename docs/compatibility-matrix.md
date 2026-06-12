@@ -4,23 +4,34 @@
 
 ## Recommended Pattern
 
-最佳实践是 **one canonical `SKILL.md` first, runtime notes second**：
+最佳实践是 **one canonical `SKILL.md` first, support files by progressive disclosure, runtime notes second**：
 
 1. 用一个 canonical `SKILL.md` 表达技能语义、触发条件、流程、输出、验证和安全边界。
-2. 在同一个 `SKILL.md` 的 adapter notes 中记录各 runtime 的加载路径、frontmatter 限制、工具调用、用户问询、任务/子代理和权限差异。
-3. v1 不维护独立 adapter 文件；如果 notes 变长，先压缩成必要检查点并保留在 canonical 文件里。
-4. 只有当 runtime 确实无法直接使用 canonical 文件时，才重新打开范围讨论 generated wrappers；v1 不实现 wrapper 生成，也不维护多份技能逻辑。
+2. 把长格式规则、examples、renderer notes、artifact contract、UAT 和 troubleshooting 放进 skill-local `references/`，把 helper commands 和 internal modules 放进 `scripts/`，把 Markdown intermediate 或输出 scaffolds 放进 `templates/`。
+3. 在同一个 `SKILL.md` 的 adapter notes 中记录各 runtime 的加载路径、frontmatter 限制、工具调用、用户问询、任务/子代理和权限差异。
+4. v1 不维护独立 adapter 文件；如果 notes 变长，先压缩成必要检查点并保留在 canonical 文件里。
+5. 只有当 runtime 确实无法直接使用 canonical 文件时，才重新打开范围讨论 generated wrappers；v1 不实现 wrapper generation，也不维护多份技能逻辑。
+
+## Installation Checks
+
+每个 runtime 在标记支持前都要做安装期核验：
+
+- `SKILL.md` frontmatter 可被解析，`description` 能触发正确技能。
+- `references/`、`templates/` 和 `scripts/` 保持相对路径可读；runtime 不会只复制入口文件而丢失支持文件。
+- `scripts/` 中的公共 helper command 在 sandbox/allowlist/write-permission 边界内可执行；未验证自动脚本发现时必须记录手动调用 fallback。
+- Markdown intermediate 模板和 artifact contract reference 可从 `SKILL.md` 或技能索引中找到。
+- 未在目标 runtime 上验证的行为必须明确标注为 installation-time check，不要声称完整支持。
 
 ## Matrix
 
 | Runtime | v1 Status | Same-File Strategy | Adapter Notes Must Cover |
 |---------|-----------|--------------------|--------------------------|
-| Codex | Required | Keep canonical workflow in `SKILL.md`; expose persistent project guidance through `AGENTS.md` or the local skill mechanism available in the installed Codex environment. | Tool equivalents, unavailable Claude-only syntax, file-write safety, and how Codex is told to read the skill. |
-| Claude Code | Required | Install the same `SKILL.md` in a Claude skill folder such as `.claude/skills/<name>/SKILL.md`. | Trigger-focused `description`, frontmatter/tool allowlist, progressive disclosure, and supporting file paths. |
-| Gemini CLI | Required | Use `GEMINI.md` or project context to point Gemini at the canonical `SKILL.md`. | Discovery bridge, invocation wording, unavailable tool mappings, and user-question fallback. |
-| OpenCode | Required | Prefer an OpenCode skill path that can load the same `SKILL.md`; record any Claude-compatible fallback path as an install note. | Native path, fallback path, tool permission differences, and verification that the runtime selected the skill. |
-| OpenClaw | Required | Treat OpenClaw as a first-class target using an AgentSkills-compatible `SKILL.md` folder when supported by the installed runtime. | Conservative frontmatter, allowlist, skill roots, sandbox sync, third-party skill review, and installation-time parser checks. |
-| Hermes Agent | Required | Treat Hermes Agent as a first-class target with `SKILL.md` skill folders, but validate the exact local/global path in the installed runtime. | Loading path, project-vs-global behavior, script discovery, tool permissions, and verification cautions for untested behavior. |
+| Codex | Required | Keep canonical workflow in `SKILL.md`; expose persistent project guidance through `AGENTS.md` or the local skill mechanism available in the installed Codex environment. | Tool equivalents, unavailable Claude-only syntax, file-write safety, support-file discovery, and how Codex is told to read the skill. |
+| Claude Code | Required | Install the same skill folder in a Claude skill path such as `.claude/skills/<name>/`, preserving `SKILL.md`, `references/`, `scripts/`, and `templates/`. | Trigger-focused `description`, frontmatter/tool allowlist, progressive disclosure, and supporting file paths. |
+| Gemini CLI | Required | Use `GEMINI.md` or project context to point Gemini at the canonical `SKILL.md`. | Discovery bridge, invocation wording, unavailable tool mappings, support-file paths, and user-question fallback. |
+| OpenCode | Required | Prefer an OpenCode skill path that can load the same `SKILL.md`; record any Claude-compatible fallback path as an install note. | Native path, fallback path, tool permission differences, support-folder preservation, and verification that the runtime selected the skill. |
+| OpenClaw | Required | Treat OpenClaw as a first-class target using an AgentSkills-compatible `SKILL.md` folder when supported by the installed runtime. | Conservative frontmatter, allowlist, skill roots, sandbox sync, reference/template/script discovery, third-party skill review, and installation-time parser checks. |
+| Hermes Agent | Required | Treat Hermes Agent as a first-class target with `SKILL.md` skill folders, but validate the exact local/global path in the installed runtime. | Loading path, project-vs-global behavior, reference/template/script discovery, tool permissions, and verification cautions for untested behavior. |
 
 ## Runtime Notes
 

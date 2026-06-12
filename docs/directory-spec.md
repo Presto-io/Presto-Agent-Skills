@@ -25,7 +25,7 @@
 
 `skills/` 下的 `SKILL.md` 是 semantic source of truth。它应该保留触发意图、目标、输入、核心流程、脚本调用入口、输出概览、验证入口、安全边界和 `Runtime Adapter Notes`。长格式规则、完整字段表、示例、renderer notes、artifact 明细、UAT 清单和排障说明应放进同一技能的 `references/`，并从 `SKILL.md` 显式链接。技能正文应该尽量 runtime-neutral；遇到 runtime 差异时，写在同一个 `SKILL.md` 的 `Runtime Adapter Notes` 中。v1 不维护独立 adapter 文件，也不要复制出多份语义不同的技能。
 
-`references/` 是 skill-local progressive disclosure 区域，不是新的 canonical skill body。引用文件可以很详细，但必须服务 owning skill 的 workflow；不要把某个模板的 metadata fields、renderer rules 或 fixture 细节提升为全仓库通用 schema。`scripts/` 只放可调用辅助命令或内部模块；`templates/` 只放生成输出时复制、渲染或填充的文件模板，不要把长说明文档混进模板目录。
+`references/` 是 skill-local progressive disclosure 区域，不是新的 canonical skill body。引用文件可以很详细，但必须服务 owning skill 的 workflow；不要把某个模板的 metadata fields、renderer rules 或 fixture 细节提升为全仓库通用 schema。`scripts/` 只放可调用辅助命令或内部模块；大型脚本可以拆成 CLI dispatch、parsing、rendering、artifact writing、verification/reporting 等 skill-local modules，但外层公共命令、常用 flags、输出文件名、manifest keys 和行为契约必须保持稳定。`templates/` 只放生成输出时复制、渲染或填充的文件模板，不要把长说明文档混进模板目录。
 
 ## Templates
 
