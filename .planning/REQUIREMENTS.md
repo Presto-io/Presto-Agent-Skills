@@ -10,10 +10,10 @@ Requirements for reducing the weight of current skill entry files and scripts wh
 
 ### Skill Entry Decomposition
 
-- [ ] **SD-01**: A skill reader can understand each current skill's trigger, objective, inputs, process, outputs, verification, safety boundary, and runtime adapter notes from a concise `SKILL.md`.
-- [ ] **SD-02**: Long format rules, examples, renderer details, and operational notes are moved from skill entry files into skill-local `references/` files with clear names and explicit links from `SKILL.md`.
-- [ ] **SD-03**: OpenClaw and Hermes Agent remain first-class runtime targets in every affected `SKILL.md`, with adapter notes preserved during slimming.
-- [ ] **SD-04**: The repository template and directory guidance describe when material belongs in `SKILL.md`, `references/`, `scripts/`, or `templates/`.
+- [x] **SD-01**: A skill reader can understand each current skill's trigger, objective, inputs, process, outputs, verification, safety boundary, and runtime adapter notes from a concise `SKILL.md`.
+- [x] **SD-02**: Long format rules, examples, renderer details, and operational notes are moved from skill entry files into skill-local `references/` files with clear names and explicit links from `SKILL.md`.
+- [x] **SD-03**: OpenClaw and Hermes Agent remain first-class runtime targets in every affected `SKILL.md`, with adapter notes preserved during slimming.
+- [x] **SD-04**: The repository template and directory guidance describe when material belongs in `SKILL.md`, `references/`, `scripts/`, or `templates/`.
 
 ### Script Decomposition
 
@@ -57,10 +57,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SD-01 | Phase 17 | Pending |
-| SD-02 | Phase 17 | Pending |
-| SD-03 | Phase 17 | Pending |
-| SD-04 | Phase 17 | Pending |
+| SD-01 | Phase 17 | Complete |
+| SD-02 | Phase 17 | Complete |
+| SD-03 | Phase 17 | Complete |
+| SD-04 | Phase 17 | Complete |
 | SD-05 | Phase 18 | Complete |
 | SD-06 | Phase 18 | Complete |
 | SD-07 | Phase 18 | Complete |
