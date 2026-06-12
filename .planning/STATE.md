@@ -2,31 +2,31 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Skill Decomposition and Entry Slimming
-current_phase: 18
+current_phase: 19
 status: complete
-stopped_at: Phase 19 context gathered
-last_updated: "2026-06-12T18:55:43.480Z"
-last_activity: 2026-06-12
+stopped_at: Phase 19 execution complete; ready for v1.9 milestone audit
+last_updated: "2026-06-12T19:22:42Z"
+last_activity: 2026-06-13 -- Phase 19 execution complete
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 3
-  completed_plans: 2
-  percent: 67
+  completed_plans: 3
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 18
-**Status:** Phase 18 complete
+**Current Phase:** 19
+**Status:** Phase 19 complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 18 — Script Module Decomposition complete; Phase 19 remains pending
+**Current focus:** v1.9 Phase 19 complete; formal milestone audit remains a separate command
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 ## Next Up
 
-Phase 18 is complete and verified. Phase 19 remains pending; do not start it from the Phase 18 execute handoff.
+Phase 19 is complete and verified. Run a formal v1.9 milestone audit when ready; do not treat Phase 19 execution as milestone archive or closeout.
 
 ## Accumulated Context
 
@@ -64,6 +64,7 @@ Phase 18 is complete and verified. Phase 19 remains pending; do not start it fro
 - Phase 16 completed: The offline HTML deck now includes generated print review controls, full physical-page PDF review output, section-divider print inclusion/exclusion, expanded reveal/mask/emphasis/sort review semantics, annotation exclusion, gallery card pagination hooks, 16:9 and 4:3 ratio checks, deterministic `print_review_verified` regression evidence, one-click final PDF export, and the user-accepted floating capsule top/playback control design.
 - Milestone v1.8 archived: ROADMAP, REQUIREMENTS, and passed milestone audit are preserved under `.planning/milestones/`.
 - Phase 18 completed: `school-presentation.sh`, `render_package.py`, and `gongwen.sh` now use skill-local modules or sourced helpers while preserving public command surfaces, common flags, Markdown intermediates, manifest keys, and artifact contracts.
+- Phase 19 completed: contributor guidance now documents the lightweight-entry and script-module decomposition pattern, affected skill artifact contracts are discoverable from README/skills index, and phase-local pre-audit evidence records Phase 17/18 before/after facts without marking v1.9 shipped.
 
 ## Decisions
 
@@ -99,6 +100,7 @@ Phase 18 is complete and verified. Phase 19 remains pending; do not start it fro
 - [Phase 14]: Presenter markup is playback-local session state only. — Pointer, pen, highlighter, eraser, and clear current page live in the generated playback UI; Markdown, `.page-source`, preview workspace, overview, thumbnails, and manifests stay annotation-free.
 - [Phase 15]: Classroom interaction and structured layout execution is complete. — The renderer connects teacher-facing Markdown directives to deterministic offline HTML, verifies real fixture rendering, preserves unknown directive content, and marks SP-21 through SP-25 complete.
 - [Phase 18]: Shared Bash helper extraction stayed skill-local. — The secondary jiaoan scripts were left untouched because a broader shared framework was not justified by a stable Phase 18 contract.
+- [Phase 19]: Decomposition guidance remains documentation/evidence-only. — Formal v1.9 audit, complete-milestone, milestone archive, generated wrappers, linting, scaffolding, hosted workflows, office-suite automation, and new output formats remain out of scope for this execute-phase run.
 
 ## Performance Metrics
 
@@ -119,6 +121,7 @@ Phase 18 is complete and verified. Phase 19 remains pending; do not start it fro
 | Phase 14 P01 | current session | 6 tasks | 7 files |
 | Phase 15 P01 | current session | 6 tasks | 6 files |
 | Phase 18 P01 | current session | 5 tasks | 30 files |
+| Phase 19 P01 | current session | 4 tasks | 10 files |
 
 ## Last Session
 
@@ -140,14 +143,14 @@ Phase 18 is complete and verified. Phase 19 remains pending; do not start it fro
 
 ## Current Position
 
-Phase: 18 (script-module-decomposition) — COMPLETE
+Phase: 19 (decomposition-guidance-and-milestone-review) — COMPLETE
 Plan: 1 of 1
 Status: Phase complete and verified
-Last activity: 2026-06-12
+Last activity: 2026-06-13 -- Phase 19 execution complete
 
 ## Operator Next Steps
 
-- Phase 18 execution is complete; Phase 19 remains pending for a separate command.
+- Phase 19 execution is complete; v1.9 formal milestone audit and complete-milestone remain separate commands.
 
 ### Quick Tasks Completed
 
