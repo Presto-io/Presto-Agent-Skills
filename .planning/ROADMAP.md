@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-13 for v1.9 milestone start
+**Last updated:** 2026-06-13 after Phase 18 execution
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -49,7 +49,7 @@
 **Depends on:** Phase 17
 **Plans:** 1/1 plans complete
 **Requirements:** SD-05, SD-06, SD-07, SD-08
-**Status:** Planned
+**Status:** Complete
 
 **Success criteria:**
 
@@ -99,11 +99,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 18 is planned and ready to execute.
+Phase 18 is complete and verified. Phase 19 remains pending.
 
 ## Next Step
 
-Execute Phase 18 with `/gsd:execute-phase 18`.
+Start Phase 19 when ready; do not treat Phase 18 execution as milestone audit or closeout.
 
 ---
-*Roadmap updated: 2026-06-13 for v1.9 skill decomposition and entry slimming*
+*Roadmap updated: 2026-06-13 after Phase 18 script module decomposition*

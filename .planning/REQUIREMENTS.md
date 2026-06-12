@@ -17,10 +17,10 @@ Requirements for reducing the weight of current skill entry files and scripts wh
 
 ### Script Decomposition
 
-- [ ] **SD-05**: Large script entry points are split into smaller internal modules or support scripts while keeping the public command names and common flags stable.
-- [ ] **SD-06**: Script modules have clear ownership boundaries, such as CLI dispatch, parsing, rendering, artifact writing, and verification/reporting helpers.
-- [ ] **SD-07**: Decomposition avoids introducing runtime-specific private syntax into canonical skill bodies or script interfaces.
-- [ ] **SD-08**: Shared behavior created during decomposition is extracted only when it reduces real duplication or clarifies a stable contract.
+- [x] **SD-05**: Large script entry points are split into smaller internal modules or support scripts while keeping the public command names and common flags stable.
+- [x] **SD-06**: Script modules have clear ownership boundaries, such as CLI dispatch, parsing, rendering, artifact writing, and verification/reporting helpers.
+- [x] **SD-07**: Decomposition avoids introducing runtime-specific private syntax into canonical skill bodies or script interfaces.
+- [x] **SD-08**: Shared behavior created during decomposition is extracted only when it reduces real duplication or clarifies a stable contract.
 
 ### Compatibility and Documentation
 
@@ -61,10 +61,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SD-02 | Phase 17 | Pending |
 | SD-03 | Phase 17 | Pending |
 | SD-04 | Phase 17 | Pending |
-| SD-05 | Phase 18 | Pending |
-| SD-06 | Phase 18 | Pending |
-| SD-07 | Phase 18 | Pending |
-| SD-08 | Phase 18 | Pending |
+| SD-05 | Phase 18 | Complete |
+| SD-06 | Phase 18 | Complete |
+| SD-07 | Phase 18 | Complete |
+| SD-08 | Phase 18 | Complete |
 | SD-09 | Phase 19 | Pending |
 | SD-10 | Phase 19 | Pending |
 | SD-11 | Phase 19 | Pending |
