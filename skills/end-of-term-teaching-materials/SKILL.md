@@ -18,15 +18,7 @@ metadata:
 
 ## Objective
 
-把期末提交材料需要的课程、班级、教师、学期、过程考核、成绩、分析和交接信息整理成一份可复核的 `end-of-term-full.md` Markdown intermediate，再通过固定 skill-local 模板生成 Typst/PDF、manifest、确定性 JSON/CSV 表格产物、calculated score evidence 和 teacher-facing workbook。
-
-固定流程是：
-
-```text
-structured data -> Markdown -> Typst/PDF + table artifacts
-```
-
-不得跳过持久 Markdown 复核点直接从原始数据导出 PDF。
+把期末提交材料需要的课程、班级、教师、学期、过程考核、成绩、分析和交接信息整理成一份可复核的 `end-of-term-full.md` Markdown intermediate，再通过固定 skill-local 模板生成 Typst/PDF、manifest、确定性表格产物、calculated score evidence 和 teacher-facing workbook。
 
 ## Use When
 
@@ -40,6 +32,8 @@ structured data -> Markdown -> Typst/PDF + table artifacts
 - `output_markdown`: 持久化 Markdown intermediate，默认结构见 `templates/end-of-term-full.md`。
 - `review_answers`: 用户对 `## 复核标记` 中不确定成绩、缺失字段或 AI 草稿内容的逐项确认或修正。
 - `workdir`: 已存在的输出目录；脚本只写入该目录或显式 `--output` 路径。
+- `references/workflow-and-artifacts.md`: 复核链、导出闸门、score/template 规则、artifact 列表和详细验证规则。
+- `references/rendering-style.md`, `references/cover-template-notes.md`, `references/scorebook-template-notes.md`: 固定模板排版和封面/记分册说明。
 
 ## Script Usage
 
@@ -54,7 +48,7 @@ skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh 
 Additional commands:
 
 - `validate --input <source.json|markdown.md>` checks required metadata, task/score consistency, package flags, and export readiness.
-- `render --abnormal-review` is only for explicitly requested unresolved-review inspection artifacts. It keeps `final_ready=false` and must not be treated as a final submission package.
+- `render --abnormal-review` is only for explicitly requested unresolved-review inspection artifacts; it keeps `final_ready=false` and must not be treated as a final submission package.
 - `manifest` prints machine-readable command/output metadata.
 - `info` prints a short workflow summary.
 - `version` prints the script version.
@@ -64,57 +58,36 @@ Parent directories for `--output` must already exist. `--workdir` must already e
 ## Process
 
 1. Normalize source material into explicit structured JSON following `references/data-contract.md`.
-2. Generate or update `end-of-term-full.md`; keep `YAML frontmatter + body` and the reviewable sections `## 我带的学生`、`## 过程考核任务`、`## 成绩数据`、`## 分析` and `## 复核标记`.
-3. When `成绩分析表` / 成绩分析册 content is enabled, do not rely only on generic AI prose. Ask the teacher for brief context such as 教学重点和难点、学生整体表现、缺考或异常情况、需要强调的问题、后续改进措施; then combine those answers with score distribution, pass rate, below-60 cases, blank cells, and task-score patterns to draft `## 分析`.
-4. Review the Markdown with the teacher. Uncertain values such as `87?` may be generated into `## 成绩数据` for review, and every unresolved value must have a matching `## 复核标记` row. Ask one item at a time, edit the Markdown value after teacher confirmation or correction, and remove the matching marker.
-5. The hard export rule: `## 复核标记` must be exactly `无`. If it is anything else, `validate`, `render`, and final export readiness must fail.
-6. Render normally only after review is clear. If unresolved items remain and the user explicitly wants inspection artifacts, explain the unresolved items first, ask whether to generate an abnormal preview, then use `render --abnormal-review`; manifest fields must include `artifact_kind: abnormal_review`, `final_ready: false`, and `review_cleared: false`.
-7. Preserve blank score cells and declared task columns. Empty scores remain empty; declared tasks remain columns even when all cells are blank.
-8. Respect package flags. `成绩记分册` is one bundle covering the redesigned cover and score-book body. `交接班记录封面` requires both `handover_class_name` and `handover_teachers`; otherwise the renderer skips it and records a manifest warning.
-9. Run `verify --workdir <dir>` before delivery. PDF compilation is attempted when `typst` is installed; missing Typst is reported explicitly in the manifest instead of silently passing as a PDF success.
-10. In abnormal review artifacts, unresolved uncertain score cells are marked with red warning styling. Values such as `87?` keep the visible `?` in raw score cells, but their numeric portion is used provisionally for calculated `期末分` and `学期成绩`. Derived `学期成绩` cells below 60 are also marked red where the workbook or PDF-visible score-book output shows that field.
-11. Support up to 8 process-assessment tasks. Markdown and deterministic artifacts must expand columns through `任务8`; the fixed `成绩汇总表` PDF grid renders at most 8 task columns.
-12. Calculate score-book derived values from the fixed template rules: `成绩记分册` shows every score row and uses the Markdown `考勤`、`作业`、`期末` test columns as its source data; `平时分` uses `考勤 * 0.3 + 作业 * 0.4 + 期末测试 * 0.3` when the Markdown `期末` test column is present, otherwise `考勤 * 0.5 + 作业 * 0.5`.
-13. Calculate score-summary values from a different view: `成绩汇总表` only shows students listed under `## 我带的学生`, uses `任务1..任务N`, and its `总评成绩` equals `期末分`, where `期末分` is the task-hours weighted average.
-14. Preserve fixed-template merged cells in the `成绩分析表`; `全班人数` and `缺考人数` labels each span the upper two statistic rows and remain centered above their values.
-
-## Outputs
-
-- `end-of-term-full.md`: persistent Markdown intermediate.
-- `end-of-term-package.typ`: generated Typst package using `templates/typst/end-of-term-package.typ`.
-- `end-of-term-package.pdf`: merged PDF package when `typst compile` succeeds.
-- `manifest.json`: package flags, warnings, PDF status, review status, repeatability and artifact verification flags.
-- `tables/score-data.json`: deterministic score rows.
-- `tables/score-data.csv`: deterministic score rows in fixed column order.
-- `tables/task-map.json`: mapping from `任务1..任务N` to task names and hours.
-- `tables/calculated-score-data.json`: deterministic raw score rows plus renderer-calculated `平时分`、`期末分` and `学期成绩`; PDF and workbook must use the same calculated values.
-- `tables/score-summary.json`: summary evidence for `## 我带的学生` only, using `任务1..任务N` and `总评成绩 = 期末分`.
-- `tables/highlight-evidence.json`: deterministic red-warning evidence for unresolved uncertain cells and below-60 `学期成绩` cells.
-- `tables/score-list.md`: 4-column Markdown table sorted by ascending student ID: `姓名`、`学号`、`平时成绩`、`期末成绩`; values come from the score-book `平时分` and `期末分`.
-- `tables/score-list.xlsx`: single-sheet workbook with the same 4-column sorted score list.
-- `tables/scorebook.xlsx`: teacher-facing workbook with `成绩数据`、`任务映射`、`成绩汇总` sheets; `成绩数据` follows the score-book view and uses `考勤`、`作业`、`期末` plus derived scores.
-
-PDF rendering uses the fixed Excel-style grid for the score book body, score summary, and analysis sheet: column proportions, row rhythm, thin borders, merged headers, merged statistic cells, and diagonal header cells are encoded in the skill-local renderer.
+2. Generate or update `end-of-term-full.md`; keep the reviewable Markdown sections listed in `references/workflow-and-artifacts.md`.
+3. Draft `## 分析` from teacher-provided context and score evidence; do not rely only on generic AI prose.
+4. Clear review markers one item at a time with the teacher. Normal final export requires `## 复核标记` to be exactly `无`.
+5. If unresolved items remain and the user explicitly wants inspection artifacts, explain the unresolved items first, ask whether to generate an abnormal preview, then use `render --abnormal-review`.
+6. Render normally only after the review gate is clear. Preserve blank cells, declared task columns, package flags, and fixed-template scoring rules from `references/workflow-and-artifacts.md`.
+7. Run `verify --workdir <dir>` before delivery. Missing Typst is reported explicitly in the manifest instead of silently passing as a PDF success.
 
 ## Runtime Adapter Notes
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | 读取本 `SKILL.md`、`references/data-contract.md`、固定模板说明和脚本后执行；写入前确认 `--output` parent 和 `--workdir` 已存在；用 `bash -n`、`python3 -m py_compile` 和 `verify --workdir` 做本地黑盒验证。 |
+| Codex | 读取本 `SKILL.md`、`references/data-contract.md`、`references/workflow-and-artifacts.md`、固定模板说明和脚本后执行；写入前确认 `--output` parent 和 `--workdir` 已存在；用 `bash -n`、`python3 -m py_compile` 和 `verify --workdir` 做本地黑盒验证。 |
 | Claude Code | 可安装到 `.claude/skills/end-of-term-teaching-materials/`；frontmatter 的 `description` 是触发入口；复核项可用 AskUserQuestion 或普通对话逐项确认；脚本执行前仍要验证文件写入边界。 |
 | Gemini CLI | 通过 `GEMINI.md` 或项目上下文指向本 `SKILL.md`；若缺少专用交互工具，用编号列表收集复核答案；执行脚本时显式传入 `--input`、`--output` 和 `--workdir`，不要依赖自动发现。 |
 | OpenCode | 使用可加载 `SKILL.md` 的 skill 路径；若走 Claude-compatible fallback，保持同一目录结构；验证 `references/`、`templates/`、`scripts/` 可读，且脚本只写入允许目录。 |
-| OpenClaw | 作为 AgentSkills-compatible 目录使用；安装时验证 frontmatter 解析、脚本执行权限、文件写入权限、fixture verification 和用户复核退路；如果脚本未被自动发现，显式调用 `scripts/end-of-term-teaching-materials.sh`。 |
+| OpenClaw | 作为 AgentSkills-compatible 目录使用；安装时验证 frontmatter 解析、reference/template 读取、脚本执行权限、文件写入权限、fixture verification 和用户复核退路；如果脚本未被自动发现，显式调用 `scripts/end-of-term-teaching-materials.sh`。 |
 | Hermes Agent | 使用 `SKILL.md` skill folder；安装时验证项目级/全局技能路径、支持文件读取、脚本执行权限、可写 workdir、fixture verification 和用户追问能力；不要假设自动脚本发现，必要时手动调用脚本并检查 manifest fallback。 |
+
+## Outputs
+
+- `end-of-term-full.md`: persistent Markdown intermediate。
+- Typst/PDF package, `manifest.json`, deterministic table artifacts, calculated score evidence, score-list workbook, and teacher-facing scorebook workbook。
+- Full artifact list and scoring evidence contract are maintained in `references/workflow-and-artifacts.md`。
 
 ## Verification
 
 - [ ] `bash -n skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh`
 - [ ] `python3 -m py_compile skills/end-of-term-teaching-materials/scripts/render_package.py`
 - [ ] `skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh verify --workdir <existing-dir>`
-- [ ] `manifest.json` includes `"review_cleared": true`, `"repeatable": true`, `"calculated_scores_verified": true`, `"table_artifacts_verified": true`, and workbook verification.
-- [ ] Uncertain fixture generation preserves `87?`, writes `## 复核标记`, blocks normal render, and allows only explicit `--abnormal-review` output with `"final_ready": false`.
-- [ ] `tables/score-data.json`、`tables/calculated-score-data.json`、`tables/score-data.csv`、`tables/task-map.json`、`tables/score-summary.json`、`tables/highlight-evidence.json`、`tables/score-list.md`、`tables/score-list.xlsx` and `tables/scorebook.xlsx` exist.
+- [ ] Manifest and deterministic table/workbook checks listed in `references/workflow-and-artifacts.md` pass.
 - [ ] Runtime adapter notes mention Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
 ## Success Criteria
@@ -123,7 +96,7 @@ PDF rendering uses the fixed Excel-style grid for the score book body, score sum
 - 脚本能从结构化 JSON 生成 Markdown，从 Markdown 生成 Typst，并在 Typst 可用时编译 merged PDF package。
 - Renderer 能稳定输出 deterministic table artifacts、calculated score evidence 和 teacher-facing workbook，且 PDF 显示值与 calculated score evidence 一致。
 - 复核未清除时不会声称最终导出、打印或提交材料已经完成。
-- 异常预览产物必须被报告为 `abnormal_review`，并带有 red/highlight evidence；它只支持教师检查，不能替代最终件。
+- 长工作流、artifact 和 scoring 细节位于 `references/workflow-and-artifacts.md`，入口保持清晰可读。
 - OpenClaw 与 Hermes Agent 的脚本权限、写入权限、fixture verification 和 fallback 行为有明确 adapter notes。
 
 ## Safety
