@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-13 after Phase 19 execution
+**Last updated:** 2026-06-13 after v1.9 milestone archive
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -16,63 +16,11 @@
 - **Shipped: v1.6 School Presentation Playback UX** - Phases 9-10, automated verification passed 2026-06-03; Phase 10 visual UAT passed 2026-06-11. Archives: `.planning/milestones/v1.6-ROADMAP.md`, `.planning/milestones/v1.6-REQUIREMENTS.md`, `.planning/milestones/v1.6-MILESTONE-AUDIT.md`
 - **Shipped: v1.7 End-of-Term Teaching Materials Skill** - Phases 11-13, shipped 2026-06-10. Archives: `.planning/milestones/v1.7-ROADMAP.md`, `.planning/milestones/v1.7-REQUIREMENTS.md`, `.planning/milestones/v1.7-MILESTONE-AUDIT.md`
 - **Shipped: v1.8 School Presentation Continuation** - Phases 14-16, shipped 2026-06-11. Archives: `.planning/milestones/v1.8-ROADMAP.md`, `.planning/milestones/v1.8-REQUIREMENTS.md`, `.planning/milestones/v1.8-MILESTONE-AUDIT.md`
-- **Active: v1.9 Skill Decomposition and Entry Slimming** - Phases 17-19.
+- **Shipped: v1.9 Skill Decomposition and Entry Slimming** - Phases 17-19, shipped 2026-06-13. Archives: `.planning/milestones/v1.9-ROADMAP.md`, `.planning/milestones/v1.9-REQUIREMENTS.md`, `.planning/milestones/v1.9-MILESTONE-AUDIT.md`
 
-## Current Milestone: v1.9 Skill Decomposition and Entry Slimming
+## Active Milestone
 
-**Goal:** Split heavy skill entry files and scripts into smaller, discoverable support files without changing the public skill interface or artifact contracts.
-
-**Requirements:** SD-01 through SD-12
-
-**Phases:** 3
-
-## Phase 17: Skill Entry and Reference Decomposition
-
-**Goal:** Slim the current canonical `SKILL.md` files so each remains a clear semantic entry point while long operational details move into skill-local `references/`.
-
-**Depends on:** v1.9 requirements
-**Plans:** 1/1 plans complete
-**Requirements:** SD-01, SD-02, SD-03, SD-04
-**Status:** Complete
-
-**Success criteria:**
-
-1. Each current skill entry keeps trigger intent, objective, inputs, process, outputs, verification, safety, and runtime adapter notes visible.
-2. Long examples, format rules, renderer notes, and operational details are moved into named `references/` files and linked from the relevant `SKILL.md`.
-3. OpenClaw and Hermes Agent notes remain present and easy to find in affected entries.
-4. `templates/skill/SKILL.md` and `docs/directory-spec.md` clearly describe the split between entry, references, scripts, and templates.
-
-## Phase 18: Script Module Decomposition
-
-**Goal:** Split the largest script entry points into smaller internal modules with clear ownership while keeping current command names, common flags, and output contracts stable.
-
-**Depends on:** Phase 17
-**Plans:** 1/1 plans complete
-**Requirements:** SD-05, SD-06, SD-07, SD-08
-**Status:** Complete
-
-**Success criteria:**
-
-1. The largest script targets have smaller module boundaries for CLI dispatch, parsing, rendering, artifact writing, and reporting helpers where appropriate.
-2. Public command names and common flags remain stable for current skills.
-3. Extracted shared behavior is limited to real duplication or stable contracts.
-4. Canonical skill bodies and script interfaces remain runtime-neutral.
-
-## Phase 19: Decomposition Guidance and Milestone Review
-
-**Goal:** Update contributor guidance and review evidence so future skills follow the lightweight-entry pattern without reintroducing oversized entry files or monolithic scripts.
-
-**Depends on:** Phase 18
-**Plans:** 1/1 plans complete
-**Requirements:** SD-09, SD-10, SD-11, SD-12
-**Status:** Complete
-
-**Success criteria:**
-
-1. README, skills index, directory specification, and compatibility guidance match the implemented decomposition pattern.
-2. Before/after evidence records which entry files and scripts were slimmed or split.
-3. Each affected skill still exposes its Markdown intermediate and artifact contract in a discoverable place.
-4. The milestone review confirms no unrelated feature expansion was folded into the structure work.
+No active milestone is defined. Start the next milestone only via an explicit `/gsd:new-milestone` command.
 
 ## Completed Phase Archive
 
@@ -102,11 +50,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 19 is complete and verified. v1.9 remains active until a separate milestone audit and closeout command runs.
+v1.9 is archived. No active milestone is currently defined.
 
 ## Next Step
 
-Run a formal v1.9 milestone audit when ready; do not treat Phase 19 execution as milestone archive or closeout.
+Wait for an explicit next-milestone command before creating new requirements or roadmap phases.
 
 ---
-*Roadmap updated: 2026-06-13 after Phase 19 decomposition guidance execution*
+*Roadmap updated: 2026-06-13 after v1.9 milestone archive*

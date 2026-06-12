@@ -130,6 +130,48 @@
 
 ---
 
+## Milestone: v1.9 - Skill Decomposition and Entry Slimming
+
+**Shipped:** 2026-06-13
+**Phases:** 3 | **Plans:** 3 | **Sessions:** 4+
+
+### What Was Built
+
+- Lightweight `SKILL.md` entries for current skills, with long operational detail moved into skill-local references.
+- Skill-local script modules for the largest current command surfaces while preserving public flags, artifact names, manifest keys, and Markdown intermediates.
+- Contributor guidance and pre-audit evidence for the decomposition pattern across README, skills index, directory spec, compatibility matrix, and the skill template.
+
+### What Worked
+
+- Treating `SKILL.md -> templates -> references -> scripts` as a lookup path kept the work focused on discoverability instead of feature expansion.
+- Phase 17 and Phase 18 summaries provided enough before/after evidence for a strict milestone audit.
+- Public-command regression checks gave confidence that the refactor reduced maintenance weight without changing user-facing behavior.
+
+### What Was Inefficient
+
+- Audit metadata needed normalization for Phase 17 requirements after the implementation had already passed verification.
+- The native `audit-open` query and the quick-task workflow disagreed on quick summary filenames, so closeout needed a compatibility summary for a completed quick task.
+- The automatic `milestone.complete` output needed manual date, statistics, ROADMAP, PROJECT, STATE, and archive wording fixes.
+
+### Patterns Established
+
+- Long-form skill detail belongs in `references/` and should be linked from the entry, not embedded in the default skill read.
+- Script splits should stay skill-local until there is stable cross-skill duplication worth a shared framework.
+- Milestone archives need manual review after SDK generation, especially for dates, task counts, and active/shipped wording.
+
+### Key Lessons
+
+1. Normalize requirement metadata before audit when a phase summary body and frontmatter can drift.
+2. Keep compatibility wrappers small and explicit when workflow tooling has legacy naming assumptions.
+3. Use phase summaries, verification files, and audit evidence as the source of truth for milestone statistics instead of trusting generated counts blindly.
+
+### Cost Observations
+
+- Model mix: balanced profile.
+- Notable: Most work was refactor and documentation review, with verification centered on public command compatibility rather than new feature behavior.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -139,6 +181,7 @@
 | v1.0 | 3 | 3 | Established canonical-template-first documentation and deferred unused examples. |
 | v1.7 | 3+ | 3 | Added fixed-template document package generation with strict review gates and audit-driven closure. |
 | v1.8 | 6+ | 3 | Extended the school-presentation renderer through live markup, classroom structures, and one-click PDF export while preserving HTML-first delivery. |
+| v1.9 | 4+ | 3 | Reduced skill entry and script weight through progressive-disclosure references, skill-local modules, and contributor guidance. |
 
 ### Cumulative Quality
 
@@ -147,6 +190,7 @@
 | v1.0 | Local Markdown and artifact checks | 9/9 v1 requirements shipped | 0 runtime dependencies added |
 | v1.7 | Script verifier, Typst/PDF compile when available, table/workbook repeatability, milestone audit | 8/8 ETM requirements shipped | Reused standard shell/Python workflow |
 | v1.8 | Script verifier, manifest checks, browser/manual UAT, PDF artifact sanity, milestone audit | 11/11 SP requirements shipped | Reused the existing shell/Python/HTML renderer path |
+| v1.9 | Public command regression, syntax/compile checks, documentation discovery checks, milestone audit | 12/12 SD requirements shipped | No new runtime dependencies added |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -154,3 +198,4 @@
 2. Keep optional artifacts out until they have a real user.
 3. Preserve a reviewable Markdown checkpoint before final document exports.
 4. Keep live presentation UI closeout tied to explicit visual UAT, not only code or state-file completion.
+5. Review generated milestone archives manually before committing closeout.

@@ -2,22 +2,22 @@
 
 ## Current State
 
-**Latest shipped milestone:** v1.8 School Presentation Continuation
+**Latest shipped milestone:** v1.9 Skill Decomposition and Entry Slimming
 
-**Shipped:** 2026-06-11
+**Shipped:** 2026-06-13
 
-**Status:** v1.9 is active. This milestone reduces the default weight of current skill entry files and large scripts while keeping the new skill system coherent.
+**Status:** v1.9 is archived. No active milestone is currently defined.
 
-**Delivered in v1.8:**
-- Presenter marking and annotation tools for playback, including pointer, pen, highlighter, eraser, and clear/reset controls.
-- Classroom interaction extensions from the Phase 10 deferred scope, including hover/peek, sorting/reordering exercises, and restrained body-step animation.
-- Structured school-style layout helpers, section controls, print/export review behavior, and one-click final PDF export while preserving the Markdown-first, offline HTML-first model.
+**Delivered in v1.9:**
+- Current canonical `SKILL.md` entries are lighter semantic entry points, with long examples, renderer notes, artifact details, and operational guidance moved into skill-local `references/`.
+- The largest script entry points now delegate to skill-local modules or sourced helpers while preserving public command names, common flags, generated artifacts, manifest keys, and Markdown intermediate contracts.
+- Contributor guidance now documents the decomposition lookup path and support-file ownership model so future skills do not accumulate heavy entry files or monolithic scripts by default.
 
 ## Milestone History
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior.
 
 ## What This Is
 
@@ -29,15 +29,9 @@ The repository is currently a stable documentation-first framework. New skill wo
 
 A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
 
-## Current Milestone: v1.9 Skill Decomposition and Entry Slimming
+## Current Milestone
 
-**Goal:** Split heavy skill entry files and scripts into smaller, discoverable support files without changing the public skill interface or artifact contracts.
-
-**Target features:**
-
-- Shorten canonical `SKILL.md` entry files so they keep trigger intent, workflow, outputs, verification, safety, and runtime adapter notes while moving long operational detail into skill-local `references/`.
-- Modularize large scripts behind stable command-line entry points, keeping current flags, default outputs, manifest fields, and verification behavior compatible.
-- Add regression evidence and documentation so future skills follow the same lightweight-entry, progressive-disclosure pattern.
+No active milestone is defined. New requirements and roadmap phases should only be created after an explicit `/gsd:new-milestone` command.
 
 ## Requirements
 
@@ -59,13 +53,14 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Add presenter-facing marking tools to the `school-presentation` playback UI while keeping annotations separate from Markdown source content. - v1.8 Phase 14
 - [x] Add deterministic classroom interaction extensions compatible with reveal/mask playback. - v1.8 Phase 15
 - [x] Add structured layout helpers, print/export review behavior, and one-click final PDF export without breaking the offline single-file HTML model or fixed slide canvas constraints. - v1.8 Phases 15-16
+- [x] Reduce the default reading weight of current `SKILL.md` files without losing trigger clarity, runtime adapter coverage, verification instructions, or safety boundaries. - v1.9 Phase 17
+- [x] Split large helper scripts into smaller internal modules while preserving the current shell command surface and generated artifact contracts. - v1.9 Phase 18
+- [x] Document the decomposition pattern in repository guidance so new skills do not accumulate heavy entry files or monolithic scripts. - v1.9 Phase 19
+- [x] Review affected skills for stable public interfaces, discoverable artifact contracts, and clear post-split ownership before accepting the refactor. - v1.9 Phase 19
 
 ### Active
 
-- [ ] Reduce the default reading weight of current `SKILL.md` files without losing trigger clarity, runtime adapter coverage, verification instructions, or safety boundaries. - v1.9
-- [ ] Split large helper scripts into smaller internal modules while preserving the current shell command surface and generated artifact contracts. - v1.9
-- [ ] Document the decomposition pattern in repository guidance so new skills do not accumulate heavy entry files or monolithic scripts. - v1.9
-- [ ] Review affected skills for stable public interfaces, discoverable artifact contracts, and clear post-split ownership before accepting the refactor. - v1.9
+(None currently active. Define the next milestone before adding new active requirements.)
 
 ### Out of Scope
 
@@ -97,14 +92,16 @@ v1.7 shipped a concrete document workflow skill for end-of-term teaching-materia
 
 v1.8 completed the official-school presentation continuation path from v1.5 and v1.6. It closed the Phase 10 deferred scope through scoped Markdown/rendering/playback capabilities: playback-local presenter markup, peek and sorting exercises, restrained body animation, SmartArt/timeline/cards/gallery-style layout helpers, semantic icons, section controls, print/export review behavior, and one-click final PDF export. The milestone kept freeform HTML editing, hosted collaboration, and office-suite automation out of scope.
 
-v1.9 is a structure milestone for the current skill system. Some entry files and scripts now carry too much detail for the progressive-disclosure model: `school-presentation.sh`, `end-of-term-teaching-materials/scripts/render_package.py`, and `gongwen.sh` are the largest script targets, while all canonical `SKILL.md` files should be checked against the repository skill template before slimming.
+v1.9 shipped the first decomposition pass for the current skill system. Some entry files and scripts had grown too heavy for the progressive-disclosure model, so the milestone slimmed current entries, moved long support material into references, split `school-presentation.sh`, `end-of-term-teaching-materials/scripts/render_package.py`, and `gongwen.sh` behind stable public entry points, and updated repository guidance for future skill authors.
 
 ## Next Milestone Goals
 
-- Apply the existing skill authoring rule: keep shared workflow logic in `SKILL.md`, long background in `references/`, helper code in `scripts/`, and output templates in `templates/`.
-- Preserve the current public skill interface, especially command names, CLI flags, output filenames, manifest keys, Markdown intermediate contracts, and user-facing invocation patterns.
-- Keep OpenClaw and Hermes Agent compatibility notes visible in every affected canonical skill entry.
-- Prefer mechanical refactors with focused interface and artifact-contract checks over opportunistic feature changes.
+No next milestone is active. When the next milestone is explicitly started, carry forward these constraints:
+
+- Keep shared workflow logic in `SKILL.md`, long background in `references/`, helper code in `scripts/`, and output templates in `templates/`.
+- Preserve public skill interfaces unless a new requirement explicitly authorizes a breaking change.
+- Keep OpenClaw and Hermes Agent compatibility notes visible in affected canonical skill entries.
+- Prefer focused interface and artifact-contract checks over opportunistic feature changes.
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -144,8 +141,9 @@ v1.9 is a structure milestone for the current skill system. Some entry files and
 | Use data to Markdown to Typst to PDF for v1.7 | This preserves the repository's reviewable Markdown-first document workflow while supporting fixed templates and verification | Good - shipped in v1.7 |
 | Skip external research for v1.7 planning | The target follows already validated local document-skill patterns, so requirements can be defined from project context and the user's confirmed scope | Good - shipped in v1.7 |
 | Keep uncertain scores reviewable before final export | The audit found that `87?` must reach Markdown review while final delivery stays strict | Good - closed in v1.7 Phase 13 |
-| Start v1.9 as a structure milestone | Current skill entries and scripts are increasingly heavy, so the next value is lowering default reading and edit cost while keeping the skill interface stable | Pending |
-| Preserve command surfaces during decomposition | Users and future agents rely on the current commands, generated artifacts, and invocation patterns | Pending |
+| Start v1.9 as a structure milestone | Current skill entries and scripts are increasingly heavy, so the next value is lowering default reading and edit cost while keeping the skill interface stable | Good - shipped in v1.9 |
+| Preserve command surfaces during decomposition | Users and future agents rely on the current commands, generated artifacts, and invocation patterns | Good - shipped in v1.9 |
+| Keep decomposition support files discoverable | Progressive disclosure only works if contributors can reliably find templates, references, artifact contracts, and scripts from the entry docs | Good - shipped in v1.9 |
 
 ## Evolution
 
@@ -165,4 +163,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-13 after v1.9 milestone start*
+*Last updated: 2026-06-13 after v1.9 milestone archive*
