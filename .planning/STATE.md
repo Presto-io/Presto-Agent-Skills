@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Skill Decomposition and Entry Slimming
 current_phase: 19
-status: complete
-stopped_at: Phase 19 execution complete; ready for v1.9 milestone audit
-last_updated: "2026-06-12T19:22:42Z"
-last_activity: 2026-06-13 -- Phase 19 execution complete
+status: completed
+stopped_at: v1.9 milestone archived; no active milestone
+last_updated: "2026-06-13T03:45:00+08:00"
+last_activity: 2026-06-13 -- Milestone v1.9 completed and archived
 progress:
   total_phases: 3
   completed_phases: 3
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 19
-**Status:** Phase 19 complete
+**Status:** v1.9 milestone complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.9 Phase 19 complete; formal milestone audit remains a separate command
+**Current focus:** No active milestone; v1.9 archive is complete.
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 ## Next Up
 
-Phase 19 is complete and verified. Run a formal v1.9 milestone audit when ready; do not treat Phase 19 execution as milestone archive or closeout.
+v1.9 is complete and archived. Do not create the next milestone until the user explicitly requests `/gsd:new-milestone`.
 
 ## Accumulated Context
 
@@ -65,6 +65,7 @@ Phase 19 is complete and verified. Run a formal v1.9 milestone audit when ready;
 - Milestone v1.8 archived: ROADMAP, REQUIREMENTS, and passed milestone audit are preserved under `.planning/milestones/`.
 - Phase 18 completed: `school-presentation.sh`, `render_package.py`, and `gongwen.sh` now use skill-local modules or sourced helpers while preserving public command surfaces, common flags, Markdown intermediates, manifest keys, and artifact contracts.
 - Phase 19 completed: contributor guidance now documents the lightweight-entry and script-module decomposition pattern, affected skill artifact contracts are discoverable from README/skills index, and phase-local pre-audit evidence records Phase 17/18 before/after facts without marking v1.9 shipped.
+- Milestone v1.9 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; no next milestone has been started.
 
 ## Decisions
 
@@ -140,17 +141,18 @@ Phase 19 is complete and verified. Run a formal v1.9 milestone audit when ready;
 - v1.6 Phase 10 visual UAT passed on 2026-06-11 and is recorded as shipped in `.planning/MILESTONES.md`.
 - v1.8 starts from Phase 10 deferred scope rather than reopening completed playback/reveal work.
 - v1.8 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
+- v1.9 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 
 ## Current Position
 
-Phase: 19 (decomposition-guidance-and-milestone-review) — COMPLETE
-Plan: 1 of 1
-Status: Phase complete and verified
-Last activity: 2026-06-13 -- Phase 19 execution complete
+Phase: Milestone v1.9 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-13 -- Milestone v1.9 completed and archived
 
 ## Operator Next Steps
 
-- Phase 19 execution is complete; v1.9 formal milestone audit and complete-milestone remain separate commands.
+- Await an explicit `/gsd:new-milestone` command before creating new requirements or roadmap phases.
 
 ### Quick Tasks Completed
 
