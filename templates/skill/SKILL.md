@@ -30,6 +30,7 @@ metadata:
 
 - `<input-name>`: <Expected input, constraints, and default behavior>
 - `<context-file-or-folder>`: <Optional supporting context the agent should read before acting>
+- `references/<reference-name>.md`: <Long format rules, examples, renderer notes, or operational details to read only when needed>
 
 ## Process
 
@@ -37,7 +38,7 @@ metadata:
 2. <Step two>
 3. <Step three>
 
-Keep shared workflow logic in this file. Put long background material in `references/`, helper scripts in `scripts/`, and output templates in `templates/` only when the skill needs them.
+Keep `SKILL.md` as the semantic entry point: trigger intent, objective, required inputs, high-level process, outputs, verification, safety, and runtime adapter notes must remain visible here. Put long examples, detailed format rules, renderer notes, troubleshooting, fixture explanations, and operational edge cases in `references/`. Put helper commands in `scripts/`. Put output scaffolds or copyable artifact templates in `templates/`.
 
 For document workflow skills, normalize source material into the Markdown intermediate described in `docs/markdown-normalization-contract.md` before generating Typst, HTML, or other target outputs.
 
@@ -58,12 +59,14 @@ Use this table for concise compatibility notes. Do not duplicate the skill proce
 
 - <Expected output artifact or response>
 - <Any files created or modified>
+- <If outputs have many fields or files, link to `references/<artifact-contract>.md` instead of listing every detail here>
 
 ## Verification
 
 - [ ] <Checkable success criterion for the output>
 - [ ] <Checkable success criterion for runtime compatibility notes>
 - [ ] <Checkable success criterion for safety boundaries>
+- [ ] <If detailed verification is long, this entry links to the skill-local reference that owns it>
 
 ## Success Criteria
 
