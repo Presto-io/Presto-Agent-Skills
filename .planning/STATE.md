@@ -3,29 +3,30 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Skill Decomposition and Entry Slimming
 current_phase: 17
-status: planning
-last_updated: "2026-06-13T00:00:00.000+08:00"
-last_activity: 2026-06-13 — Milestone v1.9 roadmap created
+status: completed
+stopped_at: Phase 17 complete
+last_updated: "2026-06-12T18:00:54.815Z"
+last_activity: 2026-06-13 — Phase 17 complete
 progress:
   total_phases: 3
-  completed_phases: 0
-  total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 33
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 17
-**Status:** v1.9 planning complete; Phase 17 is ready to discuss or plan
+**Status:** Phase 17 complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.9 will split current skill entries and scripts into lighter, more discoverable pieces while keeping the public skill interface stable.
+**Current focus:** Phase 18 — Script Module Decomposition
 
 ## Workflow Preferences
 
@@ -49,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 ## Next Up
 
-Phase 17 is next: slim canonical skill entries and move long operational detail into skill-local references.
+Phase 18 is next: split the largest script entry points into smaller internal modules while preserving public command surfaces.
 
 ## Accumulated Context
 
@@ -119,8 +120,8 @@ Phase 17 is next: slim canonical skill entries and move long operational detail 
 ## Last Session
 
 - **Completed:** Phase 16 implementation, deterministic verification, Chrome-generated PDF review artifact, final control visual UAT, and planning closeout
-- **Stopped At:** Phase 16 complete
-- **Resume File:** .planning/phases/16-print-export-review-and-v1-8-regression-gate/16-01-SUMMARY.md
+- **Stopped At:** Phase 17 complete
+- **Resume File:** .planning/phases/17-skill-entry-and-reference-decomposition/17-01-SUMMARY.md
 
 ## Close Notes
 
@@ -136,14 +137,14 @@ Phase 17 is next: slim canonical skill entries and move long operational detail 
 
 ## Current Position
 
-Phase: 17 — Skill Entry and Reference Decomposition
-Plan: —
-Status: Ready for discussion or planning
-Last activity: 2026-06-13 — Milestone v1.9 requirements and roadmap created
+Phase: 17 — COMPLETE
+Plan: 1 of 1
+Status: Phase 17 complete
+Last activity: 2026-06-13 — Phase 17 complete
 
 ## Operator Next Steps
 
-- Start Phase 17 with `/gsd:discuss-phase 17` or `/gsd:plan-phase 17`
+- Start Phase 18 with `/gsd:discuss-phase 18` or `/gsd:plan-phase 18`
 
 ### Quick Tasks Completed
 
