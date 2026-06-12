@@ -45,12 +45,12 @@ metadata:
    - `page_ratio`: 页面比例，只允许 `16:9` 或 `4:3`，默认 `16:9`；渲染器按该比例生成等尺寸物理页。
    - `max_output_mb`: 默认 `50`，用于离线 HTML 产物尺寸门禁。
 3. 正文优先用 `## Section: 章节名` 表达章节边界，并在章节下用 `### Slide: 标题` 表达一个逻辑页。旧的平面 `## Slide: 标题` deck 仍然兼容，渲染器会把它们放入默认章节。逻辑页下方可放一个 `<!-- slide ... -->` 元数据块：
-   - `layout`: `auto`、`cover`、`closing`、`section`、`content`、`media-right`、`media-left`、`media-center`、`media-compare`、`media-chart`、`table`、`chart` 或 `quote`。
+   - `layout`: `auto`、`cover`、`closing`、`section`、`content`、`media-right`、`media-left`、`media-center`、`media-compare`、`media-chart`、`full_page_image`、`table`、`chart` 或 `quote`。
    - `intent`: 该页的表达目的，供 agent 审阅和渲染器选择布局。
    - `split`: 默认为 `auto`，过长内容可自动拆为多个物理 HTML 页。
 4. 封面只能由一个主标题、一个可省略副标题和一个固定信息栏构成。主标题每行最多 10 个中文字符、最多 2 行；副标题最多按 24 个中文字符设计；固定信息栏只允许可选单位值、汇报人值、日期值，单位字段默认不显示，只有用户填写 `unit` 时才显示，且封面不显示“单位”标签；汇报地点不再使用。不要根据用户需求额外发明“主题、班级、课程、项目背景、适用对象、指导思想、地点”等封面栏目。不要在封面逻辑页正文中追加说明段落、第二副标题、口号、项目背景、更多信息卡片或自定义 `cover_*` 字段；这些内容必须移动到封面后的第一个内容页。渲染器会忽略封面正文块，只使用 frontmatter 的 `title`、`subtitle`、`unit`、汇报人和日期，防止首页内容溢出。
 5. 页面层级模型固定为 `sections -> logical_slides -> physical_pages -> reveal_steps`。渲染器会在封面后自动插入目录页，目录只读取 `## Section:` 一级章节标题，不要求 Markdown 作者手写次级页标题。目录每页最多显示 5 个章节，超过后自动拆成多个目录物理页。一个逻辑页可以自动拆成多个物理页，物理页标签使用逻辑页点号格式，例如 `3.1`、`3.2`。`reveal_steps` 记录当前物理页中的有序揭示、强调和答案遮罩步骤。
-6. 逻辑页内容保持普通 Markdown：标题、段落、列表、表格、代码块、公式、图片、视频占位、图表 fenced block、强调块和 speaker notes。强调块支持 `::: info`、`::: tip`、`::: warning`、`::: error`，并兼容 GitHub alert 写法 `> [!NOTE]`、`> [!TIP]`、`> [!IMPORTANT]`、`> [!WARNING]`、`> [!CAUTION]`。
+6. 逻辑页内容保持普通 Markdown：标题、段落、列表、表格、代码块、公式、图片、视频占位、图表 fenced block、强调块和 speaker notes。`layout: full_page_image` 用于承接其他工作流已经生成好的整页图片：该逻辑页仍用 `### Slide: 标题` 和 slide 注释提供目录、页码和管理语义，但页面本体只渲染正文中的第一张 Markdown 图片，不显示标题、页码、页脚、说明文字、speaker notes 或交互元素；图片以整页画布居中 contain 展示，不裁切。强调块支持 `::: info`、`::: tip`、`::: warning`、`::: error`，并兼容 GitHub alert 写法 `> [!NOTE]`、`> [!TIP]`、`> [!IMPORTANT]`、`> [!WARNING]`、`> [!CAUTION]`。
 7. 课堂揭示语法保持 Markdown-first：
    - 块级揭示：`::: reveal order=1 ... :::`，可包住列表、段落、公式、图表、图片等常见块。
    - 答案遮罩：`::: mask order=1 ... :::` 或行内 `{{mask order=1}}答案{{/mask}}`；播放态遮住答案但不显示“点击揭示”等提示文字。
@@ -66,7 +66,7 @@ metadata:
 10. playback 支持键盘方向键、Space、PageUp/PageDown、鼠标左/中/右点击区域、触摸滑动、`Esc` 返回 workspace、URL hash 当前页与 step 同步和顶部蓝绿色进度条。右方向/Space/右侧或中部点击先推进当前页 reveal step，当前页完成后才翻页；左方向/左侧点击先撤回当前页上一步。跨页切换时，旧页按当前已揭示状态淡出，新切入页面一律从 step0 原始遮罩状态开始。最后一页全部完成后继续前进会退出放映模式。
 11. playback 内置 presenter markup palette：激光笔、画笔、荧光笔、橡皮擦和清除当前页控件只作用于当前浏览器放映会话；浮窗根据鼠标或触控边缘意图自动停靠。pen/highlighter/eraser 的标注按 physical page 做 page-scoped session state，翻页后返回仍保留，直到用户清除当前页；激光笔按住拖动时显示临时红色轨迹，抬笔后约 2 秒开始淡出，不生成持久标注。标注层只挂在 playback shell，不能写回 Markdown、`.page-source`、preview workspace、overview、thumbnail、manifest 或 deterministic review artifacts。绘制/擦除时会压住播放点击区，键盘导航、reveal、mask、emphasis 和 hover/peek 在非绘制状态下继续按原规则工作。
 12. 生成 deck 内置 PDF 导出控件：`导出最终PDF` 会在当前离线 HTML 内直接生成并下载最终 PDF，不依赖系统打印对话框，也不要求用户再运行后处理命令。导出的 PDF 按 manifest physical page 顺序输出全量页面，内嵌 PDF reader 可读取的 outline/bookmarks，并给目录页写入跳转链接；reveal 内容展开、mask 答案可见、emphasis 保留下划线、排序练习使用最终顺序。最终 PDF 是否包含 section divider 直接跟随当前 `章节页` 预览按钮状态；跳过章节页时，PDF outline 与目录页链接必须自动指向对应章节的第一个可见正文页，不能丢失章节导航。该状态只属于生成 deck UI，不写入 Markdown 或 manifest。默认排除 presenter annotation layer、markup palette、laser trail、pinned peek、hover state 和其他运行时状态。为保证一键闭环和低性能设备打开速度，最终 PDF 页面以固定画布视觉栅格写入，文字不承诺可选择或可复制。
-13. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook、peek、排序、结构化版式、语义图标、section divider、presenter markup 控件、annotation layer hook、print/export review tokens、离线单文件边界，以及 `16:9` / `4:3` 固定画布样例，并写出 verification manifest。`presenter_markup_verified`、`classroom_structure_verified`、`print_review_verified`、`ratio_4x3_verified` 和 `offline_single_file_verified` 必须为 `true`，且 manifest 不得包含 annotation state、markup palette、stroke 数据、pinned peek、hover peek 或 print control runtime state。
+13. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook、peek、排序、结构化版式、语义图标、section divider、`full_page_image` 整页图片、presenter markup 控件、annotation layer hook、print/export review tokens、离线单文件边界，以及 `16:9` / `4:3` 固定画布样例，并写出 verification manifest。`presenter_markup_verified`、`classroom_structure_verified`、`full_page_image_verified`、`print_review_verified`、`ratio_4x3_verified` 和 `offline_single_file_verified` 必须为 `true`，且 manifest 不得包含 annotation state、markup palette、stroke 数据、pinned peek、hover peek 或 print control runtime state。
 14. PDF UAT 应直接点击离线 HTML 中的 `导出最终PDF`，确认下载产物可被 PDF 阅读器打开、outline/bookmarks 可读、目录页链接可跳转、页数与 manifest physical pages 一致、reveal 已展开、mask 答案可见、emphasis 下划线可见、排序为最终顺序、章节页可包含/跳过且不重排后续页、自动插入页和拆分页顺序正确、gallery 卡片不被截断、presenter annotations 默认不进入 PDF、`16:9` 与 `4:3` 样例保持固定画布比例。
 15. 对来源不确定、素材缺失、视频过大或内容无法稳定呈现的片段，就近写入合适级别的强调块或渲染 manifest，不要静默删除。
 
@@ -111,6 +111,7 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 - [ ] 输出 HTML 包含 preview workspace、thumbnail rail、preview stage、playback、overview、hash 同步、键盘/鼠标/触摸导航和当前页同步逻辑。
 - [ ] 输出 HTML 包含有序 reveal、答案遮罩和正确项强调；preview 显示全内容和最终揭示状态，playback 按 step 控制。
 - [ ] 输出 HTML 包含 peek 卡片、排序编号/最终重排、`animate: step` 普通正文动画、timeline、cards、gallery、smartart、语义图标和 section divider 控件；`verify` 记录 `classroom_structure_verified: true`。
+- [ ] 输出 HTML 支持 `layout: full_page_image`，manifest 仍记录章节、逻辑页、物理页、页码和 layout，但页面 DOM 只包含一张全画布图片且无 reveal steps；`verify` 记录 `full_page_image_verified: true`。
 - [ ] 输出 HTML 包含 playback-local pointer、pen、highlighter、eraser、clear/reset 与 page-scoped annotation layer；`verify` 记录 `presenter_markup_verified: true`，manifest 与 Markdown source 不包含标注状态。
 - [ ] 输出 HTML 包含 `导出最终PDF`、`预览` 和 `章节页` 双稳态按钮；按钮文案不写 `是/否`，状态由按下态表达；点击一次直接下载最终 PDF，PDF 章节页包含策略跟随当前 `章节页` 预览状态，内嵌 reader outline/bookmarks 和目录页跳转链接；章节页被跳过时，outline 与目录页链接仍指向可见正文页；展开 reveal/mask/emphasis/sort，排除 presenter annotations；`verify` 记录 `print_review_verified: true`。
 - [ ] 封面只包含每行最多 10 个中文字符且最多 2 行的主标题、最多 24 个中文字符的可选副标题和固定信息栏；信息栏只显示可选单位值、汇报人值和日期值，封面正文、额外副标题、自定义 `cover_*` 信息、地点或更多内容卡片不会进入首页。

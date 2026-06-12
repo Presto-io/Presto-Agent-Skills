@@ -838,6 +838,39 @@ def render_media(line: str, input_dir: Path, media_warnings: list[str]) -> str:
     return f"<figure><img src=\"{data_uri(path)}\" alt=\"{html.escape(label_text)}\"><figcaption>{inline_markdown(label_text)}</figcaption></figure>"
 
 
+def full_page_image_html(blocks: list[dict[str, str]], input_dir: Path, media_warnings: list[str]) -> tuple[str, str]:
+    for block in blocks:
+        if block.get("type") != "media":
+            continue
+        match = re.match(r"^!\[([^\]]+)\]\(([^)]+)\)", block.get("text", "").strip())
+        if not match:
+            continue
+        label, raw_path = match.group(1), match.group(2)
+        if label.lower().startswith("video:"):
+            media_warnings.append(f"full_page_image ignores video media: {raw_path}")
+            continue
+        path = resolve_asset(raw_path, input_dir)
+        if path is None:
+            media_warnings.append(f"full_page_image missing image: {raw_path}")
+            return (
+                '<div class="full-page-image-missing media-broken">'
+                '<div class="broken-media-icon broken-image" aria-hidden="true"></div>'
+                f'<code>{html.escape(raw_path)}</code></div>',
+                raw_path,
+            )
+        return (
+            f'<img class="full-page-image" src="{data_uri(path)}" alt="{html.escape(label)}">',
+            raw_path,
+        )
+    media_warnings.append("full_page_image slide has no image")
+    return (
+        '<div class="full-page-image-missing media-broken">'
+        '<div class="broken-media-icon broken-image" aria-hidden="true"></div>'
+        '<code>full_page_image requires one Markdown image</code></div>',
+        "",
+    )
+
+
 def render_alert(kind: str, text: str) -> str:
     alert_type = normalize_alert_type(kind) or "info"
     label = ALERT_LABELS[alert_type]
@@ -1451,6 +1484,17 @@ def render_page_section(
             f"<img class=\"cover-slogan\" src=\"{cover_slogan_uri}\" alt=\"school slogan\">"
             f"</section>"
         )
+    if layout == "full_page_image":
+        image_html, raw_path = full_page_image_html(chunk, input_dir, media_warnings)
+        record["reveal_steps"] = []
+        record["full_page_image"] = True
+        if raw_path:
+            record["full_page_image_source"] = raw_path
+        return (
+            f"<section class=\"{classes}\" {attrs}>"
+            f"{image_html}"
+            f"</section>"
+        )
     section_number = int(record["section_index"])
     animation_start = order_number(normalize_order(slide_meta.get("animate_order") if isinstance(slide_meta, dict) else None, "1")) or 1.0
     animation_state = {"next": animation_start}
@@ -1890,6 +1934,7 @@ figure{margin:24px 0;max-width:100%;display:grid;justify-items:center;align-cont
 .smartart{gap:13px}.smartart-item{padding:14px 16px;gap:10px}.smartart-index{width:32px;height:32px;font-size:17px}.smartart .semantic-icon.mini{--icon-size:30px;border-radius:9px}.smartart h3{font-size:25px!important;line-height:1.12;margin-bottom:6px!important}.smartart p{font-size:22px;line-height:1.32}.smartart-process{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.smartart-process .smartart-item{grid-template-columns:1fr;min-height:166px;padding:14px 16px;border-top:6px solid var(--blue)}.smartart-process .smartart-item h3{font-size:25px!important;line-height:1.12}.smartart-process .smartart-item p{font-size:22px;line-height:1.32}.smartart-cycle{display:block;position:relative;min-height:360px;padding:10px 18px;margin-top:2px}.smartart-cycle::before{left:50%;right:auto;top:50%;width:360px;height:224px;border-width:7px;transform:translate(-50%,-50%)}.smartart-cycle::after{width:64px;height:64px}.smartart-cycle .smartart-item{width:250px;min-height:92px;padding:14px 16px;grid-template-columns:34px 34px minmax(0,1fr);gap:9px}.smartart-cycle .smartart-index{width:32px;height:32px;font-size:17px}.smartart-cycle .semantic-icon.mini{--icon-size:30px;border-radius:9px}.smartart-cycle .smartart-item h3{font-size:22px!important;line-height:1.12}.smartart-cycle .smartart-item p{font-size:18px;line-height:1.24}.smartart-hierarchy-layers{grid-template-columns:1fr;gap:13px}.smartart-hierarchy-layers .smartart-item{width:var(--layer-width);justify-self:center;min-height:116px;padding:14px 16px;grid-template-columns:34px 34px minmax(0,1fr);gap:10px}.smartart-pyramid{gap:8px}.smartart-pyramid .smartart-item{width:var(--pyramid-width);min-height:76px;padding:14px 16px;grid-template-columns:42px 34px minmax(0,1fr);gap:10px}
 .gallery-compare{display:block;column-count:4;column-gap:12px;max-height:500px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:2px 8px 8px 2px;scrollbar-gutter:stable;background:linear-gradient(180deg,rgba(238,247,251,.55),rgba(255,255,255,0));border-radius:7px}.gallery-compare:focus-visible{outline:3px solid rgba(0,132,204,.45);outline-offset:3px}.gallery-compare .gallery-item{display:inline-block;width:100%;margin:0 0 12px;break-inside:avoid;page-break-inside:avoid;grid-template-rows:auto minmax(0,auto);overflow:visible}.gallery-compare .structure-media{position:static!important;display:block;height:auto!important;min-height:0!important;overflow:visible!important;background:#eef7fb;border-bottom:1px solid #dceaf0}.gallery-compare .structure-media img{position:static!important;inset:auto!important;display:block;width:100%!important;height:auto!important;max-width:100%!important;max-height:none!important;object-fit:contain!important;padding:0!important}.gallery-compare .gallery-icon-panel{height:auto;min-height:118px}.gallery-compare .gallery-copy{padding:10px 12px}.gallery-compare h3{font-size:20px!important;line-height:1.08;margin-bottom:4px!important}.gallery-compare p{font-size:16px;line-height:1.18}
 .slide-footer{position:absolute;left:0;right:0;bottom:0;width:100%;z-index:2;pointer-events:none}.slide-footer::before{content:"";position:absolute;left:16px;right:0;top:-2px;height:2px;background:linear-gradient(90deg,rgba(87,158,64,.85),rgba(0,132,204,.45),transparent)}.footer-band{display:block;width:100%;height:auto;max-height:none;object-fit:fill;box-shadow:none;border-radius:0;background:transparent}.footer-logo{position:absolute;left:3.4%;bottom:12%;width:13.5%;min-width:118px;max-width:178px;height:auto;box-shadow:none;border-radius:0;background:transparent}
+.layout-full_page_image{display:block!important;position:relative;background:#fff;overflow:hidden}.full-page-image{position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;object-position:center;display:block;background:#fff;box-shadow:none;border-radius:0}.full-page-image-missing{position:absolute;inset:0;display:grid;place-items:center;gap:14px;background:#f8fbfc;color:#8a3a32;font-size:24px;text-align:center}
 html.print-review-mode .annotation-layer,html.print-review-mode .markup-palette,html.print-review-mode .markup-live-pointer,html.print-review-mode .laser-trail-layer{display:none!important}html.print-review-mode .reveal-kind-reveal,html.print-review-mode .reveal-kind-animate{visibility:visible!important}html.print-review-mode .reveal-kind-mask>.reveal-content,html.print-review-mode .reveal-kind-reveal>.reveal-content{visibility:visible!important}html.print-review-mode .reveal-kind-mask::after,html.print-review-mode .reveal-kind-reveal::after{display:none!important}html.print-review-mode .reveal-kind-emphasis,html.print-review-mode .emphasis-underline{text-decoration:underline;text-decoration-thickness:5px;text-decoration-color:rgba(242,186,2,.88);text-underline-offset:7px;background:rgba(87,158,64,.08);border-radius:4px}html.print-review-mode .sort-list[data-print-sort-state="final"] .sort-item{order:var(--sort-order);background:#f4fbf2;border-color:rgba(87,158,64,.62)}html.print-review-mode .gallery-item{break-inside:avoid;page-break-inside:avoid}.lightweight-export-source,.lightweight-export-workbench{display:none}.lightweight-export-page{position:relative;width:var(--lightweight-export-width,var(--slide-design-width));height:var(--lightweight-export-height,var(--slide-design-height));overflow:hidden;background:#fff}.lightweight-export-background,.lightweight-export-overlay{position:absolute!important;left:0!important;top:0!important;right:auto!important;bottom:auto!important;width:var(--lightweight-export-width,var(--slide-design-width))!important;height:var(--lightweight-export-height,var(--slide-design-height))!important;max-width:none!important;max-height:none!important;min-width:0!important;min-height:0!important;aspect-ratio:auto!important;margin:0!important;transform:none!important}.lightweight-export-background{display:block;object-fit:fill}.lightweight-export-overlay{overflow:hidden!important;background:transparent!important;background-image:none!important;box-shadow:none!important;border-color:transparent!important;filter:none!important;text-shadow:none!important}.lightweight-export-overlay::before,.lightweight-export-overlay::after{display:none!important}.lightweight-export-overlay *{background-color:transparent!important;background-image:none!important;border-color:transparent!important;box-shadow:none!important;filter:none!important;text-shadow:none!important}.lightweight-export-overlay *::before,.lightweight-export-overlay *::after{display:none!important}.lightweight-export-overlay img,.lightweight-export-overlay video{visibility:hidden!important}.lightweight-export-overlay .structure-media img,.lightweight-export-overlay main>figure img,.lightweight-export-overlay main>video{visibility:visible!important}.lightweight-export-overlay .reveal-kind-reveal,.lightweight-export-overlay .reveal-kind-animate{visibility:visible!important}.lightweight-export-overlay .reveal-kind-mask>.reveal-content,.lightweight-export-overlay .reveal-kind-reveal>.reveal-content{visibility:visible!important}.lightweight-export-overlay .reveal-kind-mask::after,.lightweight-export-overlay .reveal-kind-reveal::after{display:none!important}
 @media print{@page{size:__PRINT_PAGE_WIDTH_PX__px __PRINT_PAGE_HEIGHT_PX__px;margin:0}html,body{width:__PRINT_PAGE_WIDTH_PX__px;min-width:0;height:auto;min-height:0;overflow:visible;background:#fff}.app-top,.thumbnail-rail,.rail-resizer,.drawer-handle,.preview-meta,.overview,.playback,.workspace,.preview-stage,.annotation-layer,.markup-palette,.markup-live-pointer,.laser-trail-layer,.lightweight-export-workbench{display:none!important}.page-source,.page-source[hidden]{display:block!important}.page-source .slide{position:relative;display:grid!important;width:100%;max-width:none;aspect-ratio:var(--slide-aspect);height:auto;min-height:0;overflow:hidden;box-shadow:none;page-break-after:always;break-after:page}.page-source .slide.has-scrollable-region,.page-source .slide:has(.scrollable-region){display:block!important;aspect-ratio:auto;height:auto;min-height:__PRINT_PAGE_HEIGHT_PX__px;overflow:visible}.page-source .slide.has-scrollable-region main,.page-source .slide:has(.scrollable-region) main{display:block!important;height:auto;overflow:visible!important}.page-source .slide:last-child{page-break-after:auto;break-after:auto}.page-source .reveal-kind-reveal,.page-source .reveal-kind-animate{visibility:visible!important}.page-source .reveal-kind-mask>.reveal-content,.page-source .reveal-kind-reveal>.reveal-content{visibility:visible!important}.page-source .reveal-kind-mask::after,.page-source .reveal-kind-reveal::after{display:none!important}.page-source .reveal-kind-emphasis,.page-source .emphasis-underline{text-decoration:underline!important;text-decoration-thickness:5px;text-decoration-color:rgba(242,186,2,.9);text-underline-offset:7px;background:rgba(87,158,64,.08);border-radius:4px}.page-source .sort-list[data-print-sort-state="final"] .sort-item{order:var(--sort-order);background:#f4fbf2;border-color:rgba(87,158,64,.62)}.page-source .gallery,.page-source .gallery-compare{max-height:none!important;overflow:visible!important}.page-source .gallery-item,.page-source .board-card,.page-source .timeline-card,.page-source .smartart-item{break-inside:avoid;page-break-inside:avoid}html.skip-section-dividers .page-source .slide[data-section-divider="true"]{display:none!important}html.lightweight-export-ready .app{display:none!important}html.lightweight-export-ready .page-source{display:none!important}html.lightweight-export-ready .lightweight-export-source{display:block!important;width:__PRINT_PAGE_WIDTH_PX__px!important;margin:0!important;padding:0!important}html.lightweight-export-ready .lightweight-export-page{display:block!important;width:__PRINT_PAGE_WIDTH_PX__px!important;height:__PRINT_PAGE_HEIGHT_PX__px!important;max-width:none!important;aspect-ratio:auto!important;margin:0!important;padding:0!important;page-break-after:always;break-after:page;break-inside:avoid;page-break-inside:avoid}html.lightweight-export-ready .lightweight-export-background,html.lightweight-export-ready .lightweight-export-overlay{width:100%!important;height:100%!important}html.lightweight-export-ready .lightweight-export-page:last-child{page-break-after:auto;break-after:auto}}@media(max-width:1040px){:root{--rail-width:230px}.preview-pane{padding:14px}.brand-lockup{max-width:calc(100vw - 230px);grid-template-columns:38px minmax(0,1fr)}.brand-lockup img{width:38px;max-height:34px}.brand-context{display:none}.top-actions .icon-btn{padding:7px 10px}.thumb-label{font-size:11px}}@media(max-width:680px){body{overflow:hidden}.app-top{position:sticky;top:0;z-index:40;padding:0 10px}.workspace{grid-template-columns:1fr;height:calc(100vh - 56px);overflow:hidden}.thumbnail-rail{position:fixed;left:0;top:56px;bottom:0;width:min(84vw,330px);max-width:calc(100vw - 44px);z-index:45;border-right:1px solid var(--line);border-bottom:0;box-shadow:18px 0 46px rgba(14,40,65,.22);transform:translateX(calc(-100% - 2px));transition:transform .24s cubic-bezier(.22,1,.36,1);max-height:none}.app.rail-open .thumbnail-rail{transform:translateX(0)}.rail-resizer{display:none}.drawer-handle{position:fixed;left:0;top:50%;z-index:46;display:grid;place-items:center;width:34px;height:76px;border:1px solid rgba(0,132,204,.28);border-left:0;border-radius:0 16px 16px 0;background:linear-gradient(180deg,var(--green),var(--blue));color:#fff;font-weight:850;box-shadow:0 10px 28px rgba(14,40,65,.24);transform:translateY(-50%);cursor:pointer}.drawer-handle::before{content:"☰";font-size:20px;line-height:1}.app.rail-open .drawer-handle{left:min(84vw,330px);transform:translate(-34px,-50%);border-radius:16px;background:rgba(14,40,65,.86);backdrop-filter:blur(12px)}.preview-pane{height:100%;min-height:0;padding:12px 10px 10px}.preview-meta{font-size:12px}.thumb-real{display:none}.thumb-card{display:block}.overview{height:auto}.brand-title{font-size:13px}.current-page-chip{min-width:46px}.top-actions{gap:5px}.top-actions .icon-btn{padding:7px 8px}}
 """
@@ -4530,6 +4575,18 @@ def cmd_verify(args: argparse.Namespace) -> None:
         and not any(token in first_manifest_text or token in second_manifest_text for token in runtime_state_tokens)
         and offline_single_file_verified
     )
+    full_page_image_pages = [
+        page for page in m1.get("pages", [])
+        if isinstance(page, dict) and page.get("layout") == "full_page_image"
+    ]
+    full_page_image_verified = (
+        len(full_page_image_pages) == 1
+        and full_page_image_pages[0].get("full_page_image") is True
+        and full_page_image_pages[0].get("reveal_steps") == []
+        and "layout-full_page_image" in first_html
+        and "full-page-image" in first_html
+        and "layout: full_page_image" in sample_text
+    )
     gallery_logical_pages = [
         logical
         for section in m1.get("sections", [])
@@ -4622,6 +4679,7 @@ split: auto
         and presenter_markup_verified
         and classroom_structure_verified
         and print_review_verified
+        and full_page_image_verified
         and gallery_scrollable_verified
         and ratio43_verified
         and offline_single_file_verified
@@ -4637,6 +4695,7 @@ split: auto
         "presenter_markup_verified": presenter_markup_verified,
         "classroom_structure_verified": classroom_structure_verified,
         "print_review_verified": print_review_verified,
+        "full_page_image_verified": full_page_image_verified,
         "gallery_scrollable_verified": gallery_scrollable_verified,
         "ratio_4x3_verified": ratio43_verified,
         "offline_single_file_verified": offline_single_file_verified,
