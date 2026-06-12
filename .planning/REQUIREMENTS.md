@@ -24,10 +24,10 @@ Requirements for reducing the weight of current skill entry files and scripts wh
 
 ### Compatibility and Documentation
 
-- [ ] **SD-09**: README, skills index, directory specification, and compatibility guidance are updated when the decomposition pattern changes contributor expectations.
-- [ ] **SD-10**: The v1.9 implementation records enough before/after evidence for reviewers to confirm that entry weight is lower and public interfaces are still stable.
-- [ ] **SD-11**: Each affected skill keeps its current Markdown intermediate and artifact contract discoverable after the split.
-- [ ] **SD-12**: The milestone leaves feature expansion out of scope unless required to preserve the decomposition contract.
+- [x] **SD-09**: README, skills index, directory specification, and compatibility guidance are updated when the decomposition pattern changes contributor expectations.
+- [x] **SD-10**: The v1.9 implementation records enough before/after evidence for reviewers to confirm that entry weight is lower and public interfaces are still stable.
+- [x] **SD-11**: Each affected skill keeps its current Markdown intermediate and artifact contract discoverable after the split.
+- [x] **SD-12**: The milestone leaves feature expansion out of scope unless required to preserve the decomposition contract.
 
 ## Future Requirements
 
@@ -65,10 +65,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SD-06 | Phase 18 | Complete |
 | SD-07 | Phase 18 | Complete |
 | SD-08 | Phase 18 | Complete |
-| SD-09 | Phase 19 | Pending |
-| SD-10 | Phase 19 | Pending |
-| SD-11 | Phase 19 | Pending |
-| SD-12 | Phase 19 | Pending |
+| SD-09 | Phase 19 | Complete |
+| SD-10 | Phase 19 | Complete |
+| SD-11 | Phase 19 | Complete |
+| SD-12 | Phase 19 | Complete |
 
 **Coverage:**
 - v1.9 requirements: 12 total

@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-13 after Phase 18 execution
+**Last updated:** 2026-06-13 after Phase 19 execution
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -63,9 +63,9 @@
 **Goal:** Update contributor guidance and review evidence so future skills follow the lightweight-entry pattern without reintroducing oversized entry files or monolithic scripts.
 
 **Depends on:** Phase 18
-**Plans:** 1 planned
+**Plans:** 1/1 plans complete
 **Requirements:** SD-09, SD-10, SD-11, SD-12
-**Status:** Pending
+**Status:** Complete
 
 **Success criteria:**
 
@@ -96,14 +96,17 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 14. Presenter Markup Tools | v1.8 | Complete | 2026-06-11 |
 | 15. Classroom Interaction and Structured Layout Extensions | v1.8 | Complete | 2026-06-11 |
 | 16. Print Export Review and v1.8 Regression Gate | v1.8 | Complete | 2026-06-11 |
+| 17. Skill Entry and Reference Decomposition | v1.9 | Complete | 2026-06-13 |
+| 18. Script Module Decomposition | v1.9 | Complete | 2026-06-13 |
+| 19. Decomposition Guidance and Milestone Review | v1.9 | Complete | 2026-06-13 |
 
 ## Current Position
 
-Phase 18 is complete and verified. Phase 19 remains pending.
+Phase 19 is complete and verified. v1.9 remains active until a separate milestone audit and closeout command runs.
 
 ## Next Step
 
-Start Phase 19 when ready; do not treat Phase 18 execution as milestone audit or closeout.
+Run a formal v1.9 milestone audit when ready; do not treat Phase 19 execution as milestone archive or closeout.
 
 ---
-*Roadmap updated: 2026-06-13 after Phase 18 script module decomposition*
+*Roadmap updated: 2026-06-13 after Phase 19 decomposition guidance execution*
