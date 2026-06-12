@@ -31,9 +31,9 @@
 **Goal:** Slim the current canonical `SKILL.md` files so each remains a clear semantic entry point while long operational details move into skill-local `references/`.
 
 **Depends on:** v1.9 requirements
-**Plans:** 1 planned
+**Plans:** 1/1 plans complete
 **Requirements:** SD-01, SD-02, SD-03, SD-04
-**Status:** Pending
+**Status:** Complete
 
 **Success criteria:**
 
@@ -99,11 +99,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-v1.9 is defining and planning the skill decomposition path. Phase 17 is the next phase.
+Phase 17 is complete. Phase 18 is the next phase.
 
 ## Next Step
 
-Start Phase 17 with `/gsd:discuss-phase 17` or `/gsd:plan-phase 17`.
+Start Phase 18 with `/gsd:discuss-phase 18` or `/gsd:plan-phase 18`.
 
 ---
 *Roadmap updated: 2026-06-13 for v1.9 skill decomposition and entry slimming*
