@@ -6,7 +6,7 @@
 
 **Shipped:** 2026-06-11
 
-**Status:** v1.8 is archived. There is no active milestone; the next milestone should start with fresh requirements.
+**Status:** v1.9 is active. This milestone reduces the default weight of current skill entry files and large scripts while keeping the new skill system coherent.
 
 **Delivered in v1.8:**
 - Presenter marking and annotation tools for playback, including pointer, pen, highlighter, eraser, and clear/reset controls.
@@ -29,6 +29,16 @@ The repository is currently a stable documentation-first framework. New skill wo
 
 A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
 
+## Current Milestone: v1.9 Skill Decomposition and Entry Slimming
+
+**Goal:** Split heavy skill entry files and scripts into smaller, discoverable support files without changing the public skill interface or artifact contracts.
+
+**Target features:**
+
+- Shorten canonical `SKILL.md` entry files so they keep trigger intent, workflow, outputs, verification, safety, and runtime adapter notes while moving long operational detail into skill-local `references/`.
+- Modularize large scripts behind stable command-line entry points, keeping current flags, default outputs, manifest fields, and verification behavior compatible.
+- Add regression evidence and documentation so future skills follow the same lightweight-entry, progressive-disclosure pattern.
+
 ## Requirements
 
 ### Validated
@@ -42,7 +52,7 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Define a Markdown-first normalization contract for arbitrary document input. - v1.1 Phase 4
 - [x] Add the first concrete `gongwen` skill with trigger wording, canonical workflow, runtime notes, script code, and verification path. - v1.2 Phase 5
 - [x] Add the second concrete `jiaoan-shicao` skill with trigger wording, canonical workflow, support resource, script code, and verification path. - v1.3 Phase 6
-- [x] Add the `jiaoan-jihua` skill with trigger wording, canonical workflow, script code, and black-box Typst/PDF verification path. - v1.4 Phase 7
+- [x] Add the `jiaoan-jihua` skill with trigger wording, canonical workflow, script code, and Typst/PDF verification path. - v1.4 Phase 7
 - [x] Add the `school-presentation` skill with a Markdown logical-slide intermediate, school identity assets, offline HTML rendering, overflow splitting, and human-accepted visual output. - v1.5 Phase 8
 - [x] Refine `school-presentation` playback with preview workspace, page hierarchy, ordered reveals, emphasis animation, and answer masks. - v1.6 Phases 9-10
 - [x] Add the `end-of-term-teaching-materials` skill with structured data input, teacher-reviewable Markdown, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict review gates. - v1.7 Phases 11-13
@@ -52,7 +62,10 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ### Active
 
-(None. Define the next milestone with fresh requirements.)
+- [ ] Reduce the default reading weight of current `SKILL.md` files without losing trigger clarity, runtime adapter coverage, verification instructions, or safety boundaries. - v1.9
+- [ ] Split large helper scripts into smaller internal modules while preserving the current shell command surface and generated artifact contracts. - v1.9
+- [ ] Document the decomposition pattern in repository guidance so new skills do not accumulate heavy entry files or monolithic scripts. - v1.9
+- [ ] Review affected skills for stable public interfaces, discoverable artifact contracts, and clear post-split ownership before accepting the refactor. - v1.9
 
 ### Out of Scope
 
@@ -76,7 +89,7 @@ v1.0 shipped 3 phases and 3 plans:
 - Phase 2 made `templates/skill/SKILL.md` the canonical copyable artifact and documented runtime compatibility for all six required runtimes.
 - Phase 3 removed unused examples and standalone adapter files, keeping examples optional until they solve a real contributor need.
 
-v1.2 adds the first concrete skill using that pattern: `skills/gongwen`, backed by a Presto gongwen black-box renderer and Typst PDF verification. v1.3 adds the second concrete skill, `skills/jiaoan-shicao`, backed by a Presto jiaoan-shicao black-box renderer, calendar support resource, and Typst PDF verification. v1.4 adds `skills/jiaoan-jihua`, backed by the Presto jiaoan-jihua black-box renderer and Typst/PDF verification.
+v1.2 adds the first concrete skill using that pattern: `skills/gongwen`, backed by a Presto gongwen renderer and Typst PDF verification. v1.3 adds the second concrete skill, `skills/jiaoan-shicao`, backed by a Presto jiaoan-shicao renderer, calendar support resource, and Typst PDF verification. v1.4 adds `skills/jiaoan-jihua`, backed by the Presto jiaoan-jihua renderer and Typst/PDF verification.
 
 v1.5 added `skills/school-presentation`, backed by extracted official-school visual assets and a Markdown-to-HTML presentation renderer. The milestone deliberately avoids PPTX generation and treats HTML as the primary stable output. v1.6 added playback and classroom interaction controls to that HTML deck.
 
@@ -84,12 +97,14 @@ v1.7 shipped a concrete document workflow skill for end-of-term teaching-materia
 
 v1.8 completed the official-school presentation continuation path from v1.5 and v1.6. It closed the Phase 10 deferred scope through scoped Markdown/rendering/playback capabilities: playback-local presenter markup, peek and sorting exercises, restrained body animation, SmartArt/timeline/cards/gallery-style layout helpers, semantic icons, section controls, print/export review behavior, and one-click final PDF export. The milestone kept freeform HTML editing, hosted collaboration, and office-suite automation out of scope.
 
+v1.9 is a structure milestone for the current skill system. Some entry files and scripts now carry too much detail for the progressive-disclosure model: `school-presentation.sh`, `end-of-term-teaching-materials/scripts/render_package.py`, and `gongwen.sh` are the largest script targets, while all canonical `SKILL.md` files should be checked against the repository skill template before slimming.
+
 ## Next Milestone Goals
 
-- Define fresh requirements before opening the next milestone.
-- Keep the existing Markdown logical-slide intermediate as the source of truth for presentation work.
-- Preserve offline single-file HTML as the primary `school-presentation` runtime output unless a future milestone explicitly changes that contract.
-- Treat presenter annotations as playback-local state unless a later requirement explicitly asks for saved annotation artifacts.
+- Apply the existing skill authoring rule: keep shared workflow logic in `SKILL.md`, long background in `references/`, helper code in `scripts/`, and output templates in `templates/`.
+- Preserve the current public skill interface, especially command names, CLI flags, output filenames, manifest keys, Markdown intermediate contracts, and user-facing invocation patterns.
+- Keep OpenClaw and Hermes Agent compatibility notes visible in every affected canonical skill entry.
+- Prefer mechanical refactors with focused interface and artifact-contract checks over opportunistic feature changes.
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -103,6 +118,8 @@ v1.8 completed the official-school presentation continuation path from v1.5 and 
 - **Data checkpoint discipline**: Structured data and Markdown must remain inspectable before Typst/PDF generation; avoid invisible one-step conversions.
 - **Language**: Agent-facing responses in this repository should be Simplified Chinese unless a file format or downstream runtime requires otherwise.
 - **Portability**: Avoid assuming one agent's proprietary tool syntax in the canonical skill body; isolate those differences in adapter sections.
+- **Entry weight**: `SKILL.md` should remain the semantic entry point, not a full reference manual; move long format rules, examples, and renderer details into skill-local references.
+- **Behavior compatibility**: Script decomposition must not rename existing commands, flags, output paths, manifest fields, or accepted input contracts unless a requirement explicitly says so.
 
 ## Key Decisions
 
@@ -127,6 +144,8 @@ v1.8 completed the official-school presentation continuation path from v1.5 and 
 | Use data to Markdown to Typst to PDF for v1.7 | This preserves the repository's reviewable Markdown-first document workflow while supporting fixed templates and verification | Good - shipped in v1.7 |
 | Skip external research for v1.7 planning | The target follows already validated local document-skill patterns, so requirements can be defined from project context and the user's confirmed scope | Good - shipped in v1.7 |
 | Keep uncertain scores reviewable before final export | The audit found that `87?` must reach Markdown review while final delivery stays strict | Good - closed in v1.7 Phase 13 |
+| Start v1.9 as a structure milestone | Current skill entries and scripts are increasingly heavy, so the next value is lowering default reading and edit cost while keeping the skill interface stable | Pending |
+| Preserve command surfaces during decomposition | Users and future agents rely on the current commands, generated artifacts, and invocation patterns | Pending |
 
 ## Evolution
 
@@ -146,4 +165,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-11 after v1.8 milestone archive*
+*Last updated: 2026-06-13 after v1.9 milestone start*
