@@ -1,32 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.8
-milestone_name: School Presentation Continuation
-current_phase: 16
-status: completed
-stopped_at: Phase 16 complete
-last_updated: "2026-06-11T19:35:38.977Z"
-last_activity: 2026-06-11 — Milestone v1.8 completed and archived
+milestone: v1.9
+milestone_name: Skill Decomposition and Entry Slimming
+current_phase: 17
+status: planning
+last_updated: "2026-06-13T00:00:00.000+08:00"
+last_activity: 2026-06-13 — Milestone v1.9 roadmap created
 progress:
   total_phases: 3
-  completed_phases: 3
+  completed_phases: 0
   total_plans: 3
-  completed_plans: 3
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 16
-**Status:** v1.8 milestone complete
+**Current Phase:** 17
+**Status:** v1.9 planning complete; Phase 17 is ready to discuss or plan
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-11)
+See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.8 is archived. Next work should start from a fresh milestone and requirements file.
+**Current focus:** v1.9 will split current skill entries and scripts into lighter, more discoverable pieces while keeping the public skill interface stable.
 
 ## Workflow Preferences
 
@@ -50,7 +49,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-11)
 
 ## Next Up
 
-v1.8 is complete and archived. Next step is a new milestone if more skill capabilities are needed.
+Phase 17 is next: slim canonical skill entries and move long operational detail into skill-local references.
 
 ## Accumulated Context
 
@@ -78,11 +77,11 @@ v1.8 is complete and archived. Next step is a new milestone if more skill capabi
 - [Phase 04]: Document workflow skills normalize source material into a persistent Markdown intermediate before target generation. — Phase 4 created `docs/markdown-normalization-contract.md` and linked it from README, directory spec, and the skill template.
 - [Phase 04]: The shared Markdown contract stays behavioral and does not define universal metadata fields or a universal marker taxonomy. — Template-specific metadata, marker syntax, scripts, and renderer rules remain owned by the relevant skill/template or later target-specific docs.
 - [Milestone v1.2]: `gongwen` is the first concrete skill. — User provided a Presto gongwen fixture and requested the trigger word `gongwen` for similar official-document writing.
-- [Phase 05]: The Presto `presto-template-gongwen` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
+- [Phase 05]: The Presto `presto-template-gongwen` executable is treated as the Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
 - [Milestone v1.3]: `jiaoan-shicao` is the second concrete skill. — User provided a Presto jiaoan-shicao fixture, `calendar.json`, and requested the trigger word for practical lesson-plan writing.
-- [Phase 06]: The Presto `presto-template-jiaoan-shicao` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
+- [Phase 06]: The Presto `presto-template-jiaoan-shicao` executable is treated as the Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
 - [Milestone v1.4]: `jiaoan-jihua` adds a teaching-schedule workflow. — User provided a Presto jiaoan-jihua fixture, `calendar.json`, and requested the trigger word for授课进度计划 writing.
-- [Phase 07]: The Presto `presto-template-jiaoan-jihua` executable is treated as a black-box Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
+- [Phase 07]: The Presto `presto-template-jiaoan-jihua` executable is treated as the Markdown-to-Typst renderer. — Skill scripts call it through stdin/stdout and use Typst for PDF verification.
 - [Milestone v1.5]: `school-presentation` generates school-style HTML presentations. — User clarified that PPTX output was unstable and the preferred route is a Markdown intermediate rendered to an offline single-file HTML deck.
 - [Milestone v1.5]: Markdown pages are logical slides, not necessarily physical pages. — If a logical slide contains too much content, the renderer should split it into multiple physical HTML pages while keeping the Markdown easy to edit.
 - [Milestone v1.5]: User images should preserve their original aspect ratio. — Images should be scaled and placed without cropping by default.
@@ -137,14 +136,14 @@ v1.8 is complete and archived. Next step is a new milestone if more skill capabi
 
 ## Current Position
 
-Phase: Milestone v1.8 complete
+Phase: 17 — Skill Entry and Reference Decomposition
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-13 — Completed quick task 260613-134: school-presentation full_page_image 页面样式
+Status: Ready for discussion or planning
+Last activity: 2026-06-13 — Milestone v1.9 requirements and roadmap created
 
 ## Operator Next Steps
 
-- Start the next milestone with `/gsd:new-milestone`
+- Start Phase 17 with `/gsd:discuss-phase 17` or `/gsd:plan-phase 17`
 
 ### Quick Tasks Completed
 
