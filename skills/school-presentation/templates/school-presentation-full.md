@@ -136,6 +136,16 @@ split: false
 
 底部说明可以补充图片来源、使用边界、教学观察点或展示结论。
 
+### Slide: 整页图片示例
+
+<!-- slide
+layout: full_page_image
+intent: render a flat full-page image while preserving logical indexing
+split: false
+-->
+
+![整页图片示例：页面本体只显示这一张图片](media/风景.webp)
+
 ### Slide: 双图对比
 
 <!-- slide
