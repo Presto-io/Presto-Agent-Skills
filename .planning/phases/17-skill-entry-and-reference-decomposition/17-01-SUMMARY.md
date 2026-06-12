@@ -29,6 +29,11 @@ metrics:
   tasks_total: 3
   skill_entry_lines_before: 611
   skill_entry_lines_after: 514
+requirements-completed:
+  - SD-01
+  - SD-02
+  - SD-03
+  - SD-04
 ---
 
 # Plan 17-01 Summary: Slim Skill Entries and Move Detail into References
