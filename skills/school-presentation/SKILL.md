@@ -32,43 +32,19 @@ metadata:
 - `output_markdown`: 持久化的逻辑页 Markdown intermediate，默认结构见 `templates/school-presentation-full.md`。
 - `references/identity/`: 学校视觉识别资源，包括校名 logo、slogan、蓝绿色 palette、装饰条和来源说明。
 - `media/`: 用户提供的图片、视频或图表数据。图片默认按 contain 方式放置，不裁切；超过 50 MB 输出上限的视频走外链/旁路说明。
+- `references/authoring-and-layout.md`: frontmatter、章节/逻辑页结构、封面规则、结构化版式、固定画布和 Markdown authoring 规则。
+- `references/playback-and-export.md`: preview workspace、playback、presenter markup 和最终 PDF export 行为。
+- `references/verification-contract.md`: verify command、manifest booleans、HTML/PDF verification coverage 和 UAT 检查点。
 
 ## Process
 
-1. 先按 `docs/markdown-normalization-contract.md` 把源材料归一化为 `YAML frontmatter + body` 的 Markdown intermediate。
-2. frontmatter 使用本技能自己的 deck 元数据：
-   - `template`: 固定为 `school-presentation`。
-   - `title`: 演示文稿标题；封面渲染时每行最多 10 个可见字符、最多 2 行，生成时应优先提炼为 20 个中文字符以内。
-   - `subtitle`: 副标题；未知时留空，建议不超过 24 个中文字符，渲染器会按 24 个可见字符截断。
-   - `unit`: 可选单位字段；未知时留空，留空时封面信息栏不显示单位。不要把 `school`、`department` 或 `location` 当作封面信息栏字段。
-   - `author`、`presenter`、`reporter`、`date`: 可选封面信息栏字段；未知时留空或标记复核。`author`、`presenter`、`reporter` 只会归并为一个汇报人值，封面上不再显示“汇报人”标签；`date` 只显示日期值，不再显示“时间/日期”标签。
-   - `page_ratio`: 页面比例，只允许 `16:9` 或 `4:3`，默认 `16:9`；渲染器按该比例生成等尺寸物理页。
-   - `max_output_mb`: 默认 `50`，用于离线 HTML 产物尺寸门禁。
-3. 正文优先用 `## Section: 章节名` 表达章节边界，并在章节下用 `### Slide: 标题` 表达一个逻辑页。旧的平面 `## Slide: 标题` deck 仍然兼容，渲染器会把它们放入默认章节。逻辑页下方可放一个 `<!-- slide ... -->` 元数据块：
-   - `layout`: `auto`、`cover`、`closing`、`section`、`content`、`media-right`、`media-left`、`media-center`、`media-compare`、`media-chart`、`full_page_image`、`table`、`chart` 或 `quote`。
-   - `intent`: 该页的表达目的，供 agent 审阅和渲染器选择布局。
-   - `split`: 默认为 `auto`，过长内容可自动拆为多个物理 HTML 页。
-4. 封面只能由一个主标题、一个可省略副标题和一个固定信息栏构成。主标题每行最多 10 个中文字符、最多 2 行；副标题最多按 24 个中文字符设计；固定信息栏只允许可选单位值、汇报人值、日期值，单位字段默认不显示，只有用户填写 `unit` 时才显示，且封面不显示“单位”标签；汇报地点不再使用。不要根据用户需求额外发明“主题、班级、课程、项目背景、适用对象、指导思想、地点”等封面栏目。不要在封面逻辑页正文中追加说明段落、第二副标题、口号、项目背景、更多信息卡片或自定义 `cover_*` 字段；这些内容必须移动到封面后的第一个内容页。渲染器会忽略封面正文块，只使用 frontmatter 的 `title`、`subtitle`、`unit`、汇报人和日期，防止首页内容溢出。
-5. 页面层级模型固定为 `sections -> logical_slides -> physical_pages -> reveal_steps`。渲染器会在封面后自动插入目录页，目录只读取 `## Section:` 一级章节标题，不要求 Markdown 作者手写次级页标题。目录每页最多显示 5 个章节，超过后自动拆成多个目录物理页。一个逻辑页可以自动拆成多个物理页，物理页标签使用逻辑页点号格式，例如 `3.1`、`3.2`。`reveal_steps` 记录当前物理页中的有序揭示、强调和答案遮罩步骤。
-6. 逻辑页内容保持普通 Markdown：标题、段落、列表、表格、代码块、公式、图片、视频占位、图表 fenced block、强调块和 speaker notes。`layout: full_page_image` 用于承接其他工作流已经生成好的整页图片：该逻辑页仍用 `### Slide: 标题` 和 slide 注释提供目录、页码和管理语义，但页面本体只渲染正文中的第一张 Markdown 图片，不显示标题、页码、页脚、说明文字、speaker notes 或交互元素；图片以整页画布居中 contain 展示，不裁切。强调块支持 `::: info`、`::: tip`、`::: warning`、`::: error`，并兼容 GitHub alert 写法 `> [!NOTE]`、`> [!TIP]`、`> [!IMPORTANT]`、`> [!WARNING]`、`> [!CAUTION]`。
-7. 课堂揭示语法保持 Markdown-first：
-   - 块级揭示：`::: reveal order=1 ... :::`，可包住列表、段落、公式、图表、图片等常见块。
-   - 答案遮罩：`::: mask order=1 ... :::` 或行内 `{{mask order=1}}答案{{/mask}}`；播放态遮住答案但不显示“点击揭示”等提示文字。
-   - 正确项强调：`::: emphasis order=1 ... :::` 或行内 `{{emphasis order=1}}正确项{{/emphasis}}`；选择题选项常显，正确项按 order 变成强调状态。默认强调包含下划线，打印或静态审阅时仍可见。强调入场动画只在该 step 首次出现时播放，已经强调过的内容保持静态高亮，不随后续 step 重播动画。
-   - 自动逐条展示：在 slide 注释中写 `animate: step`，普通段落、列表条目和表格行会自动生成播放步骤；排序练习可用 `::: sort final_order=4 ... :::` 与条目 `[order=1]` 控制排序编号和最终重排。
-   - Peek 补充提示：`::: peek title="教师提示" trigger=both target="查看教师提示" ... :::` 会生成卡片式提示；`trigger` 可为 `hover`、`click` 或默认 `both`。Peek 是补充查看，不替代 click-based reveal，也不写入 manifest 的运行时 pinned/hover 状态。
-   - 结构化版式：`::: timeline variant=vertical|horizontal ... :::`、`::: cards columns=3 ... :::`、`::: gallery variant=compare|album|strip ... :::`、`::: smartart type=process|cycle|hierarchy|pyramid ... :::` 使用 Markdown 列表项和 `[title="..." image="..." icon=...]` 属性表达内容；图片集合统一使用 `gallery`，不要写 raw HTML，也不要新增 `::: process :::`，流程图统一写作 `::: smartart type=process :::`。
-   - 语义图标：普通内容页默认 `icon=auto`，渲染器根据标题、intent 和正文选择克制的 school identity CSS 图标；slide 注释可写 `icon=none` 关闭标题图标，或写 `icon=safety|risk|formula|chart|table|media|reveal|review|process|target` 指定。封面、封底和章节页不自动添加标题图标。结构化条目也支持 `icon=none` 关闭条目图标。
-   - 章节分隔页：渲染器会为每个非默认章节生成可选显示的 section divider；顶部 `章节页` 按钮用按下态控制预览是否显示章节页，最终 PDF 导出沿用当前预览状态：预览显示章节页则 PDF 包含章节页，预览隐藏章节页则 PDF 跳过章节页，不在 Markdown 中写 raw HTML 控制。
-   - `order` 是播放优先级，允许小数插入；渲染器按数值排序并在 manifest 中归一成连续 `step_index`。相同 `order` 的元素同时出现。
-8. 生成 Markdown 后，运行 `skills/school-presentation/scripts/school-presentation.sh render` 输出离线 HTML。生成结果默认打开 preview workspace：左侧 thumbnail rail 按章节和逻辑页分组，右侧 preview stage 显示当前物理页的真实 slide DOM；同一个单文件 HTML 内还包含 playback 和 overview。Preview workspace 显示全内容和最终揭示状态；playback 才按 reveal step 隐藏、遮罩或强调内容。
-9. slide 内部必须保持固定设计画布尺寸。不要在 slide 内容、字体、图片高度、图文栅格中使用 viewport-dependent CSS，例如 `vh`、`vw` 或基于视口的 `clamp()`；不同预览尺寸和浏览器缩放比例下，只允许外层 stage scale 改变，slide 内部元素相对关系必须像图片缩放一样保持不变。
-10. playback 支持键盘方向键、Space、PageUp/PageDown、鼠标左/中/右点击区域、触摸滑动、`Esc` 返回 workspace、URL hash 当前页与 step 同步和顶部蓝绿色进度条。右方向/Space/右侧或中部点击先推进当前页 reveal step，当前页完成后才翻页；左方向/左侧点击先撤回当前页上一步。跨页切换时，旧页按当前已揭示状态淡出，新切入页面一律从 step0 原始遮罩状态开始。最后一页全部完成后继续前进会退出放映模式。
-11. playback 内置 presenter markup palette：激光笔、画笔、荧光笔、橡皮擦和清除当前页控件只作用于当前浏览器放映会话；浮窗根据鼠标或触控边缘意图自动停靠。pen/highlighter/eraser 的标注按 physical page 做 page-scoped session state，翻页后返回仍保留，直到用户清除当前页；激光笔按住拖动时显示临时红色轨迹，抬笔后约 2 秒开始淡出，不生成持久标注。标注层只挂在 playback shell，不能写回 Markdown、`.page-source`、preview workspace、overview、thumbnail、manifest 或 deterministic review artifacts。绘制/擦除时会压住播放点击区，键盘导航、reveal、mask、emphasis 和 hover/peek 在非绘制状态下继续按原规则工作。
-12. 生成 deck 内置 PDF 导出控件：`导出最终PDF` 会在当前离线 HTML 内直接生成并下载最终 PDF，不依赖系统打印对话框，也不要求用户再运行后处理命令。导出的 PDF 按 manifest physical page 顺序输出全量页面，内嵌 PDF reader 可读取的 outline/bookmarks，并给目录页写入跳转链接；reveal 内容展开、mask 答案可见、emphasis 保留下划线、排序练习使用最终顺序。最终 PDF 是否包含 section divider 直接跟随当前 `章节页` 预览按钮状态；跳过章节页时，PDF outline 与目录页链接必须自动指向对应章节的第一个可见正文页，不能丢失章节导航。该状态只属于生成 deck UI，不写入 Markdown 或 manifest。默认排除 presenter annotation layer、markup palette、laser trail、pinned peek、hover state 和其他运行时状态。为保证一键闭环和低性能设备打开速度，最终 PDF 页面以固定画布视觉栅格写入，文字不承诺可选择或可复制。
-13. 运行 `verify` 可生成示例、重复渲染、比对稳定性、检查层级 manifest、workspace/playback/overview/reveal hook、peek、排序、结构化版式、语义图标、section divider、`full_page_image` 整页图片、presenter markup 控件、annotation layer hook、print/export review tokens、离线单文件边界，以及 `16:9` / `4:3` 固定画布样例，并写出 verification manifest。`presenter_markup_verified`、`classroom_structure_verified`、`full_page_image_verified`、`print_review_verified`、`ratio_4x3_verified` 和 `offline_single_file_verified` 必须为 `true`，且 manifest 不得包含 annotation state、markup palette、stroke 数据、pinned peek、hover peek 或 print control runtime state。
-14. PDF UAT 应直接点击离线 HTML 中的 `导出最终PDF`，确认下载产物可被 PDF 阅读器打开、outline/bookmarks 可读、目录页链接可跳转、页数与 manifest physical pages 一致、reveal 已展开、mask 答案可见、emphasis 下划线可见、排序为最终顺序、章节页可包含/跳过且不重排后续页、自动插入页和拆分页顺序正确、gallery 卡片不被截断、presenter annotations 默认不进入 PDF、`16:9` 与 `4:3` 样例保持固定画布比例。
-15. 对来源不确定、素材缺失、视频过大或内容无法稳定呈现的片段，就近写入合适级别的强调块或渲染 manifest，不要静默删除。
+1. 按 `docs/markdown-normalization-contract.md` 把源材料归一化为 `YAML frontmatter + body` 的 Markdown intermediate。
+2. 按 `references/authoring-and-layout.md` 写 deck metadata、章节、逻辑页、slide 注释、版式语法、封面和固定画布内容。
+3. 保持页面层级模型为 `sections -> logical_slides -> physical_pages -> reveal_steps`；逻辑页过长时由渲染器拆为多个物理页。
+4. 课堂揭示、答案遮罩、正确项强调、peek、排序、timeline、cards、gallery、smartart、语义图标和 section divider 使用 reference 中的 Markdown-first 语法，不写 raw HTML。
+5. 运行 `skills/school-presentation/scripts/school-presentation.sh render` 输出离线 HTML；生成 deck 的 preview/playback/export 行为见 `references/playback-and-export.md`。
+6. 运行 `verify --workdir <dir>`，并按 `references/verification-contract.md` 检查 manifest、固定比例、单文件边界、结构化语义和 PDF/export tokens。
+7. 对来源不确定、素材缺失、视频过大或内容无法稳定呈现的片段，就近写入合适级别的强调块或渲染 manifest，不要静默删除。
 
 ## Script Usage
 
@@ -89,35 +65,26 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | 读取本 `SKILL.md` 后执行流程；用 shell 调用 `scripts/school-presentation.sh`；写文件前确认目标路径，验证时运行 `verify` 并检查 manifest。 |
+| Codex | 读取本 `SKILL.md` 和 `references/authoring-and-layout.md`、`references/playback-and-export.md`、`references/verification-contract.md` 后执行流程；用 shell 调用 `scripts/school-presentation.sh`；写文件前确认目标路径，验证时运行 `verify` 并检查 manifest。 |
 | Claude Code | 可把同一目录安装到 `.claude/skills/school-presentation/`；frontmatter 的 `description` 是触发入口；脚本属于显式外部命令，执行前检查路径和权限。 |
-| Gemini CLI | 通过 `GEMINI.md` 或项目上下文指向本 `SKILL.md`；若无法自动发现脚本，按 `Script Usage` 手动调用。 |
-| OpenCode | 使用可加载 `SKILL.md` 的 skill 路径；若走 Claude-compatible fallback，保持同一目录结构并验证脚本可执行。 |
-| OpenClaw | 作为 AgentSkills-compatible 目录使用；安装时验证 frontmatter 解析、技能根目录、脚本 allowlist、sandbox 对 `references/identity/` 和媒体路径的访问。 |
-| Hermes Agent | 使用 `SKILL.md` skill folder；安装时验证项目级/全局技能路径、脚本发现行为，以及是否允许读取 skill-local assets 和用户媒体。 |
+| Gemini CLI | 通过 `GEMINI.md` 或项目上下文指向本 `SKILL.md`；若无法自动发现脚本，按 `Script Usage` 手动调用，并读取 `references/` 中的长规则。 |
+| OpenCode | 使用可加载 `SKILL.md` 的 skill 路径；若走 Claude-compatible fallback，保持同一目录结构并验证 `references/`、identity assets、脚本和媒体路径可读。 |
+| OpenClaw | 作为 AgentSkills-compatible 目录使用；安装时验证 frontmatter 解析、技能根目录、reference 读取、脚本 allowlist、sandbox 对 `references/identity/` 和媒体路径的访问。 |
+| Hermes Agent | 使用 `SKILL.md` skill folder；安装时验证项目级/全局技能路径、reference/script 发现行为，以及是否允许读取 skill-local assets 和用户媒体。 |
 
 ## Outputs
 
 - `school-presentation-full.md` 结构的 Markdown logical-slide intermediate。
 - 单文件优先的离线 `.html` 演示文稿，默认进入 preview workspace，并内置 playback 与 overview。
-- 可选 `manifest.json`，记录章节、逻辑页、物理页、`sections -> logical_slides -> physical_pages -> reveal_steps` 层级、HTML hash、产物大小、尺寸门禁和媒体 fallback。`reveal_steps` 包含连续 `step_index`、原始优先级 `priority`、交互类型和目标数量。
+- 可选 `manifest.json`，记录章节、逻辑页、物理页、reveal steps、HTML hash、产物大小、尺寸门禁和媒体 fallback。
+- 一键最终 PDF export 行为、outline/link 规则和 runtime-state 排除规则见 `references/playback-and-export.md`。
 
 ## Verification
 
 - [ ] `skills/school-presentation/scripts/school-presentation.sh example --output <file>` 能输出可审阅的逻辑页 Markdown。
 - [ ] `render --input <md> --html <html>` 能生成离线 HTML，并内嵌学校 logo、slogan、CSS、图表和可内嵌资产。
 - [ ] `verify --workdir <dir>` 能重复渲染同一 Markdown，并证明 HTML hash 一致。
-- [ ] manifest 包含 `sections -> logical_slides -> physical_pages -> reveal_steps` 层级，每个物理页带 `data-section-index`、`data-logical-index`、`data-physical-index`、`data-global-index` 和 `data-page-id` 对应信息。
-- [ ] 输出 HTML 包含 preview workspace、thumbnail rail、preview stage、playback、overview、hash 同步、键盘/鼠标/触摸导航和当前页同步逻辑。
-- [ ] 输出 HTML 包含有序 reveal、答案遮罩和正确项强调；preview 显示全内容和最终揭示状态，playback 按 step 控制。
-- [ ] 输出 HTML 包含 peek 卡片、排序编号/最终重排、`animate: step` 普通正文动画、timeline、cards、gallery、smartart、语义图标和 section divider 控件；`verify` 记录 `classroom_structure_verified: true`。
-- [ ] 输出 HTML 支持 `layout: full_page_image`，manifest 仍记录章节、逻辑页、物理页、页码和 layout，但页面 DOM 只包含一张全画布图片且无 reveal steps；`verify` 记录 `full_page_image_verified: true`。
-- [ ] 输出 HTML 包含 playback-local pointer、pen、highlighter、eraser、clear/reset 与 page-scoped annotation layer；`verify` 记录 `presenter_markup_verified: true`，manifest 与 Markdown source 不包含标注状态。
-- [ ] 输出 HTML 包含 `导出最终PDF`、`预览` 和 `章节页` 双稳态按钮；按钮文案不写 `是/否`，状态由按下态表达；点击一次直接下载最终 PDF，PDF 章节页包含策略跟随当前 `章节页` 预览状态，内嵌 reader outline/bookmarks 和目录页跳转链接；章节页被跳过时，outline 与目录页链接仍指向可见正文页；展开 reveal/mask/emphasis/sort，排除 presenter annotations；`verify` 记录 `print_review_verified: true`。
-- [ ] 封面只包含每行最多 10 个中文字符且最多 2 行的主标题、最多 24 个中文字符的可选副标题和固定信息栏；信息栏只显示可选单位值、汇报人值和日期值，封面正文、额外副标题、自定义 `cover_*` 信息、地点或更多内容卡片不会进入首页。
-- [ ] 公式内容必须保持数学公式样式；被遮罩或揭示的公式/公式片段不能降级为普通字符。
-- [ ] manifest 显示 HTML 输出小于或等于 50 MB；若视频或媒体过大，记录 fallback 而不是强行内嵌。
-- [ ] 输出 deck 覆盖固定 `16:9`/`4:3` 页面比例、封面后自动目录页、公式、表格、图表、图片、视频 fallback、speaker notes、四类强调块、自动物理页拆分和 PDF review 样例；`verify` 记录 `ratio_4x3_verified: true` 与 `offline_single_file_verified: true`。
+- [ ] Manifest、preview/playback/overview、reveal/mask/emphasis、structured layout、presenter markup、print/export、fixed ratio 和 offline single-file 检查符合 `references/verification-contract.md`。
 - [ ] OpenClaw 与 Hermes Agent 的运行时差异保留在 adapter notes 中，没有写入 canonical 主流程。
 
 ## Success Criteria
@@ -126,11 +93,12 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 - 脚本能从 Markdown 生成稳定、离线、蓝绿色学校视觉识别明确的 HTML deck。
 - 渲染器保持图片等比 contain 放置，并能按 frontmatter 中的 `page_ratio` 把过长逻辑页拆成多个等尺寸物理 HTML 页。
 - 输出 deck 能在同一个离线 HTML 中完成 preview workspace、playback、overview 导航、playback-local presenter markup 和一键最终 PDF 导出，并暴露章节、逻辑页、物理页和真实 reveal-step 层级。
+- 长 authoring、layout、playback/export 和 verification 细节位于 `references/`，入口保持清晰可读。
 - 技能保持 canonical 单文件语义源，不引入 runtime-specific wrapper。
 
 ## Deferred Scope
 
-PPTX、Keynote、可编辑 PowerPoint、系统打印生产回路、自动浏览器截图 gate、托管分享、多人同步、远程互动、拖拽排序、持久保存标注和 annotation flattening 不属于 v1.8 print/export review 交付；后续如需要，应单独规划需求、模板 fixture 和黑盒验证。
+PPTX、Keynote、可编辑 PowerPoint、系统打印生产回路、自动浏览器截图 gate、托管分享、多人同步、远程互动、拖拽排序、持久保存标注和 annotation flattening 不属于当前交付；后续如需要，应单独规划需求、模板 fixture 和黑盒验证。
 
 ## Safety
 
