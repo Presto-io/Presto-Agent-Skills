@@ -21,6 +21,23 @@ skills/
     └── templates/
 ```
 
-Only `SKILL.md` is required. Add supporting folders only when the skill needs them. Keep reusable support files like calendars, schemas, and long format notes under `references/`.
+Only `SKILL.md` is required. Add supporting folders only when the skill needs them.
+
+Directory ownership:
+
+- `SKILL.md` is the lightweight semantic entry: trigger intent, objective, inputs, high-level process, Markdown intermediate, output overview, verification entry, safety boundary, and runtime adapter notes.
+- `references/` holds progressive disclosure material: long format rules, artifact contract details, renderer notes, support resources such as calendars, UAT checklists, and troubleshooting.
+- `scripts/` holds public helper commands and skill-local internal modules. Keep public command names, common flags, output filenames, manifest keys, and behavior stable when splitting scripts.
+- `templates/` holds copyable Markdown intermediates, output scaffolds, or renderer templates. Do not mix long documentation into templates.
+
+Artifact contract discovery:
+
+| Skill | Markdown intermediate | Artifact contract |
+|-------|-----------------------|-------------------|
+| `end-of-term-teaching-materials` | `templates/end-of-term-full.md` | `references/data-contract.md`, `references/workflow-and-artifacts.md` |
+| `gongwen` | `templates/gongwen-full.md` | `references/format-and-rendering.md` |
+| `jiaoan-jihua` | `templates/jiaoan-jihua-full.md` | `references/format-and-rendering.md`, `references/calendar.json` |
+| `jiaoan-shicao` | `templates/jiaoan-shicao-full.md` | `references/format-and-rendering.md` |
+| `school-presentation` | `templates/school-presentation-full.md` | `references/authoring-and-layout.md`, `references/playback-and-export.md`, `references/verification-contract.md` |
 
 Before adding a new skill, copy `templates/skill/SKILL.md` and fill the runtime adapter table for all required runtimes.
