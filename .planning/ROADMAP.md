@@ -47,9 +47,9 @@
 **Goal:** Split the largest script entry points into smaller internal modules with clear ownership while keeping current command names, common flags, and output contracts stable.
 
 **Depends on:** Phase 17
-**Plans:** 1 planned
+**Plans:** 1/1 plans complete
 **Requirements:** SD-05, SD-06, SD-07, SD-08
-**Status:** Pending
+**Status:** Planned
 
 **Success criteria:**
 
@@ -99,11 +99,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 17 is complete. Phase 18 is the next phase.
+Phase 18 is planned and ready to execute.
 
 ## Next Step
 
-Start Phase 18 with `/gsd:discuss-phase 18` or `/gsd:plan-phase 18`.
+Execute Phase 18 with `/gsd:execute-phase 18`.
 
 ---
 *Roadmap updated: 2026-06-13 for v1.9 skill decomposition and entry slimming*
