@@ -21,23 +21,23 @@ The user request names `presto-jiaoan-shicao` and `presto-jiaoan-jihua`; in this
 
 ### Jiaoan Shicao 教案
 
-- [ ] **SHICAO-01**: `skills/jiaoan-shicao/SKILL.md` and related skill-local scripts/references are allowed and expected to change as needed for the v1.10教案 conversion.
-- [ ] **SHICAO-02**: The skill-internal script path converts `test/1.10/电气设备控制线路安装与调试教案.md` to `test/1.10/电气设备控制线路安装与调试教案.typ` without relying on renderer code outside `skills/jiaoan-shicao/`.
-- [ ] **SHICAO-03**: Generated教案 Typst is proven strictly equivalent to the target `.typ` through a recorded strict diff, hash comparison, or documented byte/semantic equivalence check.
-- [ ] **SHICAO-04**: The implementation preserves the existing `jiaoan-shicao` public workflow unless a narrow compatibility note is required in `SKILL.md` or `references/`.
+- [x] **SHICAO-01**: `skills/jiaoan-shicao/SKILL.md` and related skill-local scripts/references are allowed and expected to change as needed for the v1.10教案 conversion.
+- [x] **SHICAO-02**: The skill-internal script path converts `test/1.10/电气设备控制线路安装与调试教案.md` to `test/1.10/电气设备控制线路安装与调试教案.typ` without relying on renderer code outside `skills/jiaoan-shicao/`.
+- [x] **SHICAO-03**: Generated教案 Typst is proven strictly equivalent to the target `.typ` through a recorded strict diff, hash comparison, or documented byte/semantic equivalence check.
+- [x] **SHICAO-04**: The implementation preserves the existing `jiaoan-shicao` public workflow unless a narrow compatibility note is required in `SKILL.md` or `references/`.
 
 ### Jiaoan Jihua 授课计划
 
-- [ ] **JIHUA-01**: `skills/jiaoan-jihua/SKILL.md` and related skill-local scripts/references are allowed and expected to change as needed for the v1.10授课计划 conversion.
-- [ ] **JIHUA-02**: The skill-internal script path converts `test/1.10/电气设备控制线路安装与调试授课计划.md` to `test/1.10/电气设备控制线路安装与调试授课计划.typ` without relying on renderer code outside `skills/jiaoan-jihua/`.
-- [ ] **JIHUA-03**: Generated授课计划 Typst is proven strictly equivalent to the target `.typ` through a recorded strict diff, hash comparison, or documented byte/semantic equivalence check.
-- [ ] **JIHUA-04**: The implementation preserves the existing `jiaoan-jihua` public workflow unless a narrow compatibility note is required in `SKILL.md` or `references/`.
+- [x] **JIHUA-01**: `skills/jiaoan-jihua/SKILL.md` and related skill-local scripts/references are allowed and expected to change as needed for the v1.10授课计划 conversion.
+- [x] **JIHUA-02**: The skill-internal script path converts `test/1.10/电气设备控制线路安装与调试授课计划.md` to `test/1.10/电气设备控制线路安装与调试授课计划.typ` without relying on renderer code outside `skills/jiaoan-jihua/`.
+- [x] **JIHUA-03**: Generated授课计划 Typst is proven strictly equivalent to the target `.typ` through a recorded strict diff, hash comparison, or documented byte/semantic equivalence check.
+- [x] **JIHUA-04**: The implementation preserves the existing `jiaoan-jihua` public workflow unless a narrow compatibility note is required in `SKILL.md` or `references/`.
 
 ### Milestone Verification
 
-- [ ] **VERIFY-01**: Verification commands generate both `.typ` outputs from the source `.md` files by invoking only skill-internal scripts.
-- [ ] **VERIFY-02**: Verification records strict output evidence for both pairs: generated result vs target `.typ` by diff, hash, or equivalence check.
-- [ ] **VERIFY-03**: Verification evidence is committed in the relevant phase summary, verification file, or milestone audit path before the milestone can be completed.
+- [x] **VERIFY-01**: Verification commands generate both `.typ` outputs from the source `.md` files by invoking only skill-internal scripts.
+- [x] **VERIFY-02**: Verification records strict output evidence for both pairs: generated result vs target `.typ` by diff, hash, or equivalence check.
+- [x] **VERIFY-03**: Verification evidence is committed in the relevant phase summary, verification file, or milestone audit path before the milestone can be completed.
 
 ## Future Requirements
 
@@ -60,17 +60,17 @@ Deferred to a later milestone unless explicitly requested:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHICAO-01 | Phase 20 | Pending |
-| SHICAO-02 | Phase 20 | Pending |
-| SHICAO-03 | Phase 20 | Pending |
-| SHICAO-04 | Phase 20 | Pending |
-| JIHUA-01 | Phase 21 | Pending |
-| JIHUA-02 | Phase 21 | Pending |
-| JIHUA-03 | Phase 21 | Pending |
-| JIHUA-04 | Phase 21 | Pending |
-| VERIFY-01 | Phase 20, Phase 21 | Pending |
-| VERIFY-02 | Phase 20, Phase 21 | Pending |
-| VERIFY-03 | Phase 20, Phase 21 | Pending |
+| SHICAO-01 | Phase 20 | Completed - evidence: `.planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-01-SUMMARY.md` and `20-VERIFICATION.md` |
+| SHICAO-02 | Phase 20 | Completed - evidence: `.planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-VERIFICATION.md` |
+| SHICAO-03 | Phase 20 | Completed - evidence: clean `diff -u` and matching SHA-256 in `.planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-VERIFICATION.md` |
+| SHICAO-04 | Phase 20 | Completed - evidence: `.planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-01-SUMMARY.md` |
+| JIHUA-01 | Phase 21 | Completed - evidence: `.planning/phases/21-jiaoan-jihua-1-1-typst-conversion/21-01-SUMMARY.md` and `21-VERIFICATION.md` |
+| JIHUA-02 | Phase 21 | Completed - evidence: `.planning/phases/21-jiaoan-jihua-1-1-typst-conversion/21-VERIFICATION.md` |
+| JIHUA-03 | Phase 21 | Completed - evidence: clean `diff -u` and matching SHA-256 in `.planning/phases/21-jiaoan-jihua-1-1-typst-conversion/21-VERIFICATION.md` |
+| JIHUA-04 | Phase 21 | Completed - evidence: `.planning/phases/21-jiaoan-jihua-1-1-typst-conversion/21-01-SUMMARY.md` |
+| VERIFY-01 | Phase 20, Phase 21 | Completed - evidence: Phase 20 `20-VERIFICATION.md`; Phase 21 `21-VERIFICATION.md` |
+| VERIFY-02 | Phase 20, Phase 21 | Completed - evidence: strict diff/hash records in Phase 20 `20-VERIFICATION.md` and Phase 21 `21-VERIFICATION.md` |
+| VERIFY-03 | Phase 20, Phase 21 | Completed - evidence: committed phase summaries and verification files for Phase 20 and Phase 21 |
 
 **Coverage:**
 - v1.10 requirements: 11 total
@@ -79,4 +79,4 @@ Deferred to a later milestone unless explicitly requested:
 
 ---
 *Requirements defined: 2026-06-14*
-*Last updated: 2026-06-14 after v1.10 milestone start*
+*Last updated: 2026-06-14 after Phase 20 verification evidence closure*
