@@ -29,8 +29,17 @@ This reference holds detailed authoring and renderer rules for the `gongwen` ski
 ## Numbering Rules
 
 - 不要为了“看起来规范”凭空增加项目序号、序号列、项目编号、有序列表或手写标题编号。
-- 只有源材料明确给出编号时才保留。
-- 公文层级编号由模板根据标题层级自动生成，不要在标题文字里重复写 `一、`、`（一）`、`1.` 或 `（1）`。
+- 普通段落、列表、表格中的业务编号按源材料保留；本规则只归一化 Markdown 标题开头的层级序号。
+- 无论源材料是否写了标题层级序号，Markdown intermediate 中的标题文字都不得保留该序号。
+- 渲染器必须忽略标题开头的 `一、`、`（一）`、`1.`、`1.1`、`（1）` 及对应全角/半角变体，公文层级编号只由模板根据标题级别自动生成。
+- 带手写标题序号和不带手写标题序号的等价输入，必须产生同一套模板自动编号，不能重复编号。
+
+## Font Fallback Rules
+
+- 字体 fallback 必须按字体类型分组，只能在同类型字体之间替代。
+- 黑体类可使用 `SimHei`、`STHeiti`、`Heiti SC`、`Noto Sans CJK SC`、`Source Han Sans SC`、`思源黑体` 等无衬线黑体；不得 fallback 到宋体类。
+- 宋体类可使用 `SimSun`、`NSimSun`、`Songti SC`、`STSong`、`Noto Serif CJK SC`、`Source Han Serif SC`、`思源宋体` 等衬线宋体；不得 fallback 到黑体类。
+- 仿宋、楷体、小标宋和等宽代码字体也应分别使用同类 fallback，不能为了提高字体命中率跨类型混用；例如小标宋不得降级为普通宋体。
 
 ## Renderer Notes
 
@@ -45,3 +54,4 @@ This reference holds detailed authoring and renderer rules for the `gongwen` ski
 - `skills/gongwen/scripts/gongwen.sh render --input <md> --typ <typ>` must generate Typst without external converters.
 - `skills/gongwen/scripts/gongwen.sh render --input <md> --typ <typ> --pdf <pdf>` must export PDF when `typst` is installed and preserve `**bold**` semantics.
 - `--expected-typ` must match the generated Typst against a fixture when provided.
+- `skills/gongwen/tests/test_heading_normalization.sh` must confirm numbered and unnumbered heading fixtures render identically and font fallback lists do not cross font types.

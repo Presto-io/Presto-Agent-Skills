@@ -3,7 +3,7 @@ name: "gongwen"
 description: "Use when writing, normalizing, or rendering Chinese gongwen-style official documents such as notices, reports, and formal work arrangements."
 metadata:
   short-description: "类公文 Markdown 到 Typst 工作流"
-  version: "0.2.0"
+  version: "0.2.2"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -36,7 +36,7 @@ metadata:
 ## Process
 
 1. 按 `docs/markdown-normalization-contract.md` 把源材料归一化为 `YAML frontmatter + body` 的 Markdown intermediate。
-2. 使用 `references/format-and-rendering.md` 中的 frontmatter、正文结构、控制语法和编号规则；不要凭空新增编号、序号列或标题编号。
+2. 使用 `references/format-and-rendering.md` 中的 frontmatter、正文结构、控制语法和编号规则；归一化时删除标题文字开头的手写层级序号，编号只交给模板生成。
 3. 生成或更新 `gongwen-full.md`，并保持所有不确定或缺失内容可复核。
 4. 运行 `skills/gongwen/scripts/gongwen.sh render` 生成 `.typ`；需要 PDF 时增加 `--pdf <output.pdf>`。
 5. 若有参考 Typst，使用 `--expected-typ` 做黑盒一致性验证。
@@ -79,6 +79,8 @@ skills/gongwen/scripts/gongwen.sh render \
 
 - [ ] `skills/gongwen/scripts/gongwen.sh example --output <file>` 能输出可审阅的 `gongwen-full.md` 结构。
 - [ ] `skills/gongwen/scripts/gongwen.sh render --input <md> --typ <typ>` 能生成 Typst。
+- [ ] 带手写标题序号与不带手写标题序号的等价输入生成相同 Typst 标题内容。
+- [ ] 标题及正文使用同字体类型 fallback，不把黑体替换成宋体或把宋体替换成黑体。
 - [ ] 需要 PDF 时，`render --pdf <pdf>` 在安装 `typst` CLI 的环境中可导出 PDF。
 - [ ] 对给定 fixture 运行 `--expected-typ` 时，生成 Typst 与参考文件一致。
 - [ ] OpenClaw 与 Hermes Agent 的运行时差异保留在 adapter notes 中，没有写入 canonical 主流程。
