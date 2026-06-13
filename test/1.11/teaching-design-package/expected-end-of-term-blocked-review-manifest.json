@@ -1,0 +1,40 @@
+{
+  "end_of_term": {
+    "enabled": true,
+    "status": "blocked_review",
+    "handoff": "end-of-term-full.md",
+    "source_data": "end-of-term-source.json",
+    "workdir": "end-of-term-output",
+    "manifest": "end-of-term-output/manifest.json",
+    "typ": "end-of-term-output/end-of-term-package.typ",
+    "pdf": "end-of-term-output/end-of-term-package.pdf",
+    "review_cleared": false,
+    "review_markers": [
+      "成绩数据 / 学生乙 / 任务1 当前值 87?"
+    ],
+    "calculated_scores_verified": false,
+    "table_artifacts_verified": false,
+    "workbook_verified": false
+  },
+  "split_outputs": {
+    "teaching_plan_pdf": {
+      "path": "teaching-plan.pdf",
+      "status": "not_run"
+    },
+    "lesson_plans_pdf": {
+      "path": "lesson-plans.pdf",
+      "status": "not_run"
+    },
+    "end_of_term_pdf": {
+      "path": "end-of-term-output/end-of-term-package.pdf",
+      "status": "not_run"
+    }
+  },
+  "combined_output": {
+    "path": "teaching-design-package.pdf",
+    "status": "failed",
+    "reason": "missing_selected_split_pdfs"
+  },
+  "review_markers": [],
+  "final_ready": false
+}

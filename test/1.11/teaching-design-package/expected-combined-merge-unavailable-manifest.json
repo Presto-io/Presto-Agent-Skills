@@ -1,0 +1,37 @@
+{
+  "end_of_term": {
+    "enabled": true,
+    "status": "passed",
+    "handoff": "end-of-term-full.md",
+    "source_data": "end-of-term-source.json",
+    "workdir": "end-of-term-output",
+    "manifest": "end-of-term-output/manifest.json",
+    "typ": "end-of-term-output/end-of-term-package.typ",
+    "pdf": "end-of-term-output/end-of-term-package.pdf",
+    "review_cleared": true,
+    "calculated_scores_verified": true,
+    "table_artifacts_verified": true,
+    "workbook_verified": true
+  },
+  "split_outputs": {
+    "teaching_plan_pdf": {
+      "path": "teaching-plan.pdf",
+      "status": "passed"
+    },
+    "lesson_plans_pdf": {
+      "path": "lesson-plans.pdf",
+      "status": "passed"
+    },
+    "end_of_term_pdf": {
+      "path": "end-of-term-output/end-of-term-package.pdf",
+      "status": "passed"
+    }
+  },
+  "combined_output": {
+    "path": "teaching-design-package.pdf",
+    "status": "merge_unavailable",
+    "reason": "no_pdf_merge_tool"
+  },
+  "review_markers": [],
+  "final_ready": false
+}

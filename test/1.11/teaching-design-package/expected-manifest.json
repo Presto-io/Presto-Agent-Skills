@@ -1,4 +1,22 @@
 {
+  "split_outputs": {
+    "teaching_plan_typ": {
+      "path": "teaching-plan.typ",
+      "status": "planned_or_passed"
+    },
+    "lesson_plans_typ": {
+      "path": "lesson-plans.typ",
+      "status": "planned_or_passed"
+    },
+    "teaching_plan_pdf": {
+      "path": "teaching-plan.pdf",
+      "status": "not_run"
+    },
+    "lesson_plans_pdf": {
+      "path": "lesson-plans.pdf",
+      "status": "not_run"
+    }
+  },
   "teaching_plan_typ": {
     "path": "teaching-plan.typ",
     "status": "planned_or_passed"
@@ -15,11 +33,14 @@
     "path": "lesson-plans.pdf",
     "status": "not_run"
   },
+  "end_of_term": {
+    "enabled": false,
+    "status": "disabled"
+  },
+  "combined_output": {
+    "path": "teaching-design-package.pdf",
+    "status": "failed_or_merge_unavailable_or_not_run"
+  },
   "review_markers": [],
-  "final_ready": false,
-  "phase_24_deferred": [
-    "optional end-of-term module",
-    "combined final package output",
-    "end-of-term package output"
-  ]
+  "final_ready": false
 }
