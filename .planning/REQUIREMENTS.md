@@ -44,8 +44,8 @@ The package workflow should be Markdown-first: generate a teacher-reviewable Mar
 
 - [x] **TDP-13**: The default final package artifact must be a combined `teaching-design-package.pdf` when Typst/PDF tooling can merge the selected modules.
 - [x] **TDP-14**: If split compilation or merged PDF generation is unavailable, the package must fail with explicit manifest/status evidence instead of claiming a complete final package.
-- [ ] **TDP-15**: Regression verification must prove the existing `jiaoan-jihua`, `jiaoan-shicao`, and `end-of-term-teaching-materials` public command surfaces remain usable after package integration.
-- [ ] **TDP-16**: Documentation/index verification must show the new skill is discoverable while preserving repository guidance: Markdown-first, lightweight `SKILL.md`, long rules in `references/`, scripts in `scripts/`, templates in `templates/`, and no agent-private syntax in canonical workflow text.
+- [x] **TDP-15**: Regression verification must prove the existing `jiaoan-jihua`, `jiaoan-shicao`, and `end-of-term-teaching-materials` public command surfaces remain usable after package integration.
+- [x] **TDP-16**: Documentation/index verification must show the new skill is discoverable while preserving repository guidance: Markdown-first, lightweight `SKILL.md`, long rules in `references/`, scripts in `scripts/`, templates in `templates/`, and no agent-private syntax in canonical workflow text.
 
 ## Future Requirements
 
@@ -78,14 +78,14 @@ Deferred to a later milestone unless explicitly requested:
 | TDP-06 | Phase 23 | Complete |
 | TDP-07 | Phase 23 | Complete |
 | TDP-08 | Phase 23 | Complete |
-| TDP-09 | Phase 23, Phase 25 | Partially complete |
+| TDP-09 | Phase 23, Phase 25 | Complete |
 | TDP-10 | Phase 24 | Complete |
 | TDP-11 | Phase 24 | Complete |
 | TDP-12 | Phase 24 | Complete |
 | TDP-13 | Phase 24 | Complete |
-| TDP-14 | Phase 24, Phase 25 | Complete in Phase 24; Phase 25 verifies regression behavior |
-| TDP-15 | Phase 25 | Planned |
-| TDP-16 | Phase 25 | Planned |
+| TDP-14 | Phase 24, Phase 25 | Complete; Phase 25 regression verified |
+| TDP-15 | Phase 25 | Complete |
+| TDP-16 | Phase 25 | Complete |
 
 **Coverage:**
 - v1.11 requirements: 16 total

@@ -8,7 +8,7 @@
 
 **Active milestone:** v1.11 Integrated Teaching Design Package / 教学设计整包技能
 
-**Status:** v1.11 is in progress. Phase 24 is complete; next execution step is Phase 25 discussion.
+**Status:** v1.11 phase execution is complete through Phase 25; next step is milestone audit, not milestone completion.
 
 **Delivered in v1.10:**
 - `jiaoan-shicao` can generate the v1.10 教案 Typst fixture byte-for-byte from Markdown through skill-local script code.
@@ -67,7 +67,7 @@ This milestone creates a new orchestration skill plan that integrates the alread
 
 ### Active
 
-- [ ] Verify the new package plan with regression coverage for existing public skill interfaces, OpenClaw/Hermes adapter expectations, Markdown-first flow, and documentation indexes. - v1.11 Phase 25
+- [x] Verify the new package plan with regression coverage for existing public skill interfaces, OpenClaw/Hermes adapter expectations, Markdown-first flow, and documentation indexes. - v1.11 Phase 25
 
 ### Validated in v1.11
 
@@ -76,6 +76,7 @@ This milestone creates a new orchestration skill plan that integrates the alread
 - [x] Require a teacher-reviewable Markdown intermediate before Typst/PDF generation for the integrated teaching plan and lesson-plan package. - v1.11 Phase 23
 - [x] Integrate the optional end-of-term package module using existing structured data, score calculation, deterministic table artifacts, workbook, manifest, and review-gate rules. - v1.11 Phase 24
 - [x] Define package outputs including split PDFs where supported and a default combined `teaching-design-package.pdf` with explicit failure/status evidence. - v1.11 Phase 24
+- [x] Verify public command regression, package manifest truthfulness, runtime adapter coverage, and documentation/index discoverability for `teaching-design-package`. - v1.11 Phase 25
 
 ### Out of Scope
 

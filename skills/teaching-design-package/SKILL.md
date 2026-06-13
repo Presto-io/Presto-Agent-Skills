@@ -68,9 +68,17 @@ skills/teaching-design-package/scripts/teaching-design-package.sh plan-end-of-te
   --input teaching-design-package-full.md \
   --out-dir build/teaching-design-package
 
+skills/teaching-design-package/scripts/teaching-design-package.sh render-end-of-term \
+  --input teaching-design-package-full.md \
+  --out-dir build/teaching-design-package
+
 skills/teaching-design-package/scripts/teaching-design-package.sh render-package \
   --input teaching-design-package-full.md \
   --out-dir build/teaching-design-package
+
+skills/teaching-design-package/scripts/teaching-design-package.sh info
+
+skills/teaching-design-package/scripts/teaching-design-package.sh version
 ```
 
 ## Runtime Adapter Notes
