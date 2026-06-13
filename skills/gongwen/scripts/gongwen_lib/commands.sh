@@ -66,7 +66,7 @@ cmd_manifest() {
 {
   "name": "gongwen",
   "displayName": "类公文模板",
-  "version": "0.2.1-shell-only",
+  "version": "0.2.2-shell-only",
   "description": "Bash-only Markdown-to-Typst renderer with optional Typst PDF export."
 }
 JSON
@@ -82,5 +82,5 @@ INFO
 }
 
 cmd_version() {
-  printf 'gongwen.sh 0.2.1-shell-only\n'
+  printf 'gongwen.sh 0.2.2-shell-only\n'
 }
