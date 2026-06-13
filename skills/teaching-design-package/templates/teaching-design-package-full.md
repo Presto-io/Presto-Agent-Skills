@@ -15,12 +15,18 @@ modules:
     handoff: "jiaoan-shicao-full.md"
   end_of_term:
     enabled: false
-    phase: "Phase 24 placeholder"
+    handoff: "end-of-term-full.md"
+    source_data: "end-of-term-source.json"
+    workdir: "end-of-term-output"
+    manifest: "end-of-term-output/manifest.json"
 outputs:
   teaching_plan_typ: "teaching-plan.typ"
   lesson_plans_typ: "lesson-plans.typ"
+  end_of_term_typ: "end-of-term-output/end-of-term-package.typ"
   teaching_plan_pdf: "not_run"
   lesson_plans_pdf: "not_run"
+  end_of_term_pdf: "not_run"
+  combined_pdf: "teaching-design-package.pdf"
 ---
 
 # 教学设计整包
@@ -88,6 +94,17 @@ outputs:
 
 - 安全文明生产、图纸识读、线路安装、检测调试、过程记录和成果展示按教师给定评价细则填写。
 
+## 期末材料
+
+模块 handoff：当 `modules.end_of_term.enabled: true` 时，生成或维护 `end-of-term-full.md`，再交给 `skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh` 的 `validate`、`markdown`、`render`、`verify`、`manifest` 公开命令。
+
+> 本节只保存整包级摘要、源数据路径和 artifact 指针，不复制 `end-of-term-full.md` 的完整模板，也不覆盖模块本地 `## 复核标记`。
+
+- source data：`end-of-term-source.json`
+- workdir：`end-of-term-output`
+- module manifest：`end-of-term-output/manifest.json`
+- module review gate：`end-of-term-full.md` 中的 `## 复核标记` 必须为 `无`
+
 ## 输出清单
 
 | Artifact | Source | Status | Evidence |
@@ -96,16 +113,26 @@ outputs:
 | `jiaoan-shicao-full.md` | `## 实操教案` | planned | 模块 handoff scaffold |
 | `teaching-plan.typ` | `jiaoan-jihua-full.md` | planned | 等待 render-split |
 | `lesson-plans.typ` | `jiaoan-shicao-full.md` | planned | 等待 render-split |
+| `end-of-term-full.md` | `end-of-term-source.json` | disabled | `modules.end_of_term.enabled: false` 时不要求存在 |
+| `end-of-term-output/end-of-term-package.typ` | `end-of-term-full.md` | not_run | 仅启用期末模块后由模块 renderer 生成 |
+| `end-of-term-output/end-of-term-package.pdf` | `end-of-term-output/end-of-term-package.typ` | not_run | 仅显式 PDF 编译成功且文件存在后可改为 passed |
+| `end-of-term-output/manifest.json` | end-of-term module | not_run | 记录 `review_cleared`、table/workbook/PDF 状态 |
+| `end-of-term-output/tables/score-data.json` | end-of-term module | not_run | 模块 deterministic table artifact |
+| `end-of-term-output/tables/calculated-score-data.json` | end-of-term module | not_run | 模块 calculated score evidence |
+| `end-of-term-output/tables/score-summary.json` | end-of-term module | not_run | 模块 score summary evidence |
+| `end-of-term-output/tables/highlight-evidence.json` | end-of-term module | not_run | 模块 review/highlight evidence |
+| `end-of-term-output/tables/score-list.md` | end-of-term module | not_run | 模块 teacher-facing score list |
+| `end-of-term-output/tables/score-list.xlsx` | end-of-term module | not_run | 模块 workbook artifact |
+| `end-of-term-output/tables/scorebook.xlsx` | end-of-term module | not_run | 模块 scorebook workbook |
 | `teaching-plan.pdf` | `teaching-plan.typ` | not_run | 仅显式 PDF 编译成功后可改为 passed |
 | `lesson-plans.pdf` | `lesson-plans.typ` | not_run | 仅显式 PDF 编译成功后可改为 passed |
-| optional end-of-term module | Phase 24 | deferred | 不在 Phase 23 实现 |
+| `teaching-design-package.pdf` | selected split PDFs | not_run | 仅显式合并/编译成功且文件存在后可改为 passed |
 
 ## 复核标记
 
 无
 
 <!--
-Phase 24 placeholder:
-- Optional end-of-term material may later attach `end-of-term-full.md`.
-- Combined `teaching-design-package.pdf` and `end-of-term-package.pdf` are deferred.
+Package-level clearance never overrides enabled module-local clearance.
+If `end-of-term-full.md` still has unresolved `## 复核标记`, package final_ready remains false.
 -->
