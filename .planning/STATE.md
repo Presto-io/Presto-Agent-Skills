@@ -4,15 +4,15 @@ milestone: v1.10
 milestone_name: "Jiaoan Typst 1:1 Conversion"
 current_phase: 20
 status: executing
-stopped_at: Phase 21 context gathered
-last_updated: "2026-06-13T16:59:19.722Z"
-last_activity: 2026-06-14 -- Phase 21 planning complete
+stopped_at: Phase 21 P01 completed; Phase 20 remains independent
+last_updated: "2026-06-13T17:19:40.847Z"
+last_activity: 2026-06-14 -- Phase 21 execution complete
 progress:
   total_phases: 2
-  completed_phases: 0
-  total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 1
+  percent: 50
 ---
 
 # State: Presto Agent Skills
@@ -107,6 +107,7 @@ Start either parallel phase:
 - [Phase 18]: Shared Bash helper extraction stayed skill-local. — The secondary jiaoan scripts were left untouched because a broader shared framework was not justified by a stable Phase 18 contract.
 - [Phase 19]: Decomposition guidance remains documentation/evidence-only. — Formal v1.9 audit, complete-milestone, milestone archive, generated wrappers, linting, scaffolding, hosted workflows, office-suite automation, and new output formats remain out of scope for this execute-phase run.
 - [Milestone v1.10]: Keep fixture conversion inside each affected skill. — User required final conversion through skill-internal script code and strict generated-output verification against the two target `.typ` files.
+- [Phase 21]: jiaoan-jihua conversion stays skill-local and uses target Typst only for generated-output verification. — Phase 21 generated `test/1.10/电气设备控制线路安装与调试授课计划.typ` byte-for-byte from Markdown via `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh`.
 
 ## Performance Metrics
 
@@ -128,12 +129,13 @@ Start either parallel phase:
 | Phase 15 P01 | current session | 6 tasks | 6 files |
 | Phase 18 P01 | current session | 5 tasks | 30 files |
 | Phase 19 P01 | current session | 4 tasks | 10 files |
+| Phase 21 P01 | 16min | 4 tasks | 4 files |
 
 ## Last Session
 
-- **Completed:** Phase 16 implementation, deterministic verification, Chrome-generated PDF review artifact, final control visual UAT, and planning closeout
-- **Stopped At:** Phase 21 context gathered
-- **Resume File:** .planning/phases/21-jiaoan-jihua-1-1-typst-conversion/21-CONTEXT.md
+- **Completed:** Phase 21 P01 implementation, strict diff/hash verification, anti-copy assertion, and phase summary
+- **Stopped At:** Phase 21 complete; Phase 20 remains independent
+- **Resume File:** None
 
 ## Close Notes
 
@@ -150,15 +152,15 @@ Start either parallel phase:
 
 ## Current Position
 
-Phase: 20 / 21 ready for parallel planning
-Plan: —
-Status: Ready to execute
-Last activity: 2026-06-14 -- Phase 21 planning complete
+Phase: 20 pending / 21 complete
+Plan: Phase 21 P01 complete
+Status: Executing v1.10 with Phase 20 still independent
+Last activity: 2026-06-14 -- Phase 21 execution complete
 
 ## Operator Next Steps
 
 - `/gsd:discuss-phase 20 /Users/mrered/Developer/Presto-Agent-Skills`
-- `/gsd:discuss-phase 21 /Users/mrered/Developer/Presto-Agent-Skills`
+- `/gsd:execute-phase 20 /Users/mrered/Developer/Presto-Agent-Skills` if Phase 20 planning is already complete
 
 ### Quick Tasks Completed
 
