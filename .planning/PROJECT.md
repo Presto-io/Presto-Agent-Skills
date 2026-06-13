@@ -6,7 +6,9 @@
 
 **Shipped:** 2026-06-13
 
-**Status:** v1.10 is archived; no active milestone is currently open.
+**Active milestone:** v1.11 Integrated Teaching Design Package / 教学设计整包技能
+
+**Status:** v1.11 is in planning. Next execution step is Phase 22.
 
 **Delivered in v1.10:**
 - `jiaoan-shicao` can generate the v1.10 教案 Typst fixture byte-for-byte from Markdown through skill-local script code.
@@ -31,7 +33,9 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Milestone
 
-No active milestone. v1.10 is shipped and archived.
+v1.11 Integrated Teaching Design Package / 教学设计整包技能.
+
+This milestone creates a new orchestration skill plan that integrates the already-shipped `jiaoan-jihua`, `jiaoan-shicao`, and optional `end-of-term-teaching-materials` workflows into a reviewable teaching-design package. The existing skills stay in place and remain callable; the new skill should coordinate them through a Markdown-first intermediate, shared scheduling evidence, split Typst/PDF outputs where practical, and a final combined package output.
 
 ## Requirements
 
@@ -63,7 +67,12 @@ No active milestone. v1.10 is shipped and archived.
 
 ### Active
 
-(None currently. Define the next milestone before adding active requirements.)
+- [ ] Define a shared calendar/scheduling contract that can infer task, activity, and lesson-plan date ranges from calendar data, first teaching day, daily hours, task/activity hours, holiday lists, and makeup teaching days. - v1.11 Phase 22
+- [ ] Create a new orchestration skill plan for a teaching-design package without deleting or replacing `jiaoan-jihua` or `jiaoan-shicao`. - v1.11 Phase 23
+- [ ] Require a teacher-reviewable Markdown intermediate before Typst/PDF generation for the integrated teaching plan and lesson-plan package. - v1.11 Phase 23
+- [ ] Plan optional end-of-term package integration using the existing structured data, score calculation, deterministic table artifacts, workbook, manifest, and review-gate rules. - v1.11 Phase 24
+- [ ] Define package outputs including split PDFs where supported and a default combined `teaching-design-package.pdf`. - v1.11 Phase 24
+- [ ] Verify the new package plan with regression coverage for existing public skill interfaces, OpenClaw/Hermes adapter expectations, Markdown-first flow, and documentation indexes. - v1.11 Phase 25
 
 ### Out of Scope
 
@@ -99,15 +108,20 @@ v1.9 shipped the first decomposition pass for the current skill system. Some ent
 
 v1.10 shipped strict jiaoan fixture conversion. `skills/jiaoan-shicao` and `skills/jiaoan-jihua` now generate the two committed `test/1.10/` Typst targets from Markdown through skill-local script code only. Both flows preserve public commands, use the target Typst only for generated-output comparison, and record clean diff/hash evidence in phase verification artifacts plus the passed milestone audit.
 
+v1.11 starts the integrated teaching-design package line. Local research confirms that the current `jiaoan-jihua` script already consumes `calendar.json`, `first_teaching_day`, `daily_hours`, and per-content hours to derive week numbers, weekdays, and hour consumption. The milestone turns that proven local behavior into a shared scheduling contract for a future `teaching-design-package`-style orchestration skill, then layers teaching-plan, practical lesson-plan, and optional end-of-term artifacts behind reviewable Markdown and deterministic output gates.
+
 ## Next Milestone Goals
 
-No next milestone is defined yet. Carry forward these constraints when planning the next milestone:
+v1.11 should deliver the planning and executable phase structure for a new integrated teaching-design package skill:
 
+- Abstract scheduling into shared package behavior: input school calendar, first teaching day, daily hours, task/activity hours, holidays, and makeup teaching days; output start/end dates, week numbers, weekdays, and hour-consumption evidence for each task, activity, and lesson-plan fragment.
+- Add a new orchestration skill rather than deleting or merging away `jiaoan-jihua` and `jiaoan-shicao`.
+- Preserve a teacher-reviewable Markdown intermediate before any Typst/PDF generation.
+- Reuse `end-of-term-teaching-materials` as an optional module with structured data, score calculation, deterministic table artifacts, workbook, PDF, manifest, and review gates.
+- Prefer split outputs such as `teaching-plan.pdf`, `lesson-plans.pdf`, `end-of-term-package.pdf`, plus default combined `teaching-design-package.pdf` when Typst/PDF tooling supports it.
 - Keep shared workflow logic in `SKILL.md`, long background in `references/`, helper code in `scripts/`, and output templates in `templates/`.
-- Preserve public skill interfaces unless a new requirement explicitly authorizes a breaking change.
+- Preserve public skill interfaces unless a future phase explicitly authorizes a breaking change.
 - Keep OpenClaw and Hermes Agent compatibility notes visible in affected canonical skill entries.
-- Prefer focused interface and artifact-contract checks over opportunistic feature changes.
-- Keep fixture-specific conversion logic inside the affected skill directories unless a later requirement explicitly authorizes shared infrastructure.
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -123,6 +137,8 @@ No next milestone is defined yet. Carry forward these constraints when planning 
 - **Portability**: Avoid assuming one agent's proprietary tool syntax in the canonical skill body; isolate those differences in adapter sections.
 - **Entry weight**: `SKILL.md` should remain the semantic entry point, not a full reference manual; move long format rules, examples, and renderer details into skill-local references.
 - **Behavior compatibility**: Script decomposition must not rename existing commands, flags, output paths, manifest fields, or accepted input contracts unless a requirement explicitly says so.
+- **Integrated package discipline**: The v1.11 package skill must compose existing teaching skills through stable contracts; it must not silently delete or replace their canonical entries.
+- **Scheduling evidence discipline**: Inferred dates must be accompanied by reviewable inputs and hour-consumption evidence so teachers can audit why a task or activity received a date range.
 
 ## Key Decisions
 
@@ -152,6 +168,9 @@ No next milestone is defined yet. Carry forward these constraints when planning 
 | Keep decomposition support files discoverable | Progressive disclosure only works if contributors can reliably find templates, references, artifact contracts, and scripts from the entry docs | Good - shipped in v1.9 |
 | Start v1.10 as a strict jiaoan Typst conversion milestone | User provided two concrete Markdown and Typst fixture pairs and requested script-only 1:1 conversion through the existing jiaoan skills | Good - shipped in v1.10 |
 | Keep v1.10 conversion fixture-scoped and skill-local | The milestone acceptance was strict 1:1 fixture equivalence, not a shared jiaoan rendering framework | Good - shipped in v1.10 |
+| Start v1.11 as a new orchestration skill milestone | User wants plan and lesson-plan integration plus optional end-of-term outputs, while preserving the original skills | Active - planned for Phases 22-25 |
+| Treat jiaoan-jihua scheduling as reusable evidence, not final shared API | Existing local code proves the derivation is feasible, but a package-level contract and fixtures are needed before broad reuse | Active - Phase 22 |
+| Keep the integrated package Markdown-first | Teachers need a reviewable intermediate before Typst/PDF and workbook generation across the combined workflow | Active - Phases 23-24 |
 
 ## Evolution
 
