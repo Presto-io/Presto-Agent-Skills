@@ -3,30 +3,30 @@ gsd_state_version: 1.0
 milestone: v1.11
 milestone_name: Integrated Teaching Design Package
 current_phase: 24
-status: Ready to execute
-stopped_at: Phase 24 context gathered
-last_updated: "2026-06-13T22:26:28.963Z"
-last_activity: 2026-06-13 -- Phase 24 planning complete
+status: Ready for next phase
+stopped_at: Phase 24 execution complete
+last_updated: "2026-06-14T06:49:13+08:00"
+last_activity: 2026-06-14 -- Phase 24 execution complete
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 4
-  completed_plans: 2
-  percent: 50
+  completed_plans: 3
+  percent: 75
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 24
-**Status:** Ready to execute
+**Status:** Ready for next phase
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 24 optional end-of-term module and package outputs is ready to discuss.
+**Current focus:** Phase 25 regression verification and documentation index is ready to discuss.
 
 ## Workflow Preferences
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 Plan the next v1.11 phase:
 
-- `/gsd:discuss-phase 24`
+- `/gsd:discuss-phase 25`
 
 ## Accumulated Context
 
@@ -72,6 +72,7 @@ Plan the next v1.11 phase:
 - Milestone v1.10 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; Phase 20 and Phase 21 evidence directories remain in `.planning/phases/`.
 - Milestone v1.11 started: create a new integrated teaching-design package skill plan that preserves existing jiaoan and end-of-term skills while adding shared scheduling evidence, a teacher-reviewable Markdown intermediate, optional end-of-term module integration, split/combined PDF outputs, and regression/documentation gates.
 - Phase 23 completed: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, jiaoan module handoff rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage.
+- Phase 24 completed: `teaching-design-package` now supports optional end-of-term module handoff, module-owned review gates, deterministic table/workbook pointers, `end-of-term-package.pdf` split status, and honest `teaching-design-package.pdf` combined-output status evidence.
 
 ## Decisions
 
@@ -117,6 +118,8 @@ Plan the next v1.11 phase:
 - [Milestone v1.11]: Keep the integrated package Markdown-first. — Teachers must review a persistent Markdown intermediate before Typst/PDF, workbook, or combined package artifacts are claimed final.
 - [Phase 23]: The integrated package skill composes the existing jiaoan skills rather than replacing them. — Phase 23 added `skills/teaching-design-package/` with module-local handoff files and kept `jiaoan-jihua` and `jiaoan-shicao` public skill entries unchanged.
 - [Phase 23]: Split Typst/PDF status is honest and bounded. — The helper can render `teaching-plan.typ` and `lesson-plans.typ`, while PDF manifest fields remain `not_run` unless explicit PDF compilation succeeds.
+- [Phase 24]: Optional end-of-term support delegates module internals to `end-of-term-teaching-materials`. — The package manifest exposes pointers and status evidence but does not reimplement score calculation, tables, workbooks, or module review resolution.
+- [Phase 24]: Combined package readiness requires actual `teaching-design-package.pdf` file evidence. — Split output success is preserved separately, and missing merge tooling or PDFs records `merge_unavailable` or `failed` instead of false readiness.
 
 ## Performance Metrics
 
@@ -146,7 +149,7 @@ Plan the next v1.11 phase:
 ## Last Session
 
 - **Completed:** v1.10 milestone audit and closeout archive
-- **Stopped At:** Phase 24 context gathered
+- **Stopped At:** Phase 24 execution complete
 - **Resume File:** .planning/phases/24-optional-end-of-term-module-and-package-outputs/24-CONTEXT.md
 
 ## Close Notes
@@ -167,14 +170,14 @@ Plan the next v1.11 phase:
 
 ## Current Position
 
-Phase: 24 (optional-end-of-term-module-and-package-outputs) — READY TO EXECUTE
-Plan: 1 of 1 complete
-Status: Ready to execute
-Last activity: 2026-06-13 -- Phase 24 planning complete
+Phase: 25 (regression-verification-and-documentation-index) — READY TO DISCUSS
+Plan: Not started
+Status: Phase 24 complete; Phase 25 not started
+Last activity: 2026-06-14 -- Phase 24 execution complete
 
 ## Operator Next Steps
 
-- Execute Phase 24 with `/gsd:execute-phase 24`
+- Discuss Phase 25 with `/gsd:discuss-phase 25`
 
 ### Quick Tasks Completed
 
