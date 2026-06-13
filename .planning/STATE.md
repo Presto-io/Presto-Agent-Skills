@@ -2,31 +2,31 @@
 gsd_state_version: 1.0
 milestone: v1.11
 milestone_name: Integrated Teaching Design Package
-current_phase: 24
-status: Ready for next phase
-stopped_at: Phase 25 context gathered
-last_updated: "2026-06-13T23:10:08.203Z"
-last_activity: 2026-06-14 -- Phase 24 execution complete
+current_phase: 25
+status: Ready for milestone audit
+stopped_at: Phase 25 execution complete
+last_updated: "2026-06-14T00:00:00.000Z"
+last_activity: 2026-06-14 -- Phase 25 execution complete
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 24
-**Status:** Ready for next phase
+**Current Phase:** 25
+**Status:** Ready for milestone audit
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 25 regression verification and documentation index is ready to discuss.
+**Current focus:** Phase 25 regression verification is complete; v1.11 is ready for milestone audit.
 
 ## Workflow Preferences
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 ## Next Up
 
-Plan the next v1.11 phase:
+Audit the v1.11 milestone:
 
-- `/gsd:discuss-phase 25`
+- `/gsd:audit-milestone`
 
 ## Accumulated Context
 
@@ -73,6 +73,7 @@ Plan the next v1.11 phase:
 - Milestone v1.11 started: create a new integrated teaching-design package skill plan that preserves existing jiaoan and end-of-term skills while adding shared scheduling evidence, a teacher-reviewable Markdown intermediate, optional end-of-term module integration, split/combined PDF outputs, and regression/documentation gates.
 - Phase 23 completed: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, jiaoan module handoff rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage.
 - Phase 24 completed: `teaching-design-package` now supports optional end-of-term module handoff, module-owned review gates, deterministic table/workbook pointers, `end-of-term-package.pdf` split status, and honest `teaching-design-package.pdf` combined-output status evidence.
+- Phase 25 completed: public command regression, package manifest truthfulness, six-runtime adapter coverage, OpenClaw/Hermes practical notes, and documentation/index discoverability are verified with no gaps.
 
 ## Decisions
 
@@ -170,14 +171,14 @@ Plan the next v1.11 phase:
 
 ## Current Position
 
-Phase: 25 (regression-verification-and-documentation-index) — READY TO DISCUSS
-Plan: Not started
-Status: Phase 24 complete; Phase 25 not started
-Last activity: 2026-06-14 -- Phase 24 execution complete
+Phase: 25 (regression-verification-and-documentation-index) — COMPLETE
+Plan: 1 of 1 complete
+Status: Phase 25 complete; milestone audit not yet run
+Last activity: 2026-06-14 -- Phase 25 execution complete
 
 ## Operator Next Steps
 
-- Discuss Phase 25 with `/gsd:discuss-phase 25`
+- Run milestone audit with `/gsd:audit-milestone`
 
 ### Quick Tasks Completed
 

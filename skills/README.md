@@ -9,7 +9,7 @@ Current skills:
 - `jiaoan-jihua`: 授课进度计划 Markdown intermediate 到 Presto jiaoan-jihua Typst/PDF 的工作流。
 - `jiaoan-shicao`: 实操教案 Markdown intermediate 到 Presto jiaoan-shicao Typst/PDF 的工作流。
 - `school-presentation`: 学校正式汇报、课程展示、培训课件、招生宣讲或项目答辩材料的 Markdown logical-slide intermediate 到离线 HTML 演示文稿的工作流；生成物内置 preview、overview、playback、presenter markup、课堂交互/结构化版式和一键最终 PDF 导出。
-- `teaching-design-package`: 教学设计整包 Markdown intermediate 到授课计划/实操教案拆分 Typst/PDF status 的编排工作流；组合 `jiaoan-jihua` 与 `jiaoan-shicao`，不替换原技能。
+- `teaching-design-package`: 教学设计整包 Markdown intermediate 到授课计划/实操教案/可选期末材料拆分 Typst/PDF status 的编排工作流；组合 `jiaoan-jihua`、`jiaoan-shicao` 与可选 `end-of-term-teaching-materials`，不替换原技能。
 
 Expected layout:
 
@@ -40,6 +40,6 @@ Artifact contract discovery:
 | `jiaoan-jihua` | `templates/jiaoan-jihua-full.md` | `references/format-and-rendering.md`, `references/calendar.json` |
 | `jiaoan-shicao` | `templates/jiaoan-shicao-full.md` | `references/format-and-rendering.md` |
 | `school-presentation` | `templates/school-presentation-full.md` | `references/authoring-and-layout.md`, `references/playback-and-export.md`, `references/verification-contract.md` |
-| `teaching-design-package` | `templates/teaching-design-package-full.md` | `references/format-and-orchestration.md` |
+| `teaching-design-package` | `templates/teaching-design-package-full.md` | `SKILL.md`, `references/format-and-orchestration.md`, `scripts/teaching-design-package.sh` |
 
 Before adding a new skill, copy `templates/skill/SKILL.md` and fill the runtime adapter table for all required runtimes.
