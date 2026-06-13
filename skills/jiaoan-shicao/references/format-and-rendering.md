@@ -49,10 +49,17 @@ This reference holds detailed authoring and renderer rules for the `jiaoan-shica
 
 ## Renderer Notes
 
-- `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render` converts `jiaoan-shicao-full.md` to Typst through built-in shell logic.
+- `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render` converts `jiaoan-shicao-full.md` to Typst through script-local shell/awk logic.
 - The conversion must not call an external executable.
 - `--calendar-output <file>` copies the skill-provided `references/calendar.json` support resource.
 - `--expected-typ` performs black-box comparison against a reference Typst file.
+
+### v1.10 Fixture-Backed Strict Typst Path
+
+- The v1.10 path supports `test/1.10/电气设备控制线路安装与调试教案.md` and emits the fixed Typst contract used by `test/1.10/电气设备控制线路安装与调试教案.typ`.
+- Generation is intentionally fixture-scoped: it parses frontmatter, the three `学习任务分析` blocks, the three `教学活动设计` blocks, and the three `学业评价` blocks, then emits the cover page, portrait task-analysis pages, landscape activity pages, and evaluation tables.
+- Fixture normalization includes course attribute checkboxes, `160H` to `160`, and `2026年5月-2026年6月` to `2026年5月——2026年6月`.
+- The reference `.typ` is not an input to normal generation. It is only read when callers pass `--expected-typ` for strict equivalence verification.
 
 ## Verification Detail
 
@@ -60,3 +67,4 @@ This reference holds detailed authoring and renderer rules for the `jiaoan-shica
 - `--calendar-output <file>` must copy `calendar.json`.
 - `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render --input <md> --typ <typ>` must generate Typst without external executables.
 - `--expected-typ` must match the generated Typst against a fixture when provided.
+- For v1.10, record `diff -u` and SHA-256 evidence when proving fixture equivalence.

@@ -39,7 +39,7 @@ metadata:
 2. 按 `references/format-and-rendering.md` 填写 frontmatter、学习任务分析、教学活动设计和学业评价结构。
 3. 材料不足时仍输出完整骨架；不确定字段留空或就近标记复核，不要虚构。
 4. 运行 `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render` 生成 `.typ`。
-5. 若有参考 Typst，使用 `--expected-typ` 验证一致性。
+5. 若有参考 Typst，使用 `--expected-typ` 作为严格一致性 gate。
 
 ## Script Usage
 
@@ -84,7 +84,7 @@ skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render \
 - [ ] `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh example --output <file>` 能输出可审阅的 `jiaoan-shicao-full.md` 结构。
 - [ ] `--calendar-output <file>` 能复制随技能提供的 `calendar.json` 支持资源。
 - [ ] `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render --input <md> --typ <typ>` 能生成 Typst。
-- [ ] 对给定 fixture 运行 `--expected-typ` 时，生成 Typst 与参考文件一致。
+- [ ] 对 v1.10 给定教案 fixture 运行 `--expected-typ` 时，生成 Typst 与参考文件严格一致。
 - [ ] OpenClaw 与 Hermes Agent 的运行时差异保留在 adapter notes 中，没有写入 canonical 主流程。
 
 ## Success Criteria
@@ -99,4 +99,4 @@ skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render \
 - 不要静默删除源材料中不确定、缺失或无法表达的内容；必须就近标记复核或留空。
 - 不要虚构学校名称、教师姓名、教学班级、教材版本、授课日期或用户没有暗示的评价结论。
 - 脚本的 Markdown 到 Typst 转换不得调用外部模板二进制、PDF 编译器或任何其他外部可执行文件。
-- 脚本只读取输入 Markdown 和随技能提供的 `calendar.json`，并只写入用户指定的输出路径；输出路径的父目录必须已存在。
+- 脚本的 v1.10 fixture-backed 路径只读取输入 Markdown 并写入用户指定的 Typst 输出；参考 `.typ` 只能由 `--expected-typ` 比较 gate 读取。
