@@ -9,6 +9,7 @@ SKILL_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${SKILL_DIR}/../.." && pwd)"
 TEMPLATE_MD="${SKILL_DIR}/templates/teaching-design-package-full.md"
 MANIFEST_NAME="teaching-design-package-manifest.json"
+END_OF_TERM_SCRIPT="${REPO_ROOT}/skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh"
 
 usage() {
   while IFS= read -r line; do printf '%s\n' "$line"; done <<'USAGE'
@@ -16,12 +17,15 @@ Usage:
   teaching-design-package.sh example --output <teaching-design-package-full.md>
   teaching-design-package.sh plan-split --input <package.md> --out-dir <dir>
   teaching-design-package.sh render-split --input <package.md> --out-dir <dir>
+  teaching-design-package.sh plan-end-of-term --input <package.md> --out-dir <dir>
+  teaching-design-package.sh render-end-of-term --input <package.md> --out-dir <dir>
+  teaching-design-package.sh render-package --input <package.md> --out-dir <dir>
   teaching-design-package.sh manifest --input <package.md> --out-dir <dir>
   teaching-design-package.sh info
   teaching-design-package.sh version
 
-Phase 23 supports split teaching-plan and lesson-plan outputs only.
-Phase 24 owns optional end-of-term-package.pdf and combined teaching-design-package.pdf behavior.
+Optional end-of-term behavior delegates to skills/end-of-term-teaching-materials.
+Combined teaching-design-package.pdf is passed only when the actual file exists.
 USAGE
 }
 
@@ -89,6 +93,28 @@ frontmatter_value() {
   ' "$input"
 }
 
+end_of_term_enabled() {
+  local input="$1"
+  awk '
+    BEGIN { in_fm=0; in_mod=0; in_eot=0 }
+    NR == 1 && $0 == "---" { in_fm=1; next }
+    in_fm && $0 == "---" { exit }
+    !in_fm { next }
+    /^modules:[[:space:]]*$/ { in_mod=1; next }
+    in_mod && /^  [A-Za-z0-9_]+:[[:space:]]*$/ {
+      in_eot=($1 == "end_of_term:")
+      next
+    }
+    in_eot && /^    enabled:[[:space:]]*/ {
+      value=$0
+      sub(/^    enabled:[[:space:]]*/, "", value)
+      gsub(/"/, "", value)
+      print value
+      exit
+    }
+  ' "$input"
+}
+
 json_escape() {
   local value="$1"
   value="${value//\\/\\\\}"
@@ -151,15 +177,134 @@ review_marker_state() {
   printf ']'
 }
 
+json_bool_from_manifest() {
+  local manifest="$1" key="$2" default_value="${3:-false}"
+  if [[ -f "$manifest" ]] && grep -q "\"${key}\"[[:space:]]*:[[:space:]]*true" "$manifest"; then
+    printf 'true'
+  elif [[ -f "$manifest" ]] && grep -q "\"${key}\"[[:space:]]*:[[:space:]]*false" "$manifest"; then
+    printf 'false'
+  else
+    printf '%s' "$default_value"
+  fi
+}
+
+end_of_term_review_markers() {
+  local handoff="$1"
+  if [[ -f "$handoff" ]]; then
+    review_marker_state "$handoff"
+  else
+    printf '[]'
+  fi
+}
+
+status_for_file() {
+  local path="$1" planned_status="${2:-not_run}"
+  if [[ -f "$path" ]]; then
+    printf 'passed'
+  else
+    printf '%s' "$planned_status"
+  fi
+}
+
+all_split_pdfs_exist() {
+  local teaching_pdf="$1" lesson_pdf="$2" eot_enabled="$3" eot_pdf="$4"
+  [[ -f "$teaching_pdf" && -f "$lesson_pdf" ]] || return 1
+  if [[ "$eot_enabled" == "true" ]]; then
+    [[ -f "$eot_pdf" ]] || return 1
+  fi
+}
+
+merge_combined_pdf() {
+  local out_dir="$1" eot_enabled="$2"
+  local combined="${out_dir}/teaching-design-package.pdf"
+  local teaching_pdf="${out_dir}/teaching-plan.pdf"
+  local lesson_pdf="${out_dir}/lesson-plans.pdf"
+  local eot_pdf="${out_dir}/end-of-term-output/end-of-term-package.pdf"
+  [[ -f "$combined" ]] && { printf 'passed:existing_file'; return 0; }
+  if ! all_split_pdfs_exist "$teaching_pdf" "$lesson_pdf" "$eot_enabled" "$eot_pdf"; then
+    printf 'failed:missing_selected_split_pdfs'
+    return 0
+  fi
+  if command -v pdfunite >/dev/null 2>&1; then
+    if [[ "$eot_enabled" == "true" ]]; then
+      pdfunite "$teaching_pdf" "$lesson_pdf" "$eot_pdf" "$combined" >/dev/null 2>&1 || {
+        printf 'failed:pdfunite_failed'
+        return 0
+      }
+    else
+      pdfunite "$teaching_pdf" "$lesson_pdf" "$combined" >/dev/null 2>&1 || {
+        printf 'failed:pdfunite_failed'
+        return 0
+      }
+    fi
+    [[ -f "$combined" ]] && printf 'passed:pdfunite' || printf 'failed:combined_pdf_missing_after_merge'
+    return 0
+  fi
+  if command -v qpdf >/dev/null 2>&1; then
+    if [[ "$eot_enabled" == "true" ]]; then
+      qpdf --empty --pages "$teaching_pdf" "$lesson_pdf" "$eot_pdf" -- "$combined" >/dev/null 2>&1 || {
+        printf 'failed:qpdf_failed'
+        return 0
+      }
+    else
+      qpdf --empty --pages "$teaching_pdf" "$lesson_pdf" -- "$combined" >/dev/null 2>&1 || {
+        printf 'failed:qpdf_failed'
+        return 0
+      }
+    fi
+    [[ -f "$combined" ]] && printf 'passed:qpdf' || printf 'failed:combined_pdf_missing_after_merge'
+    return 0
+  fi
+  printf 'merge_unavailable:no_pdf_merge_tool'
+}
+
 write_manifest() {
   local package_md="$1" out_dir="$2" teaching_typ_status="$3" lesson_typ_status="$4"
   local manifest review_markers final_ready teaching_pdf_status lesson_pdf_status
+  local eot_enabled eot_status eot_handoff eot_source eot_workdir eot_manifest
+  local eot_typ eot_pdf eot_typ_status eot_pdf_status eot_review_markers eot_review_cleared
+  local calculated_scores_verified table_artifacts_verified workbook_verified
+  local combined_pdf combined_status combined_reason merge_result
   mkdir -p "$out_dir"
   manifest="${out_dir}/${MANIFEST_NAME}"
   review_markers="$(review_marker_state "$package_md")"
-  teaching_pdf_status="not_run"
-  lesson_pdf_status="not_run"
-  if [[ "$review_markers" == "[]" && "$teaching_typ_status" == "passed" && "$lesson_typ_status" == "passed" && "$teaching_pdf_status" == "passed" && "$lesson_pdf_status" == "passed" ]]; then
+  teaching_pdf_status="$(status_for_file "${out_dir}/teaching-plan.pdf" "not_run")"
+  lesson_pdf_status="$(status_for_file "${out_dir}/lesson-plans.pdf" "not_run")"
+  eot_enabled="$(end_of_term_enabled "$package_md")"
+  [[ "$eot_enabled" == "true" ]] || eot_enabled="false"
+  eot_handoff="${out_dir}/end-of-term-full.md"
+  eot_source="${out_dir}/end-of-term-source.json"
+  eot_workdir="${out_dir}/end-of-term-output"
+  eot_manifest="${eot_workdir}/manifest.json"
+  eot_typ="${eot_workdir}/end-of-term-package.typ"
+  eot_pdf="${eot_workdir}/end-of-term-package.pdf"
+  eot_typ_status="$(status_for_file "$eot_typ" "not_run")"
+  eot_pdf_status="$(status_for_file "$eot_pdf" "not_run")"
+  eot_review_markers="$(end_of_term_review_markers "$eot_handoff")"
+  eot_review_cleared="$(json_bool_from_manifest "$eot_manifest" "review_cleared" "false")"
+  calculated_scores_verified="$(json_bool_from_manifest "$eot_manifest" "calculated_scores_verified" "false")"
+  table_artifacts_verified="$(json_bool_from_manifest "$eot_manifest" "table_artifacts_verified" "false")"
+  workbook_verified="$(json_bool_from_manifest "$eot_manifest" "workbook_verified" "false")"
+  if [[ "$eot_enabled" != "true" ]]; then
+    eot_status="disabled"
+    eot_review_cleared="true"
+  elif [[ "$eot_review_markers" != "[]" || "$eot_review_cleared" != "true" ]]; then
+    eot_status="blocked_review"
+  elif [[ -f "$eot_manifest" && -f "$eot_typ" && -f "$eot_pdf" ]]; then
+    eot_status="passed"
+  elif [[ -f "$eot_manifest" || -f "$eot_handoff" ]]; then
+    eot_status="not_run"
+  else
+    eot_status="planned"
+  fi
+  combined_pdf="${out_dir}/teaching-design-package.pdf"
+  merge_result="$(merge_combined_pdf "$out_dir" "$eot_enabled")"
+  combined_status="${merge_result%%:*}"
+  combined_reason="${merge_result#*:}"
+  if [[ "$combined_status" == "$combined_reason" ]]; then
+    combined_reason=""
+  fi
+  if [[ "$review_markers" == "[]" && "$teaching_pdf_status" == "passed" && "$lesson_pdf_status" == "passed" && "$combined_status" == "passed" && "$eot_status" != "blocked_review" && "$eot_status" != "planned" && "$eot_status" != "not_run" ]]; then
     final_ready="true"
   else
     final_ready="false"
@@ -167,6 +312,32 @@ write_manifest() {
   {
     printf '{\n'
     printf '  "package_markdown": "%s",\n' "$(json_escape "$package_md")"
+    printf '  "split_outputs": {\n'
+    printf '    "teaching_plan_typ": {\n'
+    printf '      "path": "%s",\n' "$(json_escape "${out_dir}/teaching-plan.typ")"
+    printf '      "status": "%s"\n' "$teaching_typ_status"
+    printf '    },\n'
+    printf '    "lesson_plans_typ": {\n'
+    printf '      "path": "%s",\n' "$(json_escape "${out_dir}/lesson-plans.typ")"
+    printf '      "status": "%s"\n' "$lesson_typ_status"
+    printf '    },\n'
+    printf '    "teaching_plan_pdf": {\n'
+    printf '      "path": "%s",\n' "$(json_escape "${out_dir}/teaching-plan.pdf")"
+    printf '      "status": "%s"\n' "$teaching_pdf_status"
+    printf '    },\n'
+    printf '    "lesson_plans_pdf": {\n'
+    printf '      "path": "%s",\n' "$(json_escape "${out_dir}/lesson-plans.pdf")"
+    printf '      "status": "%s"\n' "$lesson_pdf_status"
+    printf '    },\n'
+    printf '    "end_of_term_typ": {\n'
+    printf '      "path": "%s",\n' "$(json_escape "$eot_typ")"
+    printf '      "status": "%s"\n' "$eot_typ_status"
+    printf '    },\n'
+    printf '    "end_of_term_pdf": {\n'
+    printf '      "path": "%s",\n' "$(json_escape "$eot_pdf")"
+    printf '      "status": "%s"\n' "$eot_pdf_status"
+    printf '    }\n'
+    printf '  },\n'
     printf '  "teaching_plan_typ": {\n'
     printf '    "path": "%s",\n' "$(json_escape "${out_dir}/teaching-plan.typ")"
     printf '    "status": "%s"\n' "$teaching_typ_status"
@@ -183,13 +354,39 @@ write_manifest() {
     printf '    "path": "%s",\n' "$(json_escape "${out_dir}/lesson-plans.pdf")"
     printf '    "status": "%s"\n' "$lesson_pdf_status"
     printf '  },\n'
+    printf '  "end_of_term": {\n'
+    printf '    "enabled": %s,\n' "$eot_enabled"
+    printf '    "status": "%s",\n' "$eot_status"
+    printf '    "handoff": "%s",\n' "$(json_escape "$eot_handoff")"
+    printf '    "source_data": "%s",\n' "$(json_escape "$eot_source")"
+    printf '    "workdir": "%s",\n' "$(json_escape "$eot_workdir")"
+    printf '    "manifest": "%s",\n' "$(json_escape "$eot_manifest")"
+    printf '    "typ": "%s",\n' "$(json_escape "$eot_typ")"
+    printf '    "pdf": "%s",\n' "$(json_escape "$eot_pdf")"
+    printf '    "review_cleared": %s,\n' "$eot_review_cleared"
+    printf '    "review_markers": %s,\n' "$eot_review_markers"
+    printf '    "calculated_scores_verified": %s,\n' "$calculated_scores_verified"
+    printf '    "table_artifacts_verified": %s,\n' "$table_artifacts_verified"
+    printf '    "workbook_verified": %s,\n' "$workbook_verified"
+    printf '    "tables": {\n'
+    printf '      "score_data": "%s",\n' "$(json_escape "${eot_workdir}/tables/score-data.json")"
+    printf '      "calculated_score_data": "%s",\n' "$(json_escape "${eot_workdir}/tables/calculated-score-data.json")"
+    printf '      "score_summary": "%s",\n' "$(json_escape "${eot_workdir}/tables/score-summary.json")"
+    printf '      "highlight_evidence": "%s",\n' "$(json_escape "${eot_workdir}/tables/highlight-evidence.json")"
+    printf '      "score_list_md": "%s"\n' "$(json_escape "${eot_workdir}/tables/score-list.md")"
+    printf '    },\n'
+    printf '    "workbooks": {\n'
+    printf '      "score_list_xlsx": "%s",\n' "$(json_escape "${eot_workdir}/tables/score-list.xlsx")"
+    printf '      "scorebook_xlsx": "%s"\n' "$(json_escape "${eot_workdir}/tables/scorebook.xlsx")"
+    printf '    }\n'
+    printf '  },\n'
+    printf '  "combined_output": {\n'
+    printf '    "path": "%s",\n' "$(json_escape "$combined_pdf")"
+    printf '    "status": "%s",\n' "$combined_status"
+    printf '    "reason": "%s"\n' "$(json_escape "$combined_reason")"
+    printf '  },\n'
     printf '  "review_markers": %s,\n' "$review_markers"
-    printf '  "final_ready": %s,\n' "$final_ready"
-    printf '  "phase_24_deferred": [\n'
-    printf '    "optional end-of-term module",\n'
-    printf '    "combined teaching-design-package.pdf",\n'
-    printf '    "end-of-term-package.pdf"\n'
-    printf '  ]\n'
+    printf '  "final_ready": %s\n' "$final_ready"
     printf '}\n'
   } > "$manifest"
   printf '%s\n' "$manifest"
@@ -248,6 +445,62 @@ cmd_render_split() {
   fi
 }
 
+cmd_plan_end_of_term() {
+  parse_io_args "$@"
+  [[ -n "$INPUT" ]] || die "plan-end-of-term requires --input"
+  [[ -n "$OUT_DIR" ]] || die "plan-end-of-term requires --out-dir"
+  validate_package "$INPUT"
+  mkdir -p "$OUT_DIR"
+  local enabled source_json handoff
+  enabled="$(end_of_term_enabled "$INPUT")"
+  [[ "$enabled" == "true" ]] || {
+    write_manifest "$INPUT" "$OUT_DIR" "planned" "planned" >/dev/null
+    return 0
+  }
+  need_file "$END_OF_TERM_SCRIPT"
+  source_json="${OUT_DIR}/end-of-term-source.json"
+  handoff="${OUT_DIR}/end-of-term-full.md"
+  [[ -f "$source_json" ]] || die "enabled end-of-term module requires source data: $source_json"
+  "$END_OF_TERM_SCRIPT" markdown --input "$source_json" --output "$handoff"
+  "$END_OF_TERM_SCRIPT" validate --input "$handoff" >/dev/null 2>&1 || true
+  write_manifest "$INPUT" "$OUT_DIR" "planned" "planned" >/dev/null
+}
+
+cmd_render_end_of_term() {
+  parse_io_args "$@"
+  [[ -n "$INPUT" ]] || die "render-end-of-term requires --input"
+  [[ -n "$OUT_DIR" ]] || die "render-end-of-term requires --out-dir"
+  validate_package "$INPUT"
+  mkdir -p "$OUT_DIR"
+  local enabled handoff workdir
+  enabled="$(end_of_term_enabled "$INPUT")"
+  [[ "$enabled" == "true" ]] || {
+    write_manifest "$INPUT" "$OUT_DIR" "planned" "planned" >/dev/null
+    return 0
+  }
+  need_file "$END_OF_TERM_SCRIPT"
+  handoff="${OUT_DIR}/end-of-term-full.md"
+  workdir="${OUT_DIR}/end-of-term-output"
+  [[ -f "$handoff" ]] || cmd_plan_end_of_term --input "$INPUT" --out-dir "$OUT_DIR"
+  mkdir -p "$workdir"
+  "$END_OF_TERM_SCRIPT" render --input "$handoff" --workdir "$workdir" --pdf
+  "$END_OF_TERM_SCRIPT" verify --workdir "$workdir"
+  "$END_OF_TERM_SCRIPT" manifest --workdir "$workdir" >/dev/null
+  write_manifest "$INPUT" "$OUT_DIR" "planned" "planned" >/dev/null
+}
+
+cmd_render_package() {
+  parse_io_args "$@"
+  [[ -n "$INPUT" ]] || die "render-package requires --input"
+  [[ -n "$OUT_DIR" ]] || die "render-package requires --out-dir"
+  validate_package "$INPUT"
+  mkdir -p "$OUT_DIR"
+  local teaching_status="planned" lesson_status="planned"
+  [[ -f "${OUT_DIR}/teaching-plan.typ" ]] && teaching_status="passed"
+  [[ -f "${OUT_DIR}/lesson-plans.typ" ]] && lesson_status="passed"
+  write_manifest "$INPUT" "$OUT_DIR" "$teaching_status" "$lesson_status" >/dev/null
+}
+
 cmd_manifest() {
   parse_io_args "$@"
   [[ -n "$INPUT" ]] || die "manifest requires --input"
@@ -260,10 +513,11 @@ cmd_manifest() {
 }
 
 cmd_info() {
-  printf 'teaching-design-package: Markdown-first orchestration over jiaoan-jihua and jiaoan-shicao.\n'
+  printf 'teaching-design-package: Markdown-first orchestration over jiaoan-jihua, jiaoan-shicao, and optional end-of-term-teaching-materials.\n'
   printf 'Package checkpoint: templates/teaching-design-package-full.md\n'
   printf 'Reference: references/format-and-orchestration.md\n'
-  printf 'Phase 24 deferred: optional end-of-term-package.pdf and combined teaching-design-package.pdf.\n'
+  printf 'Optional module: end-of-term-full.md -> end-of-term-package.pdf via end-of-term-teaching-materials.\n'
+  printf 'Combined output: teaching-design-package.pdf is passed only when the actual file exists after merge/compile.\n'
 }
 
 cmd_version() {
@@ -278,6 +532,9 @@ main() {
     example) cmd_example "$@" ;;
     plan-split) cmd_plan_split "$@" ;;
     render-split) cmd_render_split "$@" ;;
+    plan-end-of-term) cmd_plan_end_of_term "$@" ;;
+    render-end-of-term) cmd_render_end_of_term "$@" ;;
+    render-package) cmd_render_package "$@" ;;
     manifest) cmd_manifest "$@" ;;
     info) cmd_info "$@" ;;
     version) cmd_version "$@" ;;
