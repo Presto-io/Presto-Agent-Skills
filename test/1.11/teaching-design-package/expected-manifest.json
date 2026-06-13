@@ -1,0 +1,25 @@
+{
+  "teaching_plan_typ": {
+    "path": "teaching-plan.typ",
+    "status": "planned_or_passed"
+  },
+  "lesson_plans_typ": {
+    "path": "lesson-plans.typ",
+    "status": "planned_or_passed"
+  },
+  "teaching_plan_pdf": {
+    "path": "teaching-plan.pdf",
+    "status": "not_run"
+  },
+  "lesson_plans_pdf": {
+    "path": "lesson-plans.pdf",
+    "status": "not_run"
+  },
+  "review_markers": [],
+  "final_ready": false,
+  "phase_24_deferred": [
+    "optional end-of-term module",
+    "combined final package output",
+    "end-of-term package output"
+  ]
+}
