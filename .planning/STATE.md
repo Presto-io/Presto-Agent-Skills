@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: "Jiaoan Typst 1:1 Conversion"
 current_phase: 20
-status: ready_for_audit
-stopped_at: Phase 20 P01 complete; audit and complete not run
-last_updated: "2026-06-13T17:33:00Z"
-last_activity: 2026-06-14 -- Phase 20 execution complete
+status: completed
+stopped_at: Milestone v1.10 completed and archived
+last_updated: "2026-06-14T02:05:00+08:00"
+last_activity: 2026-06-14 -- Milestone v1.10 completed and archived
 progress:
   total_phases: 2
   completed_phases: 2
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 20
-**Status:** Ready for audit
+**Status:** v1.10 milestone complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.10 Jiaoan Typst 1:1 Conversion.
+**Current focus:** Planning next milestone.
 
 ## Workflow Preferences
 
@@ -50,10 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 ## Next Up
 
-Start either parallel phase:
+Start the next milestone when ready:
 
-- Phase 20: Jiaoan Shicao 教案 1:1 Typst Conversion
-- Phase 21: Jiaoan Jihua 授课计划 1:1 Typst Conversion
+- `/gsd:new-milestone /Users/mrered/Developer/Presto-Agent-Skills`
 
 ## Accumulated Context
 
@@ -70,6 +69,7 @@ Start either parallel phase:
 - Phase 19 completed: contributor guidance now documents the lightweight-entry and script-module decomposition pattern, affected skill artifact contracts are discoverable from README/skills index, and phase-local pre-audit evidence records Phase 17/18 before/after facts without marking v1.9 shipped.
 - Milestone v1.9 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; no next milestone has been started.
 - Milestone v1.10 started: strict 1:1 Markdown-to-Typst conversion is scoped to the existing `jiaoan-shicao` and `jiaoan-jihua` skills, with separate parallel phases for the教案 and授课计划 fixture pairs under `test/1.10/`.
+- Milestone v1.10 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; Phase 20 and Phase 21 evidence directories remain in `.planning/phases/`.
 
 ## Decisions
 
@@ -136,8 +136,8 @@ Start either parallel phase:
 
 ## Last Session
 
-- **Completed:** Phase 20 P01 implementation, strict diff/hash verification, anti-copy assertion, and phase summary
-- **Stopped At:** Phase 20 and Phase 21 complete; audit and complete not run
+- **Completed:** v1.10 milestone audit and closeout archive
+- **Stopped At:** Milestone v1.10 complete; awaiting next milestone
 - **Resume File:** None
 
 ## Close Notes
@@ -152,18 +152,18 @@ Start either parallel phase:
 - v1.8 starts from Phase 10 deferred scope rather than reopening completed playback/reveal work.
 - v1.8 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 - v1.9 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
+- v1.10 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 
 ## Current Position
 
-Phase: 20 complete / 21 complete
-Plan: Phase 20 P01 complete
-Status: Ready for audit; audit and complete not run
-Last activity: 2026-06-14 -- Phase 20 execution complete
+Phase: Milestone v1.10 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-14 -- Milestone v1.10 completed and archived
 
 ## Operator Next Steps
 
-- `/gsd:discuss-phase 20 /Users/mrered/Developer/Presto-Agent-Skills`
-- `/gsd:execute-phase 20 /Users/mrered/Developer/Presto-Agent-Skills` if Phase 20 planning is already complete
+- Start the next milestone with `/gsd:new-milestone /Users/mrered/Developer/Presto-Agent-Skills`
 
 ### Quick Tasks Completed
 

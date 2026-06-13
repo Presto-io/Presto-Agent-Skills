@@ -172,6 +172,48 @@
 
 ---
 
+## Milestone: v1.10 - Jiaoan Typst 1:1 Conversion
+
+**Shipped:** 2026-06-13
+**Phases:** 2 | **Plans:** 2 | **Sessions:** 4+
+
+### What Was Built
+
+- A skill-local `jiaoan-shicao` renderer for the v1.10 教案 Markdown fixture.
+- A Bash-only `jiaoan-jihua` parser and official five-column Typst emitter for the v1.10 授课计划 fixture.
+- Strict generated-output verification for both fixture pairs with clean `diff -u`, matching SHA-256, and anti-copy inspection.
+- A passed milestone audit covering all 11 v1.10 requirements across Phase 20 and Phase 21.
+
+### What Worked
+
+- Splitting the two jiaoan skills into parallel phases kept ownership clear and avoided premature shared infrastructure.
+- Requiring `--expected-typ` only after generation made target files useful as oracles without allowing copy-through behavior.
+- Standalone phase verification files gave the final audit enough durable evidence to pass without reopening implementation.
+
+### What Was Inefficient
+
+- Phase 20 needed a small follow-up evidence closure because its first summary did not fully expose requirement completion metadata.
+- The SDK milestone close generated a partial MILESTONES accomplishment list and stale active-state wording, so closeout still needed manual review.
+
+### Patterns Established
+
+- Fixture-specific 1:1 conversion can live inside the affected skill directory while the public command surface remains stable.
+- For byte-for-byte renderer milestones, verification should include render-with-expected, independent diff, hash comparison, and source anti-copy inspection.
+- Phase directories can remain in `.planning/phases/` as raw evidence when milestone-level archives already preserve ROADMAP, REQUIREMENTS, and AUDIT.
+
+### Key Lessons
+
+1. Put requirement completion metadata in phase summaries before audit so closeout does not need evidence repair.
+2. Treat target fixtures as verification oracles only after renderer execution.
+3. Review generated milestone archives manually before committing closeout.
+
+### Cost Observations
+
+- Model mix: balanced profile.
+- Notable: The highest-value verification was deterministic text comparison, not visual/PDF acceptance.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -182,6 +224,7 @@
 | v1.7 | 3+ | 3 | Added fixed-template document package generation with strict review gates and audit-driven closure. |
 | v1.8 | 6+ | 3 | Extended the school-presentation renderer through live markup, classroom structures, and one-click PDF export while preserving HTML-first delivery. |
 | v1.9 | 4+ | 3 | Reduced skill entry and script weight through progressive-disclosure references, skill-local modules, and contributor guidance. |
+| v1.10 | 4+ | 2 | Added strict skill-local jiaoan Markdown-to-Typst fixture conversion with byte-for-byte verification. |
 
 ### Cumulative Quality
 
@@ -191,6 +234,7 @@
 | v1.7 | Script verifier, Typst/PDF compile when available, table/workbook repeatability, milestone audit | 8/8 ETM requirements shipped | Reused standard shell/Python workflow |
 | v1.8 | Script verifier, manifest checks, browser/manual UAT, PDF artifact sanity, milestone audit | 11/11 SP requirements shipped | Reused the existing shell/Python/HTML renderer path |
 | v1.9 | Public command regression, syntax/compile checks, documentation discovery checks, milestone audit | 12/12 SD requirements shipped | No new runtime dependencies added |
+| v1.10 | Skill render commands, strict diff, SHA-256, anti-copy source inspection, milestone audit | 11/11 jiaoan requirements shipped | No new runtime dependencies added |
 
 ### Top Lessons (Verified Across Milestones)
 

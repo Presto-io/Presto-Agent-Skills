@@ -2,22 +2,22 @@
 
 ## Current State
 
-**Latest shipped milestone:** v1.9 Skill Decomposition and Entry Slimming
+**Latest shipped milestone:** v1.10 Jiaoan Typst 1:1 Conversion
 
 **Shipped:** 2026-06-13
 
-**Status:** v1.10 Jiaoan Typst 1:1 Conversion is active and in planning.
+**Status:** v1.10 is archived; no active milestone is currently open.
 
-**Delivered in v1.9:**
-- Current canonical `SKILL.md` entries are lighter semantic entry points, with long examples, renderer notes, artifact details, and operational guidance moved into skill-local `references/`.
-- The largest script entry points now delegate to skill-local modules or sourced helpers while preserving public command names, common flags, generated artifacts, manifest keys, and Markdown intermediate contracts.
-- Contributor guidance now documents the decomposition lookup path and support-file ownership model so future skills do not accumulate heavy entry files or monolithic scripts by default.
+**Delivered in v1.10:**
+- `jiaoan-shicao` can generate the v1.10 教案 Typst fixture byte-for-byte from Markdown through skill-local script code.
+- `jiaoan-jihua` can generate the v1.10 授课计划 Typst fixture byte-for-byte from Markdown through skill-local script code.
+- Both fixture pairs have recorded strict diff, SHA-256, and anti-copy verification evidence, and the milestone audit passed.
 
 ## Milestone History
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets.
 
 ## What This Is
 
@@ -29,14 +29,9 @@ The repository is currently a stable documentation-first framework. New skill wo
 
 A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
 
-## Current Milestone: v1.10 Jiaoan Typst 1:1 Conversion
+## Current Milestone
 
-**Goal:** Make the existing `jiaoan-shicao` and `jiaoan-jihua` skills convert the two provided Markdown fixtures into their corresponding Typst files with strict 1:1 output equivalence, using only skill-internal script code.
-
-**Target features:**
-- Extend `skills/jiaoan-shicao` so its `SKILL.md`, references, and scripts can support strict conversion of `test/1.10/电气设备控制线路安装与调试教案.md` into `test/1.10/电气设备控制线路安装与调试教案.typ`.
-- Extend `skills/jiaoan-jihua` so its `SKILL.md`, references, and scripts can support strict conversion of `test/1.10/电气设备控制线路安装与调试授课计划.md` into `test/1.10/电气设备控制线路安装与调试授课计划.typ`.
-- Verify generated Typst output against the target `.typ` files through strict diff, hash, or documented equivalence checks, without relying on external renderer code outside the relevant skill directories.
+No active milestone. v1.10 is shipped and archived.
 
 ## Requirements
 
@@ -62,13 +57,13 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Split large helper scripts into smaller internal modules while preserving the current shell command surface and generated artifact contracts. - v1.9 Phase 18
 - [x] Document the decomposition pattern in repository guidance so new skills do not accumulate heavy entry files or monolithic scripts. - v1.9 Phase 19
 - [x] Review affected skills for stable public interfaces, discoverable artifact contracts, and clear post-split ownership before accepting the refactor. - v1.9 Phase 19
+- [x] Support strict Markdown-to-Typst conversion for the v1.10 `jiaoan-shicao` 教案 fixture through skill-local scripts. - v1.10 Phase 20
+- [x] Support strict Markdown-to-Typst conversion for the v1.10 `jiaoan-jihua` 授课计划 fixture through skill-local scripts. - v1.10 Phase 21
+- [x] Verify both v1.10 jiaoan outputs with strict diff, SHA-256, anti-copy inspection, phase verification files, and passed milestone audit. - v1.10 Phases 20-21
 
 ### Active
 
-- [ ] `skills/jiaoan-shicao/SKILL.md` and related skill-local scripts/references can be modified to support strict Markdown-to-Typst conversion for the v1.10教案 fixture.
-- [ ] `skills/jiaoan-jihua/SKILL.md` and related skill-local scripts/references can be modified to support strict Markdown-to-Typst conversion for the v1.10授课计划 fixture.
-- [ ] The final conversion path calls only the relevant skill's internal script code and produces Typst matching the committed target files under `test/1.10/`.
-- [ ] Verification records strict diff, hash, or documented equivalence evidence for both generated `.typ` outputs.
+(None currently. Define the next milestone before adding active requirements.)
 
 ### Out of Scope
 
@@ -102,9 +97,11 @@ v1.8 completed the official-school presentation continuation path from v1.5 and 
 
 v1.9 shipped the first decomposition pass for the current skill system. Some entry files and scripts had grown too heavy for the progressive-disclosure model, so the milestone slimmed current entries, moved long support material into references, split `school-presentation.sh`, `end-of-term-teaching-materials/scripts/render_package.py`, and `gongwen.sh` behind stable public entry points, and updated repository guidance for future skill authors.
 
+v1.10 shipped strict jiaoan fixture conversion. `skills/jiaoan-shicao` and `skills/jiaoan-jihua` now generate the two committed `test/1.10/` Typst targets from Markdown through skill-local script code only. Both flows preserve public commands, use the target Typst only for generated-output comparison, and record clean diff/hash evidence in phase verification artifacts plus the passed milestone audit.
+
 ## Next Milestone Goals
 
-v1.10 is active. Carry forward these constraints while planning and executing the milestone:
+No next milestone is defined yet. Carry forward these constraints when planning the next milestone:
 
 - Keep shared workflow logic in `SKILL.md`, long background in `references/`, helper code in `scripts/`, and output templates in `templates/`.
 - Preserve public skill interfaces unless a new requirement explicitly authorizes a breaking change.
@@ -153,7 +150,8 @@ v1.10 is active. Carry forward these constraints while planning and executing th
 | Start v1.9 as a structure milestone | Current skill entries and scripts are increasingly heavy, so the next value is lowering default reading and edit cost while keeping the skill interface stable | Good - shipped in v1.9 |
 | Preserve command surfaces during decomposition | Users and future agents rely on the current commands, generated artifacts, and invocation patterns | Good - shipped in v1.9 |
 | Keep decomposition support files discoverable | Progressive disclosure only works if contributors can reliably find templates, references, artifact contracts, and scripts from the entry docs | Good - shipped in v1.9 |
-| Start v1.10 as a strict jiaoan Typst conversion milestone | User provided two concrete Markdown and Typst fixture pairs and requested script-only 1:1 conversion through the existing jiaoan skills | Pending - planned for Phases 20-21 |
+| Start v1.10 as a strict jiaoan Typst conversion milestone | User provided two concrete Markdown and Typst fixture pairs and requested script-only 1:1 conversion through the existing jiaoan skills | Good - shipped in v1.10 |
+| Keep v1.10 conversion fixture-scoped and skill-local | The milestone acceptance was strict 1:1 fixture equivalence, not a shared jiaoan rendering framework | Good - shipped in v1.10 |
 
 ## Evolution
 
@@ -173,4 +171,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-14 after v1.10 milestone start*
+*Last updated: 2026-06-14 after v1.10 milestone close*
