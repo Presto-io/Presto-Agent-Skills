@@ -28,11 +28,11 @@ The package workflow should be Markdown-first: generate a teacher-reviewable Mar
 
 ### Integrated Teaching Plan and Lesson Plan Package
 
-- [ ] **TDP-05**: Add a new orchestration skill, preferably named `teaching-design-package` unless phase research identifies a better repository-consistent name.
-- [ ] **TDP-06**: Preserve `skills/jiaoan-jihua` and `skills/jiaoan-shicao` as standalone public skills; the new package skill must compose or reference them rather than delete, rename, or replace them.
-- [ ] **TDP-07**: The new package skill must define a persistent teacher-reviewable Markdown intermediate that includes teaching-plan sections, lesson-plan sections, scheduling evidence, and review markers before Typst/PDF generation.
-- [ ] **TDP-08**: The new package skill must plan Typst/PDF output for teaching-plan and lesson-plan content, including split outputs such as `teaching-plan.pdf` and `lesson-plans.pdf` where the renderer can support them.
-- [ ] **TDP-09**: The canonical skill body must remain portable and must keep runtime-specific behavior in adapter notes, with Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent represented.
+- [x] **TDP-05**: Add a new orchestration skill, preferably named `teaching-design-package` unless phase research identifies a better repository-consistent name.
+- [x] **TDP-06**: Preserve `skills/jiaoan-jihua` and `skills/jiaoan-shicao` as standalone public skills; the new package skill must compose or reference them rather than delete, rename, or replace them.
+- [x] **TDP-07**: The new package skill must define a persistent teacher-reviewable Markdown intermediate that includes teaching-plan sections, lesson-plan sections, scheduling evidence, and review markers before Typst/PDF generation.
+- [x] **TDP-08**: The new package skill must plan Typst/PDF output for teaching-plan and lesson-plan content, including split outputs such as `teaching-plan.pdf` and `lesson-plans.pdf` where the renderer can support them.
+- [x] **TDP-09**: The canonical skill body must remain portable and must keep runtime-specific behavior in adapter notes, with Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent represented.
 
 ### Optional End-of-Term Module
 
@@ -74,11 +74,11 @@ Deferred to a later milestone unless explicitly requested:
 | TDP-02 | Phase 22 | Complete |
 | TDP-03 | Phase 22 | Complete |
 | TDP-04 | Phase 22 | Complete |
-| TDP-05 | Phase 23 | Planned |
-| TDP-06 | Phase 23 | Planned |
-| TDP-07 | Phase 23 | Planned |
-| TDP-08 | Phase 23 | Planned |
-| TDP-09 | Phase 23, Phase 25 | Planned |
+| TDP-05 | Phase 23 | Complete |
+| TDP-06 | Phase 23 | Complete |
+| TDP-07 | Phase 23 | Complete |
+| TDP-08 | Phase 23 | Complete |
+| TDP-09 | Phase 23, Phase 25 | Partially complete |
 | TDP-10 | Phase 24 | Planned |
 | TDP-11 | Phase 24 | Planned |
 | TDP-12 | Phase 24 | Planned |

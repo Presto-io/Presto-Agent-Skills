@@ -8,7 +8,7 @@
 
 **Active milestone:** v1.11 Integrated Teaching Design Package / 教学设计整包技能
 
-**Status:** v1.11 is in planning. Next execution step is Phase 22.
+**Status:** v1.11 is in progress. Phase 23 is complete; next execution step is Phase 24 discussion.
 
 **Delivered in v1.10:**
 - `jiaoan-shicao` can generate the v1.10 教案 Typst fixture byte-for-byte from Markdown through skill-local script code.
@@ -67,12 +67,15 @@ This milestone creates a new orchestration skill plan that integrates the alread
 
 ### Active
 
-- [ ] Define a shared calendar/scheduling contract that can infer task, activity, and lesson-plan date ranges from calendar data, first teaching day, daily hours, task/activity hours, holiday lists, and makeup teaching days. - v1.11 Phase 22
-- [ ] Create a new orchestration skill plan for a teaching-design package without deleting or replacing `jiaoan-jihua` or `jiaoan-shicao`. - v1.11 Phase 23
-- [ ] Require a teacher-reviewable Markdown intermediate before Typst/PDF generation for the integrated teaching plan and lesson-plan package. - v1.11 Phase 23
 - [ ] Plan optional end-of-term package integration using the existing structured data, score calculation, deterministic table artifacts, workbook, manifest, and review-gate rules. - v1.11 Phase 24
 - [ ] Define package outputs including split PDFs where supported and a default combined `teaching-design-package.pdf`. - v1.11 Phase 24
 - [ ] Verify the new package plan with regression coverage for existing public skill interfaces, OpenClaw/Hermes adapter expectations, Markdown-first flow, and documentation indexes. - v1.11 Phase 25
+
+### Validated in v1.11
+
+- [x] Define a shared calendar/scheduling contract that can infer task, activity, and lesson-plan date ranges from calendar data, first teaching day, daily hours, task/activity hours, holiday lists, and makeup teaching days. - v1.11 Phase 22
+- [x] Create a new orchestration skill plan for a teaching-design package without deleting or replacing `jiaoan-jihua` or `jiaoan-shicao`. - v1.11 Phase 23
+- [x] Require a teacher-reviewable Markdown intermediate before Typst/PDF generation for the integrated teaching plan and lesson-plan package. - v1.11 Phase 23
 
 ### Out of Scope
 
@@ -169,8 +172,8 @@ v1.11 should deliver the planning and executable phase structure for a new integ
 | Start v1.10 as a strict jiaoan Typst conversion milestone | User provided two concrete Markdown and Typst fixture pairs and requested script-only 1:1 conversion through the existing jiaoan skills | Good - shipped in v1.10 |
 | Keep v1.10 conversion fixture-scoped and skill-local | The milestone acceptance was strict 1:1 fixture equivalence, not a shared jiaoan rendering framework | Good - shipped in v1.10 |
 | Start v1.11 as a new orchestration skill milestone | User wants plan and lesson-plan integration plus optional end-of-term outputs, while preserving the original skills | Active - planned for Phases 22-25 |
-| Treat jiaoan-jihua scheduling as reusable evidence, not final shared API | Existing local code proves the derivation is feasible, but a package-level contract and fixtures are needed before broad reuse | Active - Phase 22 |
-| Keep the integrated package Markdown-first | Teachers need a reviewable intermediate before Typst/PDF and workbook generation across the combined workflow | Active - Phases 23-24 |
+| Treat jiaoan-jihua scheduling as reusable evidence, not final shared API | Existing local code proves the derivation is feasible, but a package-level contract and fixtures are needed before broad reuse | Good - Phase 22 |
+| Keep the integrated package Markdown-first | Teachers need a reviewable intermediate before Typst/PDF and workbook generation across the combined workflow | Good - Phase 23 created the package checkpoint; Phase 24 continues package outputs |
 
 ## Evolution
 
