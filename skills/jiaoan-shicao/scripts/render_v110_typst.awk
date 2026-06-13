@@ -114,6 +114,207 @@ function format_multiline(text,    out, lines, count, i, line) {
   return out
 }
 
+function max_int(a, b) {
+  return (a > b) ? a : b
+}
+
+function ceil_int(value,    whole) {
+  whole = int(value)
+  return (value > whole) ? whole + 1 : whole
+}
+
+function nearly_equal(a, b) {
+  return ((a - b < 0 ? b - a : a - b) < 0.000000001)
+}
+
+function display_width_line(text,    ascii, non_ascii_count) {
+  ascii = text
+  gsub(/[^ -~]/, "", ascii)
+  text = text
+  non_ascii_count = gsub(/[^ -~]/, "", text)
+  return length(ascii) + non_ascii_count * 2
+}
+
+function display_width(text,    lines, count, i, max_width) {
+  count = split(text, lines, "\n")
+  max_width = 0
+  for (i = 1; i <= count; i++) {
+    max_width = max_int(max_width, display_width_line(lines[i]))
+  }
+  return max_width
+}
+
+function content_pressure(text,    lines, count, i, total) {
+  if (trim(text) == "") return 0
+  count = split(text, lines, "\n")
+  total = 0
+  for (i = 1; i <= count; i++) {
+    total += display_width(lines[i])
+  }
+  return total
+}
+
+function resource_available_units(width_cm,    units) {
+  units = int((width_cm - 0.22) / 0.18)
+  return (units < 1) ? 1 : units
+}
+
+function resource_wrapped_line_count(content, width_cm,    lines, count, units, i, line_width, total) {
+  units = resource_available_units(width_cm)
+  count = split(content, lines, "\n")
+  total = 0
+  for (i = 1; i <= count; i++) {
+    line_width = max_int(display_width(lines[i]), 1)
+    total += int((line_width + units - 1) / units)
+  }
+  return max_int(total, 1)
+}
+
+function resource_wrapped_line_load(content, width_cm,    lines, count, units, i, total) {
+  units = resource_available_units(width_cm)
+  count = split(content, lines, "\n")
+  total = 0
+  for (i = 1; i <= count; i++) {
+    total += max_int(display_width(lines[i]), 1) / units
+  }
+  return total
+}
+
+function resource_column_spec(resource_text,    contents, min_widths, targets, weights, widths, count, i, total_min, total_weight, extra, step_cm, total_units, min_units, first, second, third, max_lines, total_lines, max_load, distance, delta, lines, load, best_max_load, best_max_lines, best_total_lines, best_distance, best_widths) {
+  count = split(resource_text, contents, "\n\n")
+  min_widths[1] = 3.2
+  min_widths[2] = 2.6
+  min_widths[3] = 2.2
+  total_min = 0
+  total_weight = 0
+  for (i = 1; i <= 3; i++) {
+    total_min += min_widths[i]
+    weights[i] = sqrt(max_int(display_width(contents[i]), 1))
+    total_weight += weights[i]
+  }
+
+  extra = 16.34 - total_min
+  for (i = 1; i <= 3; i++) {
+    targets[i] = min_widths[i]
+    if (extra > 0 && total_weight != 0) {
+      targets[i] += extra * weights[i] / total_weight
+    }
+    best_widths[i] = targets[i]
+  }
+
+  step_cm = 0.02
+  total_units = int((16.34 / step_cm) + 0.5)
+  for (i = 1; i <= 3; i++) {
+    min_units[i] = ceil_int(min_widths[i] / step_cm)
+  }
+
+  best_max_load = 1.0e99
+  best_max_lines = 2147483647
+  best_total_lines = 2147483647
+  best_distance = 1.0e99
+
+  for (first = min_units[1]; first <= total_units - min_units[2] - min_units[3]; first++) {
+    for (second = min_units[2]; second <= total_units - first - min_units[3]; second++) {
+      third = total_units - first - second
+      widths[1] = first * step_cm
+      widths[2] = second * step_cm
+      widths[3] = third * step_cm
+      max_lines = 0
+      total_lines = 0
+      max_load = 0
+      for (i = 1; i <= 3; i++) {
+        lines = resource_wrapped_line_count(contents[i], widths[i])
+        load = resource_wrapped_line_load(contents[i], widths[i])
+        max_lines = max_int(max_lines, lines)
+        total_lines += lines
+        if (load > max_load) max_load = load
+      }
+      distance = 0
+      for (i = 1; i <= 3; i++) {
+        delta = widths[i] - targets[i]
+        distance += delta * delta
+      }
+      if (max_load < best_max_load ||
+          (nearly_equal(max_load, best_max_load) && max_lines < best_max_lines) ||
+          (nearly_equal(max_load, best_max_load) && max_lines == best_max_lines && total_lines < best_total_lines) ||
+          (nearly_equal(max_load, best_max_load) && max_lines == best_max_lines && total_lines == best_total_lines && distance < best_distance)) {
+        for (i = 1; i <= 3; i++) best_widths[i] = widths[i]
+        best_max_load = max_load
+        best_max_lines = max_lines
+        best_total_lines = total_lines
+        best_distance = distance
+      }
+    }
+  }
+
+  return sprintf("%.2fcm, %.2fcm, %.2fcm", best_widths[1], best_widths[2], best_widths[3])
+}
+
+function header_min_width_cm(metric, bias) {
+  return metric * 0.18 + 0.42 + bias
+}
+
+function table_columns_for_task(i,    widths, pressures, base_weights, pressure_scales, remaining_width, total_weight, g, r, col) {
+  widths[1] = header_min_width_cm(max_int(display_width("教学活动"), display_width("学习环节")), 0.10)
+  widths[2] = header_min_width_cm(display_width("学习内容"), 0.10)
+  widths[3] = header_min_width_cm(display_width("学生活动"), 0.10)
+  widths[4] = header_min_width_cm(display_width("教师活动"), 0.10)
+  widths[5] = header_min_width_cm(display_width("教学方法与手段"), 0.14)
+  widths[6] = header_min_width_cm(display_width("课时分配"), 0.10)
+
+  remaining_width = 25.04
+  for (col = 1; col <= 6; col++) remaining_width -= widths[col]
+  if (remaining_width <= 0) {
+    return sprintf("%.2fcm, %.2fcm, %.2fcm, %.2fcm, %.2fcm, %.2fcm", widths[1], widths[2], widths[3], widths[4], widths[5], widths[6])
+  }
+
+  pressures[1] = 1
+  pressures[2] = 1
+  pressures[3] = 1
+  pressures[4] = 1
+  pressures[5] = 0.5
+  pressures[6] = 0.25
+  for (g = 1; g <= GROUP_COUNT[i]; g++) {
+    pressures[1] += content_pressure(GROUP_STAGE[i, g]) * 0.2
+    pressures[2] += content_pressure(GROUP_UNIT[i, g]) * 0.15
+    for (r = 1; r <= ROW_COUNT[i, g]; r++) {
+      pressures[1] += content_pressure(ACT_TITLE[i, g, r]) * 0.7
+      pressures[2] += content_pressure(ACT_LEARN[i, g, r]) + 4
+      pressures[3] += content_pressure(ACT_STUDENT[i, g, r]) + 4
+      pressures[4] += content_pressure(ACT_TEACHER[i, g, r]) + 4
+      pressures[5] += content_pressure(ACT_METHOD[i, g, r]) * 0.45
+      pressures[6] += content_pressure(ACT_HOURS[i, g, r]) * 0.25
+    }
+  }
+
+  base_weights[1] = 0.5
+  base_weights[2] = 1.8
+  base_weights[3] = 1.6
+  base_weights[4] = 1.6
+  base_weights[5] = 0.18
+  base_weights[6] = 0.06
+  pressure_scales[1] = 0.22
+  pressure_scales[2] = 1.0
+  pressure_scales[3] = 0.95
+  pressure_scales[4] = 0.95
+  pressure_scales[5] = 0.18
+  pressure_scales[6] = 0.05
+
+  total_weight = 0
+  for (col = 1; col <= 6; col++) {
+    weights[col] = base_weights[col] + pressure_scales[col] * sqrt(pressures[col] + 1)
+    total_weight += weights[col]
+  }
+  if (total_weight == 0) {
+    return sprintf("%.2fcm, %.2fcm, %.2fcm, %.2fcm, %.2fcm, %.2fcm", widths[1], widths[2], widths[3], widths[4], widths[5], widths[6])
+  }
+
+  for (col = 1; col <= 6; col++) {
+    widths[col] += remaining_width * weights[col] / total_weight
+  }
+  return sprintf("%.2fcm, %.2fcm, %.2fcm, %.2fcm, %.2fcm, %.2fcm", widths[1], widths[2], widths[3], widths[4], widths[5], widths[6])
+}
+
 function emit_file(    i) {
   emit_prelude()
   emit_cover()
@@ -125,6 +326,8 @@ function emit_file(    i) {
 }
 
 function emit_prelude() {
+  author = meta["teacher_name"]
+  if (trim(author) == "") author = "Presto"
   print "// 中文字号转换函数"
   print "#import \"@preview/pointless-size:0.1.2\": zh"
   print ""
@@ -151,7 +354,7 @@ function emit_prelude() {
   print ""
   print "#set document("
   print "  title: \"" meta["course_name"] "\","
-  print "  author: \"" meta["teacher_name"] "\","
+  print "  author: \"" author "\","
   print "  keywords: \"教案, 实操, 教学设计\","
   print ")"
   emit_portrait_page()
@@ -264,7 +467,7 @@ function emit_task_analysis(i,    resource_cols, resources) {
   print "    table.cell(colspan: 6)[*四、学生情况分析*],"
   print "    table.cell(colspan: 6, align: left + horizon)[" DATA[i SUBSEP "students"] "],"
   print "    table.cell(colspan: 6)[*五、学习资源*],"
-  resource_cols = (i == 1) ? "5.10cm, 6.16cm, 5.08cm" : "5.10cm, 6.34cm, 4.90cm"
+  resource_cols = resource_column_spec(DATA[i SUBSEP "resources"])
   split(DATA[i SUBSEP "resources"], resources, "\n\n")
   print "    table.cell(colspan: 6, inset: 0pt, stroke: none)[#table("
   print "      columns: (" resource_cols "),"
@@ -289,12 +492,6 @@ function emit_activity_design(i,    g) {
   print ""
   print "#pagebreak()"
   print ""
-}
-
-function table_columns_for_task(i) {
-  if (i == 1) return "2.43cm, 4.91cm, 6.24cm, 6.17cm, 3.31cm, 1.98cm"
-  if (i == 2) return "2.46cm, 5.01cm, 6.16cm, 6.11cm, 3.31cm, 1.98cm"
-  return "2.44cm, 4.92cm, 6.21cm, 6.17cm, 3.32cm, 1.98cm"
 }
 
 function emit_activity_group(i, g,    r) {
