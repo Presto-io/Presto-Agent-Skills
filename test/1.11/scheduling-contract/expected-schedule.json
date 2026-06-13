@@ -1,0 +1,442 @@
+{
+  "source": "test/1.11/scheduling-contract/fixture-source.md",
+  "calendar": "skills/jiaoan-jihua/references/calendar.json",
+  "first_teaching_day": "2026-05-11",
+  "daily_hours": 8,
+  "calendar_evidence": {
+    "term_week_start": "2026-03-02",
+    "holidays": [],
+    "makeup_days": [
+      "2026-05-09"
+    ]
+  },
+  "items": [
+    {
+      "source": "task:1/stage:1/row:1",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "安技教育及旧知识回顾",
+      "title": "安技教育",
+      "assigned_hours": 1,
+      "start_date": "2026-05-11",
+      "end_date": "2026-05-11",
+      "term_week": 11,
+      "weekday": 1,
+      "hour_consumption": [
+        {
+          "date": "2026-05-11",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 7,
+          "source": "task:1/stage:1/row:1"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:1/row:2",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "安技教育及旧知识回顾",
+      "title": "讲解电工工作现场管理规范",
+      "assigned_hours": 1,
+      "start_date": "2026-05-11",
+      "end_date": "2026-05-11",
+      "term_week": 11,
+      "weekday": 1,
+      "hour_consumption": [
+        {
+          "date": "2026-05-11",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 6,
+          "source": "task:1/stage:1/row:2"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:1/row:3",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "安技教育及旧知识回顾",
+      "title": "常用低压电器元件知识回顾，万用表的使用方法回顾",
+      "assigned_hours": 1,
+      "start_date": "2026-05-11",
+      "end_date": "2026-05-11",
+      "term_week": 11,
+      "weekday": 1,
+      "hour_consumption": [
+        {
+          "date": "2026-05-11",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 5,
+          "source": "task:1/stage:1/row:3"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:2/row:1",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "明确任务",
+      "title": "顺序启动逆序停止电路原理讲解",
+      "assigned_hours": 1,
+      "start_date": "2026-05-11",
+      "end_date": "2026-05-11",
+      "term_week": 11,
+      "weekday": 1,
+      "hour_consumption": [
+        {
+          "date": "2026-05-11",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 4,
+          "source": "task:1/stage:2/row:1"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:2/row:2",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "明确任务",
+      "title": "CA6140卧式车床基本结构，运动等知识讲解",
+      "assigned_hours": 1,
+      "start_date": "2026-05-11",
+      "end_date": "2026-05-11",
+      "term_week": 11,
+      "weekday": 1,
+      "hour_consumption": [
+        {
+          "date": "2026-05-11",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 3,
+          "source": "task:1/stage:2/row:2"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:2/row:3",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "明确任务",
+      "title": "发放工作页并填写",
+      "assigned_hours": 1,
+      "start_date": "2026-05-11",
+      "end_date": "2026-05-11",
+      "term_week": 11,
+      "weekday": 1,
+      "hour_consumption": [
+        {
+          "date": "2026-05-11",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 2,
+          "source": "task:1/stage:2/row:3"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:3/row:1",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "制定计划",
+      "title": "CA6140卧式车床电气原理分析",
+      "assigned_hours": 2,
+      "start_date": "2026-05-11",
+      "end_date": "2026-05-11",
+      "term_week": 11,
+      "weekday": 1,
+      "hour_consumption": [
+        {
+          "date": "2026-05-11",
+          "consumed_hours": 2,
+          "remaining_daily_capacity": 0,
+          "source": "task:1/stage:3/row:1"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:3/row:2",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "制定计划",
+      "title": "CA6140卧式车床电气元件布局图，接线图讲解",
+      "assigned_hours": 2,
+      "start_date": "2026-05-12",
+      "end_date": "2026-05-12",
+      "term_week": 11,
+      "weekday": 2,
+      "hour_consumption": [
+        {
+          "date": "2026-05-12",
+          "consumed_hours": 2,
+          "remaining_daily_capacity": 6,
+          "source": "task:1/stage:3/row:2"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:3/row:3",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "制定计划",
+      "title": "指导学生编写工作计划，并填写工作页",
+      "assigned_hours": 1,
+      "start_date": "2026-05-12",
+      "end_date": "2026-05-12",
+      "term_week": 11,
+      "weekday": 2,
+      "hour_consumption": [
+        {
+          "date": "2026-05-12",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 5,
+          "source": "task:1/stage:3/row:3"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:4/row:1",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "工作准备",
+      "title": "图纸规范绘制要求讲解，完成图纸的检查及审核",
+      "assigned_hours": 1,
+      "start_date": "2026-05-12",
+      "end_date": "2026-05-12",
+      "term_week": 11,
+      "weekday": 2,
+      "hour_consumption": [
+        {
+          "date": "2026-05-12",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 4,
+          "source": "task:1/stage:4/row:1"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:4/row:2",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "工作准备",
+      "title": "分发电气元件及耗材，学生完成配线盘的安装",
+      "assigned_hours": 2,
+      "start_date": "2026-05-12",
+      "end_date": "2026-05-12",
+      "term_week": 11,
+      "weekday": 2,
+      "hour_consumption": [
+        {
+          "date": "2026-05-12",
+          "consumed_hours": 2,
+          "remaining_daily_capacity": 2,
+          "source": "task:1/stage:4/row:2"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:5/row:1",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "任务实施",
+      "title": "电气元件质量检查",
+      "assigned_hours": 1,
+      "start_date": "2026-05-12",
+      "end_date": "2026-05-12",
+      "term_week": 11,
+      "weekday": 2,
+      "hour_consumption": [
+        {
+          "date": "2026-05-12",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 1,
+          "source": "task:1/stage:5/row:1"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:5/row:2",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "任务实施",
+      "title": "配线工艺质量要求讲解",
+      "assigned_hours": 1,
+      "start_date": "2026-05-12",
+      "end_date": "2026-05-12",
+      "term_week": 11,
+      "weekday": 2,
+      "hour_consumption": [
+        {
+          "date": "2026-05-12",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 0,
+          "source": "task:1/stage:5/row:2"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:5/row:3",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "任务实施",
+      "title": "巡回指导电气线路安装过程",
+      "assigned_hours": 16,
+      "start_date": "2026-05-13",
+      "end_date": "2026-05-14",
+      "term_week": 11,
+      "weekday": "3-4",
+      "hour_consumption": [
+        {
+          "date": "2026-05-13",
+          "consumed_hours": 8,
+          "remaining_daily_capacity": 0,
+          "source": "task:1/stage:5/row:3"
+        },
+        {
+          "date": "2026-05-14",
+          "consumed_hours": 8,
+          "remaining_daily_capacity": 0,
+          "source": "task:1/stage:5/row:3"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:5/row:4",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "任务实施",
+      "title": "讲解并指导学生运用万用表电阻法对线路完成自检",
+      "assigned_hours": 2,
+      "start_date": "2026-05-15",
+      "end_date": "2026-05-15",
+      "term_week": 11,
+      "weekday": 5,
+      "hour_consumption": [
+        {
+          "date": "2026-05-15",
+          "consumed_hours": 2,
+          "remaining_daily_capacity": 6,
+          "source": "task:1/stage:5/row:4"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:5/row:5",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "任务实施",
+      "title": "讲解并演示通电试验前的绝缘测试过程，完成通电试验过程",
+      "assigned_hours": 2,
+      "start_date": "2026-05-15",
+      "end_date": "2026-05-15",
+      "term_week": 11,
+      "weekday": 5,
+      "hour_consumption": [
+        {
+          "date": "2026-05-15",
+          "consumed_hours": 2,
+          "remaining_daily_capacity": 4,
+          "source": "task:1/stage:5/row:5"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:5/row:6",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "任务实施",
+      "title": "指导学生填写工作页",
+      "assigned_hours": 1,
+      "start_date": "2026-05-15",
+      "end_date": "2026-05-15",
+      "term_week": 11,
+      "weekday": 5,
+      "hour_consumption": [
+        {
+          "date": "2026-05-15",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 3,
+          "source": "task:1/stage:5/row:6"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:6/row:1",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "成果展示",
+      "title": "每组选派优秀学生对其成果进行通电试验及观摩展示",
+      "assigned_hours": 1,
+      "start_date": "2026-05-15",
+      "end_date": "2026-05-15",
+      "term_week": 11,
+      "weekday": 5,
+      "hour_consumption": [
+        {
+          "date": "2026-05-15",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 2,
+          "source": "task:1/stage:6/row:1"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:7/row:1",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "总结评价",
+      "title": "优秀学生个人汇报总结",
+      "assigned_hours": 1,
+      "start_date": "2026-05-15",
+      "end_date": "2026-05-15",
+      "term_week": 11,
+      "weekday": 5,
+      "hour_consumption": [
+        {
+          "date": "2026-05-15",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 1,
+          "source": "task:1/stage:7/row:1"
+        }
+      ],
+      "review_markers": []
+    },
+    {
+      "source": "task:1/stage:7/row:2",
+      "kind": "教学内容",
+      "task_title": "CA6140卧式车床电气控制线路安装与调试",
+      "stage_title": "总结评价",
+      "title": "教师评价总结",
+      "assigned_hours": 1,
+      "start_date": "2026-05-15",
+      "end_date": "2026-05-15",
+      "term_week": 11,
+      "weekday": 5,
+      "hour_consumption": [
+        {
+          "date": "2026-05-15",
+          "consumed_hours": 1,
+          "remaining_daily_capacity": 0,
+          "source": "task:1/stage:7/row:2"
+        }
+      ],
+      "review_markers": []
+    }
+  ],
+  "review_markers": []
+}
