@@ -4,8 +4,8 @@ milestone: v1.11
 milestone_name: "Integrated Teaching Design Package"
 current_phase: 22
 status: planning
-stopped_at: Milestone v1.11 initialized; next step is Phase 22 planning
-last_updated: "2026-06-14T02:30:00+08:00"
+stopped_at: Phase 22 context gathered
+last_updated: "2026-06-14T03:59:20+08:00"
 last_activity: 2026-06-14 -- Milestone v1.11 initialized for integrated teaching design package planning
 progress:
   total_phases: 4
@@ -141,8 +141,8 @@ Plan the first v1.11 phase:
 ## Last Session
 
 - **Completed:** v1.10 milestone audit and closeout archive
-- **Stopped At:** Milestone v1.11 initialized; awaiting Phase 22 planning
-- **Resume File:** None
+- **Stopped At:** Phase 22 context gathered
+- **Resume File:** .planning/phases/22-scheduling-contract-and-fixture/22-CONTEXT.md
 
 ## Close Notes
 
