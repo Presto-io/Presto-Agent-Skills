@@ -19,6 +19,23 @@
 
 ---
 
+## v1.10.1 Jiaoan Shicao Black-Box Layout Patch (Resolved: 2026-06-14)
+
+**Patch scope:** post-close visual and black-box validation fix after v1.10 milestone archive
+
+**Key fixes:**
+
+- Aligned `jiaoan-shicao` `学习资源` table column widths with the official Presto black-box template.
+- Aligned `教学活动设计` table column widths with the official content-pressure distribution.
+- Matched official empty-teacher author fallback to `Presto`.
+- Verified skill-local Typst and PDF outputs byte-for-byte against the black-box template for the same original Markdown.
+
+**Record:**
+
+- Patch notes: `.planning/milestones/v1.10.1-POST-CLOSE-PATCH.md`
+
+---
+
 ## v1.9 Skill Decomposition and Entry Slimming (Shipped: 2026-06-13)
 
 **Phases completed:** 3 phases, 3 plans, 12 tasks, automated audit passed

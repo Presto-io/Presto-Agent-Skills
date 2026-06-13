@@ -153,6 +153,7 @@ Start the next milestone when ready:
 - v1.8 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 - v1.9 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 - v1.10 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
+- v1.10.1 records the post-close `jiaoan-shicao` black-box layout fix for learning-resource and teaching-activity table wrapping without reopening the v1.10 milestone.
 
 ## Current Position
 
