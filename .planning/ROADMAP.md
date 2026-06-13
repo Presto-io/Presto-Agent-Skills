@@ -29,7 +29,7 @@
 
 | Phase | Name | Scope | Requirements |
 |-------|------|-------|--------------|
-| 22 | Scheduling Contract and Fixture | Define shared calendar/scheduling inputs, derived outputs, evidence format, conflict handling, and at least one fixture proving hand-filled date ranges can be inferred. | TDP-01, TDP-02, TDP-03, TDP-04 |
+| 22 | Scheduling Contract and Fixture | Complete 2026-06-13: shared calendar/scheduling inputs, derived outputs, evidence format, conflict handling, and deterministic fixture proof are now documented and verified. | TDP-01, TDP-02, TDP-03, TDP-04 |
 | 23 | Integrated Skill Entry and Jiaoan Orchestration | Add the new package skill entry plan/implementation path, define the teacher-reviewable Markdown intermediate, compose `jiaoan-jihua` and `jiaoan-shicao`, and plan split teaching-plan/lesson-plan Typst/PDF outputs. | TDP-05, TDP-06, TDP-07, TDP-08, TDP-09 |
 | 24 | Optional End-of-Term Module and Package Outputs | Integrate the optional end-of-term module with structured data, review gates, deterministic artifacts, workbook, manifest, split PDFs, and default combined package output behavior. | TDP-10, TDP-11, TDP-12, TDP-13, TDP-14 |
 | 25 | Regression Verification and Documentation Index | Verify existing public command surfaces, package failure/manifest behavior, runtime adapter coverage, OpenClaw/Hermes notes, and documentation/index discoverability. | TDP-09, TDP-14, TDP-15, TDP-16 |
@@ -69,18 +69,18 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 19. Decomposition Guidance and Milestone Review | v1.9 | Complete | 2026-06-13 |
 | 20. Jiaoan Shicao 教案 1:1 Typst Conversion | v1.10 | Complete | 2026-06-13 |
 | 21. Jiaoan Jihua 授课计划 1:1 Typst Conversion | v1.10 | Complete | 2026-06-13 |
-| 22. Scheduling Contract and Fixture | v1.11 | Planned | — |
+| 22. Scheduling Contract and Fixture | v1.11 | Complete | 2026-06-13 |
 | 23. Integrated Skill Entry and Jiaoan Orchestration | v1.11 | Planned | — |
 | 24. Optional End-of-Term Module and Package Outputs | v1.11 | Planned | — |
 | 25. Regression Verification and Documentation Index | v1.11 | Planned | — |
 
 ## Current Position
 
-v1.11 is initialized and ready for Phase 22 planning.
+Phase 22 is complete and v1.11 is ready for Phase 23 discussion.
 
 ## Next Step
 
-Run `/gsd:plan-phase 22` to plan the shared scheduling contract and fixture slice.
+Run `/gsd:discuss-phase 23` to discuss the integrated skill entry and jiaoan orchestration slice.
 
 ---
 *Roadmap updated: 2026-06-14 after v1.11 milestone initialization*
