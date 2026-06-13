@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.10 Jiaoan Typst 1:1 Conversion (Shipped: 2026-06-13)
+
+**Phases completed:** 2 phases, 2 plans, 8 tasks, automated audit passed
+
+**Key accomplishments:**
+
+- Added a skill-local `jiaoan-shicao` fixture renderer that generates the v1.10 教案 Typst byte-for-byte from Markdown.
+- Added a Bash-only `jiaoan-jihua` parser and official five-column Typst emitter with byte-for-byte fixture verification.
+- Recorded strict `diff -u`, SHA-256, and anti-copy evidence for both fixture pairs.
+- Passed the v1.10 milestone audit for SHICAO-01 through SHICAO-04, JIHUA-01 through JIHUA-04, and VERIFY-01 through VERIFY-03.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.10-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.10-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.10-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.9 Skill Decomposition and Entry Slimming (Shipped: 2026-06-13)
 
 **Phases completed:** 3 phases, 3 plans, 12 tasks, automated audit passed
