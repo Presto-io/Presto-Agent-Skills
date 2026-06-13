@@ -39,7 +39,7 @@ metadata:
 2. 按 `references/format-and-rendering.md` 填写 frontmatter、学习任务、学习环节和学时标记。
 3. 当源材料只给出日期、周次或总学时，而没有现成任务分段时，先参考 `references/calendar.json` 还原教学日历。
 4. 运行 `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh render` 生成 `.typ`。
-5. 若有参考 Typst，使用 `--expected-typ` 验证一致性。
+5. 若有参考 Typst，先独立生成 `.typ`，再使用 `diff -u`、`shasum -a 256` 或 `--expected-typ` 做生成后验证。
 
 ## Script Usage
 
@@ -80,6 +80,7 @@ skills/jiaoan-jihua/scripts/jiaoan-jihua.sh render \
 
 - [ ] `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh example --output <file>` 能输出可审阅的 `jiaoan-jihua-full.md` 结构。
 - [ ] `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh render --input <md> --typ <typ>` 能生成 Typst。
+- [ ] 对官方表格 fixture，目标 Typst 只作为生成后的验证 oracle，不作为渲染输入。
 - [ ] 对给定 fixture 运行 `--expected-typ` 时，生成 Typst 与参考文件一致。
 - [ ] OpenClaw 与 Hermes Agent 的运行时差异保留在 adapter notes 中，没有写入 canonical 主流程。
 
@@ -95,4 +96,5 @@ skills/jiaoan-jihua/scripts/jiaoan-jihua.sh render \
 - 不要静默删除源材料中不确定、缺失或无法表达的周次、学时或任务分段；必须就近标记复核。
 - 不要把凭据、私有路径或用户专属资源写入正文，除非用户明确要求。
 - 脚本的 Markdown 到 Typst 转换不得调用外部模板二进制、PDF 编译器或任何其他外部可执行文件。
+- 脚本不得读取或复制目标 `.typ` 来生成输出；目标文件只能用于生成后的严格比对。
 - 脚本只读取输入 Markdown，并只写入用户指定的 Typst 输出路径；输出路径的父目录必须已存在。
