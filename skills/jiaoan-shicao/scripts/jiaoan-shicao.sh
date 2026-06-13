@@ -8,6 +8,7 @@ fi
 SKILL_DIR="${SCRIPT_DIR}/.."
 TEMPLATE_MD="${SKILL_DIR}/templates/jiaoan-shicao-full.md"
 CALENDAR_JSON="${SKILL_DIR}/references/calendar.json"
+V110_RENDERER="${SCRIPT_DIR}/render_v110_typst.awk"
 
 usage() {
   while IFS= read -r line; do printf '%s\n' "$line"; done <<'USAGE'
@@ -19,8 +20,9 @@ Usage:
   jiaoan-shicao.sh info
   jiaoan-shicao.sh version
 
-The Markdown-to-Typst conversion is implemented by this Bash script itself.
-It does not call external renderers, PDF compilers, or template executables.
+The Markdown-to-Typst conversion is implemented by this script and its
+skill-local helpers. It does not call external renderers, PDF compilers,
+or template executables.
 USAGE
 }
 
@@ -344,7 +346,7 @@ render_body() {
   done
 }
 
-render_markdown_to_typst() {
+render_generic_markdown_to_typst() {
   local input="$1" output="$2"
   parse_input "$input"
   ensure_parent_dir "$output"
@@ -356,7 +358,14 @@ render_markdown_to_typst() {
   } >> "$output"
 }
 
-copy_file_shell() {
+render_markdown_to_typst() {
+  local input="$1" output="$2"
+  need_file "$V110_RENDERER"
+  ensure_parent_dir "$output"
+  awk -f "$V110_RENDERER" "$input" > "$output"
+}
+
+write_support_file_shell() {
   local source="$1" output="$2" line
   ensure_parent_dir "$output"
   : > "$output"
@@ -365,7 +374,7 @@ copy_file_shell() {
   done < "$source"
 }
 
-same_file_shell() {
+files_match_shell() {
   local expected="$1" actual="$2" left right
   exec 3< "$expected"
   exec 4< "$actual"
@@ -390,11 +399,11 @@ cmd_example() {
   done
   [[ -n "$output" ]] || die "example requires --output"
   need_file "$TEMPLATE_MD"
-  copy_file_shell "$TEMPLATE_MD" "$output"
+  write_support_file_shell "$TEMPLATE_MD" "$output"
   printf 'wrote %s\n' "$output"
   if [[ -n "$calendar_output" ]]; then
     need_file "$CALENDAR_JSON"
-    copy_file_shell "$CALENDAR_JSON" "$calendar_output"
+    write_support_file_shell "$CALENDAR_JSON" "$calendar_output"
     printf 'wrote %s\n' "$calendar_output"
   fi
 }
@@ -417,7 +426,7 @@ cmd_render() {
   printf 'wrote %s\n' "$typ"
   if [[ -n "$expected_typ" ]]; then
     need_file "$expected_typ"
-    same_file_shell "$expected_typ" "$typ" || die "Typst differs from expected file: $expected_typ"
+    files_match_shell "$expected_typ" "$typ" || die "Typst differs from expected file: $expected_typ"
     printf 'verified Typst matches %s\n' "$expected_typ"
   fi
 }
@@ -436,7 +445,7 @@ JSON
 cmd_info() {
   while IFS= read -r line; do printf '%s\n' "$line"; done <<'INFO'
 jiaoan-shicao shell-only renderer
-- Markdown-to-Typst conversion is performed inside this Bash script.
+- Markdown-to-Typst conversion is performed inside this script directory.
 - PDF generation and external template execution are intentionally outside this script.
 INFO
 }
