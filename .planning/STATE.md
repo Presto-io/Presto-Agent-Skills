@@ -2,31 +2,31 @@
 gsd_state_version: 1.0
 milestone: v1.11
 milestone_name: Integrated Teaching Design Package
-current_phase: 23
-status: executing
-stopped_at: Phase 23 planning complete
-last_updated: "2026-06-13T21:25:46Z"
-last_activity: 2026-06-14 -- Phase 23 planning complete
+current_phase: 24
+status: ready_to_discuss
+stopped_at: Phase 23 execution complete
+last_updated: "2026-06-13T21:57:38Z"
+last_activity: 2026-06-13 -- Phase 23 execution complete
 progress:
-  total_phases: 2
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 1
+  total_phases: 4
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 2
   percent: 50
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 23
-**Status:** Ready to execute
+**Current Phase:** 24
+**Status:** Ready to discuss Phase 24
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 23 integrated skill entry and jiaoan orchestration is planned and ready to execute.
+**Current focus:** Phase 24 optional end-of-term module and package outputs is ready to discuss.
 
 ## Workflow Preferences
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 Plan the next v1.11 phase:
 
-- `/gsd:execute-phase 23`
+- `/gsd:discuss-phase 24`
 
 ## Accumulated Context
 
@@ -71,6 +71,7 @@ Plan the next v1.11 phase:
 - Milestone v1.10 started: strict 1:1 Markdown-to-Typst conversion is scoped to the existing `jiaoan-shicao` and `jiaoan-jihua` skills, with separate parallel phases for the教案 and授课计划 fixture pairs under `test/1.10/`.
 - Milestone v1.10 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; Phase 20 and Phase 21 evidence directories remain in `.planning/phases/`.
 - Milestone v1.11 started: create a new integrated teaching-design package skill plan that preserves existing jiaoan and end-of-term skills while adding shared scheduling evidence, a teacher-reviewable Markdown intermediate, optional end-of-term module integration, split/combined PDF outputs, and regression/documentation gates.
+- Phase 23 completed: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, jiaoan module handoff rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage.
 
 ## Decisions
 
@@ -114,6 +115,8 @@ Plan the next v1.11 phase:
 - [Milestone v1.11]: Start a new orchestration-skill milestone instead of deleting original skills. — User requested integration of teaching plan, lesson plan, and optional end-of-term materials while keeping `jiaoan-jihua`, `jiaoan-shicao`, and `end-of-term-teaching-materials` available.
 - [Milestone v1.11]: Treat scheduling inference as auditable shared package behavior. — Existing `jiaoan-jihua` code proves `calendar.json`, `first_teaching_day`, `daily_hours`, and per-row hours can derive week, weekday, and hour consumption; v1.11 must formalize the broader contract before reuse.
 - [Milestone v1.11]: Keep the integrated package Markdown-first. — Teachers must review a persistent Markdown intermediate before Typst/PDF, workbook, or combined package artifacts are claimed final.
+- [Phase 23]: The integrated package skill composes the existing jiaoan skills rather than replacing them. — Phase 23 added `skills/teaching-design-package/` with module-local handoff files and kept `jiaoan-jihua` and `jiaoan-shicao` public skill entries unchanged.
+- [Phase 23]: Split Typst/PDF status is honest and bounded. — The helper can render `teaching-plan.typ` and `lesson-plans.typ`, while PDF manifest fields remain `not_run` unless explicit PDF compilation succeeds.
 
 ## Performance Metrics
 
@@ -138,6 +141,7 @@ Plan the next v1.11 phase:
 | Phase 20 P01 | 8min | 4 tasks | 5 files |
 | Phase 21 P01 | 16min | 4 tasks | 4 files |
 | Phase 22 P01 | 45min | 5 tasks | 8 files |
+| Phase 23 P01 | recovery closeout | 5 tasks | 10 files |
 
 ## Last Session
 
@@ -163,14 +167,14 @@ Plan the next v1.11 phase:
 
 ## Current Position
 
-Phase: 23 (integrated-skill-entry-and-jiaoan-orchestration) — READY TO EXECUTE
+Phase: 24 (optional-end-of-term-module-and-package-outputs) — READY TO DISCUSS
 Plan: 0 of 1 complete
-Status: Ready to execute
-Last activity: 2026-06-14 -- Phase 23 planning complete
+Status: Ready to discuss
+Last activity: 2026-06-13 -- Phase 23 execution complete
 
 ## Operator Next Steps
 
-- Execute Phase 23 with `/gsd:execute-phase 23`
+- Discuss Phase 24 with `/gsd:discuss-phase 24`
 
 ### Quick Tasks Completed
 
