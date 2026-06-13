@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-14 after v1.10 milestone close
+**Last updated:** 2026-06-14 after v1.11 milestone initialization
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -21,7 +21,26 @@
 
 ## Active Milestone
 
-No active milestone. v1.10 is archived and the next milestone has not been defined yet.
+### v1.11 Integrated Teaching Design Package / 教学设计整包技能
+
+**Status:** Planning
+**Phases:** 22-25
+**Goal:** Create a new orchestration-skill path that integrates teaching-plan, lesson-plan, and optional end-of-term teaching-material workflows while preserving the original skills and the repository's Markdown-first, portable-skill discipline.
+
+| Phase | Name | Scope | Requirements |
+|-------|------|-------|--------------|
+| 22 | Scheduling Contract and Fixture | Define shared calendar/scheduling inputs, derived outputs, evidence format, conflict handling, and at least one fixture proving hand-filled date ranges can be inferred. | TDP-01, TDP-02, TDP-03, TDP-04 |
+| 23 | Integrated Skill Entry and Jiaoan Orchestration | Add the new package skill entry plan/implementation path, define the teacher-reviewable Markdown intermediate, compose `jiaoan-jihua` and `jiaoan-shicao`, and plan split teaching-plan/lesson-plan Typst/PDF outputs. | TDP-05, TDP-06, TDP-07, TDP-08, TDP-09 |
+| 24 | Optional End-of-Term Module and Package Outputs | Integrate the optional end-of-term module with structured data, review gates, deterministic artifacts, workbook, manifest, split PDFs, and default combined package output behavior. | TDP-10, TDP-11, TDP-12, TDP-13, TDP-14 |
+| 25 | Regression Verification and Documentation Index | Verify existing public command surfaces, package failure/manifest behavior, runtime adapter coverage, OpenClaw/Hermes notes, and documentation/index discoverability. | TDP-09, TDP-14, TDP-15, TDP-16 |
+
+**Acceptance direction:**
+
+- The original `jiaoan-jihua`, `jiaoan-shicao`, and `end-of-term-teaching-materials` skills remain standalone and callable.
+- The new package skill uses a persistent Markdown intermediate before rendering.
+- Scheduling inference is auditable from calendar and hour-consumption evidence.
+- Split outputs are planned where possible, and the default combined `teaching-design-package.pdf` is explicit.
+- Runtime-specific behavior stays in adapter notes; OpenClaw and Hermes Agent remain mandatory compatibility targets.
 
 ## Completed Phase Archive
 
@@ -50,14 +69,18 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 19. Decomposition Guidance and Milestone Review | v1.9 | Complete | 2026-06-13 |
 | 20. Jiaoan Shicao 教案 1:1 Typst Conversion | v1.10 | Complete | 2026-06-13 |
 | 21. Jiaoan Jihua 授课计划 1:1 Typst Conversion | v1.10 | Complete | 2026-06-13 |
+| 22. Scheduling Contract and Fixture | v1.11 | Planned | — |
+| 23. Integrated Skill Entry and Jiaoan Orchestration | v1.11 | Planned | — |
+| 24. Optional End-of-Term Module and Package Outputs | v1.11 | Planned | — |
+| 25. Regression Verification and Documentation Index | v1.11 | Planned | — |
 
 ## Current Position
 
-v1.10 is shipped and archived. No active milestone is currently open.
+v1.11 is initialized and ready for Phase 22 planning.
 
 ## Next Step
 
-Run `/gsd:new-milestone /Users/mrered/Developer/Presto-Agent-Skills` when ready to define the next milestone.
+Run `/gsd:plan-phase 22` to plan the shared scheduling contract and fixture slice.
 
 ---
-*Roadmap updated: 2026-06-14 after v1.10 milestone close*
+*Roadmap updated: 2026-06-14 after v1.11 milestone initialization*

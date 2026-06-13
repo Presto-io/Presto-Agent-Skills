@@ -1,32 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.10
-milestone_name: "Jiaoan Typst 1:1 Conversion"
-current_phase: 20
-status: completed
-stopped_at: Milestone v1.10 completed and archived
-last_updated: "2026-06-14T02:05:00+08:00"
-last_activity: 2026-06-14 -- Milestone v1.10 completed and archived
+milestone: v1.11
+milestone_name: "Integrated Teaching Design Package"
+current_phase: 22
+status: planning
+stopped_at: Milestone v1.11 initialized; next step is Phase 22 planning
+last_updated: "2026-06-14T02:30:00+08:00"
+last_activity: 2026-06-14 -- Milestone v1.11 initialized for integrated teaching design package planning
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 20
-**Status:** v1.10 milestone complete
+**Current Phase:** 22
+**Status:** v1.11 milestone planning
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Planning next milestone.
+**Current focus:** Plan Phase 22 shared scheduling contract and fixture for the integrated teaching-design package.
 
 ## Workflow Preferences
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 ## Next Up
 
-Start the next milestone when ready:
+Plan the first v1.11 phase:
 
-- `/gsd:new-milestone /Users/mrered/Developer/Presto-Agent-Skills`
+- `/gsd:plan-phase 22`
 
 ## Accumulated Context
 
@@ -70,6 +70,7 @@ Start the next milestone when ready:
 - Milestone v1.9 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; no next milestone has been started.
 - Milestone v1.10 started: strict 1:1 Markdown-to-Typst conversion is scoped to the existing `jiaoan-shicao` and `jiaoan-jihua` skills, with separate parallel phases for the教案 and授课计划 fixture pairs under `test/1.10/`.
 - Milestone v1.10 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; Phase 20 and Phase 21 evidence directories remain in `.planning/phases/`.
+- Milestone v1.11 started: create a new integrated teaching-design package skill plan that preserves existing jiaoan and end-of-term skills while adding shared scheduling evidence, a teacher-reviewable Markdown intermediate, optional end-of-term module integration, split/combined PDF outputs, and regression/documentation gates.
 
 ## Decisions
 
@@ -110,6 +111,9 @@ Start the next milestone when ready:
 - [Phase 20]: jiaoan-shicao v1.10 conversion stays fixture-scoped and skill-local. — Phase 20 generated the 教案 Typst fixture byte-for-byte from Markdown via `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh`.
 - [Phase 20]: The target Typst is used only for `--expected-typ` comparison, strict `diff -u`, and SHA-256 verification. — Anti-copy inspection only matched the comparison variable in the script.
 - [Phase 21]: jiaoan-jihua conversion stays skill-local and uses target Typst only for generated-output verification. — Phase 21 generated `test/1.10/电气设备控制线路安装与调试授课计划.typ` byte-for-byte from Markdown via `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh`.
+- [Milestone v1.11]: Start a new orchestration-skill milestone instead of deleting original skills. — User requested integration of teaching plan, lesson plan, and optional end-of-term materials while keeping `jiaoan-jihua`, `jiaoan-shicao`, and `end-of-term-teaching-materials` available.
+- [Milestone v1.11]: Treat scheduling inference as auditable shared package behavior. — Existing `jiaoan-jihua` code proves `calendar.json`, `first_teaching_day`, `daily_hours`, and per-row hours can derive week, weekday, and hour consumption; v1.11 must formalize the broader contract before reuse.
+- [Milestone v1.11]: Keep the integrated package Markdown-first. — Teachers must review a persistent Markdown intermediate before Typst/PDF, workbook, or combined package artifacts are claimed final.
 
 ## Performance Metrics
 
@@ -137,7 +141,7 @@ Start the next milestone when ready:
 ## Last Session
 
 - **Completed:** v1.10 milestone audit and closeout archive
-- **Stopped At:** Milestone v1.10 complete; awaiting next milestone
+- **Stopped At:** Milestone v1.11 initialized; awaiting Phase 22 planning
 - **Resume File:** None
 
 ## Close Notes
@@ -154,17 +158,18 @@ Start the next milestone when ready:
 - v1.9 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 - v1.10 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 - v1.10.1 records the post-close `jiaoan-shicao` black-box layout fix for learning-resource and teaching-activity table wrapping without reopening the v1.10 milestone.
+- v1.11 records local initialization research in `.planning/research/SUMMARY.md` and scopes the milestone to planning/phase execution for a new integrated package skill.
 
 ## Current Position
 
-Phase: Milestone v1.10 complete
+Phase: 22 - Scheduling Contract and Fixture
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-14 -- Milestone v1.10 completed and archived
+Status: Ready for Phase 22 planning
+Last activity: 2026-06-14 -- Milestone v1.11 initialized
 
 ## Operator Next Steps
 
-- Start the next milestone with `/gsd:new-milestone /Users/mrered/Developer/Presto-Agent-Skills`
+- Plan the next phase with `/gsd:plan-phase 22`
 
 ### Quick Tasks Completed
 
