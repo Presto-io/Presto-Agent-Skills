@@ -1,32 +1,32 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.11
-milestone_name: "Integrated Teaching Design Package"
+milestone_name: Integrated Teaching Design Package
 current_phase: 22
-status: executing
-stopped_at: Phase 22 planned
-last_updated: "2026-06-14T04:14:47+08:00"
-last_activity: 2026-06-14 -- Phase 22 planning complete
+status: ready_for_next_phase
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-06-13T20:36:20.356Z"
+last_activity: 2026-06-13
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 25
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 22
-**Status:** Ready to execute
+**Status:** Phase 22 complete — ready for Phase 23 planning
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Plan Phase 22 shared scheduling contract and fixture for the integrated teaching-design package.
+**Current focus:** Phase 22 complete; next planned work is Phase 23 integrated skill entry and jiaoan orchestration.
 
 ## Workflow Preferences
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 ## Next Up
 
-Plan the first v1.11 phase:
+Plan the next v1.11 phase:
 
-- `/gsd:plan-phase 22`
+- `/gsd:discuss-phase 23`
 
 ## Accumulated Context
 
@@ -137,12 +137,13 @@ Plan the first v1.11 phase:
 | Phase 19 P01 | current session | 4 tasks | 10 files |
 | Phase 20 P01 | 8min | 4 tasks | 5 files |
 | Phase 21 P01 | 16min | 4 tasks | 4 files |
+| Phase 22 P01 | 45min | 5 tasks | 8 files |
 
 ## Last Session
 
 - **Completed:** v1.10 milestone audit and closeout archive
-- **Stopped At:** Phase 22 context gathered
-- **Resume File:** .planning/phases/22-scheduling-contract-and-fixture/22-CONTEXT.md
+- **Stopped At:** Completed 22-01-PLAN.md
+- **Resume File:** None
 
 ## Close Notes
 
@@ -162,14 +163,14 @@ Plan the first v1.11 phase:
 
 ## Current Position
 
-Phase: 22 - Scheduling Contract and Fixture
-Plan: —
-Status: Ready to execute
-Last activity: 2026-06-14 -- Phase 22 planning complete
+Phase: 22 (scheduling-contract-and-fixture) — EXECUTING
+Plan: 1 of 1 complete
+Status: Phase 22 complete — ready for Phase 23 planning
+Last activity: 2026-06-13
 
 ## Operator Next Steps
 
-- Execute the planned phase with `/gsd:execute-phase 22`
+- Discuss Phase 23 with `/gsd:discuss-phase 23`
 
 ### Quick Tasks Completed
 

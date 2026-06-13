@@ -21,10 +21,10 @@ The package workflow should be Markdown-first: generate a teacher-reviewable Mar
 
 ### Shared Scheduling Contract
 
-- [ ] **TDP-01**: Define a package-level scheduling contract that accepts school calendar data, first teaching day, daily hours, task/activity/lesson-fragment hours, holidays, and makeup teaching days.
-- [ ] **TDP-02**: The scheduling contract must output start date, end date, term week number, weekday, assigned hours, and hour-consumption evidence for each teaching task, activity, and lesson-plan fragment.
-- [ ] **TDP-03**: The scheduling contract must preserve uncertain, missing, or conflicting schedule inputs as teacher-review markers instead of silently guessing or dropping them.
-- [ ] **TDP-04**: At least one fixture must prove that date ranges previously hand-filled in teaching-design documents can be derived from the scheduling contract.
+- [x] **TDP-01**: Define a package-level scheduling contract that accepts school calendar data, first teaching day, daily hours, task/activity/lesson-fragment hours, holidays, and makeup teaching days.
+- [x] **TDP-02**: The scheduling contract must output start date, end date, term week number, weekday, assigned hours, and hour-consumption evidence for each teaching task, activity, and lesson-plan fragment.
+- [x] **TDP-03**: The scheduling contract must preserve uncertain, missing, or conflicting schedule inputs as teacher-review markers instead of silently guessing or dropping them.
+- [x] **TDP-04**: At least one fixture must prove that date ranges previously hand-filled in teaching-design documents can be derived from the scheduling contract.
 
 ### Integrated Teaching Plan and Lesson Plan Package
 
@@ -70,10 +70,10 @@ Deferred to a later milestone unless explicitly requested:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TDP-01 | Phase 22 | Planned |
-| TDP-02 | Phase 22 | Planned |
-| TDP-03 | Phase 22 | Planned |
-| TDP-04 | Phase 22 | Planned |
+| TDP-01 | Phase 22 | Complete |
+| TDP-02 | Phase 22 | Complete |
+| TDP-03 | Phase 22 | Complete |
+| TDP-04 | Phase 22 | Complete |
 | TDP-05 | Phase 23 | Planned |
 | TDP-06 | Phase 23 | Planned |
 | TDP-07 | Phase 23 | Planned |
