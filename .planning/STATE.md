@@ -1,32 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.9
-milestone_name: Skill Decomposition and Entry Slimming
-current_phase: 19
-status: completed
-stopped_at: v1.9 milestone archived; no active milestone
-last_updated: "2026-06-13T03:45:00+08:00"
-last_activity: 2026-06-13 -- Milestone v1.9 completed and archived
+milestone: v1.10
+milestone_name: "Jiaoan Typst 1:1 Conversion"
+current_phase: 20
+status: planning
+last_updated: "2026-06-14T00:29:52+08:00"
+last_activity: 2026-06-14 -- Milestone v1.10 started and roadmap created
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 19
-**Status:** v1.9 milestone complete
+**Current Phase:** 20
+**Status:** v1.10 milestone planning
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-13)
+See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** No active milestone; v1.9 archive is complete.
+**Current focus:** v1.10 Jiaoan Typst 1:1 Conversion.
 
 ## Workflow Preferences
 
@@ -50,7 +49,10 @@ See: `.planning/PROJECT.md` (updated 2026-06-13)
 
 ## Next Up
 
-v1.9 is complete and archived. Do not create the next milestone until the user explicitly requests `/gsd:new-milestone`.
+Start either parallel phase:
+
+- Phase 20: Jiaoan Shicao 教案 1:1 Typst Conversion
+- Phase 21: Jiaoan Jihua 授课计划 1:1 Typst Conversion
 
 ## Accumulated Context
 
@@ -66,6 +68,7 @@ v1.9 is complete and archived. Do not create the next milestone until the user e
 - Phase 18 completed: `school-presentation.sh`, `render_package.py`, and `gongwen.sh` now use skill-local modules or sourced helpers while preserving public command surfaces, common flags, Markdown intermediates, manifest keys, and artifact contracts.
 - Phase 19 completed: contributor guidance now documents the lightweight-entry and script-module decomposition pattern, affected skill artifact contracts are discoverable from README/skills index, and phase-local pre-audit evidence records Phase 17/18 before/after facts without marking v1.9 shipped.
 - Milestone v1.9 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; no next milestone has been started.
+- Milestone v1.10 started: strict 1:1 Markdown-to-Typst conversion is scoped to the existing `jiaoan-shicao` and `jiaoan-jihua` skills, with separate parallel phases for the教案 and授课计划 fixture pairs under `test/1.10/`.
 
 ## Decisions
 
@@ -102,6 +105,7 @@ v1.9 is complete and archived. Do not create the next milestone until the user e
 - [Phase 15]: Classroom interaction and structured layout execution is complete. — The renderer connects teacher-facing Markdown directives to deterministic offline HTML, verifies real fixture rendering, preserves unknown directive content, and marks SP-21 through SP-25 complete.
 - [Phase 18]: Shared Bash helper extraction stayed skill-local. — The secondary jiaoan scripts were left untouched because a broader shared framework was not justified by a stable Phase 18 contract.
 - [Phase 19]: Decomposition guidance remains documentation/evidence-only. — Formal v1.9 audit, complete-milestone, milestone archive, generated wrappers, linting, scaffolding, hosted workflows, office-suite automation, and new output formats remain out of scope for this execute-phase run.
+- [Milestone v1.10]: Keep fixture conversion inside each affected skill. — User required final conversion through skill-internal script code and strict generated-output verification against the two target `.typ` files.
 
 ## Performance Metrics
 
@@ -145,14 +149,15 @@ v1.9 is complete and archived. Do not create the next milestone until the user e
 
 ## Current Position
 
-Phase: Milestone v1.9 complete
+Phase: 20 / 21 ready for parallel planning
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-13 -- Milestone v1.9 completed and archived
+Status: Roadmap created
+Last activity: 2026-06-14 -- Milestone v1.10 started
 
 ## Operator Next Steps
 
-- Await an explicit `/gsd:new-milestone` command before creating new requirements or roadmap phases.
+- `/gsd:discuss-phase 20 /Users/mrered/Developer/Presto-Agent-Skills`
+- `/gsd:discuss-phase 21 /Users/mrered/Developer/Presto-Agent-Skills`
 
 ### Quick Tasks Completed
 
