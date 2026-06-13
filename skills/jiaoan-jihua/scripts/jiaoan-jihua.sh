@@ -7,6 +7,7 @@ if [[ "$SCRIPT_DIR" == "${BASH_SOURCE[0]}" ]]; then
 fi
 SKILL_DIR="${SCRIPT_DIR}/.."
 TEMPLATE_MD="${SKILL_DIR}/templates/jiaoan-jihua-full.md"
+CALENDAR_JSON="${SKILL_DIR}/references/calendar.json"
 
 usage() {
   while IFS= read -r line; do printf '%s\n' "$line"; done <<'USAGE'
@@ -118,6 +119,7 @@ FM_TEACHER=""
 FM_CLASS=""
 FM_FIRST_DAY=""
 FM_DAILY_HOURS=""
+FM_TEMPLATE=""
 BODY_LINES=()
 
 set_meta_value() {
@@ -130,6 +132,7 @@ set_meta_value() {
     class_name) FM_CLASS="$value" ;;
     first_teaching_day) FM_FIRST_DAY="$value" ;;
     daily_hours) FM_DAILY_HOURS="$value" ;;
+    template) FM_TEMPLATE="$value" ;;
   esac
 }
 
@@ -143,6 +146,7 @@ parse_input() {
   FM_CLASS=""
   FM_FIRST_DAY=""
   FM_DAILY_HOURS=""
+  FM_TEMPLATE=""
 
   while IFS= read -r line || [[ -n "$line" ]]; do
     line="${line%$'\r'}"
@@ -168,6 +172,342 @@ parse_input() {
       BODY_LINES+=("$line")
     fi
   done < "$input"
+}
+
+date_to_serial() {
+  local value="$1" year month day era yoe doy doe
+  [[ "$value" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})$ ]] || die "invalid date: $value"
+  year=$((10#${BASH_REMATCH[1]}))
+  month=$((10#${BASH_REMATCH[2]}))
+  day=$((10#${BASH_REMATCH[3]}))
+  if (( month <= 2 )); then
+    year=$((year - 1))
+  fi
+  era=$(( year >= 0 ? year / 400 : (year - 399) / 400 ))
+  yoe=$(( year - era * 400 ))
+  if (( month > 2 )); then
+    month=$((month - 3))
+  else
+    month=$((month + 9))
+  fi
+  doy=$(((153 * month + 2) / 5 + day - 1))
+  doe=$((yoe * 365 + yoe / 4 - yoe / 100 + doy))
+  printf '%s\n' $((era * 146097 + doe - 719468))
+}
+
+weekday_for_date() {
+  local serial
+  serial="$(date_to_serial "$1")"
+  printf '%s\n' $((((serial + 3) % 7 + 7) % 7 + 1))
+}
+
+load_calendar_dates() {
+  local line value
+  need_file "$CALENDAR_JSON"
+  CALENDAR_DATES=()
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="$(trim "$line")"
+    if [[ "$line" =~ \"([0-9]{4}-[0-9]{2}-[0-9]{2})\" ]]; then
+      value="${BASH_REMATCH[1]}"
+      CALENDAR_DATES+=("$value")
+    fi
+  done < "$CALENDAR_JSON"
+  [[ "${#CALENDAR_DATES[@]}" -gt 0 ]] || die "calendar has no teaching dates: $CALENDAR_JSON"
+}
+
+term_week_for_date() {
+  local date="$1" first_date first_serial first_weekday term_start serial
+  [[ "${#CALENDAR_DATES[@]}" -gt 0 ]] || load_calendar_dates
+  first_date="${CALENDAR_DATES[0]}"
+  first_serial="$(date_to_serial "$first_date")"
+  first_weekday="$(weekday_for_date "$first_date")"
+  term_start=$((first_serial - first_weekday + 1))
+  serial="$(date_to_serial "$date")"
+  printf '%s\n' $(((serial - term_start) / 7 + 1))
+}
+
+set_dyn() {
+  local name="$1" value="$2"
+  printf -v "$name" '%s' "$value"
+}
+
+get_dyn() {
+  local name="$1"
+  printf '%s' "${!name}"
+}
+
+append_unique() {
+  local var="$1" value="$2" current item
+  current="$(get_dyn "$var")"
+  for item in $current; do
+    [[ "$item" == "$value" ]] && return 0
+  done
+  if [[ -n "$current" ]]; then
+    set_dyn "$var" "$current $value"
+  else
+    set_dyn "$var" "$value"
+  fi
+}
+
+parse_official_jihua_body() {
+  local line text hours task_count=0 stage_count row_count current_task=0 current_stage=0
+  OFFICIAL_TASK_COUNT=0
+
+  for line in "${BODY_LINES[@]}"; do
+    line="$(trim "$line")"
+    [[ -z "$line" ]] && continue
+
+    if [[ "$line" =~ ^##[[:space:]]+(.+)$ ]]; then
+      task_count=$((task_count + 1))
+      current_task="$task_count"
+      current_stage=0
+      set_dyn "TASK_TITLE_${current_task}" "${BASH_REMATCH[1]}"
+      set_dyn "TASK_STAGE_COUNT_${current_task}" "0"
+      set_dyn "TASK_TOTAL_HOURS_${current_task}" "0"
+      OFFICIAL_TASK_COUNT="$task_count"
+      continue
+    fi
+
+    if [[ "$line" =~ ^###[[:space:]]+(.+)$ ]]; then
+      (( current_task > 0 )) || die "stage appears before any task: $line"
+      stage_count="$(get_dyn "TASK_STAGE_COUNT_${current_task}")"
+      stage_count=$((stage_count + 1))
+      current_stage="$stage_count"
+      set_dyn "TASK_STAGE_COUNT_${current_task}" "$stage_count"
+      set_dyn "STAGE_TITLE_${current_task}_${current_stage}" "${BASH_REMATCH[1]}"
+      set_dyn "STAGE_ROW_COUNT_${current_task}_${current_stage}" "0"
+      continue
+    fi
+
+    (( current_task > 0 )) || die "content appears before any task: $line"
+    (( current_stage > 0 )) || die "content appears before any stage: $line"
+    if [[ "$line" =~ ^(.+)-([0-9]+)$ ]]; then
+      text="$(trim "${BASH_REMATCH[1]}")"
+      hours="${BASH_REMATCH[2]}"
+      [[ -n "$text" ]] || die "empty content before hour suffix: $line"
+      row_count="$(get_dyn "STAGE_ROW_COUNT_${current_task}_${current_stage}")"
+      row_count=$((row_count + 1))
+      set_dyn "STAGE_ROW_COUNT_${current_task}_${current_stage}" "$row_count"
+      set_dyn "ROW_TEXT_${current_task}_${current_stage}_${row_count}" "$text"
+      set_dyn "ROW_HOURS_${current_task}_${current_stage}_${row_count}" "$hours"
+      set_dyn "ROW_WEEKS_${current_task}_${current_stage}_${row_count}" ""
+      set_dyn "ROW_DAYS_${current_task}_${current_stage}_${row_count}" ""
+      set_dyn "TASK_TOTAL_HOURS_${current_task}" "$(( $(get_dyn "TASK_TOTAL_HOURS_${current_task}") + 10#$hours ))"
+      continue
+    fi
+
+    die "malformed stage body line, expected text-N: $line"
+  done
+
+  (( OFFICIAL_TASK_COUNT > 0 )) || die "no learning tasks found"
+}
+
+assign_schedule_cells() {
+  local daily_hours first_index=-1 index remaining t s r stage_count row_count hours_left hours date take week day min_week=999 max_week=0
+  [[ -n "$FM_FIRST_DAY" ]] || die "frontmatter first_teaching_day is required"
+  [[ -n "$FM_DAILY_HOURS" ]] || die "frontmatter daily_hours is required"
+  [[ "$FM_DAILY_HOURS" =~ ^[0-9]+$ ]] || die "daily_hours must be an integer: $FM_DAILY_HOURS"
+  daily_hours=$((10#$FM_DAILY_HOURS))
+  (( daily_hours > 0 )) || die "daily_hours must be greater than zero"
+
+  load_calendar_dates
+  for ((index = 0; index < ${#CALENDAR_DATES[@]}; index++)); do
+    if [[ "${CALENDAR_DATES[$index]}" == "$FM_FIRST_DAY" ]]; then
+      first_index="$index"
+      break
+    fi
+  done
+  (( first_index >= 0 )) || die "first_teaching_day not found in calendar: $FM_FIRST_DAY"
+
+  index="$first_index"
+  remaining="$daily_hours"
+  for ((t = 1; t <= OFFICIAL_TASK_COUNT; t++)); do
+    stage_count="$(get_dyn "TASK_STAGE_COUNT_${t}")"
+    for ((s = 1; s <= stage_count; s++)); do
+      row_count="$(get_dyn "STAGE_ROW_COUNT_${t}_${s}")"
+      (( row_count > 0 )) || die "stage has no content rows: $(get_dyn "STAGE_TITLE_${t}_${s}")"
+      for ((r = 1; r <= row_count; r++)); do
+        hours="$(get_dyn "ROW_HOURS_${t}_${s}_${r}")"
+        hours_left=$((10#$hours))
+        (( hours_left > 0 )) || die "row hours must be greater than zero"
+        while (( hours_left > 0 )); do
+          (( index < ${#CALENDAR_DATES[@]} )) || die "calendar ended before all hours were assigned"
+          date="${CALENDAR_DATES[$index]}"
+          week="$(term_week_for_date "$date")"
+          day="$(weekday_for_date "$date")"
+          append_unique "ROW_WEEKS_${t}_${s}_${r}" "$week"
+          append_unique "ROW_DAYS_${t}_${s}_${r}" "$day"
+          (( week < min_week )) && min_week="$week"
+          (( week > max_week )) && max_week="$week"
+          if (( hours_left < remaining )); then
+            take="$hours_left"
+          else
+            take="$remaining"
+          fi
+          hours_left=$((hours_left - take))
+          remaining=$((remaining - take))
+          if (( remaining == 0 )); then
+            index=$((index + 1))
+            remaining="$daily_hours"
+          fi
+        done
+      done
+    done
+  done
+
+  OFFICIAL_MIN_WEEK="$min_week"
+  OFFICIAL_MAX_WEEK="$max_week"
+}
+
+academic_year_label() {
+  local year month
+  [[ "$FM_FIRST_DAY" =~ ^([0-9]{4})-([0-9]{2})-[0-9]{2}$ ]] || die "invalid first_teaching_day: $FM_FIRST_DAY"
+  year=$((10#${BASH_REMATCH[1]}))
+  month=$((10#${BASH_REMATCH[2]}))
+  if (( month >= 9 )); then
+    printf '%s-%s学年第一学期' "$year" "$((year + 1))"
+  else
+    printf '%s-%s学年第二学期' "$((year - 1))" "$year"
+  fi
+}
+
+emit_official_jihua_head() {
+  local title
+  title="$(academic_year_label)第${OFFICIAL_MIN_WEEK} - ${OFFICIAL_MAX_WEEK}周"
+  while IFS= read -r line; do printf '%s\n' "$line"; done <<'TYP'
+// jiaoan-jihua official template
+#import "@preview/cuti:0.2.1": show-cn-fakebold
+#show: show-cn-fakebold
+
+#set page(
+  paper: "a4",
+  flipped: false,
+  margin: (top: 2.54cm, bottom: 2.54cm, left: 2.8cm, right: 2.8cm)
+)
+
+#set text(
+  lang: "zh",
+  font: "STSong",
+  size: 10.5pt,
+  hyphenate: false,
+)
+
+#set par(justify: true, leading: 0.52em)
+
+#let cell-pad = (x: 4.8pt, y: 4.8pt)
+#let task-th(body) = table.cell(align: center + horizon, inset: cell-pad)[#text(weight: 700)[#body]]
+#let th(body) = table.cell(align: center + horizon, inset: cell-pad)[#body]
+#let subth(body) = table.cell(align: center + horizon, inset: cell-pad)[#body]
+#let body-cell(body) = table.cell(align: center + horizon, inset: cell-pad)[#body]
+#let content-cell(body) = table.cell(align: left + horizon, inset: cell-pad)[#body]
+
+TYP
+  printf '#set document(\n'
+  printf '  title: "授课进度计划表 %s",\n' "$(escape_string "$FM_COURSE")"
+  printf '  author: "%s",\n' "$(escape_string "$FM_TEACHER")"
+  printf '  keywords: "授课计划, 教学计划, 工学一体化",\n'
+  printf ')\n\n'
+  printf '#align(center)[#text(size: 14pt, weight: "bold")[%s]]\n' "$(escape_content "$title")"
+  while IFS= read -r line; do printf '%s\n' "$line"; done <<'TYP'
+#v(0.45em)
+#align(center)[#text(size: 14pt, weight: "bold")[工学一体化课程/基本技能课程授课进度计划表]]
+#v(0.72em)
+
+#text(size: 10.5pt)[
+  #grid(columns: (1fr, 1fr), row-gutter: 0.75em,
+TYP
+  printf '    [专业名称：%s],\n' "$(escape_content "$FM_MAJOR")"
+  printf '    [课程名称：%s],\n' "$(escape_content "$FM_COURSE")"
+  printf '    [授课教师：%s],\n' "$(escape_content "$FM_TEACHER")"
+  printf '    [授课班级：%s],\n' "$(escape_content "$FM_CLASS")"
+  while IFS= read -r line; do printf '%s\n' "$line"; done <<'TYP'
+  )
+]
+
+#v(0.9em)
+
+TYP
+}
+
+emit_official_content_line() {
+  local macro="$1" value="$2"
+  printf '    %s[' "$macro"
+  render_inline "$value"
+  printf '],\n'
+}
+
+emit_official_stage_first_cell() {
+  local task="$1" stage="$2" rows="$3"
+  printf '    table.cell(rowspan: %s, align: center + horizon, inset: cell-pad)[' "$rows"
+  render_inline "学习环节${stage}名称：$(get_dyn "STAGE_TITLE_${task}_${stage}")"
+  printf '],\n'
+}
+
+emit_official_jihua_table() {
+  local t s r stage_count row_count total_hours
+  while IFS= read -r line; do printf '%s\n' "$line"; done <<'TYP'
+#align(center)[
+  #table(
+    columns: (3.15cm, 8.51cm, 1.12cm, 1.29cm, 1.27cm),
+    stroke: 0.5pt,
+    align: center + horizon,
+TYP
+
+  for ((t = 1; t <= OFFICIAL_TASK_COUNT; t++)); do
+    total_hours="$(get_dyn "TASK_TOTAL_HOURS_${t}")"
+    printf '    task-th[学习任务%s名称：],\n' "$t"
+    printf '    task-th['
+    render_inline "$(get_dyn "TASK_TITLE_${t}")"
+    printf '],\n'
+    printf '    table.cell(colspan: 2, align: center + horizon, inset: cell-pad)[学时],\n'
+    printf '    th[%sH],\n\n' "$total_hours"
+
+    if (( t == 1 )); then
+      printf '    subth[],\n'
+      printf '    subth[教学内容],\n'
+      printf '    subth[周次],\n'
+      printf '    subth[星期],\n'
+      printf '    subth[学时],\n\n'
+    fi
+
+    stage_count="$(get_dyn "TASK_STAGE_COUNT_${t}")"
+    for ((s = 1; s <= stage_count; s++)); do
+      row_count="$(get_dyn "STAGE_ROW_COUNT_${t}_${s}")"
+      for ((r = 1; r <= row_count; r++)); do
+        if (( r == 1 )); then
+          emit_official_stage_first_cell "$t" "$s" "$row_count"
+        fi
+        emit_official_content_line "content-cell" "$(get_dyn "ROW_TEXT_${t}_${s}_${r}")"
+        emit_official_content_line "body-cell" "$(get_dyn "ROW_WEEKS_${t}_${s}_${r}")"
+        emit_official_content_line "body-cell" "$(get_dyn "ROW_DAYS_${t}_${s}_${r}")"
+        emit_official_content_line "body-cell" "$(get_dyn "ROW_HOURS_${t}_${s}_${r}")"
+        printf '\n'
+      done
+    done
+  done
+
+  while IFS= read -r line; do printf '%s\n' "$line"; done <<'TYP'
+  )
+]
+
+TYP
+}
+
+emit_official_signature_grid() {
+  printf '#v(1.1em)\n'
+  printf '#grid(columns: (1fr, 1fr, 1fr),\n'
+  printf '  [#align(center)[系主任：]],\n'
+  printf '  [#align(center)[教研室主任：]],\n'
+  printf '  [#align(center)[制表：%s]],\n' "$(escape_content "$FM_TEACHER")"
+  printf ')\n'
+}
+
+emit_official_jihua_typst() {
+  parse_official_jihua_body
+  assign_schedule_cells
+  emit_official_jihua_head
+  emit_official_jihua_table
+  emit_official_signature_grid
 }
 
 emit_head() {
@@ -341,9 +681,13 @@ render_markdown_to_typst() {
   ensure_parent_dir "$output"
   : > "$output"
   {
-    emit_head
-    emit_meta
-    render_body
+    if [[ "$FM_TEMPLATE" == "jiaoan-jihua" ]]; then
+      emit_official_jihua_typst
+    else
+      emit_head
+      emit_meta
+      render_body
+    fi
   } >> "$output"
 }
 
