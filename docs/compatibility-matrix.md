@@ -35,6 +35,11 @@
 
 ## Runtime Notes
 
+### Teaching Design Package
+
+- `teaching-design-package` 是整包编排 skill：运行时必须能保留 `references/format-and-orchestration.md`、`templates/teaching-design-package-full.md`、`scripts/teaching-design-package.sh`，并能读取现有 `jiaoan-jihua`、`jiaoan-shicao` skill 支持文件。
+- PDF status 只有在显式 PDF 编译命令成功且输出文件存在时才能标记为 passed；只生成 Typst 不能声称最终 PDF 完成。
+
 ### Codex
 
 - Put persistent project instructions in `AGENTS.md`.
