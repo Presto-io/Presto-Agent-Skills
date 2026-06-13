@@ -36,14 +36,14 @@ The package workflow should be Markdown-first: generate a teacher-reviewable Mar
 
 ### Optional End-of-Term Module
 
-- [ ] **TDP-10**: The package skill must support the end-of-term materials workflow as an optional module, reusing structured data, score calculation evidence, deterministic table artifacts, workbook output, manifest rules, and review gates from `end-of-term-teaching-materials`.
-- [ ] **TDP-11**: End-of-term package rendering must not bypass the existing `end-of-term-full.md` review point or the `## 复核标记` export gate.
-- [ ] **TDP-12**: The package output plan must include `end-of-term-package.pdf` when the optional module is enabled and must keep workbook/table artifacts discoverable from the package manifest.
+- [x] **TDP-10**: The package skill must support the end-of-term materials workflow as an optional module, reusing structured data, score calculation evidence, deterministic table artifacts, workbook output, manifest rules, and review gates from `end-of-term-teaching-materials`.
+- [x] **TDP-11**: End-of-term package rendering must not bypass the existing `end-of-term-full.md` review point or the `## 复核标记` export gate.
+- [x] **TDP-12**: The package output plan must include `end-of-term-package.pdf` when the optional module is enabled and must keep workbook/table artifacts discoverable from the package manifest.
 
 ### Combined Outputs and Verification
 
-- [ ] **TDP-13**: The default final package artifact must be a combined `teaching-design-package.pdf` when Typst/PDF tooling can merge the selected modules.
-- [ ] **TDP-14**: If split compilation or merged PDF generation is unavailable, the package must fail with explicit manifest/status evidence instead of claiming a complete final package.
+- [x] **TDP-13**: The default final package artifact must be a combined `teaching-design-package.pdf` when Typst/PDF tooling can merge the selected modules.
+- [x] **TDP-14**: If split compilation or merged PDF generation is unavailable, the package must fail with explicit manifest/status evidence instead of claiming a complete final package.
 - [ ] **TDP-15**: Regression verification must prove the existing `jiaoan-jihua`, `jiaoan-shicao`, and `end-of-term-teaching-materials` public command surfaces remain usable after package integration.
 - [ ] **TDP-16**: Documentation/index verification must show the new skill is discoverable while preserving repository guidance: Markdown-first, lightweight `SKILL.md`, long rules in `references/`, scripts in `scripts/`, templates in `templates/`, and no agent-private syntax in canonical workflow text.
 
@@ -79,11 +79,11 @@ Deferred to a later milestone unless explicitly requested:
 | TDP-07 | Phase 23 | Complete |
 | TDP-08 | Phase 23 | Complete |
 | TDP-09 | Phase 23, Phase 25 | Partially complete |
-| TDP-10 | Phase 24 | Planned |
-| TDP-11 | Phase 24 | Planned |
-| TDP-12 | Phase 24 | Planned |
-| TDP-13 | Phase 24 | Planned |
-| TDP-14 | Phase 24, Phase 25 | Planned |
+| TDP-10 | Phase 24 | Complete |
+| TDP-11 | Phase 24 | Complete |
+| TDP-12 | Phase 24 | Complete |
+| TDP-13 | Phase 24 | Complete |
+| TDP-14 | Phase 24, Phase 25 | Complete in Phase 24; Phase 25 verifies regression behavior |
 | TDP-15 | Phase 25 | Planned |
 | TDP-16 | Phase 25 | Planned |
 

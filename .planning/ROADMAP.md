@@ -31,7 +31,7 @@
 |-------|------|-------|--------------|
 | 22 | Scheduling Contract and Fixture | Complete 2026-06-13: shared calendar/scheduling inputs, derived outputs, evidence format, conflict handling, and deterministic fixture proof are now documented and verified. | TDP-01, TDP-02, TDP-03, TDP-04 |
 | 23 | Integrated Skill Entry and Jiaoan Orchestration | Complete 2026-06-13: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, jiaoan module handoff rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage. | TDP-05, TDP-06, TDP-07, TDP-08, TDP-09 |
-| 24 | Optional End-of-Term Module and Package Outputs | Integrate the optional end-of-term module with structured data, review gates, deterministic artifacts, workbook, manifest, split PDFs, and default combined package output behavior. | TDP-10, TDP-11, TDP-12, TDP-13, TDP-14 |
+| 24 | Optional End-of-Term Module and Package Outputs | Complete 2026-06-14: optional end-of-term module integration now has explicit package contract, module handoff fields, manifest pointers for table/workbook artifacts, split `end-of-term-package.pdf` status, blocked-review behavior, and honest `teaching-design-package.pdf` combined-output evidence. | TDP-10, TDP-11, TDP-12, TDP-13, TDP-14 |
 | 25 | Regression Verification and Documentation Index | Verify existing public command surfaces, package failure/manifest behavior, runtime adapter coverage, OpenClaw/Hermes notes, and documentation/index discoverability. | TDP-09, TDP-14, TDP-15, TDP-16 |
 
 **Acceptance direction:**
@@ -71,16 +71,16 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 21. Jiaoan Jihua 授课计划 1:1 Typst Conversion | v1.10 | Complete | 2026-06-13 |
 | 22. Scheduling Contract and Fixture | v1.11 | Complete | 2026-06-13 |
 | 23. Integrated Skill Entry and Jiaoan Orchestration | v1.11 | Complete | 2026-06-13 |
-| 24. Optional End-of-Term Module and Package Outputs | v1.11 | Planned | — |
+| 24. Optional End-of-Term Module and Package Outputs | v1.11 | Complete | 2026-06-14 |
 | 25. Regression Verification and Documentation Index | v1.11 | Planned | — |
 
 ## Current Position
 
-Phase 23 is complete and v1.11 is ready for Phase 24 discussion.
+Phase 24 is complete and v1.11 is ready for Phase 25 discussion.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 24` to discuss the optional end-of-term module and package outputs slice.
+Run `/gsd:discuss-phase 25` to discuss the regression verification and documentation index slice.
 
 ---
-*Roadmap updated: 2026-06-14 after Phase 23 execution*
+*Roadmap updated: 2026-06-14 after Phase 24 execution*
