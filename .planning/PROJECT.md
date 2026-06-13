@@ -6,7 +6,7 @@
 
 **Shipped:** 2026-06-13
 
-**Status:** v1.9 is archived. No active milestone is currently defined.
+**Status:** v1.10 Jiaoan Typst 1:1 Conversion is active and in planning.
 
 **Delivered in v1.9:**
 - Current canonical `SKILL.md` entries are lighter semantic entry points, with long examples, renderer notes, artifact details, and operational guidance moved into skill-local `references/`.
@@ -29,9 +29,14 @@ The repository is currently a stable documentation-first framework. New skill wo
 
 A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
 
-## Current Milestone
+## Current Milestone: v1.10 Jiaoan Typst 1:1 Conversion
 
-No active milestone is defined. New requirements and roadmap phases should only be created after an explicit `/gsd:new-milestone` command.
+**Goal:** Make the existing `jiaoan-shicao` and `jiaoan-jihua` skills convert the two provided Markdown fixtures into their corresponding Typst files with strict 1:1 output equivalence, using only skill-internal script code.
+
+**Target features:**
+- Extend `skills/jiaoan-shicao` so its `SKILL.md`, references, and scripts can support strict conversion of `test/1.10/电气设备控制线路安装与调试教案.md` into `test/1.10/电气设备控制线路安装与调试教案.typ`.
+- Extend `skills/jiaoan-jihua` so its `SKILL.md`, references, and scripts can support strict conversion of `test/1.10/电气设备控制线路安装与调试授课计划.md` into `test/1.10/电气设备控制线路安装与调试授课计划.typ`.
+- Verify generated Typst output against the target `.typ` files through strict diff, hash, or documented equivalence checks, without relying on external renderer code outside the relevant skill directories.
 
 ## Requirements
 
@@ -60,7 +65,10 @@ No active milestone is defined. New requirements and roadmap phases should only 
 
 ### Active
 
-(None currently active. Define the next milestone before adding new active requirements.)
+- [ ] `skills/jiaoan-shicao/SKILL.md` and related skill-local scripts/references can be modified to support strict Markdown-to-Typst conversion for the v1.10教案 fixture.
+- [ ] `skills/jiaoan-jihua/SKILL.md` and related skill-local scripts/references can be modified to support strict Markdown-to-Typst conversion for the v1.10授课计划 fixture.
+- [ ] The final conversion path calls only the relevant skill's internal script code and produces Typst matching the committed target files under `test/1.10/`.
+- [ ] Verification records strict diff, hash, or documented equivalence evidence for both generated `.typ` outputs.
 
 ### Out of Scope
 
@@ -96,12 +104,13 @@ v1.9 shipped the first decomposition pass for the current skill system. Some ent
 
 ## Next Milestone Goals
 
-No next milestone is active. When the next milestone is explicitly started, carry forward these constraints:
+v1.10 is active. Carry forward these constraints while planning and executing the milestone:
 
 - Keep shared workflow logic in `SKILL.md`, long background in `references/`, helper code in `scripts/`, and output templates in `templates/`.
 - Preserve public skill interfaces unless a new requirement explicitly authorizes a breaking change.
 - Keep OpenClaw and Hermes Agent compatibility notes visible in affected canonical skill entries.
 - Prefer focused interface and artifact-contract checks over opportunistic feature changes.
+- Keep fixture-specific conversion logic inside the affected skill directories unless a later requirement explicitly authorizes shared infrastructure.
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -144,6 +153,7 @@ No next milestone is active. When the next milestone is explicitly started, carr
 | Start v1.9 as a structure milestone | Current skill entries and scripts are increasingly heavy, so the next value is lowering default reading and edit cost while keeping the skill interface stable | Good - shipped in v1.9 |
 | Preserve command surfaces during decomposition | Users and future agents rely on the current commands, generated artifacts, and invocation patterns | Good - shipped in v1.9 |
 | Keep decomposition support files discoverable | Progressive disclosure only works if contributors can reliably find templates, references, artifact contracts, and scripts from the entry docs | Good - shipped in v1.9 |
+| Start v1.10 as a strict jiaoan Typst conversion milestone | User provided two concrete Markdown and Typst fixture pairs and requested script-only 1:1 conversion through the existing jiaoan skills | Pending - planned for Phases 20-21 |
 
 ## Evolution
 
@@ -163,4 +173,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-13 after v1.9 milestone archive*
+*Last updated: 2026-06-14 after v1.10 milestone start*

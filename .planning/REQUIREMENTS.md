@@ -1,0 +1,82 @@
+# Requirements: v1.10 Jiaoan Typst 1:1 Conversion
+
+**Defined:** 2026-06-14
+**Core Value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
+
+## Milestone Summary
+
+Create a focused brownfield milestone for the existing jiaoan document skills. The user-visible goal is strict 1:1 conversion from the two provided Markdown fixtures to their corresponding Typst targets under `test/1.10/`, using only skill-internal script code.
+
+The user request names `presto-jiaoan-shicao` and `presto-jiaoan-jihua`; in this repository those skills are implemented as `skills/jiaoan-shicao` and `skills/jiaoan-jihua`.
+
+## Gate Record
+
+- **Validation gate:** v1.9 is archived, `gsd-sdk query init.new-milestone` reports latest completed milestone `v1.9`, and this milestone continues phase numbering from Phase 20.
+- **Questioning gate:** The user supplied concrete source files, target files, modifiable skill scope, verification expectations, and preferred phase split, so no additional user prompt is required.
+- **Research gate:** External research is skipped because this is a local fixture-conversion milestone using already-shipped skill patterns and repository-local scripts.
+- **Requirements gate:** Requirements below are scoped only to the two jiaoan skills and the two `test/1.10/` fixture pairs.
+- **Roadmap approval gate:** The user explicitly requested two parallel phases; the roadmap implements that approval as Phase 20 and Phase 21.
+
+## v1.10 Requirements
+
+### Jiaoan Shicao 教案
+
+- [ ] **SHICAO-01**: `skills/jiaoan-shicao/SKILL.md` and related skill-local scripts/references are allowed and expected to change as needed for the v1.10教案 conversion.
+- [ ] **SHICAO-02**: The skill-internal script path converts `test/1.10/电气设备控制线路安装与调试教案.md` to `test/1.10/电气设备控制线路安装与调试教案.typ` without relying on renderer code outside `skills/jiaoan-shicao/`.
+- [ ] **SHICAO-03**: Generated教案 Typst is proven strictly equivalent to the target `.typ` through a recorded strict diff, hash comparison, or documented byte/semantic equivalence check.
+- [ ] **SHICAO-04**: The implementation preserves the existing `jiaoan-shicao` public workflow unless a narrow compatibility note is required in `SKILL.md` or `references/`.
+
+### Jiaoan Jihua 授课计划
+
+- [ ] **JIHUA-01**: `skills/jiaoan-jihua/SKILL.md` and related skill-local scripts/references are allowed and expected to change as needed for the v1.10授课计划 conversion.
+- [ ] **JIHUA-02**: The skill-internal script path converts `test/1.10/电气设备控制线路安装与调试授课计划.md` to `test/1.10/电气设备控制线路安装与调试授课计划.typ` without relying on renderer code outside `skills/jiaoan-jihua/`.
+- [ ] **JIHUA-03**: Generated授课计划 Typst is proven strictly equivalent to the target `.typ` through a recorded strict diff, hash comparison, or documented byte/semantic equivalence check.
+- [ ] **JIHUA-04**: The implementation preserves the existing `jiaoan-jihua` public workflow unless a narrow compatibility note is required in `SKILL.md` or `references/`.
+
+### Milestone Verification
+
+- [ ] **VERIFY-01**: Verification commands generate both `.typ` outputs from the source `.md` files by invoking only skill-internal scripts.
+- [ ] **VERIFY-02**: Verification records strict output evidence for both pairs: generated result vs target `.typ` by diff, hash, or equivalence check.
+- [ ] **VERIFY-03**: Verification evidence is committed in the relevant phase summary, verification file, or milestone audit path before the milestone can be completed.
+
+## Future Requirements
+
+Deferred to a later milestone unless explicitly requested:
+
+- **JIAOAN-FUTURE-01**: Generalize arbitrary third-party教案 Markdown into these templates beyond the two v1.10 fixtures.
+- **JIAOAN-FUTURE-02**: Introduce shared jiaoan rendering infrastructure across both skills.
+- **JIAOAN-FUTURE-03**: Add PDF visual acceptance for this fixture set after Typst strict equivalence is stable.
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Editing business skill implementations outside `skills/jiaoan-shicao/` and `skills/jiaoan-jihua/` | The milestone is explicitly limited to the two existing jiaoan skills and their support files. |
+| Running discuss/plan/execute/audit/complete during this command-level task | This workflow only creates the new milestone and roadmap. |
+| External renderer dependencies outside the skill directories | Acceptance requires final conversion through skill-internal script code. |
+| Changing unrelated document skills | The two fixture pairs do not require changes to `gongwen`, `school-presentation`, or `end-of-term-teaching-materials`. |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| SHICAO-01 | Phase 20 | Pending |
+| SHICAO-02 | Phase 20 | Pending |
+| SHICAO-03 | Phase 20 | Pending |
+| SHICAO-04 | Phase 20 | Pending |
+| JIHUA-01 | Phase 21 | Pending |
+| JIHUA-02 | Phase 21 | Pending |
+| JIHUA-03 | Phase 21 | Pending |
+| JIHUA-04 | Phase 21 | Pending |
+| VERIFY-01 | Phase 20, Phase 21 | Pending |
+| VERIFY-02 | Phase 20, Phase 21 | Pending |
+| VERIFY-03 | Phase 20, Phase 21 | Pending |
+
+**Coverage:**
+- v1.10 requirements: 11 total
+- Mapped to phases: 11
+- Unmapped: 0
+
+---
+*Requirements defined: 2026-06-14*
+*Last updated: 2026-06-14 after v1.10 milestone start*
