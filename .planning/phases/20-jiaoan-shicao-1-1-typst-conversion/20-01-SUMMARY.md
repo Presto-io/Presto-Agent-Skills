@@ -14,6 +14,22 @@ requires:
   - VERIFY-01
   - VERIFY-02
   - VERIFY-03
+requirements-completed:
+  - SHICAO-01
+  - SHICAO-02
+  - SHICAO-03
+  - SHICAO-04
+  - VERIFY-01
+  - VERIFY-02
+  - VERIFY-03
+completion-evidence:
+  SHICAO-01: skills/jiaoan-shicao/SKILL.md and skills/jiaoan-shicao/references/format-and-rendering.md updated for v1.10 fixture-scoped conversion.
+  SHICAO-02: skills/jiaoan-shicao/scripts/jiaoan-shicao.sh renders through skill-local script code only.
+  SHICAO-03: .planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-VERIFICATION.md records --expected-typ, clean diff, and matching SHA-256 evidence.
+  SHICAO-04: Existing public commands example/render/manifest/info/version and render flags are preserved.
+  VERIFY-01: .planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-VERIFICATION.md records generation from source Markdown through the skill-internal script.
+  VERIFY-02: .planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-VERIFICATION.md records strict diff and SHA-256 output evidence.
+  VERIFY-03: .planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-VERIFICATION.md is the committed standalone verification artifact for Phase 20.
 provides:
   - strict v1.10 jiaoan-shicao Markdown-to-Typst generation
 affects:
@@ -27,6 +43,7 @@ tech_stack:
 key_files:
   created:
     - skills/jiaoan-shicao/scripts/render_v110_typst.awk
+    - .planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-VERIFICATION.md
   modified:
     - skills/jiaoan-shicao/scripts/jiaoan-shicao.sh
     - skills/jiaoan-shicao/SKILL.md
@@ -56,6 +73,22 @@ metrics:
 - `095c12e` - `feat(20-01): implement jiaoan-shicao typst fixture renderer`
 
 ## Verification Evidence
+
+Standalone verification artifact:
+
+- `.planning/phases/20-jiaoan-shicao-1-1-typst-conversion/20-VERIFICATION.md`
+
+## Requirement Completion Metadata
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| SHICAO-01 | Completed | `SKILL.md` and `references/format-and-rendering.md` document the v1.10 fixture-scoped conversion. |
+| SHICAO-02 | Completed | `jiaoan-shicao.sh render` generates through `skills/jiaoan-shicao/scripts/` code. |
+| SHICAO-03 | Completed | `20-VERIFICATION.md` records `--expected-typ`, clean `diff -u`, and matching SHA-256 evidence. |
+| SHICAO-04 | Completed | Public workflow and command surface remain preserved. |
+| VERIFY-01 | Completed | `20-VERIFICATION.md` records generation from source Markdown via the skill-internal script. |
+| VERIFY-02 | Completed | `20-VERIFICATION.md` records strict diff and hash output evidence. |
+| VERIFY-03 | Completed | Phase 20 standalone verification evidence is committed as `20-VERIFICATION.md`. |
 
 Parser structure checks:
 
