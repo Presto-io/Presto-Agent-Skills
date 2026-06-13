@@ -32,7 +32,7 @@
 | 22 | Scheduling Contract and Fixture | Complete 2026-06-13: shared calendar/scheduling inputs, derived outputs, evidence format, conflict handling, and deterministic fixture proof are now documented and verified. | TDP-01, TDP-02, TDP-03, TDP-04 |
 | 23 | Integrated Skill Entry and Jiaoan Orchestration | Complete 2026-06-13: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, jiaoan module handoff rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage. | TDP-05, TDP-06, TDP-07, TDP-08, TDP-09 |
 | 24 | Optional End-of-Term Module and Package Outputs | Complete 2026-06-14: optional end-of-term module integration now has explicit package contract, module handoff fields, manifest pointers for table/workbook artifacts, split `end-of-term-package.pdf` status, blocked-review behavior, and honest `teaching-design-package.pdf` combined-output evidence. | TDP-10, TDP-11, TDP-12, TDP-13, TDP-14 |
-| 25 | Regression Verification and Documentation Index | Verify existing public command surfaces, package failure/manifest behavior, runtime adapter coverage, OpenClaw/Hermes notes, and documentation/index discoverability. | TDP-09, TDP-14, TDP-15, TDP-16 |
+| 25 | Regression Verification and Documentation Index | Complete 2026-06-14: public command regression passed for `jiaoan-jihua`, `jiaoan-shicao`, `end-of-term-teaching-materials`, and `teaching-design-package`; package manifest truthfulness, six-runtime adapter coverage, OpenClaw/Hermes notes, and documentation/index discoverability were verified. | TDP-09, TDP-14, TDP-15, TDP-16 |
 
 **Acceptance direction:**
 
@@ -72,15 +72,15 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 22. Scheduling Contract and Fixture | v1.11 | Complete | 2026-06-13 |
 | 23. Integrated Skill Entry and Jiaoan Orchestration | v1.11 | Complete | 2026-06-13 |
 | 24. Optional End-of-Term Module and Package Outputs | v1.11 | Complete | 2026-06-14 |
-| 25. Regression Verification and Documentation Index | v1.11 | Planned | — |
+| 25. Regression Verification and Documentation Index | v1.11 | Complete | 2026-06-14 |
 
 ## Current Position
 
-Phase 24 is complete and v1.11 is ready for Phase 25 discussion.
+Phase 25 is complete and v1.11 is ready for milestone audit.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 25` to discuss the regression verification and documentation index slice.
+Run the milestone audit in a separate GSD command before completing the milestone.
 
 ---
-*Roadmap updated: 2026-06-14 after Phase 24 execution*
+*Roadmap updated: 2026-06-14 after Phase 25 execution*
