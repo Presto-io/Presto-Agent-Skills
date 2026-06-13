@@ -15,13 +15,13 @@ emit_template_head() {
 // 中文字号转换函数
 #import "@preview/pointless-size:0.1.2": zh
 
-// 定义常用字体名称
-#let FONT_XBS = "FZXiaoBiaoSong-B05" // 方正小标宋
-#let FONT_HEI = "STHeiti" // 黑体
-#let FONT_FS = "STFangsong" // 仿宋
-#let FONT_KAI = "STKaiti" // 楷体
-#let FONT_SONG = "STSong" // 宋体
-#let FONT_CODE = "Noto Sans Mono CJK SC" // 代码块
+// 定义常用字体名称。同类字体可以 fallback，但不跨字体类型。
+#let FONT_XBS = ("FZXiaoBiaoSong-B05", "FZXiaoBiaoSong-B05S", "FZXiaoBiaoSongS-B-GB", "方正小标宋简体", "方正小标宋_GBK") // 小标宋类
+#let FONT_HEI = ("SimHei", "STHeiti", "Heiti SC", "Noto Sans CJK SC", "Source Han Sans SC", "思源黑体", "Microsoft YaHei") // 黑体类
+#let FONT_FS = ("FangSong", "STFangsong", "FangSong_GB2312", "Fangsong SC") // 仿宋类
+#let FONT_KAI = ("KaiTi", "STKaiti", "Kaiti SC", "KaiTi_GB2312") // 楷体类
+#let FONT_SONG = ("SimSun", "NSimSun", "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "思源宋体") // 宋体类
+#let FONT_CODE = ("Noto Sans Mono CJK SC", "Source Han Mono SC", "Sarasa Mono SC", "Menlo") // 等宽类
 
 // 设置页面、页边距、页脚
 #set page(

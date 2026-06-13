@@ -41,6 +41,29 @@ strip_trailing_markers() {
   done
 }
 
+normalize_heading_text() {
+  local s="$1" before
+  s="$(trim "$s")"
+  while true; do
+    before="$s"
+    if [[ "$s" =~ ^[一二三四五六七八九十百千万零〇两壹贰叁肆伍陆柒捌玖拾佰仟]+[、.．][[:space:]]*(.+)$ ]]; then
+      s="$(trim "${BASH_REMATCH[1]}")"
+    elif [[ "$s" =~ ^（[一二三四五六七八九十百千万零〇两壹贰叁肆伍陆柒捌玖拾佰仟]+）[[:space:]]*(.+)$ ]]; then
+      s="$(trim "${BASH_REMATCH[1]}")"
+    elif [[ "$s" =~ ^\([一二三四五六七八九十百千万零〇两壹贰叁肆伍陆柒捌玖拾佰仟]+\)[[:space:]]*(.+)$ ]]; then
+      s="$(trim "${BASH_REMATCH[1]}")"
+    elif [[ "$s" =~ ^[0-9]+([.．][0-9]+)+[、.．]?[[:space:]]*(.+)$ ]]; then
+      s="$(trim "${BASH_REMATCH[2]}")"
+    elif [[ "$s" =~ ^[0-9]+[、.．][[:space:]]*(.+)$ ]]; then
+      s="$(trim "${BASH_REMATCH[1]}")"
+    elif [[ "$s" =~ ^[（\(][0-9]+[）\)][[:space:]]*(.+)$ ]]; then
+      s="$(trim "${BASH_REMATCH[1]}")"
+    fi
+    [[ "$s" != "$before" ]] || break
+  done
+  NORMALIZED_HEADING_TEXT="$s"
+}
+
 emit_paragraph() {
   local text="$1" noindent="${2:-false}" rendered
   strip_trailing_markers "$text"
@@ -58,6 +81,8 @@ emit_heading() {
   local level="$1" text="$2" prefix i
   strip_trailing_markers "$text"
   text="$STRIPPED_TEXT"
+  normalize_heading_text "$text"
+  text="$NORMALIZED_HEADING_TEXT"
   if [[ "$MARKER_BOLD" == true && "$level" -ge 2 && "$level" -le 5 ]]; then
     printf '#custom-heading-block(%s, [' "$level"
     render_inline "$text"
@@ -75,6 +100,8 @@ emit_runin_heading() {
   local level="$1" heading="$2" para="$3"
   strip_trailing_markers "$heading"
   heading="$STRIPPED_TEXT"
+  normalize_heading_text "$heading"
+  heading="$NORMALIZED_HEADING_TEXT"
   printf '#custom-heading(%s, [' "$level"
   render_inline "$heading"
   printf '], bold: %s)' "$MARKER_BOLD"
