@@ -2,31 +2,31 @@
 gsd_state_version: 1.0
 milestone: v1.11
 milestone_name: Integrated Teaching Design Package
-current_phase: 22
-status: planning
-stopped_at: Phase 23 context gathered
-last_updated: "2026-06-13T21:14:23.841Z"
-last_activity: 2026-06-13
+current_phase: 23
+status: executing
+stopped_at: Phase 23 planning complete
+last_updated: "2026-06-13T21:25:46Z"
+last_activity: 2026-06-14 -- Phase 23 planning complete
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 1
+  total_plans: 2
   completed_plans: 1
-  percent: 100
+  percent: 50
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 22
-**Status:** Phase 22 complete — ready for Phase 23 planning
+**Current Phase:** 23
+**Status:** Ready to execute
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 22 complete; next planned work is Phase 23 integrated skill entry and jiaoan orchestration.
+**Current focus:** Phase 23 integrated skill entry and jiaoan orchestration is planned and ready to execute.
 
 ## Workflow Preferences
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 Plan the next v1.11 phase:
 
-- `/gsd:discuss-phase 23`
+- `/gsd:execute-phase 23`
 
 ## Accumulated Context
 
@@ -163,14 +163,14 @@ Plan the next v1.11 phase:
 
 ## Current Position
 
-Phase: 22 (scheduling-contract-and-fixture) — EXECUTING
-Plan: 1 of 1 complete
-Status: Phase 22 complete — ready for Phase 23 planning
-Last activity: 2026-06-13
+Phase: 23 (integrated-skill-entry-and-jiaoan-orchestration) — READY TO EXECUTE
+Plan: 0 of 1 complete
+Status: Ready to execute
+Last activity: 2026-06-14 -- Phase 23 planning complete
 
 ## Operator Next Steps
 
-- Discuss Phase 23 with `/gsd:discuss-phase 23`
+- Execute Phase 23 with `/gsd:execute-phase 23`
 
 ### Quick Tasks Completed
 
