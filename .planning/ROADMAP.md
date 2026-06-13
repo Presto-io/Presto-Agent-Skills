@@ -23,14 +23,14 @@
 
 ### v1.11 Integrated Teaching Design Package / 教学设计整包技能
 
-**Status:** Planning
+**Status:** In progress
 **Phases:** 22-25
 **Goal:** Create a new orchestration-skill path that integrates teaching-plan, lesson-plan, and optional end-of-term teaching-material workflows while preserving the original skills and the repository's Markdown-first, portable-skill discipline.
 
 | Phase | Name | Scope | Requirements |
 |-------|------|-------|--------------|
 | 22 | Scheduling Contract and Fixture | Complete 2026-06-13: shared calendar/scheduling inputs, derived outputs, evidence format, conflict handling, and deterministic fixture proof are now documented and verified. | TDP-01, TDP-02, TDP-03, TDP-04 |
-| 23 | Integrated Skill Entry and Jiaoan Orchestration | Add the new package skill entry plan/implementation path, define the teacher-reviewable Markdown intermediate, compose `jiaoan-jihua` and `jiaoan-shicao`, and plan split teaching-plan/lesson-plan Typst/PDF outputs. | TDP-05, TDP-06, TDP-07, TDP-08, TDP-09 |
+| 23 | Integrated Skill Entry and Jiaoan Orchestration | Complete 2026-06-13: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, jiaoan module handoff rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage. | TDP-05, TDP-06, TDP-07, TDP-08, TDP-09 |
 | 24 | Optional End-of-Term Module and Package Outputs | Integrate the optional end-of-term module with structured data, review gates, deterministic artifacts, workbook, manifest, split PDFs, and default combined package output behavior. | TDP-10, TDP-11, TDP-12, TDP-13, TDP-14 |
 | 25 | Regression Verification and Documentation Index | Verify existing public command surfaces, package failure/manifest behavior, runtime adapter coverage, OpenClaw/Hermes notes, and documentation/index discoverability. | TDP-09, TDP-14, TDP-15, TDP-16 |
 
@@ -70,17 +70,17 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 20. Jiaoan Shicao 教案 1:1 Typst Conversion | v1.10 | Complete | 2026-06-13 |
 | 21. Jiaoan Jihua 授课计划 1:1 Typst Conversion | v1.10 | Complete | 2026-06-13 |
 | 22. Scheduling Contract and Fixture | v1.11 | Complete | 2026-06-13 |
-| 23. Integrated Skill Entry and Jiaoan Orchestration | v1.11 | Planned | — |
+| 23. Integrated Skill Entry and Jiaoan Orchestration | v1.11 | Complete | 2026-06-13 |
 | 24. Optional End-of-Term Module and Package Outputs | v1.11 | Planned | — |
 | 25. Regression Verification and Documentation Index | v1.11 | Planned | — |
 
 ## Current Position
 
-Phase 22 is complete and v1.11 is ready for Phase 23 discussion.
+Phase 23 is complete and v1.11 is ready for Phase 24 discussion.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 23` to discuss the integrated skill entry and jiaoan orchestration slice.
+Run `/gsd:discuss-phase 24` to discuss the optional end-of-term module and package outputs slice.
 
 ---
-*Roadmap updated: 2026-06-14 after v1.11 milestone initialization*
+*Roadmap updated: 2026-06-14 after Phase 23 execution*
