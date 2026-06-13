@@ -4,8 +4,8 @@ milestone: v1.11
 milestone_name: Integrated Teaching Design Package
 current_phase: 24
 status: Ready for next phase
-stopped_at: Phase 24 execution complete
-last_updated: "2026-06-14T06:49:13+08:00"
+stopped_at: Phase 25 context gathered
+last_updated: "2026-06-13T23:10:08.203Z"
 last_activity: 2026-06-14 -- Phase 24 execution complete
 progress:
   total_phases: 4
@@ -149,8 +149,8 @@ Plan the next v1.11 phase:
 ## Last Session
 
 - **Completed:** v1.10 milestone audit and closeout archive
-- **Stopped At:** Phase 24 execution complete
-- **Resume File:** .planning/phases/24-optional-end-of-term-module-and-package-outputs/24-CONTEXT.md
+- **Stopped At:** Phase 25 context gathered
+- **Resume File:** .planning/phases/25-regression-verification-and-documentation-index/25-CONTEXT.md
 
 ## Close Notes
 
