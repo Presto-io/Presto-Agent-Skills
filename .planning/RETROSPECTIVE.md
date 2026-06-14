@@ -257,6 +257,49 @@
 
 ---
 
+## Milestone: v1.12 - Teaching Design Package Post-Close Repair
+
+**Shipped:** 2026-06-14
+**Phases:** 2 | **Plans:** 2 | **Sessions:** 2+
+
+### What Was Built
+
+- Package scheduling evidence now backfills concrete `起止日期` values into generated practical lesson-plan Markdown before `jiaoan-shicao` rendering.
+- `jiaoan-shicao` activity tables now use official-style `25.04cm` chapter-scoped Typst column widths.
+- Direct `jiaoan-shicao` and integrated package regression paths produce Markdown, Typst, and PDF evidence for the repaired behavior.
+- The v1.12 milestone audit passed with TDPR-01 through TDPR-07 covered and no open gaps.
+
+### What Worked
+
+- Treating v1.12 as a post-close repair milestone kept the scope tight and avoided replacing existing teaching skills.
+- Local official-template snapshots gave the width repair a concrete oracle instead of relying on subjective layout tuning.
+- Phase 27 re-verified the Phase 26 date backfill through the integrated package path, which caught cross-repair compatibility rather than only direct script behavior.
+
+### What Was Inefficient
+
+- The default-locale AWK task-count issue required `LC_ALL=C` in the regression path.
+- A prior executor timed out after implementation commits, so Phase 27 needed continuation work to finish verification and summary metadata.
+- `milestone.complete` archived the core files but still needed manual ROADMAP, PROJECT, STATE, MILESTONES, and retrospective cleanup.
+
+### Patterns Established
+
+- Post-close bugfix milestones can stay small when they preserve the shipped skill topology and focus on concrete regression evidence.
+- Package handoff fixes should keep standalone jiaoan skill behavior stable and prove preservation through command smoke checks.
+- Layout repairs should parse generated Typst artifacts for invariants that the user actually receives.
+
+### Key Lessons
+
+1. Keep local official-reference evidence close to the phase verification before claiming visual or layout alignment.
+2. Use integrated package regression after direct skill fixes so earlier package repairs do not silently regress.
+3. Continue manually reviewing SDK-generated closeout text until active/shipped wording is consistently reliable.
+
+### Cost Observations
+
+- Model mix: balanced profile.
+- Notable: The highest-value checks were generated Markdown assertions, Typst width parsing, real PDF compilation, and milestone audit cross-reference.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -269,6 +312,7 @@
 | v1.9 | 4+ | 3 | Reduced skill entry and script weight through progressive-disclosure references, skill-local modules, and contributor guidance. |
 | v1.10 | 4+ | 2 | Added strict skill-local jiaoan Markdown-to-Typst fixture conversion with byte-for-byte verification. |
 | v1.11 | 4+ | 4 | Added integrated teaching-design package orchestration with scheduling evidence, optional end-of-term module pointers, and honest manifest readiness. |
+| v1.12 | 2+ | 2 | Repaired post-close teaching-design regressions for package date backfill and official activity-table width alignment. |
 
 ### Cumulative Quality
 
@@ -280,6 +324,7 @@
 | v1.9 | Public command regression, syntax/compile checks, documentation discovery checks, milestone audit | 12/12 SD requirements shipped | No new runtime dependencies added |
 | v1.10 | Skill render commands, strict diff, SHA-256, anti-copy source inspection, milestone audit | 11/11 jiaoan requirements shipped | No new runtime dependencies added |
 | v1.11 | Scheduling fixture derivation, public command regression, manifest truthfulness checks, documentation/runtime coverage, milestone audit | 16/16 TDP requirements shipped | No new runtime dependencies added |
+| v1.12 | Markdown handoff assertions, Typst width parsing, direct/package PDF compilation, public command smoke checks, milestone audit | 7/7 TDPR requirements shipped | No new runtime dependencies added |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -289,3 +334,4 @@
 4. Keep live presentation UI closeout tied to explicit visual UAT, not only code or state-file completion.
 5. Review generated milestone archives manually before committing closeout.
 6. Make package final-ready status depend on actual final artifacts and explicit manifest reasons.
+7. Verify post-close repairs through both direct skill paths and integrated package paths.

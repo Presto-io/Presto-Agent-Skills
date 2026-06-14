@@ -2,24 +2,24 @@
 
 ## Current State
 
-**Latest shipped milestone:** v1.11 Integrated Teaching Design Package
+**Latest shipped milestone:** v1.12 Teaching Design Package Post-Close Repair
 
 **Shipped:** 2026-06-14
 
-**Active milestone:** v1.12 Teaching Design Package Post-Close Repair
+**Active milestone:** None
 
-**Status:** v1.12 is initialized as a v1.11 post-close bugfix milestone.
+**Status:** v1.12 is complete and archived. The next milestone has not been started.
 
-**Delivered in v1.11:**
-- `teaching-design-package` now has a portable orchestration skill entry, package Markdown checkpoint, scheduling evidence contract, jiaoan module handoff, optional end-of-term module pointers, and split/combined output status semantics.
-- The original `jiaoan-jihua`, `jiaoan-shicao`, and `end-of-term-teaching-materials` skills remain standalone and callable.
-- The milestone audit passed with 16/16 requirements covered across Phases 22-25.
+**Delivered in v1.12:**
+- `teaching-design-package` now backfills concrete inferred `起止日期` values into generated `jiaoan-shicao-full.md` from package scheduling evidence.
+- `jiaoan-shicao` now uses official-style chapter/pagebreak-scoped `教学活动设计` table widths with verified `25.04cm` total-width behavior.
+- The milestone audit passed with 7/7 TDPR requirements covered across Phases 26-27.
 
 ## Milestone History
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets. v1.11 added the integrated `teaching-design-package` orchestration path while preserving the original teaching skills and keeping package outputs honest through manifest evidence.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets. v1.11 added the integrated `teaching-design-package` orchestration path while preserving the original teaching skills and keeping package outputs honest through manifest evidence. v1.12 repaired two post-close teaching-design regressions: package date backfill into practical lesson-plan Markdown and official-style activity-table width alignment.
 
 ## What This Is
 
@@ -31,14 +31,9 @@ The repository is currently a stable documentation-first framework. New skill wo
 
 A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
 
-## Current Milestone: v1.12 Teaching Design Package Post-Close Repair
+## Current Focus
 
-**Goal:** Repair two post-close teaching-design regressions without deleting or replacing the original teaching skills.
-
-**Target fixes:**
-- Backfill inferred `起止日期` values from package scheduling evidence into generated `jiaoan-shicao-full.md`.
-- Align the `jiaoan-shicao` `教学活动设计` table-width strategy with the official `presto-official-templates/jiaoan-shicao` reference.
-- Prove the fixes through generated Markdown, Typst, and PDF artifacts, including filled date evidence and official-template width evidence.
+No active milestone is open. v1.12 is archived, and future work should start with `/gsd:new-milestone` when the next scope is defined.
 
 ## Requirements
 
@@ -77,13 +72,17 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Define package outputs including split PDFs where supported and a default combined `teaching-design-package.pdf` with explicit failure/status evidence. - v1.11 Phase 24
 - [x] Verify public command regression, package manifest truthfulness, runtime adapter coverage, and documentation/index discoverability for `teaching-design-package`. - v1.11 Phase 25
 
+### Validated in v1.12
+
+- [x] Repair `teaching-design-package` so scheduling evidence flows into lesson-plan Markdown before `jiaoan-shicao` rendering. - v1.12 Phase 26
+- [x] Preserve teacher-reviewable Markdown and explicit review markers while filling inferred `起止日期` values. - v1.12 Phase 26
+- [x] Repair `jiaoan-shicao` teaching-activity table column widths using official-template evidence from the locally downloaded reference files. - v1.12 Phase 27
+- [x] Verify generated Markdown, Typst, and PDF outputs for the integrated package and affected jiaoan skill, including filled date checks and official table-width invariants. - v1.12 Phases 26-27
+- [x] Keep `teaching-design-package`, `jiaoan-shicao`, `jiaoan-jihua`, and `end-of-term-teaching-materials` public interfaces stable. - v1.12 Phases 26-27
+
 ### Active
 
-- [ ] Repair `teaching-design-package` so scheduling evidence flows into lesson-plan Markdown before `jiaoan-shicao` rendering.
-- [ ] Preserve teacher-reviewable Markdown and explicit review markers while filling inferred `起止日期` values.
-- [ ] Repair `jiaoan-shicao` teaching-activity table column widths using official-template evidence from the locally downloaded reference files.
-- [ ] Verify generated Markdown, Typst, and PDF outputs for the integrated package and affected jiaoan skill, including filled date checks and official table-width invariants.
-- [ ] Keep `teaching-design-package`, `jiaoan-shicao`, `jiaoan-jihua`, and `end-of-term-teaching-materials` public interfaces stable.
+No active requirements. Define the next milestone before adding new active scope.
 
 ### Out of Scope
 
@@ -123,13 +122,11 @@ v1.11 shipped the integrated teaching-design package line. Local research confir
 
 Phase 24 completed the optional end-of-term and package-output slice: `teaching-design-package` now delegates end-of-term module internals to `end-of-term-teaching-materials`, exposes module artifact pointers in the package manifest, preserves module-local review gates, and records split/combined PDF status truthfully.
 
+v1.12 completed the post-close repair slice for the integrated teaching-design package. Phase 26 backfilled concrete package scheduling evidence into generated practical lesson-plan Markdown while preserving review-marker gates. Phase 27 aligned `jiaoan-shicao` activity-table widths with official-template evidence using chapter/pagebreak-scoped column grouping and verified the direct and package paths with Markdown, Typst, and PDF artifacts.
+
 ## Next Milestone Goals
 
-v1.12 is a post-close repair milestone for two bugs found after v1.11 shipped:
-
-- `teaching-design-package` currently derives package scheduling evidence, but generated practical lesson-plan Markdown can still miss `起止日期` instead of receiving the inferred date range.
-- `jiaoan-shicao` `教学活动设计` table widths must follow the official Presto template behavior. The local official-reference snapshots for this milestone are `/private/tmp/presto-jiaoan-shicao-main.go`, `/private/tmp/presto-jiaoan-shicao-main_test.go`, and `/private/tmp/presto-jiaoan-shicao-example.md`; key evidence is around `tableColumnWidthsCM`, `sectionColumnSpecs`, `columnPressures`, and the tests for total width, narrow `课时分配`, shared chapter widths, and inferred start/end dates.
-- The milestone should keep existing skills intact and focus on verifiable bugfix behavior.
+No next milestone has been defined yet. The next scope should be created through `/gsd:new-milestone` so requirements, research, and roadmap stay fresh.
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -149,7 +146,7 @@ v1.12 is a post-close repair milestone for two bugs found after v1.11 shipped:
 - **Scheduling evidence discipline**: Inferred dates must be accompanied by reviewable inputs and hour-consumption evidence so teachers can audit why a task or activity received a date range.
 - **Post-close repair discipline**: v1.12 may repair shipped behavior after v1.11, but must not reframe this as a new replacement skill or delete original teaching skills.
 - **Official template evidence**: `jiaoan-shicao` table-width repair must cite or reproduce evidence from the downloaded official `jiaoan-shicao` reference files before claiming alignment.
-- **Regression artifact discipline**: The milestone is not done until generated Markdown, Typst, and PDF artifacts show `起止日期` filled and `教学活动设计` width behavior verified.
+- **Regression artifact discipline**: Post-close repair milestones are not done until generated Markdown, Typst, and PDF artifacts prove the repaired behavior and preserve public command compatibility.
 
 ## Key Decisions
 
@@ -183,8 +180,10 @@ v1.12 is a post-close repair milestone for two bugs found after v1.11 shipped:
 | Treat jiaoan-jihua scheduling as reusable evidence, not final shared API | Existing local code proves the derivation is feasible, but a package-level contract and fixtures are needed before broad reuse | Good - Phase 22 created the shared contract and fixture evidence |
 | Keep the integrated package Markdown-first | Teachers need a reviewable intermediate before Typst/PDF and workbook generation across the combined workflow | Good - Phase 23 created the package checkpoint and Phase 24 preserved module review gates |
 | Keep package final-ready status tied to actual artifact evidence | Split Typst output alone should not imply a complete combined PDF package | Good - Phase 24 and Phase 25 verified honest manifest behavior |
-| Start v1.12 as a post-close repair milestone | The user reported two shipped-behavior bugs after v1.11: missing lesson-plan `起止日期` backfill and `jiaoan-shicao` activity-table width mismatch | Pending |
-| Use official `jiaoan-shicao` reference snapshots as layout evidence | The table-width bug depends on official template behavior, not a subjective visual tweak | Pending |
+| Start v1.12 as a post-close repair milestone | The user reported two shipped-behavior bugs after v1.11: missing lesson-plan `起止日期` backfill and `jiaoan-shicao` activity-table width mismatch | Good - shipped in v1.12 |
+| Keep date backfill package-local | The repair only needed concrete package scheduling evidence and review-marker gating, not a new shared scheduling library | Good - shipped in v1.12 Phase 26 |
+| Use official `jiaoan-shicao` reference snapshots as layout evidence | The table-width bug depends on official template behavior, not a subjective visual tweak | Good - shipped in v1.12 Phase 27 |
+| Treat activity-table widths as chapter/pagebreak-scoped | Official evidence showed shared same-chapter column specs and `{pagebreak}` as a recalculation boundary | Good - shipped in v1.12 Phase 27 |
 
 ## Evolution
 
@@ -204,4 +203,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-14 after v1.12 milestone initialization*
+*Last updated: 2026-06-14 after v1.12 milestone completion*
