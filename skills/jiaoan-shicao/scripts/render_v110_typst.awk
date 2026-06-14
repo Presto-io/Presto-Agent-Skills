@@ -114,6 +114,18 @@ function format_multiline(text,    out, lines, count, i, line) {
   return out
 }
 
+function format_method_multiline(text,    out, lines, count, i, line) {
+  count = split(text, lines, "\n")
+  out = ""
+  for (i = 1; i <= count; i++) {
+    line = trim(lines[i])
+    if (line == "") continue
+    if (out != "") out = out " #linebreak() "
+    out = out line
+  }
+  return out
+}
+
 function max_int(a, b) {
   return (a > b) ? a : b
 }
@@ -510,7 +522,7 @@ function emit_activity_group(i, g,    r) {
   print "      [*学习环节*], [*" GROUP_STAGE[i, g] "*], [*学习单元*], table.cell(colspan: 3)[*" GROUP_UNIT[i, g] "*],"
   print "      [教学活动], [学习内容], [学生活动], [教师活动], [教学方法与手段], [课时分配],"
   for (r = 1; r <= ROW_COUNT[i, g]; r++) {
-    printf "      table.cell(rowspan: 1)[%d.%s],      align(left)[%s],      align(left)[%s],      align(left)[%s],      align(center + horizon)[%s],      [%s],\n", r, ACT_TITLE[i, g, r], format_multiline(ACT_LEARN[i, g, r]), format_multiline(ACT_STUDENT[i, g, r]), format_multiline(ACT_TEACHER[i, g, r]), ACT_METHOD[i, g, r], ACT_HOURS[i, g, r]
+    printf "      table.cell(rowspan: 1)[%d.%s],      align(left)[%s],      align(left)[%s],      align(left)[%s],      align(center + horizon)[%s],      [%s],\n", r, ACT_TITLE[i, g, r], format_multiline(ACT_LEARN[i, g, r]), format_multiline(ACT_STUDENT[i, g, r]), format_multiline(ACT_TEACHER[i, g, r]), format_method_multiline(ACT_METHOD[i, g, r]), ACT_HOURS[i, g, r]
   }
   print "    )"
   print "  ]"
