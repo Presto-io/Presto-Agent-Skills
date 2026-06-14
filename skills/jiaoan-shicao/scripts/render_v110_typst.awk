@@ -127,11 +127,16 @@ function nearly_equal(a, b) {
   return ((a - b < 0 ? b - a : a - b) < 0.000000001)
 }
 
-function display_width_line(text,    ascii, non_ascii_count) {
+function display_width_line(text,    ascii, non_ascii, non_ascii_count) {
   ascii = text
   gsub(/[^ -~]/, "", ascii)
-  text = text
-  non_ascii_count = gsub(/[^ -~]/, "", text)
+  non_ascii = text
+  gsub(/[ -~]/, "", non_ascii)
+  if (ENVIRON["LC_ALL"] == "C" || ENVIRON["LC_CTYPE"] == "C") {
+    non_ascii_count = int((length(non_ascii) + 2) / 3)
+  } else {
+    non_ascii_count = length(non_ascii)
+  }
   return length(ascii) + non_ascii_count * 2
 }
 
@@ -254,7 +259,7 @@ function header_min_width_cm(metric, bias) {
   return metric * 0.18 + 0.42 + bias
 }
 
-function table_columns_for_task(i,    widths, pressures, base_weights, pressure_scales, remaining_width, total_weight, g, r, col) {
+function table_columns_for_chapter(i, chapter,    widths, pressures, base_weights, pressure_scales, remaining_width, total_weight, g, r, col) {
   widths[1] = header_min_width_cm(max_int(display_width("教学活动"), display_width("学习环节")), 0.10)
   widths[2] = header_min_width_cm(display_width("学习内容"), 0.10)
   widths[3] = header_min_width_cm(display_width("学生活动"), 0.10)
@@ -275,6 +280,7 @@ function table_columns_for_task(i,    widths, pressures, base_weights, pressure_
   pressures[5] = 0.5
   pressures[6] = 0.25
   for (g = 1; g <= GROUP_COUNT[i]; g++) {
+    if (GROUP_CHAPTER[i, g] != chapter) continue
     pressures[1] += content_pressure(GROUP_STAGE[i, g]) * 0.2
     pressures[2] += content_pressure(GROUP_UNIT[i, g]) * 0.15
     for (r = 1; r <= ROW_COUNT[i, g]; r++) {
@@ -498,7 +504,7 @@ function emit_activity_group(i, g,    r) {
   print "#block(above: 0pt, below: 0pt)["
   print "  #align(center)["
   print "    #table("
-  print "      columns: (" table_columns_for_task(i) "),"
+  print "      columns: (" table_columns_for_chapter(i, GROUP_CHAPTER[i, g]) "),"
   print "      stroke: 0.5pt,"
   print "      align: center + horizon,"
   print "      [*学习环节*], [*" GROUP_STAGE[i, g] "*], [*学习单元*], table.cell(colspan: 3)[*" GROUP_UNIT[i, g] "*],"
@@ -541,6 +547,7 @@ BEGIN {
   current_analysis_key = ""
   current_row = 0
   group_count = 0
+  activity_chapter = 1
   last_activity_was_blank = 0
 }
 
@@ -579,6 +586,7 @@ in_fm {
     mode = "analysis"
     task_count++
     current_analysis_key = ""
+    activity_chapter = 1
     next
   }
 
@@ -611,7 +619,15 @@ in_fm {
     finish_activity_row()
     mode = "activity"
     group_count = 0
+    activity_chapter = 1
     GROUP_COUNT[task_count] = 0
+    next
+  }
+
+  if (line == "{pagebreak}" && mode == "activity") {
+    finish_activity_row()
+    activity_chapter++
+    last_activity_was_blank = 0
     next
   }
 
@@ -619,6 +635,7 @@ in_fm {
     finish_activity_row()
     group_count++
     GROUP_COUNT[task_count] = group_count
+    GROUP_CHAPTER[task_count, group_count] = activity_chapter
     title = line
     sub(/^### /, "", title)
     split(title, group_parts, "——")
