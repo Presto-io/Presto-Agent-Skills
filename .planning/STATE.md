@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.12
 milestone_name: Teaching Design Package Post-Close Repair
 current_phase: 27
-status: ready_to_audit
-stopped_at: Phase 27 execution complete
-last_updated: "2026-06-14T09:17:42Z"
-last_activity: 2026-06-14 -- Phase 27 execution complete
+status: audit_passed
+stopped_at: v1.12 milestone audit passed
+last_updated: "2026-06-14T09:26:21Z"
+last_activity: 2026-06-14 -- v1.12 milestone audit passed
 progress:
   total_phases: 2
   completed_phases: 2
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 27
-**Status:** Ready to audit v1.12
+**Status:** v1.12 audit passed
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 27 execution is complete; v1.12 is ready for milestone audit.
+**Current focus:** v1.12 milestone audit passed; ready for milestone completion.
 
 ## Workflow Preferences
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 Start the next workflow step when ready:
 
-- `/gsd:execute-phase 27`
+- `/gsd:complete-milestone v1.12`
 
 ## Accumulated Context
 
@@ -181,12 +181,12 @@ Start the next workflow step when ready:
 
 Phase: 27 (official-activity-table-width-alignment) — COMPLETE
 Plan: 1 of 1
-Status: Ready to audit v1.12
-Last activity: 2026-06-14 -- Phase 27 execution complete
+Status: v1.12 audit passed
+Last activity: 2026-06-14 -- v1.12 milestone audit passed
 
 ## Operator Next Steps
 
-- Run `/gsd:audit-milestone` to verify the v1.12 post-close repair milestone before closing it.
+- Run `/gsd:complete-milestone v1.12` to archive and close the v1.12 post-close repair milestone.
 
 ### Quick Tasks Completed
 
