@@ -1,32 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.13
-milestone_name: Teaching Design Package Markdown Baseline Rendering
-current_phase: 29
-status: completed
-stopped_at: Completed 29-PLAN.md
-last_updated: "2026-06-14T21:07:18.260Z"
-last_activity: 2026-06-14 — Milestone v1.13 completed and archived
+milestone: v1.14
+milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
+status: planning
+last_updated: "2026-06-14T23:39:49.058Z"
+last_activity: 2026-06-15 — Milestone v1.14 started
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 29
-**Status:** v1.13 milestone complete
+**Current Phase:** 30
+**Status:** v1.14 milestone planning
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-15)
+See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initialization)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.13 is complete and archived: `teaching-design-package` renders the committed full-package Markdown baseline to real split and combined PDFs while preserving standalone jiaoan skills.
+**Current focus:** v1.14 is initialized: `teaching-design-package` must become a standalone teacher-facing unified skill with a clean 1+1+3 delivery contract and hidden/internal diagnostics boundary.
 
 ## Workflow Preferences
 
@@ -50,9 +48,10 @@ See: `.planning/PROJECT.md` (updated 2026-06-15)
 
 ## Next Up
 
-Start the next workflow step when ready:
+Start the first v1.14 workflow step when ready:
 
-- `/gsd:new-milestone`
+- `/gsd:discuss-phase 30`
+- `/gsd:plan-phase 30`
 
 ## Accumulated Context
 
@@ -79,6 +78,7 @@ Start the next workflow step when ready:
 - Phase 26 completed: `teaching-design-package` now backfills concrete package scheduling evidence into generated `jiaoan-shicao-full.md`, preserves review-marker gating, and records Markdown, Typst, and PDF verification evidence.
 - Phase 27 completed: `jiaoan-shicao` now computes `教学活动设计` activity-table widths by official-style chapter/pagebreak grouping, verifies `25.04cm` total width and narrow `课时分配`, and preserves the Phase 26 package date backfill through integrated package PDF verification.
 - Milestone v1.13 started: use the committed `skills/teaching-design-package/templates/teaching-design-package-full.md` Markdown template as the baseline, keep its teacher-facing structure unchanged, and plan renderer work around one Markdown, one Typst, and three PDF outputs.
+- Milestone v1.14 started: correct `teaching-design-package` so it is a standalone, teacher-facing unified skill with a final-render script boundary, clean 1+1+3 delivery outputs, hidden diagnostics, and derived scheduling validation.
 
 ## Decisions
 
@@ -135,6 +135,9 @@ Start the next workflow step when ready:
 - [Phase 29]: Final package PDF generation is explicit via `render-package --pdf`; Typst-only rendering remains the default. — This prevents callers from confusing Typst generation with accepted PDF output.
 - [Phase 29]: Combined package PDF is merged from accepted split PDFs in source order. — When `pdfunite` and `qpdf` are unavailable, installed PyMuPDF provides a real local merge fallback recorded as `python_fitz`.
 - [Phase 29]: Standalone parity is proven against the same generated handoff Markdown. — Package split Typst/PDF outputs match standalone `jiaoan-jihua` and `jiaoan-shicao` renders from `jiaoan-jihua-full.md` and `jiaoan-shicao-full.md`.
+- [Milestone v1.14]: `teaching-design-package` is the unified user experience, not a requirement to install or stitch together sibling repo skills. — User clarified that any needed `jiaoan-jihua` or `jiaoan-shicao` capability must be vendored/internalized or discoverable from self-contained package resources.
+- [Milestone v1.14]: The teacher workflow is source materials -> clarification/organization -> one editable full Markdown -> strict delivery render. — Scripts consume finalized Markdown for validation and output generation only.
+- [Milestone v1.14]: Default delivery is exactly 1+1+3. — Internal handoffs, manifests, logs, status files, split Typst, and sidecars must stay hidden/debug/failure-only and out of successful delivery directories.
 
 ## Performance Metrics
 
@@ -190,14 +193,15 @@ Start the next workflow step when ready:
 
 ## Current Position
 
-Phase: Milestone v1.13 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-14 — Milestone v1.13 completed and archived
+Phase: 30 - Standalone Skill Boundary and Internalized Dependencies
+Plan: Not started
+Status: Ready for phase discussion or planning
+Last activity: 2026-06-15 — Milestone v1.14 initialized
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run `/gsd:discuss-phase 30` to gather implementation context for standalone packaging.
+- Or run `/gsd:plan-phase 30` to plan directly.
 
 ### Quick Tasks Completed
 

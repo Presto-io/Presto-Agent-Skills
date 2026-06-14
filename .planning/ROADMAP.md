@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-15 after v1.13 milestone completion
+**Last updated:** 2026-06-15 after v1.14 milestone initialization
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -24,11 +24,60 @@
 
 ## Active Milestone
 
-No active milestone. Start the next milestone with `/gsd:new-milestone` when ready.
+**v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约**
+
+This milestone corrects the integrated package experience so `teaching-design-package` is a standalone, teacher-facing unified skill. It must not require users to install sibling repo skills, must make the source-materials-to-full-Markdown workflow the canonical entry, and must keep renderer scripts as strict finalized-Markdown validation/delivery tools.
+
+Acceptance centers on a clean default 1+1+3 delivery contract: one unified Markdown, one unified Typst, and three PDFs. Internal handoff Markdown, split Typst, manifests, stderr logs, status files, and temporary state belong in hidden work/debug/failure diagnostics, not the default delivery directory. Derived scheduling behavior from v1.13 remains mandatory: hours, academic year/semester, and date ranges must come from plan/activity/calendar evidence rather than manual YAML facts.
 
 ## Phases
 
-No active phases. Detailed shipped phase goals and verification evidence are preserved in `.planning/milestones/v1.13-ROADMAP.md`, `.planning/milestones/v1.13-REQUIREMENTS.md`, `.planning/milestones/v1.13-MILESTONE-AUDIT.md`, and the phase summary files.
+### Phase 30: Standalone Skill Boundary and Internalized Dependencies
+
+**Goal:** Make `teaching-design-package` installable and understandable as one self-contained skill while preserving legacy standalone jiaoan skills.
+**Depends on:** Phase 29
+**Plans:** 0/1 plans complete
+**Requirements:** TDPKG-01, TDPKG-02, TDPKG-03, TDPKG-15
+**Status:** Pending
+
+Success criteria:
+
+1. Installation and runtime guidance prove `teaching-design-package` can be used without asking users to install repo sibling skill directories.
+2. Any needed `jiaoan-jihua` or `jiaoan-shicao` behavior is available through vendored/internal/self-contained package resources or explicit self-contained dependency discovery.
+3. Runtime adapter notes cover Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent under the standalone install/use boundary.
+4. Existing `jiaoan-jihua` and `jiaoan-shicao` standalone entries and public contracts remain preserved.
+
+### Phase 31: Teacher-Facing Unified Markdown Workflow
+
+**Goal:** Make the canonical skill entry describe the teacher's real source-materials-to-full-Markdown workflow instead of presenting scripts as the main UX.
+**Depends on:** Phase 30
+**Plans:** 0/1 plans complete
+**Requirements:** TDPKG-04, TDPKG-05, TDPKG-06, TDPKG-14
+**Status:** Pending
+
+Success criteria:
+
+1. `SKILL.md` presents the primary workflow as ingesting many source materials, asking/clarifying, organizing, and producing one reviewable full-package Markdown.
+2. The output Markdown is described as `teaching-design-package-full.md` or a course-specific `某某某课教学资料.md`, and as the human-editable source of truth before rendering.
+3. Script usage is clearly bounded to finalized Markdown validation and delivery generation, not teacher interaction or content organization.
+4. The user-facing flow no longer asks teachers to mentally run and stitch together separate `jiaoan-jihua` and `jiaoan-shicao` skills.
+
+### Phase 32: Clean 1+1+3 Delivery and Scheduling Regression Gate
+
+**Goal:** Enforce the default delivery surface and derived scheduling validation so successful outputs are clean while diagnostics remain available when needed.
+**Depends on:** Phase 31
+**Plans:** 0/1 plans complete
+**Requirements:** TDPKG-07, TDPKG-08, TDPKG-09, TDPKG-10, TDPKG-11, TDPKG-12, TDPKG-13
+**Status:** Pending
+
+Success criteria:
+
+1. A default successful render produces only the unified Markdown, unified Typst, full package PDF, teaching-plan PDF, and teaching-design/lesson-plan PDF in the delivery directory.
+2. Internal `jiaoan-jihua-full.md`, `jiaoan-shicao-full.md`, split Typst, manifests, stderr logs, status sidecars, temporary state, and handoff artifacts are absent from the default delivery directory.
+3. Debug mode, hidden work directories, temporary directories, or failure diagnostics retain enough internal evidence to troubleshoot without polluting the default successful output.
+4. Total hours are computed from plan/activity data, not trusted from YAML as the authoritative source.
+5. Teaching-plan hours and lesson-plan activity hours are cross-checked, and mismatches fail or mark output non-final/review-needed.
+6. `first_teaching_day` infers school year and semester, and start/end dates are calculated from real teaching days with documented calendar/default behavior.
 
 ## Completed Phase Archive
 
@@ -68,11 +117,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.13 is complete and archived. No active milestone is open.
+Milestone v1.14 is initialized and ready for Phase 30 discussion or planning.
 
 ## Next Step
 
-Start the next milestone with `/gsd:new-milestone` when ready.
+Run `/gsd:discuss-phase 30` or `/gsd:plan-phase 30` when ready.
 
 ---
-*Roadmap updated: 2026-06-15 after v1.13 milestone completion*
+*Roadmap updated: 2026-06-15 after v1.14 milestone initialization*
