@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-14 after v1.11 milestone close
+**Last updated:** 2026-06-14 after v1.12 milestone initialization
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -22,7 +22,44 @@
 
 ## Active Milestone
 
-No active milestone is currently open. Start the next milestone with `/gsd:new-milestone` when ready.
+**v1.12 Teaching Design Package Post-Close Repair**
+
+This is a v1.11 post-close bugfix milestone. It keeps the original `teaching-design-package`, `jiaoan-shicao`, `jiaoan-jihua`, and `end-of-term-teaching-materials` skills intact, and scopes work to two reported regressions:
+
+- `teaching-design-package` derives scheduling evidence but fails to backfill inferred `起止日期` into generated practical lesson-plan Markdown (`jiaoan-shicao-full.md`).
+- `jiaoan-shicao` `教学活动设计` table widths need to match the official `presto-official-templates/jiaoan-shicao` behavior, using the local official-reference snapshots in `/private/tmp/presto-jiaoan-shicao-main.go`, `/private/tmp/presto-jiaoan-shicao-main_test.go`, and `/private/tmp/presto-jiaoan-shicao-example.md`.
+
+## Phases
+
+### Phase 26: Package Date Backfill Repair
+
+**Goal:** Repair `teaching-design-package` so inferred scheduling evidence is written into the generated practical lesson-plan Markdown before `jiaoan-shicao` rendering.
+**Depends on:** Phase 25
+**Plans:** 1 plan
+**Requirements:** TDPR-01, TDPR-02, TDPR-03, TDPR-06
+**Status:** Pending
+
+Success criteria:
+
+1. Package generation produces `jiaoan-shicao-full.md` with concrete `起止日期` values derived from package scheduling evidence when source lesson-plan dates are missing.
+2. The generated Markdown still preserves teacher-reviewable scheduling evidence and review markers for uncertain, conflicting, or incomplete scheduling inputs.
+3. Public command surfaces for `teaching-design-package`, `jiaoan-jihua`, and `jiaoan-shicao` remain stable.
+4. Regression verification generates Markdown, Typst, and PDF evidence for the affected package path and explicitly checks that `起止日期` is filled.
+
+### Phase 27: Official Activity Table Width Alignment
+
+**Goal:** Repair `jiaoan-shicao` `教学活动设计` table-width behavior using the official template algorithm and regression tests as evidence.
+**Depends on:** Phase 26
+**Plans:** 1 plan
+**Requirements:** TDPR-04, TDPR-05, TDPR-06, TDPR-07
+**Status:** Pending
+
+Success criteria:
+
+1. The `教学活动设计` width strategy is aligned with official-template behavior around `tableColumnWidthsCM`, `sectionColumnSpecs`, `columnPressures`, and `activityTableTotalWidthCM`.
+2. Verification proves total activity-table width matches the official total, the `课时分配` column remains narrower than main text columns, and multiple activity tables in the same chapter share one column specification.
+3. Regression verification generates Markdown, Typst, and PDF outputs for `jiaoan-shicao` and the integrated package path.
+4. Phase evidence records the official-template basis or a clear local reproduction of it before claiming alignment.
 
 ## Completed Phase Archive
 
@@ -58,11 +95,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-v1.11 is complete and archived. No next milestone has been started.
+Phase 26 is next. This milestone is initialized and ready for `/gsd:discuss-phase 26` or `/gsd:plan-phase 26`.
 
 ## Next Step
 
-Start the next milestone with `/gsd:new-milestone` when ready.
+Run `/gsd:discuss-phase 26` to gather implementation context for the package date backfill repair.
 
 ---
-*Roadmap updated: 2026-06-14 after v1.11 milestone close*
+*Roadmap updated: 2026-06-14 after v1.12 milestone initialization*

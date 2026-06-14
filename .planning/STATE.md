@@ -1,32 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.11
-milestone_name: Integrated Teaching Design Package
-current_phase: 25
-status: completed
-stopped_at: Milestone v1.11 complete
-last_updated: "2026-06-14T00:00:00.000Z"
-last_activity: 2026-06-14 -- Milestone v1.11 completed and archived
+milestone: v1.12
+milestone_name: Teaching Design Package Post-Close Repair
+status: planning
+last_updated: "2026-06-14T06:40:41.964Z"
+last_activity: 2026-06-14
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 25
-**Status:** v1.11 milestone complete
+**Current Phase:** 26
+**Status:** v1.12 milestone planning
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.11 is complete and archived; no next milestone has been started.
+**Current focus:** v1.12 post-close repair is initialized; Phase 26 will repair package date backfill before Phase 27 aligns official activity-table widths.
 
 ## Workflow Preferences
 
@@ -50,9 +48,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 ## Next Up
 
-Start the next milestone when ready:
+Start the next phase when ready:
 
-- `/gsd:new-milestone`
+- `/gsd:discuss-phase 26`
 
 ## Accumulated Context
 
@@ -75,6 +73,7 @@ Start the next milestone when ready:
 - Phase 24 completed: `teaching-design-package` now supports optional end-of-term module handoff, module-owned review gates, deterministic table/workbook pointers, `end-of-term-package.pdf` split status, and honest `teaching-design-package.pdf` combined-output status evidence.
 - Phase 25 completed: public command regression, package manifest truthfulness, six-runtime adapter coverage, OpenClaw/Hermes practical notes, and documentation/index discoverability are verified with no gaps.
 - Milestone v1.11 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; no next milestone has been started.
+- Milestone v1.12 started: post-close repair for two v1.11 teaching-design bugs. Phase 26 will backfill inferred `起止日期` values into `jiaoan-shicao-full.md`; Phase 27 will align `jiaoan-shicao` `教学活动设计` table widths with official-template evidence.
 
 ## Decisions
 
@@ -173,14 +172,14 @@ Start the next milestone when ready:
 
 ## Current Position
 
-Phase: Milestone v1.11 complete
+Phase: 26 - Package Date Backfill Repair
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-14 -- Milestone v1.11 completed and archived
+Status: Not started
+Last activity: 2026-06-14 — Milestone v1.12 started; roadmap ready for Phase 26 discussion
 
 ## Operator Next Steps
 
-- Start the next milestone with `/gsd:new-milestone`
+- Run `/gsd:discuss-phase 26` to gather implementation context for the package date backfill repair.
 
 ### Quick Tasks Completed
 
