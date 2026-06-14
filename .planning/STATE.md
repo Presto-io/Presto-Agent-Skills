@@ -3,22 +3,23 @@ gsd_state_version: 1.0
 milestone: v1.13
 milestone_name: Teaching Design Package Markdown Baseline Rendering
 current_phase: 28
-status: planning
-last_updated: "2026-06-14T18:41:10.890Z"
-last_activity: 2026-06-15 — Milestone v1.13 started
+status: completed
+stopped_at: Completed 28-PLAN.md
+last_updated: "2026-06-14T19:58:38.691Z"
+last_activity: 2026-06-14 -- Phase 28 marked complete
 progress:
   total_phases: 2
-  completed_phases: 0
-  total_plans: 2
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 28
-**Status:** v1.13 milestone planning
+**Status:** completed
 
 ## Project Reference
 
@@ -128,6 +129,9 @@ Start the next workflow step when ready:
 - [Phase 27]: Activity-table widths are chapter/pagebreak-scoped, not learning-task-scoped. — The official local snapshots define `activityTableTotalWidthCM = 25.04` and same-chapter shared `columns: (...)`; `{pagebreak}` starts a recalculation boundary.
 - [Milestone v1.13]: The full-package Markdown reference is the baseline contract. — The user corrected scope so implementation must adapt render ingestion around `skills/teaching-design-package/templates/teaching-design-package-full.md`, not change that Markdown's teacher-facing format.
 - [Milestone v1.13]: Three PDF outputs are acceptance criteria. — The combined PDF must merge the original授课进度计划 and教案 outputs; the plan and lesson PDFs must match standalone `jiaoan-jihua` and `jiaoan-shicao` outputs except timestamps.
+- [Phase 28]: Renderer ingestion adapts around the committed teacher-facing package baseline instead of changing the template. — Baseline hash/diff evidence proves skills/teaching-design-package/templates/teaching-design-package-full.md stayed byte-identical.
+- [Phase 28]: Derived scheduling facts live in generated handoffs, Typst comments, and manifest provenance, not package YAML. — Phase 28 keeps total_hours, school_year, semester, daily_hours, and output/validation knobs out of package frontmatter.
+- [Phase 28]: Phase 29 PDF outputs remain not_run slots until real PDF generation and parity verification run. — Phase 28 creates Typst and provenance only; it does not claim PDF parity.
 
 ## Performance Metrics
 
@@ -155,12 +159,13 @@ Start the next workflow step when ready:
 | Phase 23 P01 | recovery closeout | 5 tasks | 10 files |
 | Phase 26 P01 | 27min | 5 tasks | 2 files |
 | Phase 27 P01 | 20min | 5 tasks | 5 files |
+| Phase 28 P01 | 24min | 6 tasks | 5 files |
 
 ## Last Session
 
 - **Completed:** v1.12 milestone completion
-- **Stopped At:** v1.12 milestone archived
-- **Resume File:** .planning/milestones/v1.12-MILESTONE-AUDIT.md
+- **Stopped At:** Completed 28-PLAN.md
+- **Resume File:** None
 
 ## Close Notes
 
@@ -181,10 +186,10 @@ Start the next workflow step when ready:
 
 ## Current Position
 
-Phase: 28 - Markdown Baseline Ingestion and Typst Generation
+Phase: 28 — COMPLETE
 Plan: —
-Status: Ready for phase discussion or planning
-Last activity: 2026-06-15 — Milestone v1.13 started
+Status: Phase 28 complete
+Last activity: 2026-06-14 -- Phase 28 marked complete
 
 ## Operator Next Steps
 
