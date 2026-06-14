@@ -1,5 +1,22 @@
 # Milestones
 
+## v1.12 Teaching Design Package Post-Close Repair (Shipped: 2026-06-14)
+
+**Phases completed:** 2 phases, 2 plans, 10 tasks
+
+**Key accomplishments:**
+
+- Package scheduling evidence now backfills concrete `起止日期` values into generated practical lesson-plan Markdown before `jiaoan-shicao` rendering.
+- `jiaoan-shicao` activity tables now use official-style `25.04cm` chapter-scoped Typst column widths, with package regression PDFs verified.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.12-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.12-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.12-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.11 Integrated Teaching Design Package (Shipped: 2026-06-14)
 
 **Phases completed:** 4 phases, 4 plans, 20 tasks, automated audit passed
