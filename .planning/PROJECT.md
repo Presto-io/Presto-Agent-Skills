@@ -19,6 +19,7 @@
 - Use the committed teacher-facing Markdown template at `skills/teaching-design-package/templates/teaching-design-package-full.md` as the baseline input contract.
 - Preserve that Markdown reference structure and make the renderer consume it instead of requiring a format rewrite.
 - Deliver one copyable Markdown, one Typst generated from that Markdown, and three PDFs: combined package PDF, teaching-plan PDF, and lesson-plan PDF.
+- Derive total hours, task hours, lesson-plan activity hours, task date ranges, and academic year/semester from the teaching-plan rows, `first_teaching_day`, built-in teaching calendar, and script defaults instead of teacher-maintained YAML fields.
 
 ## Milestone History
 
@@ -94,6 +95,12 @@ v1.13 is active. The focus is to make `teaching-design-package` render from the 
 - [ ] **TDBR-05**: The lesson-plan PDF must match standalone `jiaoan-shicao` output in content and format, except for allowed timestamp differences.
 - [ ] **TDBR-06**: The combined package PDF must present the original teaching-plan and lesson-plan outputs as one merged teaching-design package.
 - [ ] **TDBR-07**: Existing `jiaoan-jihua` and `jiaoan-shicao` skills must remain standalone, with stable public interfaces and no forced dependency on the package skill.
+- [ ] **TDBR-12**: Package total hours must be calculated from all `活动名称-课时` rows under `# 授课进度计划`; `total_hours` must not return as package YAML. Current baseline expectation: `160H`.
+- [ ] **TDBR-13**: Package learning-task hours must be calculated from each task's plan rows. Current baseline expectations: `CA6140=40H`, `X62W=60H`, `Z3040=60H`.
+- [ ] **TDBR-14**: Lesson-plan activity hours must be derived from same-name or same-order teaching-plan activities; `##### xH` can be generated handoff data only, and mapping failure must fail or stay non-final.
+- [ ] **TDBR-15**: `学习任务分析` date ranges must be inferred from `first_teaching_day`, the built-in teaching-day calendar, default `8` hours/day, and parsed row hours, formatted as `M月D日——M月D日` without year. Current baseline expectations: `5月11日——5月15日`, `5月18日——5月27日`, `5月27日——6月5日`.
+- [ ] **TDBR-16**: `school_year` and `semester` must be inferred from `first_teaching_day`, not maintained in package YAML. Current baseline expectation: `2025-2026学年第二学期`.
+- [ ] **TDBR-17**: Defaults such as `hour_unit`, `daily_hours`, `date_display_format`, `date_locale`, `calendar_source`, `holidays`, `makeup_days`, `source_of_truth`, `outputs`, and `validation` belong in script/skill contracts or generated evidence, not package YAML.
 
 ### Out of Scope
 
@@ -166,6 +173,7 @@ v1.13 should make the integrated teaching-design package render from the committ
 - **Official template evidence**: `jiaoan-shicao` table-width repair must cite or reproduce evidence from the downloaded official `jiaoan-shicao` reference files before claiming alignment.
 - **Regression artifact discipline**: Post-close repair milestones are not done until generated Markdown, Typst, and PDF artifacts prove the repaired behavior and preserve public command compatibility.
 - **Markdown baseline discipline**: v1.13 implementation must adapt rendering around `skills/teaching-design-package/templates/teaching-design-package-full.md`; it must not require changing the teacher-facing Markdown reference format to satisfy renderer internals.
+- **Derived scheduling discipline**: v1.13 must calculate hours, lesson activity durations, date ranges, academic year/semester, and default rendering behavior from the baseline teaching-plan rows, `first_teaching_day`, built-in calendar/default contracts, and generated evidence rather than duplicating those facts in teacher-maintained YAML or body fields.
 - **Standalone teaching-skill discipline**: `jiaoan-jihua` and `jiaoan-shicao` must stay usable on their own with stable public interfaces while `teaching-design-package` composes their outputs.
 
 ## Key Decisions
