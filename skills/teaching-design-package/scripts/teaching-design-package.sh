@@ -1453,7 +1453,7 @@ cmd_info() {
   printf 'Package checkpoint: templates/teaching-design-package-full.md\n'
   printf 'Reference: references/format-and-orchestration.md\n'
   printf 'Optional module: end-of-term-full.md -> end-of-term-package.pdf via end-of-term-teaching-materials.\n'
-  printf 'Combined output: teaching-design-package.pdf is passed only when the actual file exists after merge/compile.\n'
+  printf 'Combined output: teaching-design-package.pdf is passed only when accepted split PDFs are explicitly merged and the actual file exists.\n'
 }
 
 cmd_version() {

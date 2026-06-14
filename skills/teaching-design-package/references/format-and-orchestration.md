@@ -12,7 +12,7 @@ This reference owns the detailed package contract for the `teaching-design-packa
 - `TDP-10`: Support the end-of-term materials workflow as an optional module while reusing `end-of-term-teaching-materials` data, scoring evidence, table artifacts, workbook output, manifest rules, and review gates.
 - `TDP-11`: Do not bypass the module-local `end-of-term-full.md` review point or its `## 复核标记` export gate.
 - `TDP-12`: Include `end-of-term-package.pdf` when the optional module is enabled and keep workbook/table artifacts discoverable from the package manifest.
-- `TDP-13`: Use `teaching-design-package.pdf` as the default combined final artifact when selected PDFs exist and merge/compile tooling succeeds.
+- `TDP-13`: Use `teaching-design-package.pdf` as the default combined final artifact when selected PDFs exist and merge tooling succeeds.
 - `TDP-14`: If split compilation or merged PDF generation is unavailable, fail with explicit manifest/status evidence instead of claiming a complete final package.
 
 ## Package Markdown Intermediate
@@ -202,15 +202,63 @@ For v1.13 baseline mode, the manifest also records provenance:
 Status semantics:
 
 - Typst status may be `planned`, `passed`, or `failed`.
-- PDF status may be `not_run`, `missing_compiler`, `passed`, or `failed`.
+- PDF status may be `not_run`, `missing_compiler`, `passed`, `merge_unavailable`, or `failed`.
 - PDF status must not be `passed` unless an explicit PDF command ran and the expected PDF file exists.
 - If a renderer or compiler is unavailable, record partial Typst/status evidence instead of claiming completion.
+
+## PDF-Producing Package Workflow
+
+Typst-only rendering remains the default:
+
+```bash
+skills/teaching-design-package/scripts/teaching-design-package.sh render-package \
+  --input teaching-design-package-full.md \
+  --out-dir build/teaching-design-package
+```
+
+Final PDF generation is explicit:
+
+```bash
+skills/teaching-design-package/scripts/teaching-design-package.sh render-package \
+  --pdf \
+  --input teaching-design-package-full.md \
+  --out-dir build/teaching-design-package
+```
+
+`render-package --pdf` must:
+
+- generate `jiaoan-jihua-full.md` and `jiaoan-shicao-full.md` from the package Markdown;
+- render `teaching-plan.typ`, `lesson-plans.typ`, and `teaching-design-package.typ`;
+- compile `teaching-plan.typ` to `teaching-plan.pdf` with `typst compile`;
+- compile `lesson-plans.typ` to `lesson-plans.pdf` with `typst compile`;
+- merge the accepted split PDFs in order into `teaching-design-package.pdf`.
+
+Local tool behavior:
+
+- `typst` is required for split PDF compilation. If it is missing, split PDF statuses are `missing_compiler`.
+- A Typst command that runs but fails records `failed` and leaves stderr evidence in the output directory.
+- Merge preference is `pdfunite`, then `qpdf`, then the local Python/PyMuPDF (`fitz`) fallback when available. The Python fallback is still a real PDF merge: it inserts pages from `teaching-plan.pdf` followed by `lesson-plans.pdf`.
+- If no merge path is available, `combined_output.status` is `merge_unavailable` with reason `no_pdf_merge_tool`.
+- `pdftotext` and `pdfinfo` are verification helpers only. If they are missing, use another explicit local PDF inspection path or record the unavailable checks without claiming those tool-specific results.
+
+The command removes same-directory stale PDF outputs and PDF status sidecars before compiling. Manifest `passed` status is therefore tied to the current run, not to old files.
+
+## Standalone Parity Verification
+
+Split PDF parity is checked against standalone renders from the same generated handoffs:
+
+- package `teaching-plan.typ` vs `jiaoan-jihua.sh render --input <package-out>/jiaoan-jihua-full.md`;
+- package `lesson-plans.typ` vs `jiaoan-shicao.sh render --input <package-out>/jiaoan-shicao-full.md`.
+
+Use `--expected-typ` for strict comparison when possible. If a renderer emits volatile timestamp/generated-at lines, normalize only those documented lines before `diff -u`. Do not normalize headings, table widths, derived hours, date ranges, content, or layout-affecting Typst.
+
+PDF-level parity should compile the standalone Typst outputs too. Matching page counts and extracted text hashes are acceptable local evidence when available. Missing PDF inspection tools must be recorded explicitly.
 
 ## Combined Package Output Behavior
 
 The default final artifact is `teaching-design-package.pdf`. It is package-level output, separate from module-local PDFs.
 
-Combined status is `passed` only when all selected split PDFs exist and an explicit merge or compile step leaves an actual `teaching-design-package.pdf` file on disk. Typst generation, module manifests, or planned split outputs are not sufficient evidence.
+Combined status is `passed` only when all selected split PDFs exist and an explicit merge step leaves an actual `teaching-design-package.pdf` file on disk. Typst generation, module manifests, or planned split outputs are not sufficient evidence.
 
 If only split artifacts are available, preserve successful split-output evidence and set `combined_output.status` to `merge_unavailable`, `missing_compiler`, or `failed` with a clear reason. Do not set package `final_ready` to `true` for selected combined delivery unless the combined PDF exists or a later approved workflow explicitly accepts split-only delivery.
 

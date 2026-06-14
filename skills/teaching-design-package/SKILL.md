@@ -18,13 +18,13 @@ metadata:
 
 ## Objective
 
-把课程教学设计材料归一化为持久、可复核的 `teaching-design-package-full.md` Markdown intermediate。当前维护基线使用 frontmatter、`# 授课进度计划` 和 `# 教学设计方案`，脚本从该 Markdown 派生授课计划 handoff、实操教案 handoff、整包 Typst 和 manifest provenance，并记录拆分 Typst/PDF 与 Phase 29 PDF 槽位的诚实状态。
+把课程教学设计材料归一化为持久、可复核的 `teaching-design-package-full.md` Markdown intermediate。当前维护基线使用 frontmatter、`# 授课进度计划` 和 `# 教学设计方案`，脚本从该 Markdown 派生授课计划 handoff、实操教案 handoff、整包 Typst、三份 PDF 和 manifest provenance，并记录拆分/合并输出的诚实状态。
 
 ## Use When
 
 - 用户需要一个整包教学设计，而不是单独的授课进度计划或单独的实操教案。
 - 用户要求同时整理授课计划、实操教案、派生课时、日期、学期或输出状态。
-- 用户给出的源材料需要先形成可审阅 Markdown，再计划生成 `teaching-plan.typ`、`lesson-plans.typ`、可选 `end-of-term-package.pdf` 或默认合并 `teaching-design-package.pdf` 状态。
+- 用户给出的源材料需要先形成可审阅 Markdown，再生成 `teaching-plan.typ`、`lesson-plans.typ`、`teaching-plan.pdf`、`lesson-plans.pdf`、可选 `end-of-term-package.pdf` 或默认合并 `teaching-design-package.pdf` 状态。
 
 ## Inputs
 
@@ -43,7 +43,7 @@ metadata:
 3. 从 `# 授课进度计划` 所有 `活动名称-课时` 行派生总课时、任务课时、活动课时、日期范围和学期。
 4. 为 `jiaoan-jihua` 生成或抽取 `jiaoan-jihua-full.md` 模块 intermediate，为 `jiaoan-shicao` 生成或抽取 `jiaoan-shicao-full.md` 模块 intermediate；`teachers` 列表映射为 legacy `teacher_name` 标量。
 5. 若 `modules.end_of_term.enabled: true`，先生成或指向 `end-of-term-full.md`，再通过 `end-of-term-teaching-materials` 的公开命令处理期末模块；不得复制分数计算、表格、workbook 或复核逻辑。
-6. 使用 `scripts/teaching-design-package.sh plan-split`、`render-split`、`plan-end-of-term`、`render-end-of-term` 或 `render-package` 规划/生成拆分输出，并在 manifest 中诚实记录 Typst 与 PDF 状态。
+6. 使用 `scripts/teaching-design-package.sh plan-split`、`render-split`、`plan-end-of-term`、`render-end-of-term` 或 `render-package` 规划/生成拆分输出；需要最终 PDF 时显式运行 `render-package --pdf`，并在 manifest 中诚实记录 Typst、PDF、合并工具和失败原因。
 7. 若活动课时无法从同名或同序计划行映射，或启用模块的复核状态未清除，不得把最终整包标记为 ready；缺失、冲突或不确定内容必须留在 Markdown 与 manifest 中。
 
 ## Script Usage
@@ -76,6 +76,11 @@ skills/teaching-design-package/scripts/teaching-design-package.sh render-package
   --input teaching-design-package-full.md \
   --out-dir build/teaching-design-package
 
+skills/teaching-design-package/scripts/teaching-design-package.sh render-package \
+  --pdf \
+  --input teaching-design-package-full.md \
+  --out-dir build/teaching-design-package
+
 skills/teaching-design-package/scripts/teaching-design-package.sh info
 
 skills/teaching-design-package/scripts/teaching-design-package.sh version
@@ -96,8 +101,8 @@ skills/teaching-design-package/scripts/teaching-design-package.sh version
 
 - `teaching-design-package-full.md` 结构的整包 Markdown intermediate。
 - 模块交接文件：`jiaoan-jihua-full.md`、`jiaoan-shicao-full.md` 和可选 `end-of-term-full.md`。
-- Typst 输出状态：`teaching-design-package.typ`、`teaching-plan.typ`、`lesson-plans.typ`、可选 `end-of-term-package.typ`。
-- 默认合并输出状态：`teaching-design-package.pdf`，只有实际文件存在且显式合并/编译成功时才可标记 `passed`。
+- Typst 输出：`teaching-design-package.typ`、`teaching-plan.typ`、`lesson-plans.typ`、可选 `end-of-term-package.typ`。
+- PDF 输出：`teaching-plan.pdf`、`lesson-plans.pdf`、默认合并 `teaching-design-package.pdf`，只有实际文件存在且显式编译/合并成功时才可标记 `passed`。
 - Manifest/status 字段：`generated_from_markdown`、`source_markdown`、`provenance`、`split_outputs`、`phase29_pdf_slots`、`end_of_term`、`combined_output`、`review_markers`、`final_ready`。
 
 ## Verification
@@ -108,6 +113,8 @@ skills/teaching-design-package/scripts/teaching-design-package.sh version
 - [ ] `scripts/teaching-design-package.sh example --output <file>` 输出与 `templates/teaching-design-package-full.md` byte-identical 的整包 Markdown。
 - [ ] `scripts/teaching-design-package.sh plan-split --input <file> --out-dir <dir>` 输出两个模块 intermediate。
 - [ ] `scripts/teaching-design-package.sh render-package --input <file> --out-dir <dir>` 输出 `teaching-design-package.typ`，并在 manifest 中记录 `generated_from_markdown: true`。
+- [ ] `scripts/teaching-design-package.sh render-package --pdf --input <file> --out-dir <dir>` 输出真实 `teaching-plan.pdf`、`lesson-plans.pdf`、`teaching-design-package.pdf`，并在 manifest 中记录编译/合并工具或明确失败状态。
+- [ ] 用同一轮生成的 `jiaoan-jihua-full.md` 和 `jiaoan-shicao-full.md` 重新调用 standalone `jiaoan-jihua`、`jiaoan-shicao`，确认拆分 Typst/PDF 与 standalone 输出一致；唯一允许差异是明确记录的 timestamp/generated-at 行。
 
 ## Success Criteria
 
@@ -123,4 +130,5 @@ skills/teaching-design-package/scripts/teaching-design-package.sh version
 - 不要静默丢弃缺失、冲突、耗尽或不确定的排课/内容输入；必须就近标记并汇总到 `## 复核标记`。
 - 不要把整包 baseline 缺失的派生/default/output/validation 字段补回 package YAML。
 - 不要把 PDF 状态标记为 `passed`，除非显式 PDF 编译命令已运行且输出文件存在。
+- 不要用无关 fixture 代替同一 generated handoff 的 standalone parity；整包输出必须和同源 standalone 渲染对比。
 - 不要把 `end-of-term-full.md` 的模块级 `## 复核标记` 或 manifest `review_cleared: false` 交给整包级状态静默覆盖。
