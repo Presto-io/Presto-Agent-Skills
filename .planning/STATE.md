@@ -3,30 +3,30 @@ gsd_state_version: 1.0
 milestone: v1.12
 milestone_name: Teaching Design Package Post-Close Repair
 current_phase: 27
-status: planned
-stopped_at: Phase 27 planned and ready to execute
-last_updated: "2026-06-14T09:18:00.000Z"
-last_activity: 2026-06-14 -- Phase 27 planning complete
+status: ready_to_audit
+stopped_at: Phase 27 execution complete
+last_updated: "2026-06-14T09:17:42Z"
+last_activity: 2026-06-14 -- Phase 27 execution complete
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 2
-  completed_plans: 1
-  percent: 50
+  completed_plans: 2
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 27
-**Status:** Ready to execute
+**Status:** Ready to audit v1.12
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 26 package date backfill is complete; Phase 27 activity-table width alignment is next.
+**Current focus:** Phase 27 execution is complete; v1.12 is ready for milestone audit.
 
 ## Workflow Preferences
 
@@ -77,6 +77,7 @@ Start the next workflow step when ready:
 - Milestone v1.11 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; no next milestone has been started.
 - Milestone v1.12 started: post-close repair for two v1.11 teaching-design bugs. Phase 26 will backfill inferred `起止日期` values into `jiaoan-shicao-full.md`; Phase 27 will align `jiaoan-shicao` `教学活动设计` table widths with official-template evidence.
 - Phase 26 completed: `teaching-design-package` now backfills concrete package scheduling evidence into generated `jiaoan-shicao-full.md`, preserves review-marker gating, and records Markdown, Typst, and PDF verification evidence.
+- Phase 27 completed: `jiaoan-shicao` now computes `教学活动设计` activity-table widths by official-style chapter/pagebreak grouping, verifies `25.04cm` total width and narrow `课时分配`, and preserves the Phase 26 package date backfill through integrated package PDF verification.
 
 ## Decisions
 
@@ -124,6 +125,7 @@ Start the next workflow step when ready:
 - [Phase 23]: Split Typst/PDF status is honest and bounded. — The helper can render `teaching-plan.typ` and `lesson-plans.typ`, while PDF manifest fields remain `not_run` unless explicit PDF compilation succeeds.
 - [Phase 24]: Optional end-of-term support delegates module internals to `end-of-term-teaching-materials`. — The package manifest exposes pointers and status evidence but does not reimplement score calculation, tables, workbooks, or module review resolution.
 - [Phase 24]: Combined package readiness requires actual `teaching-design-package.pdf` file evidence. — Split output success is preserved separately, and missing merge tooling or PDFs records `merge_unavailable` or `failed` instead of false readiness.
+- [Phase 27]: Activity-table widths are chapter/pagebreak-scoped, not learning-task-scoped. — The official local snapshots define `activityTableTotalWidthCM = 25.04` and same-chapter shared `columns: (...)`; `{pagebreak}` starts a recalculation boundary.
 
 ## Performance Metrics
 
@@ -150,12 +152,13 @@ Start the next workflow step when ready:
 | Phase 22 P01 | 45min | 5 tasks | 8 files |
 | Phase 23 P01 | recovery closeout | 5 tasks | 10 files |
 | Phase 26 P01 | 27min | 5 tasks | 2 files |
+| Phase 27 P01 | 20min | 5 tasks | 5 files |
 
 ## Last Session
 
-- **Completed:** Phase 26 execution closeout
-- **Stopped At:** Phase 27 context gathered
-- **Resume File:** .planning/phases/27-official-activity-table-width-alignment/27-CONTEXT.md
+- **Completed:** Phase 27 execution closeout
+- **Stopped At:** v1.12 ready for milestone audit
+- **Resume File:** .planning/phases/27-official-activity-table-width-alignment/27-SUMMARY.md
 
 ## Close Notes
 
@@ -176,14 +179,14 @@ Start the next workflow step when ready:
 
 ## Current Position
 
-Phase: 27 (official-activity-table-width-alignment) — READY TO EXECUTE
+Phase: 27 (official-activity-table-width-alignment) — COMPLETE
 Plan: 1 of 1
-Status: Ready to execute
-Last activity: 2026-06-14 -- Phase 27 planning complete
+Status: Ready to audit v1.12
+Last activity: 2026-06-14 -- Phase 27 execution complete
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 27` to implement the official activity-table width alignment repair.
+- Run `/gsd:audit-milestone` to verify the v1.12 post-close repair milestone before closing it.
 
 ### Quick Tasks Completed
 
