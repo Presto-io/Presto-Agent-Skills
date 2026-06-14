@@ -46,15 +46,15 @@ The milestone is scoped to planning renderer behavior and output parity. It must
 
 ### PDF Outputs and Parity
 
-- [ ] **TDBR-06**: The final workflow must generate three PDF artifacts: one combined package PDF, one teaching-plan PDF, and one lesson-plan PDF.
-- [ ] **TDBR-07**: The combined package PDF must behave like the original授课进度计划 and教案 outputs merged into one PDF, without dropping either document's required content.
-- [ ] **TDBR-08**: The teaching-plan PDF must match the content and format produced by standalone `jiaoan-jihua` for the same source scope, allowing only timestamp differences.
-- [ ] **TDBR-09**: The lesson-plan PDF must match the content and format produced by standalone `jiaoan-shicao` for the same source scope, allowing only timestamp differences.
+- [x] **TDBR-06**: The final workflow must generate three PDF artifacts: one combined package PDF, one teaching-plan PDF, and one lesson-plan PDF.
+- [x] **TDBR-07**: The combined package PDF must behave like the original授课进度计划 and教案 outputs merged into one PDF, without dropping either document's required content.
+- [x] **TDBR-08**: The teaching-plan PDF must match the content and format produced by standalone `jiaoan-jihua` for the same source scope, allowing only timestamp differences.
+- [x] **TDBR-09**: The lesson-plan PDF must match the content and format produced by standalone `jiaoan-shicao` for the same source scope, allowing only timestamp differences.
 
 ### Standalone Compatibility
 
-- [ ] **TDBR-10**: `jiaoan-jihua` and `jiaoan-shicao` must remain standalone skills with stable public commands, accepted inputs, output paths, and documented contracts.
-- [ ] **TDBR-11**: Package-level changes must not silently require callers of standalone `jiaoan-jihua` or `jiaoan-shicao` to adopt `teaching-design-package` input format or orchestration.
+- [x] **TDBR-10**: `jiaoan-jihua` and `jiaoan-shicao` must remain standalone skills with stable public commands, accepted inputs, output paths, and documented contracts.
+- [x] **TDBR-11**: Package-level changes must not silently require callers of standalone `jiaoan-jihua` or `jiaoan-shicao` to adopt `teaching-design-package` input format or orchestration.
 
 ## Future Requirements
 
@@ -84,12 +84,12 @@ Deferred to a later milestone unless explicitly requested:
 | TDBR-03 | Phase 28 | Complete |
 | TDBR-04 | Phase 28 | Complete |
 | TDBR-05 | Phase 28 | Complete |
-| TDBR-06 | Phase 29 | Pending |
-| TDBR-07 | Phase 29 | Pending |
-| TDBR-08 | Phase 29 | Pending |
-| TDBR-09 | Phase 29 | Pending |
-| TDBR-10 | Phase 29 | Pending |
-| TDBR-11 | Phase 29 | Pending |
+| TDBR-06 | Phase 29 | Complete |
+| TDBR-07 | Phase 29 | Complete |
+| TDBR-08 | Phase 29 | Complete |
+| TDBR-09 | Phase 29 | Complete |
+| TDBR-10 | Phase 29 | Complete |
+| TDBR-11 | Phase 29 | Complete |
 | TDBR-12 | Phase 28, Phase 29 | Complete |
 | TDBR-13 | Phase 28, Phase 29 | Complete |
 | TDBR-14 | Phase 28, Phase 29 | Complete |
@@ -104,4 +104,4 @@ Deferred to a later milestone unless explicitly requested:
 
 ---
 *Requirements defined: 2026-06-15*
-*Last updated: 2026-06-15 after v1.13 milestone initialization*
+*Last updated: 2026-06-15 after Phase 29 completion*

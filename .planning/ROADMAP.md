@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-15 after v1.13 milestone initialization
+**Last updated:** 2026-06-15 after Phase 29 completion
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -59,7 +59,7 @@ Success criteria:
 
 **Goal:** Produce the three accepted PDFs and prove split outputs match the old standalone jiaoan skills while preserving their public interfaces.
 **Depends on:** Phase 28
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 **Requirements:** TDBR-06, TDBR-07, TDBR-08, TDBR-09, TDBR-10, TDBR-11, TDBR-12, TDBR-13, TDBR-14, TDBR-15, TDBR-16, TDBR-17
 **Status:** Pending
 
@@ -107,15 +107,15 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 26. Package Date Backfill Repair | v1.12 | Complete | 2026-06-14 |
 | 27. Official Activity Table Width Alignment | v1.12 | Complete | 2026-06-14 |
 | 28. Markdown Baseline Ingestion and Typst Generation | 1/1 | Complete   | 2026-06-14 |
-| 29. PDF Parity and Standalone Regression | v1.13 | Pending | — |
+| 29. PDF Parity and Standalone Regression | 1/1 | Complete   | 2026-06-14 |
 
 ## Current Position
 
-Phase 28 is ready to discuss and plan.
+Phase 29 is complete. v1.13 has both planned phases complete and is ready for milestone audit.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 28` to gather implementation context, or `/gsd:plan-phase 28` to plan directly.
+Run `/gsd:audit-milestone v1.13` when the workflow owner is ready.
 
 ---
-*Roadmap updated: 2026-06-15 after v1.13 milestone initialization*
+*Roadmap updated: 2026-06-15 after Phase 29 completion*
