@@ -34,6 +34,7 @@ This reference holds detailed authoring and renderer rules for the `jiaoan-shica
 - `### 学习环节——学习单元` 表示学习环节和单元。
 - `#### 活动名称` 表示具体活动。
 - `##### 课时` 后按空行分隔四个内容块：学习内容、学生活动、教师活动、教学方法与手段。
+- 教学方法与手段块可写多行短语；渲染时每行独立呈现，不合并为连续文本。
 
 ### 学业评价
 
