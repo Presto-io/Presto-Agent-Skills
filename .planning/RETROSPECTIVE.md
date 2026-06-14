@@ -214,6 +214,49 @@
 
 ---
 
+## Milestone: v1.11 - Integrated Teaching Design Package
+
+**Shipped:** 2026-06-14
+**Phases:** 4 | **Plans:** 4 | **Sessions:** 4+
+
+### What Was Built
+
+- A shared package-level scheduling contract with deterministic calendar/hour fixture evidence.
+- A portable `teaching-design-package` orchestration skill entry with package Markdown checkpoint, jiaoan handoff files, and split Typst/PDF status semantics.
+- Optional end-of-term module orchestration that delegates module internals to `end-of-term-teaching-materials` while exposing manifest pointers.
+- Regression verification for existing teaching skills, package manifest truthfulness, runtime adapter coverage, and documentation/index discoverability.
+
+### What Worked
+
+- Promoting proven `jiaoan-jihua` scheduling behavior into a documented contract kept the milestone grounded in existing code instead of inventing a broad shared API too early.
+- Keeping the package skill as an orchestrator preserved the standalone public interfaces for `jiaoan-jihua`, `jiaoan-shicao`, and `end-of-term-teaching-materials`.
+- Explicit manifest status made missing merged PDFs an honest non-ready state rather than a false milestone success.
+
+### What Was Inefficient
+
+- Phase 23 needed recovery closeout after implementation commits landed without the expected summary, verification, and review artifacts.
+- SDK roadmap analysis could not infer phase details from the already curated ROADMAP shape, so milestone closeout needed manual phase/stat review.
+- Generated closeout text needed manual date and state corrections before commit.
+
+### Patterns Established
+
+- Orchestration skills should keep module ownership clear and expose handoff/status evidence instead of reimplementing module internals.
+- Package-level final readiness should require actual final artifact evidence, not only successful intermediate generation.
+- Root `references/` can hold shared contracts when the rule is broader than any one skill directory.
+
+### Key Lessons
+
+1. Keep phase summaries and verification files committed before milestone audit to avoid recovery work during closeout.
+2. Treat combined package outputs as status-driven artifacts with explicit failure reasons.
+3. Preserve standalone skill behavior first, then add package orchestration around stable handoff files.
+
+### Cost Observations
+
+- Model mix: balanced profile.
+- Notable: Most work was contract and orchestration design; the highest-risk verification was regression and manifest truthfulness rather than PDF rendering.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -225,6 +268,7 @@
 | v1.8 | 6+ | 3 | Extended the school-presentation renderer through live markup, classroom structures, and one-click PDF export while preserving HTML-first delivery. |
 | v1.9 | 4+ | 3 | Reduced skill entry and script weight through progressive-disclosure references, skill-local modules, and contributor guidance. |
 | v1.10 | 4+ | 2 | Added strict skill-local jiaoan Markdown-to-Typst fixture conversion with byte-for-byte verification. |
+| v1.11 | 4+ | 4 | Added integrated teaching-design package orchestration with scheduling evidence, optional end-of-term module pointers, and honest manifest readiness. |
 
 ### Cumulative Quality
 
@@ -235,6 +279,7 @@
 | v1.8 | Script verifier, manifest checks, browser/manual UAT, PDF artifact sanity, milestone audit | 11/11 SP requirements shipped | Reused the existing shell/Python/HTML renderer path |
 | v1.9 | Public command regression, syntax/compile checks, documentation discovery checks, milestone audit | 12/12 SD requirements shipped | No new runtime dependencies added |
 | v1.10 | Skill render commands, strict diff, SHA-256, anti-copy source inspection, milestone audit | 11/11 jiaoan requirements shipped | No new runtime dependencies added |
+| v1.11 | Scheduling fixture derivation, public command regression, manifest truthfulness checks, documentation/runtime coverage, milestone audit | 16/16 TDP requirements shipped | No new runtime dependencies added |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -243,3 +288,4 @@
 3. Preserve a reviewable Markdown checkpoint before final document exports.
 4. Keep live presentation UI closeout tied to explicit visual UAT, not only code or state-file completion.
 5. Review generated milestone archives manually before committing closeout.
+6. Make package final-ready status depend on actual final artifacts and explicit manifest reasons.

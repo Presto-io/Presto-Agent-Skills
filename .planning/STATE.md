@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.11
 milestone_name: Integrated Teaching Design Package
 current_phase: 25
-status: Ready for milestone audit
-stopped_at: Phase 25 execution complete
+status: completed
+stopped_at: Milestone v1.11 complete
 last_updated: "2026-06-14T00:00:00.000Z"
-last_activity: 2026-06-14 -- Phase 25 execution complete
+last_activity: 2026-06-14 -- Milestone v1.11 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 25
-**Status:** Ready for milestone audit
+**Status:** v1.11 milestone complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 25 regression verification is complete; v1.11 is ready for milestone audit.
+**Current focus:** v1.11 is complete and archived; no next milestone has been started.
 
 ## Workflow Preferences
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 ## Next Up
 
-Audit the v1.11 milestone:
+Start the next milestone when ready:
 
-- `/gsd:audit-milestone`
+- `/gsd:new-milestone`
 
 ## Accumulated Context
 
@@ -74,6 +74,7 @@ Audit the v1.11 milestone:
 - Phase 23 completed: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, jiaoan module handoff rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage.
 - Phase 24 completed: `teaching-design-package` now supports optional end-of-term module handoff, module-owned review gates, deterministic table/workbook pointers, `end-of-term-package.pdf` split status, and honest `teaching-design-package.pdf` combined-output status evidence.
 - Phase 25 completed: public command regression, package manifest truthfulness, six-runtime adapter coverage, OpenClaw/Hermes practical notes, and documentation/index discoverability are verified with no gaps.
+- Milestone v1.11 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; no next milestone has been started.
 
 ## Decisions
 
@@ -168,17 +169,18 @@ Audit the v1.11 milestone:
 - v1.10 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`.
 - v1.10.1 records the post-close `jiaoan-shicao` black-box layout fix for learning-resource and teaching-activity table wrapping without reopening the v1.10 milestone.
 - v1.11 records local initialization research in `.planning/research/SUMMARY.md` and scopes the milestone to planning/phase execution for a new integrated package skill.
+- v1.11 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
 
 ## Current Position
 
-Phase: 25 (regression-verification-and-documentation-index) — COMPLETE
-Plan: 1 of 1 complete
-Status: Phase 25 complete; milestone audit not yet run
-Last activity: 2026-06-14 -- Phase 25 execution complete
+Phase: Milestone v1.11 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-14 -- Milestone v1.11 completed and archived
 
 ## Operator Next Steps
 
-- Run milestone audit with `/gsd:audit-milestone`
+- Start the next milestone with `/gsd:new-milestone`
 
 ### Quick Tasks Completed
 

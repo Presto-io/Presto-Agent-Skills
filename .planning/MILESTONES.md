@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.11 Integrated Teaching Design Package (Shipped: 2026-06-14)
+
+**Phases completed:** 4 phases, 4 plans, 20 tasks, automated audit passed
+
+**Key accomplishments:**
+
+- Package-level scheduling contract with deterministic calendar/hour fixture evidence for future teaching-design package composition.
+- Portable `teaching-design-package` orchestration skill with package Markdown checkpoint, jiaoan module handoff, split Typst status, and six-runtime adapter coverage.
+- Optional end-of-term package orchestration with module-owned evidence pointers and honest combined PDF status.
+- Black-box public command regression and documentation-index verification for the v1.11 teaching-design-package integration.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.11-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.11-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.11-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.10 Jiaoan Typst 1:1 Conversion (Shipped: 2026-06-13)
 
 **Phases completed:** 2 phases, 2 plans, 8 tasks, automated audit passed

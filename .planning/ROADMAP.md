@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-14 after v1.11 milestone initialization
+**Last updated:** 2026-06-14 after v1.11 milestone close
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -18,29 +18,11 @@
 - **Shipped: v1.8 School Presentation Continuation** - Phases 14-16, shipped 2026-06-11. Archives: `.planning/milestones/v1.8-ROADMAP.md`, `.planning/milestones/v1.8-REQUIREMENTS.md`, `.planning/milestones/v1.8-MILESTONE-AUDIT.md`
 - **Shipped: v1.9 Skill Decomposition and Entry Slimming** - Phases 17-19, shipped 2026-06-13. Archives: `.planning/milestones/v1.9-ROADMAP.md`, `.planning/milestones/v1.9-REQUIREMENTS.md`, `.planning/milestones/v1.9-MILESTONE-AUDIT.md`
 - **Shipped: v1.10 Jiaoan Typst 1:1 Conversion** - Phases 20-21, shipped 2026-06-13. Archives: `.planning/milestones/v1.10-ROADMAP.md`, `.planning/milestones/v1.10-REQUIREMENTS.md`, `.planning/milestones/v1.10-MILESTONE-AUDIT.md`
+- **Shipped: v1.11 Integrated Teaching Design Package** - Phases 22-25, shipped 2026-06-14. Archives: `.planning/milestones/v1.11-ROADMAP.md`, `.planning/milestones/v1.11-REQUIREMENTS.md`, `.planning/milestones/v1.11-MILESTONE-AUDIT.md`
 
 ## Active Milestone
 
-### v1.11 Integrated Teaching Design Package / 教学设计整包技能
-
-**Status:** In progress
-**Phases:** 22-25
-**Goal:** Create a new orchestration-skill path that integrates teaching-plan, lesson-plan, and optional end-of-term teaching-material workflows while preserving the original skills and the repository's Markdown-first, portable-skill discipline.
-
-| Phase | Name | Scope | Requirements |
-|-------|------|-------|--------------|
-| 22 | Scheduling Contract and Fixture | Complete 2026-06-13: shared calendar/scheduling inputs, derived outputs, evidence format, conflict handling, and deterministic fixture proof are now documented and verified. | TDP-01, TDP-02, TDP-03, TDP-04 |
-| 23 | Integrated Skill Entry and Jiaoan Orchestration | Complete 2026-06-13: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, jiaoan module handoff rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage. | TDP-05, TDP-06, TDP-07, TDP-08, TDP-09 |
-| 24 | Optional End-of-Term Module and Package Outputs | Complete 2026-06-14: optional end-of-term module integration now has explicit package contract, module handoff fields, manifest pointers for table/workbook artifacts, split `end-of-term-package.pdf` status, blocked-review behavior, and honest `teaching-design-package.pdf` combined-output evidence. | TDP-10, TDP-11, TDP-12, TDP-13, TDP-14 |
-| 25 | Regression Verification and Documentation Index | Complete 2026-06-14: public command regression passed for `jiaoan-jihua`, `jiaoan-shicao`, `end-of-term-teaching-materials`, and `teaching-design-package`; package manifest truthfulness, six-runtime adapter coverage, OpenClaw/Hermes notes, and documentation/index discoverability were verified. | TDP-09, TDP-14, TDP-15, TDP-16 |
-
-**Acceptance direction:**
-
-- The original `jiaoan-jihua`, `jiaoan-shicao`, and `end-of-term-teaching-materials` skills remain standalone and callable.
-- The new package skill uses a persistent Markdown intermediate before rendering.
-- Scheduling inference is auditable from calendar and hour-consumption evidence.
-- Split outputs are planned where possible, and the default combined `teaching-design-package.pdf` is explicit.
-- Runtime-specific behavior stays in adapter notes; OpenClaw and Hermes Agent remain mandatory compatibility targets.
+No active milestone is currently open. Start the next milestone with `/gsd:new-milestone` when ready.
 
 ## Completed Phase Archive
 
@@ -76,11 +58,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 25 is complete and v1.11 is ready for milestone audit.
+v1.11 is complete and archived. No next milestone has been started.
 
 ## Next Step
 
-Run the milestone audit in a separate GSD command before completing the milestone.
+Start the next milestone with `/gsd:new-milestone` when ready.
 
 ---
-*Roadmap updated: 2026-06-14 after Phase 25 execution*
+*Roadmap updated: 2026-06-14 after v1.11 milestone close*
