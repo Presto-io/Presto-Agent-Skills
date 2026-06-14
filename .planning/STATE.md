@@ -2,9 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.12
 milestone_name: Teaching Design Package Post-Close Repair
+current_phase: 26
 status: planning
-last_updated: "2026-06-14T06:40:41.964Z"
-last_activity: 2026-06-14
+stopped_at: Phase 26 context gathered
+last_updated: "2026-06-14T07:01:48.459Z"
+last_activity: 2026-06-14 — Milestone v1.12 started; roadmap ready for Phase 26 discussion
 progress:
   total_phases: 2
   completed_phases: 0
@@ -150,8 +152,8 @@ Start the next phase when ready:
 ## Last Session
 
 - **Completed:** v1.10 milestone audit and closeout archive
-- **Stopped At:** Phase 25 context gathered
-- **Resume File:** .planning/phases/25-regression-verification-and-documentation-index/25-CONTEXT.md
+- **Stopped At:** Phase 26 context gathered
+- **Resume File:** .planning/phases/26-package-date-backfill-repair/26-CONTEXT.md
 
 ## Close Notes
 
