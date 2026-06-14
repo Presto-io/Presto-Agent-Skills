@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-14 after Phase 26 execution closeout
+**Last updated:** 2026-06-14 after Phase 27 execution closeout
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -53,7 +53,8 @@ Success criteria:
 **Depends on:** Phase 26
 **Plans:** 1 plan
 **Requirements:** TDPR-04, TDPR-05, TDPR-06, TDPR-07
-**Status:** Pending
+**Status:** Complete
+**Completed:** 2026-06-14
 
 Success criteria:
 
@@ -94,14 +95,15 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 24. Optional End-of-Term Module and Package Outputs | v1.11 | Complete | 2026-06-14 |
 | 25. Regression Verification and Documentation Index | v1.11 | Complete | 2026-06-14 |
 | 26. Package Date Backfill Repair | v1.12 | Complete | 2026-06-14 |
+| 27. Official Activity Table Width Alignment | v1.12 | Complete | 2026-06-14 |
 
 ## Current Position
 
-Phase 26 is complete. Phase 27 is next and remains unplanned.
+Phase 27 is complete. v1.12 is ready for milestone audit.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 27` to gather implementation context for the official activity-table width alignment repair.
+Run `/gsd:audit-milestone` to verify the v1.12 post-close repair milestone before closing it.
 
 ---
-*Roadmap updated: 2026-06-14 after Phase 26 execution closeout*
+*Roadmap updated: 2026-06-14 after Phase 27 execution closeout*

@@ -30,13 +30,13 @@ The milestone is scoped to shipped behavior repair:
 
 ### Official Activity Table Width Alignment
 
-- [ ] **TDPR-04**: `jiaoan-shicao` `教学活动设计` table-width behavior must be aligned with the official template algorithm around `tableColumnWidthsCM`, `sectionColumnSpecs`, `columnPressures`, and `activityTableTotalWidthCM`.
-- [ ] **TDPR-05**: Activity-table verification must cover the official invariants: total width equals `activityTableTotalWidthCM`, the `课时分配` column stays narrower than main text columns, and multiple teaching-activity tables in the same chapter share identical column widths.
+- [x] **TDPR-04**: `jiaoan-shicao` `教学活动设计` table-width behavior must be aligned with the official template algorithm around `tableColumnWidthsCM`, `sectionColumnSpecs`, `columnPressures`, and `activityTableTotalWidthCM`.
+- [x] **TDPR-05**: Activity-table verification must cover the official invariants: total width equals `activityTableTotalWidthCM`, the `课时分配` column stays narrower than main text columns, and multiple teaching-activity tables in the same chapter share identical column widths.
 
 ### Regression Verification
 
 - [x] **TDPR-06**: Regression verification must generate Markdown, Typst, and PDF artifacts for the affected package path, and must explicitly verify that generated `jiaoan-shicao-full.md` contains filled `起止日期` values.
-- [ ] **TDPR-07**: Regression verification must generate Markdown, Typst, and PDF artifacts for the affected `jiaoan-shicao` path, and must record official-template width evidence or a clear local reproduction before claiming alignment.
+- [x] **TDPR-07**: Regression verification must generate Markdown, Typst, and PDF artifacts for the affected `jiaoan-shicao` path, and must record official-template width evidence or a clear local reproduction before claiming alignment.
 
 ## Future Requirements
 
@@ -64,10 +64,10 @@ Deferred to a later milestone unless explicitly requested:
 | TDPR-01 | Phase 26 | Complete |
 | TDPR-02 | Phase 26 | Complete |
 | TDPR-03 | Phase 26 | Complete |
-| TDPR-04 | Phase 27 | Pending |
-| TDPR-05 | Phase 27 | Pending |
-| TDPR-06 | Phase 26, Phase 27 | Partially complete - Phase 26 package path passed; Phase 27 path pending |
-| TDPR-07 | Phase 27 | Pending |
+| TDPR-04 | Phase 27 | Complete |
+| TDPR-05 | Phase 27 | Complete |
+| TDPR-06 | Phase 26, Phase 27 | Complete |
+| TDPR-07 | Phase 27 | Complete |
 
 **Coverage:**
 - v1.12 requirements: 7 total
@@ -76,4 +76,4 @@ Deferred to a later milestone unless explicitly requested:
 
 ---
 *Requirements defined: 2026-06-14*
-*Last updated: 2026-06-14 after Phase 26 execution closeout*
+*Last updated: 2026-06-14 after Phase 27 execution closeout*
