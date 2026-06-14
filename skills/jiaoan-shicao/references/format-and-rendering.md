@@ -54,6 +54,13 @@ This reference holds detailed authoring and renderer rules for the `jiaoan-shica
 - `--calendar-output <file>` copies the skill-provided `references/calendar.json` support resource.
 - `--expected-typ` performs black-box comparison against a reference Typst file.
 
+### 教学活动设计 Activity Table Widths
+
+- `教学活动设计` 表格使用官方模板风格的绝对 `cm` 列宽，活动表总宽为 `25.04cm`。
+- 同一 chapter 内的多个活动表共享同一个 `columns: (...)` 规格，保证同页组内列宽一致。
+- 活动设计中的 `{pagebreak}` 会开始新的 chapter；分页后的活动表可以按分页后内容重新计算 `columns: (...)`。
+- `课时分配` 列保持窄列，主文本列继续按学习内容、学生活动、教师活动的内容压力分配剩余宽度。
+
 ### v1.10 Fixture-Backed Strict Typst Path
 
 - The v1.10 path supports `test/1.10/电气设备控制线路安装与调试教案.md` and emits the fixed Typst contract used by `test/1.10/电气设备控制线路安装与调试教案.typ`.
