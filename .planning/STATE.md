@@ -2,31 +2,31 @@
 gsd_state_version: 1.0
 milestone: v1.12
 milestone_name: Teaching Design Package Post-Close Repair
-current_phase: 26
-status: executing
-stopped_at: Phase 26 planning complete
-last_updated: "2026-06-14T07:12:50.200Z"
-last_activity: 2026-06-14 -- Phase 26 planning complete
+current_phase: 27
+status: ready
+stopped_at: Phase 26 complete; Phase 27 not started
+last_updated: "2026-06-14T08:20:00Z"
+last_activity: 2026-06-14 -- Phase 26 execution closeout complete
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 50
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 26
-**Status:** Ready to execute
+**Current Phase:** 27
+**Status:** Ready for Phase 27 planning
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.12 post-close repair is initialized; Phase 26 will repair package date backfill before Phase 27 aligns official activity-table widths.
+**Current focus:** Phase 26 package date backfill is complete; Phase 27 activity-table width alignment is next.
 
 ## Workflow Preferences
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 ## Next Up
 
-Start the planned phase when ready:
+Start the next phase when ready:
 
-- `/gsd:execute-phase 26`
+- `/gsd:discuss-phase 27`
 
 ## Accumulated Context
 
@@ -76,6 +76,7 @@ Start the planned phase when ready:
 - Phase 25 completed: public command regression, package manifest truthfulness, six-runtime adapter coverage, OpenClaw/Hermes practical notes, and documentation/index discoverability are verified with no gaps.
 - Milestone v1.11 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; no next milestone has been started.
 - Milestone v1.12 started: post-close repair for two v1.11 teaching-design bugs. Phase 26 will backfill inferred `起止日期` values into `jiaoan-shicao-full.md`; Phase 27 will align `jiaoan-shicao` `教学活动设计` table widths with official-template evidence.
+- Phase 26 completed: `teaching-design-package` now backfills concrete package scheduling evidence into generated `jiaoan-shicao-full.md`, preserves review-marker gating, and records Markdown, Typst, and PDF verification evidence.
 
 ## Decisions
 
@@ -148,12 +149,13 @@ Start the planned phase when ready:
 | Phase 21 P01 | 16min | 4 tasks | 4 files |
 | Phase 22 P01 | 45min | 5 tasks | 8 files |
 | Phase 23 P01 | recovery closeout | 5 tasks | 10 files |
+| Phase 26 P01 | 27min | 5 tasks | 2 files |
 
 ## Last Session
 
-- **Completed:** v1.10 milestone audit and closeout archive
-- **Stopped At:** Phase 26 context gathered
-- **Resume File:** .planning/phases/26-package-date-backfill-repair/26-CONTEXT.md
+- **Completed:** Phase 26 execution closeout
+- **Stopped At:** Phase 27 not started
+- **Resume File:** .planning/phases/26-package-date-backfill-repair/26-SUMMARY.md
 
 ## Close Notes
 
@@ -174,14 +176,14 @@ Start the planned phase when ready:
 
 ## Current Position
 
-Phase: 26 - Package Date Backfill Repair
-Plan: —
-Status: Ready to execute
-Last activity: 2026-06-14 -- Phase 26 planning complete
+Phase: 27 (official-activity-table-width-alignment) — READY TO DISCUSS
+Plan: 0 of 1
+Status: Phase 26 complete; Phase 27 not started
+Last activity: 2026-06-14 -- Phase 26 execution closeout complete
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 26` to implement the package date backfill repair from the approved Phase 26 plan.
+- Run `/gsd:discuss-phase 27` to gather context for the official activity-table width alignment repair.
 
 ### Quick Tasks Completed
 
