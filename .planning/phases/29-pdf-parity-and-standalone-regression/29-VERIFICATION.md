@@ -169,3 +169,160 @@ final_ready=true
 ```
 
 Stale-file guard: PDF mode removes existing `teaching-plan.pdf`, `lesson-plans.pdf`, `teaching-design-package.pdf`, and their status sidecars before compiling or merging, so a previous combined PDF cannot satisfy the same-run manifest.
+
+## Standalone Typst parity
+
+Fresh parity temp directory:
+
+```text
+/tmp/tdp-phase29-parity2.PYLgJA
+```
+
+Commands:
+
+```bash
+skills/teaching-design-package/scripts/teaching-design-package.sh render-package \
+  --pdf \
+  --input skills/teaching-design-package/templates/teaching-design-package-full.md \
+  --out-dir /tmp/tdp-phase29-parity2.PYLgJA/package
+
+LC_ALL=C skills/jiaoan-jihua/scripts/jiaoan-jihua.sh render \
+  --input /tmp/tdp-phase29-parity2.PYLgJA/package/jiaoan-jihua-full.md \
+  --typ /tmp/tdp-phase29-parity2.PYLgJA/standalone-plan/teaching-plan.typ \
+  --expected-typ /tmp/tdp-phase29-parity2.PYLgJA/package/teaching-plan.typ
+
+LC_ALL=C skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render \
+  --input /tmp/tdp-phase29-parity2.PYLgJA/package/jiaoan-shicao-full.md \
+  --typ /tmp/tdp-phase29-parity2.PYLgJA/standalone-lessons/lesson-plans.typ \
+  --expected-typ /tmp/tdp-phase29-parity2.PYLgJA/package/lesson-plans.typ
+```
+
+Result:
+
+```text
+teaching-plan.typ parity=passed
+lesson-plans.typ parity=passed
+normalizer=none; raw --expected-typ comparison passed
+source_scope=generated handoffs from the same package run
+```
+
+The primary parity target is not `test/1.10`; it is the package-generated `jiaoan-jihua-full.md` and `jiaoan-shicao-full.md` rendered through the existing standalone scripts.
+
+## Standalone PDF parity
+
+Commands:
+
+```bash
+typst compile /tmp/tdp-phase29-parity2.PYLgJA/standalone-plan/teaching-plan.typ \
+  /tmp/tdp-phase29-parity2.PYLgJA/standalone-plan/teaching-plan.pdf
+
+typst compile /tmp/tdp-phase29-parity2.PYLgJA/standalone-lessons/lesson-plans.typ \
+  /tmp/tdp-phase29-parity2.PYLgJA/standalone-lessons/lesson-plans.pdf
+```
+
+PDF inspection tool used:
+
+```text
+python3=/opt/homebrew/bin/python3
+fitz=available (PyMuPDF 1.27.2.2)
+pdfinfo=missing
+pdftotext=missing
+```
+
+PDF text/page evidence:
+
+```text
+pkg_plan.pages=2
+pkg_plan.sha_text=4e82213c706cc93dd1554811386fbededb16d3763232834bbc51c17d20c30ab8
+standalone_plan.pages=2
+standalone_plan.sha_text=4e82213c706cc93dd1554811386fbededb16d3763232834bbc51c17d20c30ab8
+plan_text_equal=true
+
+pkg_lessons.pages=25
+pkg_lessons.sha_text=7d510056b4393d6b842e32df44de14d71cb1c536402b117dcb858e75598cd763
+standalone_lessons.pages=25
+standalone_lessons.sha_text=7d510056b4393d6b842e32df44de14d71cb1c536402b117dcb858e75598cd763
+lessons_text_equal=true
+```
+
+Conclusion: package split PDFs and standalone PDFs generated from the same handoffs have matching page counts and extracted text hashes.
+
+## Derived fact evidence
+
+An implementation-time check found that `jiaoan-shicao` rendered each `学习任务分析` table's task-hour cell from `total_hours` (`160`) instead of per-task `TASK_HOURS[i]`. This would have made the lesson-plan PDF fail the Phase 29 derived fact requirement. Fixed under Rule 1 by changing `skills/jiaoan-shicao/scripts/render_v110_typst.awk` to render `TASK_HOURS[i]` in that table cell.
+
+Post-fix Typst evidence:
+
+```text
+lesson-plans.typ:99: [课时], table.cell(colspan: 2)[40H], [起止日期], table.cell(colspan: 2)[5月11日——5月15日]
+lesson-plans.typ:407: [课时], table.cell(colspan: 2)[60H], [起止日期], table.cell(colspan: 2)[5月18日——5月27日]
+lesson-plans.typ:690: [课时], table.cell(colspan: 2)[60H], [起止日期], table.cell(colspan: 2)[5月27日——6月5日]
+teaching-design-package.typ:7: // derived_total_hours: 160H
+teaching-design-package.typ:8: // inferred_term: 2025-2026学年第二学期
+teaching-design-package.typ:10: // task_1: CA6140卧式车床电气控制线路安装与调试 40H 5月11日——5月15日
+teaching-design-package.typ:11: // task_2: X62W万能铣床电气控制线路安装与调试 60H 5月18日——5月27日
+teaching-design-package.typ:12: // task_3: Z3040摇臂钻床电气控制线路安装与调试 60H 5月27日——6月5日
+```
+
+Generated handoff and manifest evidence:
+
+```text
+jiaoan-shicao-full.md:7: total_hours: "160H"
+jiaoan-shicao-full.md:11: academic_term: "2025-2026学年第二学期"
+jiaoan-shicao-full.md:21: 起止日期：5月11日——5月15日
+jiaoan-shicao-full.md:434: 起止日期：5月18日——5月27日
+jiaoan-shicao-full.md:798: 起止日期：5月27日——6月5日
+jiaoan-shicao-full.md:1157: <!-- activity_hour_mapping
+teaching-design-package-manifest.json:43: "total_hours": "160H"
+teaching-design-package-manifest.json:47: "hours": "40H"
+teaching-design-package-manifest.json:51: "hours": "60H"
+teaching-design-package-manifest.json:55: "hours": "60H"
+teaching-design-package-manifest.json:77: "range": "5月11日——5月15日"
+teaching-design-package-manifest.json:81: "range": "5月18日——5月27日"
+teaching-design-package-manifest.json:85: "range": "5月27日——6月5日"
+teaching-design-package-manifest.json:88: "inferred_term": "2025-2026学年第二学期"
+teaching-design-package-manifest.json:89: "activity_hour_mapping": "same-name or same-order from # 授课进度计划 rows"
+```
+
+Combined PDF text extraction via PyMuPDF found the required anchors and derived facts. Typst/PDF extraction normalizes CJK spacing, so date and term strings appear with inserted spaces:
+
+```text
+combined_anchor[授课进度计划]=true
+combined_anchor[教学设计方案]=true
+combined_anchor[学习任务分析]=true
+combined_anchor[教学活动设计]=true
+combined_anchor[学业评价]=true
+combined_anchor[160]=true
+combined_anchor[40H]=true
+combined_anchor[60H]=true
+combined_anchor[5 月11 日——5 月15 日]=true
+combined_anchor[5 月18 日——5 月27 日]=true
+combined_anchor[5 月27 日——6 月5 日]=true
+combined_anchor[2025-2026 学年第二学期]=true
+```
+
+## Forbidden YAML/default fields
+
+Command:
+
+```bash
+node - <<'NODE'
+const fs = require('fs');
+const baseline = 'skills/teaching-design-package/templates/teaching-design-package-full.md';
+const md = fs.readFileSync(baseline, 'utf8');
+const fm = (md.match(/^---\n([\s\S]*?)\n---/) || [,''])[1];
+const forbidden = ['total_hours','school_year','semester','daily_hours','hour_unit','date_display_format','date_locale','calendar_source','holidays','makeup_days','source_of_truth','outputs','validation'];
+const present = forbidden.filter((key) => new RegExp(`^${key}:`, 'm').test(fm));
+if (present.length) {
+  console.error(`forbidden_package_yaml=${present.join(',')}`);
+  process.exit(1);
+}
+console.log('forbidden_package_yaml=none');
+NODE
+```
+
+Result:
+
+```text
+forbidden_package_yaml=none
+```

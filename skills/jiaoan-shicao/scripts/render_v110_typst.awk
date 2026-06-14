@@ -463,7 +463,7 @@ function emit_task_analysis(i,    resource_cols, resources) {
   print "    stroke: 0.5pt,"
   print "    align: center + horizon,"
   print "    [学习任务], table.cell(colspan: 5)[" TASK_TITLE[i] "],"
-  print "    [课时], table.cell(colspan: 2)[" normalize_total_hours(meta["total_hours"]) "], [起止日期], table.cell(colspan: 2)[" TASK_DATE[i] "],"
+  print "    [课时], table.cell(colspan: 2)[" TASK_HOURS[i] "], [起止日期], table.cell(colspan: 2)[" TASK_DATE[i] "],"
   print "    table.cell(colspan: 6)[*一、学习任务描述*],"
   print "    table.cell(colspan: 6, align: left + horizon)[" DATA[i SUBSEP "desc"] "],"
   print "    table.cell(colspan: 6)[*二、学习目标*],"
