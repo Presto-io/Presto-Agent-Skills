@@ -2,30 +2,25 @@
 
 ## Current State
 
-**Latest shipped milestone:** v1.12 Teaching Design Package Post-Close Repair
+**Latest shipped milestone:** v1.13 Teaching Design Package Markdown Baseline Rendering
 
 **Shipped:** 2026-06-14
 
-**Active milestone:** v1.13 Teaching Design Package Markdown Baseline Rendering
+**Active milestone:** None
 
-**Status:** v1.13 is defining a Markdown-baseline rendering repair for `teaching-design-package`.
+**Status:** v1.13 is shipped and archived. The repository is ready for the next milestone definition.
 
-**Delivered in v1.12:**
-- `teaching-design-package` now backfills concrete inferred `起止日期` values into generated `jiaoan-shicao-full.md` from package scheduling evidence.
-- `jiaoan-shicao` now uses official-style chapter/pagebreak-scoped `教学活动设计` table widths with verified `25.04cm` total-width behavior.
-- The milestone audit passed with 7/7 TDPR requirements covered across Phases 26-27.
-
-**Targeted in v1.13:**
-- Use the committed teacher-facing Markdown template at `skills/teaching-design-package/templates/teaching-design-package-full.md` as the baseline input contract.
-- Preserve that Markdown reference structure and make the renderer consume it instead of requiring a format rewrite.
-- Deliver one copyable Markdown, one Typst generated from that Markdown, and three PDFs: combined package PDF, teaching-plan PDF, and lesson-plan PDF.
-- Derive total hours, task hours, lesson-plan activity hours, task date ranges, and academic year/semester from the teaching-plan rows, `first_teaching_day`, built-in teaching calendar, and script defaults instead of teacher-maintained YAML fields.
+**Delivered in v1.13:**
+- `teaching-design-package` now renders from the committed teacher-facing Markdown baseline at `skills/teaching-design-package/templates/teaching-design-package-full.md`.
+- The package workflow preserves the baseline Markdown structure while producing one copyable Markdown artifact, one package Typst artifact, and three real PDFs.
+- Split package outputs match standalone `jiaoan-jihua` and `jiaoan-shicao` renders from the same generated handoff Markdown.
+- Total hours, task hours, lesson-plan activity hours, task date ranges, and academic year/semester are derived from teaching-plan rows, `first_teaching_day`, built-in calendar/default contracts, and generated evidence instead of package YAML.
 
 ## Milestone History
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets. v1.11 added the integrated `teaching-design-package` orchestration path while preserving the original teaching skills and keeping package outputs honest through manifest evidence. v1.12 repaired two post-close teaching-design regressions: package date backfill into practical lesson-plan Markdown and official-style activity-table width alignment. v1.13 continues the integrated package line by treating the newly committed full-package Markdown template as the teacher-facing source of truth that package rendering must accept directly.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets. v1.11 added the integrated `teaching-design-package` orchestration path while preserving the original teaching skills and keeping package outputs honest through manifest evidence. v1.12 repaired two post-close teaching-design regressions: package date backfill into practical lesson-plan Markdown and official-style activity-table width alignment. v1.13 shipped the committed full-package Markdown template as the teacher-facing source of truth for package rendering, with real split/combined PDF outputs and standalone jiaoan parity.
 
 ## What This Is
 
@@ -39,7 +34,7 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-v1.13 is active. The focus is to make `teaching-design-package` render from the committed Markdown baseline while preserving the original teacher-facing Markdown structure and the standalone behavior of `jiaoan-jihua` and `jiaoan-shicao`.
+No milestone is currently active. The repository is ready to define the next scoped skill or maintenance milestone.
 
 ## Requirements
 
@@ -86,21 +81,19 @@ v1.13 is active. The focus is to make `teaching-design-package` render from the 
 - [x] Verify generated Markdown, Typst, and PDF outputs for the integrated package and affected jiaoan skill, including filled date checks and official table-width invariants. - v1.12 Phases 26-27
 - [x] Keep `teaching-design-package`, `jiaoan-shicao`, `jiaoan-jihua`, and `end-of-term-teaching-materials` public interfaces stable. - v1.12 Phases 26-27
 
+### Validated in v1.13
+
+- [x] Use `skills/teaching-design-package/templates/teaching-design-package-full.md` as the integrated package Markdown baseline while preserving its teacher-facing structure. - v1.13 Phase 28
+- [x] Generate a copyable package Markdown artifact and package Typst artifact from that single Markdown source. - v1.13 Phase 28
+- [x] Preserve the semantic split between授课进度计划 and教学设计方案 while composing existing jiaoan renderers. - v1.13 Phase 28
+- [x] Derive total hours, task hours, lesson-plan activity hours, task date ranges, and academic year/semester from baseline rows, `first_teaching_day`, built-in calendar/default contracts, and generated evidence. - v1.13 Phases 28-29
+- [x] Generate the final three PDFs: combined teaching-design package, teaching-plan, and lesson-plan PDFs. - v1.13 Phase 29
+- [x] Verify split package outputs match standalone `jiaoan-jihua` and `jiaoan-shicao` outputs from the same generated handoffs while preserving their public interfaces. - v1.13 Phase 29
+- [x] Keep machine defaults and validation/output settings out of teacher-maintained package YAML. - v1.13 Phases 28-29
+
 ### Active
 
-- [ ] **TDBR-01**: `teaching-design-package` must use `skills/teaching-design-package/templates/teaching-design-package-full.md` as the baseline package Markdown input and preserve its teacher-facing structure.
-- [ ] **TDBR-02**: Package rendering must consume the baseline Markdown directly and generate the package Typst from that Markdown instead of requiring users or agents to rewrite the reference format.
-- [ ] **TDBR-03**: The final package workflow must produce one copyable Markdown artifact, one Typst artifact, and three PDF artifacts: combined package, teaching-plan, and lesson-plan PDFs.
-- [ ] **TDBR-04**: The teaching-plan PDF must match standalone `jiaoan-jihua` output in content and format, except for allowed timestamp differences.
-- [ ] **TDBR-05**: The lesson-plan PDF must match standalone `jiaoan-shicao` output in content and format, except for allowed timestamp differences.
-- [ ] **TDBR-06**: The combined package PDF must present the original teaching-plan and lesson-plan outputs as one merged teaching-design package.
-- [ ] **TDBR-07**: Existing `jiaoan-jihua` and `jiaoan-shicao` skills must remain standalone, with stable public interfaces and no forced dependency on the package skill.
-- [ ] **TDBR-12**: Package total hours must be calculated from all `活动名称-课时` rows under `# 授课进度计划`; `total_hours` must not return as package YAML. Current baseline expectation: `160H`.
-- [ ] **TDBR-13**: Package learning-task hours must be calculated from each task's plan rows. Current baseline expectations: `CA6140=40H`, `X62W=60H`, `Z3040=60H`.
-- [ ] **TDBR-14**: Lesson-plan activity hours must be derived from same-name or same-order teaching-plan activities; `##### xH` can be generated handoff data only, and mapping failure must fail or stay non-final.
-- [ ] **TDBR-15**: `学习任务分析` date ranges must be inferred from `first_teaching_day`, the built-in teaching-day calendar, default `8` hours/day, and parsed row hours, formatted as `M月D日——M月D日` without year. Current baseline expectations: `5月11日——5月15日`, `5月18日——5月27日`, `5月27日——6月5日`.
-- [ ] **TDBR-16**: `school_year` and `semester` must be inferred from `first_teaching_day`, not maintained in package YAML. Current baseline expectation: `2025-2026学年第二学期`.
-- [ ] **TDBR-17**: Defaults such as `hour_unit`, `daily_hours`, `date_display_format`, `date_locale`, `calendar_source`, `holidays`, `makeup_days`, `source_of_truth`, `outputs`, and `validation` belong in script/skill contracts or generated evidence, not package YAML.
+None. The next milestone has not been defined.
 
 ### Out of Scope
 
@@ -142,16 +135,11 @@ Phase 24 completed the optional end-of-term and package-output slice: `teaching-
 
 v1.12 completed the post-close repair slice for the integrated teaching-design package. Phase 26 backfilled concrete package scheduling evidence into generated practical lesson-plan Markdown while preserving review-marker gates. Phase 27 aligned `jiaoan-shicao` activity-table widths with official-template evidence using chapter/pagebreak-scoped column grouping and verified the direct and package paths with Markdown, Typst, and PDF artifacts.
 
-v1.13 starts from the committed Markdown baseline `skills/teaching-design-package/templates/teaching-design-package-full.md` rather than a new Markdown schema. The milestone is explicitly scoped to renderer ingestion and output parity: the reference Markdown format stays teacher-facing and copyable, while implementation should adapt the package render path to consume that Markdown and produce equivalent split and combined outputs.
+v1.13 shipped from the committed Markdown baseline `skills/teaching-design-package/templates/teaching-design-package-full.md` rather than a new Markdown schema. The reference Markdown format stays teacher-facing and copyable, while the package render path now consumes that Markdown and produces equivalent split and combined outputs.
 
 ## Next Milestone Goals
 
-v1.13 should make the integrated teaching-design package render from the committed full-package Markdown baseline and verify the final artifact set:
-
-- 1 Markdown artifact that can be directly copied from the reference document shape.
-- 1 Typst artifact generated by rendering that Markdown.
-- 3 PDFs: combined teaching-design package PDF, standalone-equivalent teaching-plan PDF, and standalone-equivalent lesson-plan PDF.
-- Stable standalone public behavior for `jiaoan-jihua` and `jiaoan-shicao`.
+The next milestone has not been defined. Candidate future work should start from current user needs, not from the completed v1.13 acceptance list.
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -212,8 +200,10 @@ v1.13 should make the integrated teaching-design package render from the committ
 | Keep date backfill package-local | The repair only needed concrete package scheduling evidence and review-marker gating, not a new shared scheduling library | Good - shipped in v1.12 Phase 26 |
 | Use official `jiaoan-shicao` reference snapshots as layout evidence | The table-width bug depends on official template behavior, not a subjective visual tweak | Good - shipped in v1.12 Phase 27 |
 | Treat activity-table widths as chapter/pagebreak-scoped | Official evidence showed shared same-chapter column specs and `{pagebreak}` as a recalculation boundary | Good - shipped in v1.12 Phase 27 |
-| Start v1.13 from the committed full-package Markdown template | The user corrected scope so the Markdown reference format remains the baseline and implementation adapts around rendering it | Pending - planned for v1.13 |
-| Keep old jiaoan skills standalone while adding package parity | Package rendering should compose existing skills and outputs, not break their direct use or public command contracts | Pending - planned for v1.13 |
+| Start v1.13 from the committed full-package Markdown template | The user corrected scope so the Markdown reference format remains the baseline and implementation adapts around rendering it | Good - shipped in v1.13 Phase 28 |
+| Keep old jiaoan skills standalone while adding package parity | Package rendering should compose existing skills and outputs, not break their direct use or public command contracts | Good - shipped in v1.13 Phase 29 |
+| Keep package PDF generation explicit | Typst generation alone should not be confused with final accepted PDFs | Good - v1.13 Phase 29 added `render-package --pdf` |
+| Merge combined package PDFs from accepted split outputs | The combined package should be file-backed and ordered from the teaching-plan and lesson-plan PDFs | Good - v1.13 Phase 29 records `python_fitz` fallback evidence |
 
 ## Evolution
 
@@ -233,4 +223,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-15 after v1.13 milestone initialization*
+*Last updated: 2026-06-15 after v1.13 milestone completion*
