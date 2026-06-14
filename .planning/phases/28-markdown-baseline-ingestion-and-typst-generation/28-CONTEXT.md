@@ -8,9 +8,11 @@
 
 Phase 28 makes the `teaching-design-package` render path consume the committed full-package Markdown baseline at `skills/teaching-design-package/templates/teaching-design-package-full.md` without changing its teacher-facing structure. The phase delivers parser/ingestion behavior, split semantic handoff, and one package Typst artifact generated from that Markdown through the render path.
 
-This phase covers TDBR-01 through TDBR-05 only. It must preserve one copyable, teacher-reviewable Markdown artifact in the same reference-document shape, identify the semantic split between `授课进度计划` and `教学设计方案`, and generate one package Typst from the Markdown source rather than treating Typst as a maintained source file.
+This phase covers TDBR-01 through TDBR-05 for Markdown ingestion/Typst generation and TDBR-12 through TDBR-17 for derived hours, dates, term metadata, and default-value boundaries. It must preserve one copyable, teacher-reviewable Markdown artifact in the same reference-document shape, identify the semantic split between `授课进度计划` and `教学设计方案`, generate one package Typst from the Markdown source rather than treating Typst as a maintained source file, and leave derived-data evidence that Phase 29 can render into PDFs.
 
 Phase 28 does not own final PDF parity. The milestone acceptance eventually requires one Markdown, one Typst, and three PDFs, but the three real PDF outputs and standalone parity gates are Phase 29 scope. Phase 28 should leave explicit interfaces and evidence hooks so Phase 29 can compile or merge PDFs without reworking ingestion.
+
+Phase 28 does own the derived-data contract that Phase 29 must render and parity-check. The plan parser must derive total hours, learning-task hours, lesson-plan activity hours, task date ranges, and academic year/semester from `# 授课进度计划`, `first_teaching_day`, built-in teaching-day calendar support, and script defaults. These facts must not move back into package YAML or become hand-maintained duplicate teacher-facing fields.
 
 </domain>
 
@@ -41,6 +43,18 @@ Phase 28 does not own final PDF parity. The milestone acceptance eventually requ
 - **D-14:** Frontmatter parsing must support the current baseline fields: `course_name`, `major_name`, `course_attribute`, `textbook_name`, `class_name`, `teachers`, and `first_teaching_day`. The renderer should map `teachers` into module handoff teacher metadata without changing the YAML list shape in the reference Markdown.
 - **D-15:** If package-level fields needed by old handoffs are absent, derive only from visible baseline content or keep explicit non-final status. Do not invent hidden school, semester, teacher, date, or evaluation facts to make a render pass green.
 - **D-16:** Review markers in the older package contract are not present in the corrected Markdown baseline. Phase 28 should not force a `## 复核标记` section into the teacher-facing document; if unresolved data needs tracking, write manifest/status evidence or generated sidecar notes.
+
+### Derived Hours, Dates, and Metadata
+
+- **D-28:** Do not preserve or rely on package YAML `total_hours`. Total course hours must be calculated by summing every `活动名称-课时` row under `# 授课进度计划`; the current baseline must calculate to `160H`.
+- **D-29:** Calculate each learning-task hour total from that task's own teaching-plan rows. The current baseline must calculate `CA6140=40H`, `X62W=60H`, and `Z3040=60H`.
+- **D-30:** Lesson-plan activity `##### xH` rows, if needed for `jiaoan-shicao` handoff compatibility, are generated facts derived from same-name or same-order teaching-plan activities. They must not be treated as teacher-maintained source data in the package Markdown.
+- **D-31:** If a lesson-plan activity cannot be mapped to a same-name or same-order teaching-plan activity, Phase 28 must fail the render path or write an explicit non-final/review-needed status. It must not silently assign a guessed duration.
+- **D-32:** Infer each `学习任务分析` 起止日期 from `first_teaching_day`, the skill's built-in real teaching-day calendar text/resource, default `8` hours per teaching day, and the parsed row-hour sequence. The output format is `M月D日——M月D日` without year.
+- **D-33:** The current baseline date expectations are `CA6140=5月11日——5月15日`, `X62W=5月18日——5月27日`, and `Z3040=5月27日——6月5日`, derived from `first_teaching_day: "2026-05-11"`, `skills/jiaoan-jihua/references/calendar.json`, and `8` daily hours.
+- **D-34:** Infer `school_year` and `semester` from `first_teaching_day`, not package YAML. Spring/first-half dates map to previous-year/current-year academic year second semester; autumn/second-half dates map to current-year/next-year academic year first semester. The current baseline must infer `2025-2026学年第二学期`.
+- **D-35:** Keep defaults such as `hour_unit`, `daily_hours`, `date_display_format`, `date_locale`, `calendar_source`, `holidays`, `makeup_days`, `source_of_truth`, `outputs`, and `validation` in script/skill contracts or generated manifest/evidence. They must not be reintroduced as package YAML fields.
+- **D-36:** The generated package Markdown artifact must remain directly copyable from the baseline document shape. Machine fields may be reflected in handoffs, manifests, Typst provenance, or verification evidence only when needed for rendering.
 
 ### Package Typst Generation and Phase 29 Interface
 
@@ -76,7 +90,7 @@ Phase 28 does not own final PDF parity. The milestone acceptance eventually requ
 
 - `AGENTS.md` — Repository language, editing, skill authoring, GSD workflow, and OpenClaw/Hermes requirements.
 - `.planning/PROJECT.md` — Captures active v1.13 scope, Markdown baseline discipline, standalone teaching-skill discipline, and current project constraints.
-- `.planning/REQUIREMENTS.md` — Locks TDBR-01 through TDBR-05 for Phase 28 and TDBR-06 through TDBR-11 for Phase 29.
+- `.planning/REQUIREMENTS.md` — Locks TDBR-01 through TDBR-05 and TDBR-12 through TDBR-17 for Phase 28 planning, with TDBR-06 through TDBR-11 plus final parity coverage for Phase 29.
 - `.planning/ROADMAP.md` — Defines Phase 28 goal, success criteria, dependency on Phase 27, and Phase 29 boundary.
 - `.planning/STATE.md` — Records Phase 28 as current phase and v1.13 as active milestone.
 
@@ -102,6 +116,7 @@ Phase 28 does not own final PDF parity. The milestone acceptance eventually requ
 - `.planning/phases/26-package-date-backfill-repair/26-CONTEXT.md` — Package handoff/date backfill decisions and generated artifact discipline.
 - `.planning/phases/27-official-activity-table-width-alignment/27-CONTEXT.md` — Current `jiaoan-shicao` activity-table width behavior and package-path regression expectations.
 - `references/scheduling-contract.md` — Shared scheduling evidence model. Use only when deriving handoff evidence; do not require new teacher-facing sections in the baseline Markdown.
+- `skills/jiaoan-jihua/references/calendar.json` — Built-in teaching-day calendar support used by the current baseline date-range expectation.
 
 ### Fixtures and Expected Evidence
 
@@ -148,6 +163,9 @@ Phase 28 does not own final PDF parity. The milestone acceptance eventually requ
   - three teaching-plan `##` task headings are found under `# 授课进度计划`;
   - three `## 学习任务分析` blocks, three `## 教学活动设计——学习任务...` blocks, and three `## 学业评价` blocks are found under `# 教学设计方案`;
   - no edits are made to the baseline Markdown.
+- The same smoke test should assert derived hours from `# 授课进度计划`: `total=160H`, `CA6140=40H`, `X62W=60H`, `Z3040=60H`.
+- Date-range verification should use `first_teaching_day: "2026-05-11"`, the built-in teaching-day calendar, and default `8` hours/day to assert `5月11日——5月15日`, `5月18日——5月27日`, and `5月27日——6月5日`.
+- Metadata verification should assert `2025-2026学年第二学期` is inferred, and that package YAML does not contain `total_hours`, `school_year`, `semester`, `daily_hours`, `hour_unit`, `date_display_format`, `date_locale`, `calendar_source`, `holidays`, `makeup_days`, `source_of_truth`, `outputs`, or `validation`.
 - A generated package Typst verification should include a marker/comment or manifest field showing `source_markdown: skills/teaching-design-package/templates/teaching-design-package-full.md` and the generated `.typ` path.
 - The generated package Typst should be inspected for content from both halves, for example `授课进度计划`/task table content and `学习任务分析`/`教学活动设计` content.
 - The plan should include `git diff -- skills/teaching-design-package/templates/teaching-design-package-full.md` or an equivalent hash check after implementation to prove the baseline reference file was not modified.

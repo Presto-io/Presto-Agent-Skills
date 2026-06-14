@@ -30,6 +30,15 @@ The milestone is scoped to planning renderer behavior and output parity. It must
 - [ ] **TDBR-02**: The teacher-facing Markdown structure and format of the baseline reference document must remain unchanged; implementation must adapt renderer parsing around that Markdown shape.
 - [ ] **TDBR-03**: The package workflow must produce one Markdown artifact that can be directly copied from the reference document shape and used as the teacher-reviewable package checkpoint.
 
+### Derived Hours, Dates, and Metadata Contract
+
+- [ ] **TDBR-12**: Total course hours must be derived from all `活动名称-课时` rows under `# 授课进度计划`; package YAML must not retain or depend on `total_hours`. The current baseline must calculate to `160H`.
+- [ ] **TDBR-13**: Each learning-task hour total must be derived from its own teaching-plan rows, not from lesson-plan frontmatter or manually repeated fields. The current baseline must calculate `CA6140=40H`, `X62W=60H`, and `Z3040=60H`.
+- [ ] **TDBR-14**: Lesson-plan activity hours must be mapped from same-name or same-order activities in `# 授课进度计划`; generated `##### xH` lines may only be derived render handoff data, not a maintained human fact source. If a lesson activity cannot be mapped, the package must fail or emit a non-final/review-needed status instead of inventing hours.
+- [ ] **TDBR-15**: Each `学习任务分析` date range must be inferred from `first_teaching_day`, the skill's built-in real teaching-day calendar text/resource, the default `8` hours per teaching day, and automatically parsed plan-row hours. Output format is `M月D日——M月D日`, with no year. For the current baseline, the expected ranges are `CA6140=5月11日——5月15日`, `X62W=5月18日——5月27日`, and `Z3040=5月27日——6月5日`.
+- [ ] **TDBR-16**: `school_year` and `semester` must be inferred from `first_teaching_day` and must not be manually maintained in package YAML. Spring/first-half dates infer the previous-year/current-year academic year second semester; autumn/second-half dates infer the current-year/next-year academic year first semester. The current baseline `2026-05-11` must infer `2025-2026学年第二学期`.
+- [ ] **TDBR-17**: Default rendering and scheduling contract values such as `hour_unit`, `daily_hours`, `date_display_format`, `date_locale`, `calendar_source`, `holidays`, `makeup_days`, `source_of_truth`, `outputs`, and `validation` must stay in script/skill contracts or generated evidence. They must not be reintroduced as teacher-maintained package YAML fields.
+
 ### Markdown-to-Typst Rendering
 
 - [ ] **TDBR-04**: Package rendering must consume the baseline Markdown and generate one Typst artifact from that Markdown, with evidence that the Typst was produced through the render path rather than manually maintained as the source.
@@ -81,10 +90,16 @@ Deferred to a later milestone unless explicitly requested:
 | TDBR-09 | Phase 29 | Pending |
 | TDBR-10 | Phase 29 | Pending |
 | TDBR-11 | Phase 29 | Pending |
+| TDBR-12 | Phase 28, Phase 29 | Pending |
+| TDBR-13 | Phase 28, Phase 29 | Pending |
+| TDBR-14 | Phase 28, Phase 29 | Pending |
+| TDBR-15 | Phase 28, Phase 29 | Pending |
+| TDBR-16 | Phase 28, Phase 29 | Pending |
+| TDBR-17 | Phase 28, Phase 29 | Pending |
 
 **Coverage:**
-- v1.13 requirements: 11 total
-- Mapped to phases: 11
+- v1.13 requirements: 17 total
+- Mapped to phases: 17
 - Unmapped: 0
 
 ---
