@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.13
 milestone_name: Teaching Design Package Markdown Baseline Rendering
-current_phase: 28
+current_phase: 29
 status: completed
-stopped_at: Phase 29 context gathered
-last_updated: "2026-06-14T20:06:57.003Z"
-last_activity: 2026-06-14 -- Phase 28 marked complete
+stopped_at: Completed 29-PLAN.md
+last_updated: "2026-06-14T20:50:50.588Z"
+last_activity: 2026-06-14 -- Phase 29 marked complete
 progress:
   total_phases: 2
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
   percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 28
+**Current Phase:** 29
 **Status:** completed
 
 ## Project Reference
@@ -26,7 +26,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-06-15)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.13 makes `teaching-design-package` render from the committed full-package Markdown baseline while preserving standalone jiaoan skills.
+**Current focus:** v1.13 Phase 29 is complete: `teaching-design-package` now renders the committed full-package Markdown baseline to real split and combined PDFs while preserving standalone jiaoan skills.
 
 ## Workflow Preferences
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-15)
 
 Start the next workflow step when ready:
 
-- `/gsd:discuss-phase 28`
+- `/gsd:audit-milestone v1.13`
 
 ## Accumulated Context
 
@@ -132,6 +132,9 @@ Start the next workflow step when ready:
 - [Phase 28]: Renderer ingestion adapts around the committed teacher-facing package baseline instead of changing the template. — Baseline hash/diff evidence proves skills/teaching-design-package/templates/teaching-design-package-full.md stayed byte-identical.
 - [Phase 28]: Derived scheduling facts live in generated handoffs, Typst comments, and manifest provenance, not package YAML. — Phase 28 keeps total_hours, school_year, semester, daily_hours, and output/validation knobs out of package frontmatter.
 - [Phase 28]: Phase 29 PDF outputs remain not_run slots until real PDF generation and parity verification run. — Phase 28 creates Typst and provenance only; it does not claim PDF parity.
+- [Phase 29]: Final package PDF generation is explicit via `render-package --pdf`; Typst-only rendering remains the default. — This prevents callers from confusing Typst generation with accepted PDF output.
+- [Phase 29]: Combined package PDF is merged from accepted split PDFs in source order. — When `pdfunite` and `qpdf` are unavailable, installed PyMuPDF provides a real local merge fallback recorded as `python_fitz`.
+- [Phase 29]: Standalone parity is proven against the same generated handoff Markdown. — Package split Typst/PDF outputs match standalone `jiaoan-jihua` and `jiaoan-shicao` renders from `jiaoan-jihua-full.md` and `jiaoan-shicao-full.md`.
 
 ## Performance Metrics
 
@@ -160,12 +163,13 @@ Start the next workflow step when ready:
 | Phase 26 P01 | 27min | 5 tasks | 2 files |
 | Phase 27 P01 | 20min | 5 tasks | 5 files |
 | Phase 28 P01 | 24min | 6 tasks | 5 files |
+| Phase 29 P01 | 23min | 7 tasks | 5 files |
 
 ## Last Session
 
-- **Completed:** v1.12 milestone completion
-- **Stopped At:** Phase 29 context gathered
-- **Resume File:** .planning/phases/29-pdf-parity-and-standalone-regression/29-CONTEXT.md
+- **Completed:** Phase 29 PDF parity and standalone regression
+- **Stopped At:** Completed 29-PLAN.md
+- **Resume File:** None
 
 ## Close Notes
 
@@ -186,14 +190,14 @@ Start the next workflow step when ready:
 
 ## Current Position
 
-Phase: 28 — COMPLETE
+Phase: 29 — COMPLETE
 Plan: —
-Status: Phase 28 complete
-Last activity: 2026-06-14 -- Phase 28 marked complete
+Status: Phase 29 complete
+Last activity: 2026-06-14 -- Phase 29 marked complete
 
 ## Operator Next Steps
 
-- `/gsd:discuss-phase 28`
+- `/gsd:audit-milestone v1.13`
 
 ### Quick Tasks Completed
 
