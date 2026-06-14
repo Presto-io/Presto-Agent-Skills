@@ -1,32 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.12
-milestone_name: Teaching Design Package Post-Close Repair
-current_phase: 27
-status: completed
-stopped_at: v1.12 milestone archived
-last_updated: "2026-06-14T09:34:06.908Z"
-last_activity: 2026-06-14 — Milestone v1.12 completed and archived
+milestone: v1.13
+milestone_name: Teaching Design Package Markdown Baseline Rendering
+current_phase: 28
+status: planning
+last_updated: "2026-06-14T18:41:10.890Z"
+last_activity: 2026-06-15 — Milestone v1.13 started
 progress:
   total_phases: 2
-  completed_phases: 2
+  completed_phases: 0
   total_plans: 2
-  completed_plans: 2
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 27
-**Status:** v1.12 milestone complete
+**Current Phase:** 28
+**Status:** v1.13 milestone planning
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-14)
+See: `.planning/PROJECT.md` (updated 2026-06-15)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.12 milestone complete; no active milestone is open.
+**Current focus:** v1.13 makes `teaching-design-package` render from the committed full-package Markdown baseline while preserving standalone jiaoan skills.
 
 ## Workflow Preferences
 
@@ -52,7 +51,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 Start the next workflow step when ready:
 
-- `/gsd:new-milestone`
+- `/gsd:discuss-phase 28`
 
 ## Accumulated Context
 
@@ -78,6 +77,7 @@ Start the next workflow step when ready:
 - Milestone v1.12 started: post-close repair for two v1.11 teaching-design bugs. Phase 26 will backfill inferred `起止日期` values into `jiaoan-shicao-full.md`; Phase 27 will align `jiaoan-shicao` `教学活动设计` table widths with official-template evidence.
 - Phase 26 completed: `teaching-design-package` now backfills concrete package scheduling evidence into generated `jiaoan-shicao-full.md`, preserves review-marker gating, and records Markdown, Typst, and PDF verification evidence.
 - Phase 27 completed: `jiaoan-shicao` now computes `教学活动设计` activity-table widths by official-style chapter/pagebreak grouping, verifies `25.04cm` total width and narrow `课时分配`, and preserves the Phase 26 package date backfill through integrated package PDF verification.
+- Milestone v1.13 started: use the committed `skills/teaching-design-package/templates/teaching-design-package-full.md` Markdown template as the baseline, keep its teacher-facing structure unchanged, and plan renderer work around one Markdown, one Typst, and three PDF outputs.
 
 ## Decisions
 
@@ -126,6 +126,8 @@ Start the next workflow step when ready:
 - [Phase 24]: Optional end-of-term support delegates module internals to `end-of-term-teaching-materials`. — The package manifest exposes pointers and status evidence but does not reimplement score calculation, tables, workbooks, or module review resolution.
 - [Phase 24]: Combined package readiness requires actual `teaching-design-package.pdf` file evidence. — Split output success is preserved separately, and missing merge tooling or PDFs records `merge_unavailable` or `failed` instead of false readiness.
 - [Phase 27]: Activity-table widths are chapter/pagebreak-scoped, not learning-task-scoped. — The official local snapshots define `activityTableTotalWidthCM = 25.04` and same-chapter shared `columns: (...)`; `{pagebreak}` starts a recalculation boundary.
+- [Milestone v1.13]: The full-package Markdown reference is the baseline contract. — The user corrected scope so implementation must adapt render ingestion around `skills/teaching-design-package/templates/teaching-design-package-full.md`, not change that Markdown's teacher-facing format.
+- [Milestone v1.13]: Three PDF outputs are acceptance criteria. — The combined PDF must merge the original授课进度计划 and教案 outputs; the plan and lesson PDFs must match standalone `jiaoan-jihua` and `jiaoan-shicao` outputs except timestamps.
 
 ## Performance Metrics
 
@@ -179,14 +181,14 @@ Start the next workflow step when ready:
 
 ## Current Position
 
-Phase: Milestone v1.12 complete
+Phase: 28 - Markdown Baseline Ingestion and Typst Generation
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-14 — Milestone v1.12 completed and archived
+Status: Ready for phase discussion or planning
+Last activity: 2026-06-15 — Milestone v1.13 started
 
 ## Operator Next Steps
 
-- Start the next milestone with `/gsd:new-milestone`
+- `/gsd:discuss-phase 28`
 
 ### Quick Tasks Completed
 
