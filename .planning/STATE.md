@@ -4,8 +4,8 @@ milestone: v1.13
 milestone_name: Teaching Design Package Markdown Baseline Rendering
 current_phase: 28
 status: completed
-stopped_at: Completed 28-PLAN.md
-last_updated: "2026-06-14T19:58:38.691Z"
+stopped_at: Phase 29 context gathered
+last_updated: "2026-06-14T20:06:57.003Z"
 last_activity: 2026-06-14 -- Phase 28 marked complete
 progress:
   total_phases: 2
@@ -164,8 +164,8 @@ Start the next workflow step when ready:
 ## Last Session
 
 - **Completed:** v1.12 milestone completion
-- **Stopped At:** Completed 28-PLAN.md
-- **Resume File:** None
+- **Stopped At:** Phase 29 context gathered
+- **Resume File:** .planning/phases/29-pdf-parity-and-standalone-regression/29-CONTEXT.md
 
 ## Close Notes
 
