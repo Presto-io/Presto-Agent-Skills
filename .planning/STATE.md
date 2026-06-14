@@ -5,8 +5,8 @@ milestone_name: Teaching Design Package Markdown Baseline Rendering
 current_phase: 29
 status: completed
 stopped_at: Completed 29-PLAN.md
-last_updated: "2026-06-14T20:50:50.588Z"
-last_activity: 2026-06-14 -- Phase 29 marked complete
+last_updated: "2026-06-14T21:07:18.260Z"
+last_activity: 2026-06-14 — Milestone v1.13 completed and archived
 progress:
   total_phases: 2
   completed_phases: 2
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 29
-**Status:** completed
+**Status:** v1.13 milestone complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-15)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.13 Phase 29 is complete: `teaching-design-package` now renders the committed full-package Markdown baseline to real split and combined PDFs while preserving standalone jiaoan skills.
+**Current focus:** v1.13 is complete and archived: `teaching-design-package` renders the committed full-package Markdown baseline to real split and combined PDFs while preserving standalone jiaoan skills.
 
 ## Workflow Preferences
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-15)
 
 Start the next workflow step when ready:
 
-- `/gsd:audit-milestone v1.13`
+- `/gsd:new-milestone`
 
 ## Accumulated Context
 
@@ -190,14 +190,14 @@ Start the next workflow step when ready:
 
 ## Current Position
 
-Phase: 29 — COMPLETE
+Phase: Milestone v1.13 complete
 Plan: —
-Status: Phase 29 complete
-Last activity: 2026-06-14 -- Phase 29 marked complete
+Status: Awaiting next milestone
+Last activity: 2026-06-14 — Milestone v1.13 completed and archived
 
 ## Operator Next Steps
 
-- `/gsd:audit-milestone v1.13`
+- Start the next milestone with /gsd-new-milestone
 
 ### Quick Tasks Completed
 

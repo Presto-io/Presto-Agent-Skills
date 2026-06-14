@@ -1,5 +1,22 @@
 # Milestones
 
+## v1.13 Teaching Design Package Markdown Baseline Rendering (Shipped: 2026-06-14)
+
+**Phases completed:** 2 phases, 2 plans, 13 tasks
+
+**Key accomplishments:**
+
+- Teacher-facing package Markdown now drives generated jiaoan handoffs, derived scheduling evidence, and package Typst without modifying the baseline reference.
+- Real split and combined teaching-design PDFs with same-handoff standalone parity and derived scheduling evidence
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.13-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.13-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.13-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.12 Teaching Design Package Post-Close Repair (Shipped: 2026-06-14)
 
 **Phases completed:** 2 phases, 2 plans, 10 tasks
