@@ -418,13 +418,11 @@ shicao_schedule_evidence_rows() {
       line=$0
       sub(/^\|/, "", line)
       sub(/\|[[:space:]]*$/, "", line)
-      cols=split(line, cells, "|")
+      cols=split(line, cells, "[|]")
       for (i=1; i<=cols; i++) cells[i]=trim(cells[i])
       if (source_col == 0 && cells[1] == "Source") {
-        for (i=1; i<=cols; i++) {
-          if (cells[i] == "Source") source_col=i
-          if (cells[i] == "起止日期") date_col=i
-        }
+        source_col=1
+        if (cells[4] == "起止日期") date_col=4
         next
       }
       if (source_col == 0 || date_col == 0) next
@@ -432,7 +430,7 @@ shicao_schedule_evidence_rows() {
       source=unquote_source(cells[source_col])
       range=trim(cells[date_col])
       if (source == "") next
-      if (range ~ /^[0-9]{4}-[0-9]{2}-[0-9]{2} - [0-9]{4}-[0-9]{2}-[0-9]{2}$/) {
+      if (range ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] - [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) {
         print source "\t" range
       }
     }
@@ -445,12 +443,13 @@ shicao_declared_task_prefix() {
     /^## 实操教案$/ { in_shicao=1; next }
     in_shicao && /^## / { exit }
     !in_shicao { next }
-    /起止日期：由[[:space:]]*`task:[0-9]+\/\*`[[:space:]]*调度证据推导/ {
+    /起止日期：由[[:space:]]*`task:[0-9][0-9]*\/\*`[[:space:]]*调度证据推导/ {
       line=$0
-      sub(/^.*`/, "", line)
-      sub(/`.*$/, "", line)
-      sub(/\*$/, "", line)
-      print line
+      if (match(line, /`task:[0-9][0-9]*\/\*`/)) {
+        source=substr(line, RSTART + 1, RLENGTH - 2)
+        sub(/\*$/, "", source)
+        print source
+      }
       exit
     }
   ' "$package_md"
@@ -471,18 +470,83 @@ aggregate_date_ranges_for_prefix() {
   '
 }
 
+shicao_lesson_sources() {
+  local package_md="$1"
+  awk '
+    /^## 实操教案$/ { in_shicao=1; next }
+    in_shicao && /^## / { exit }
+    !in_shicao { next }
+    {
+      line=$0
+      while (match(line, /`lesson:[^`]+`/)) {
+        source=substr(line, RSTART + 1, RLENGTH - 2)
+        if (!seen[source]++) print source
+        line=substr(line, RSTART + RLENGTH)
+      }
+    }
+  ' "$package_md"
+}
+
+aggregate_date_ranges_for_sources() {
+  local package_md="$1"
+  local sources=("$@")
+  shicao_schedule_evidence_rows "$package_md" | awk -F '\t' -v source_list="$(printf '%s\n' "${sources[@]:1}")" '
+    BEGIN {
+      split(source_list, source_items, "\n")
+      for (i in source_items) {
+        if (source_items[i] != "") wanted[source_items[i]]=1
+      }
+    }
+    wanted[$1] {
+      start=substr($2, 1, 10)
+      end=substr($2, 14, 10)
+      if (min == "" || start < min) min=start
+      if (max == "" || end > max) max=end
+    }
+    END {
+      if (min != "" && max != "") print min " - " max
+    }
+  '
+}
+
 shicao_backfill_date_range() {
-  local package_md="$1" task_prefix
+  local package_md="$1" task_prefix date_range
+  local -a lesson_sources
   task_prefix="$(shicao_declared_task_prefix "$package_md")"
   if [[ -n "$task_prefix" ]]; then
     aggregate_date_ranges_for_prefix "$package_md" "$task_prefix"
+    return 0
+  fi
+  mapfile -t lesson_sources < <(shicao_lesson_sources "$package_md")
+  if [[ "${#lesson_sources[@]}" -gt 0 ]]; then
+    date_range="$(aggregate_date_ranges_for_sources "$package_md" "${lesson_sources[@]}")"
+    [[ -n "$date_range" ]] && printf '%s\n' "$date_range"
   fi
 }
 
+backfill_shicao_blank_dates() {
+  local out="$1" date_range="$2" tmp
+  [[ -n "$date_range" ]] || return 0
+  tmp="${out}.tmp.$$"
+  awk -v date_range="$date_range" '
+    /^起止日期：[[:space:]]*$/ {
+      print "起止日期：" date_range
+      next
+    }
+    { print }
+  ' "$out" > "$tmp"
+  mv "$tmp" "$out"
+}
+
 write_shicao_scaffold() {
-  local package_md="$1" out="$2"
+  local package_md="$1" out="$2" date_range
   frontmatter_value "$package_md" course_name >/dev/null
   cp "${SKILL_DIR}/../jiaoan-shicao/templates/jiaoan-shicao-full.md" "$out"
+  if [[ "$(review_marker_state "$package_md")" != "[]" ]]; then
+    return 0
+  fi
+  date_range="$(shicao_backfill_date_range "$package_md")"
+  backfill_shicao_blank_dates "$out" "$date_range"
 }
 
 cmd_example() {
