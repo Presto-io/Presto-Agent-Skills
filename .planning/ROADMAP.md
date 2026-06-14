@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-14 after v1.12 milestone completion
+**Last updated:** 2026-06-15 after v1.13 milestone initialization
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -23,7 +23,47 @@
 
 ## Active Milestone
 
-No active milestone is open. Start the next milestone with `/gsd:new-milestone` when new scope is ready.
+**v1.13 Teaching Design Package Markdown Baseline Rendering**
+
+This milestone makes `teaching-design-package` render from the committed teacher-facing Markdown baseline:
+
+- Baseline file: `skills/teaching-design-package/templates/teaching-design-package-full.md`
+- Baseline commit observed during initialization: `28932fd Revise teaching design package markdown`
+
+The renderer must adapt to this Markdown shape. The Markdown reference format itself is not part of the implementation change. Acceptance requires one copyable Markdown artifact, one Typst artifact produced by rendering that Markdown, and three PDFs: combined package, teaching-plan, and lesson-plan PDFs. The old `jiaoan-jihua` and `jiaoan-shicao` skills must remain standalone.
+
+## Phases
+
+### Phase 28: Markdown Baseline Ingestion and Typst Generation
+
+**Goal:** Make the integrated package render path consume the committed full-package Markdown baseline without changing its teacher-facing structure.
+**Depends on:** Phase 27
+**Plans:** 1 plan
+**Requirements:** TDBR-01, TDBR-02, TDBR-03, TDBR-04, TDBR-05
+**Status:** Pending
+
+Success criteria:
+
+1. The package path accepts `skills/teaching-design-package/templates/teaching-design-package-full.md` as a baseline input without requiring Markdown format changes.
+2. The output package Markdown remains copyable and teacher-reviewable in the same reference-document shape.
+3. The renderer produces one Typst artifact from that Markdown through the render path.
+4. Verification records how the single Markdown source is split semantically into授课进度计划 and教学设计方案 sections without making Typst the maintained source.
+
+### Phase 29: PDF Parity and Standalone Regression
+
+**Goal:** Produce the three accepted PDFs and prove split outputs match the old standalone jiaoan skills while preserving their public interfaces.
+**Depends on:** Phase 28
+**Plans:** 1 plan
+**Requirements:** TDBR-06, TDBR-07, TDBR-08, TDBR-09, TDBR-10, TDBR-11
+**Status:** Pending
+
+Success criteria:
+
+1. The final package workflow generates three PDF artifacts: combined package PDF, teaching-plan PDF, and lesson-plan PDF.
+2. The combined package PDF contains the original授课进度计划 and教案 outputs as one merged package without dropping required content.
+3. The teaching-plan PDF matches standalone `jiaoan-jihua` content and format for the same source scope, allowing only timestamp differences.
+4. The lesson-plan PDF matches standalone `jiaoan-shicao` content and format for the same source scope, allowing only timestamp differences.
+5. Public command, input, output, and documentation contracts for standalone `jiaoan-jihua` and `jiaoan-shicao` remain stable.
 
 ## Completed Phase Archive
 
@@ -58,14 +98,16 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 25. Regression Verification and Documentation Index | v1.11 | Complete | 2026-06-14 |
 | 26. Package Date Backfill Repair | v1.12 | Complete | 2026-06-14 |
 | 27. Official Activity Table Width Alignment | v1.12 | Complete | 2026-06-14 |
+| 28. Markdown Baseline Ingestion and Typst Generation | v1.13 | Pending | — |
+| 29. PDF Parity and Standalone Regression | v1.13 | Pending | — |
 
 ## Current Position
 
-Milestone v1.12 is complete and archived. No active milestone is open.
+Phase 28 is ready to discuss and plan.
 
 ## Next Step
 
-Start the next milestone with `/gsd:new-milestone` when ready.
+Run `/gsd:discuss-phase 28` to gather implementation context, or `/gsd:plan-phase 28` to plan directly.
 
 ---
-*Roadmap updated: 2026-06-14 after v1.12 milestone completion*
+*Roadmap updated: 2026-06-15 after v1.13 milestone initialization*
