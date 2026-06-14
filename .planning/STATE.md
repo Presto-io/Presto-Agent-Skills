@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.12
 milestone_name: Teaching Design Package Post-Close Repair
 current_phase: 27
-status: audit_passed
-stopped_at: v1.12 milestone audit passed
-last_updated: "2026-06-14T09:26:21Z"
-last_activity: 2026-06-14 -- v1.12 milestone audit passed
+status: completed
+stopped_at: v1.12 milestone archived
+last_updated: "2026-06-14T09:34:06.908Z"
+last_activity: 2026-06-14 — Milestone v1.12 completed and archived
 progress:
   total_phases: 2
   completed_phases: 2
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 27
-**Status:** v1.12 audit passed
+**Status:** v1.12 milestone complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.12 milestone audit passed; ready for milestone completion.
+**Current focus:** v1.12 milestone complete; no active milestone is open.
 
 ## Workflow Preferences
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-14)
 
 Start the next workflow step when ready:
 
-- `/gsd:complete-milestone v1.12`
+- `/gsd:new-milestone`
 
 ## Accumulated Context
 
@@ -156,9 +156,9 @@ Start the next workflow step when ready:
 
 ## Last Session
 
-- **Completed:** Phase 27 execution closeout
-- **Stopped At:** v1.12 ready for milestone audit
-- **Resume File:** .planning/phases/27-official-activity-table-width-alignment/27-SUMMARY.md
+- **Completed:** v1.12 milestone completion
+- **Stopped At:** v1.12 milestone archived
+- **Resume File:** .planning/milestones/v1.12-MILESTONE-AUDIT.md
 
 ## Close Notes
 
@@ -179,14 +179,14 @@ Start the next workflow step when ready:
 
 ## Current Position
 
-Phase: 27 (official-activity-table-width-alignment) — COMPLETE
-Plan: 1 of 1
-Status: v1.12 audit passed
-Last activity: 2026-06-14 -- v1.12 milestone audit passed
+Phase: Milestone v1.12 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-14 — Milestone v1.12 completed and archived
 
 ## Operator Next Steps
 
-- Run `/gsd:complete-milestone v1.12` to archive and close the v1.12 post-close repair milestone.
+- Start the next milestone with `/gsd:new-milestone`
 
 ### Quick Tasks Completed
 
