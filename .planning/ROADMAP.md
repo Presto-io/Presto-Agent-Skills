@@ -40,7 +40,7 @@ The baseline also locks derived scheduling behavior. Course and task hours are c
 
 **Goal:** Make the integrated package render path consume the committed full-package Markdown baseline without changing its teacher-facing structure.
 **Depends on:** Phase 27
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 **Requirements:** TDBR-01, TDBR-02, TDBR-03, TDBR-04, TDBR-05, TDBR-12, TDBR-13, TDBR-14, TDBR-15, TDBR-16, TDBR-17
 **Status:** Pending
 
@@ -106,7 +106,7 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 25. Regression Verification and Documentation Index | v1.11 | Complete | 2026-06-14 |
 | 26. Package Date Backfill Repair | v1.12 | Complete | 2026-06-14 |
 | 27. Official Activity Table Width Alignment | v1.12 | Complete | 2026-06-14 |
-| 28. Markdown Baseline Ingestion and Typst Generation | v1.13 | Pending | — |
+| 28. Markdown Baseline Ingestion and Typst Generation | 1/1 | Complete   | 2026-06-14 |
 | 29. PDF Parity and Standalone Regression | v1.13 | Pending | — |
 
 ## Current Position
