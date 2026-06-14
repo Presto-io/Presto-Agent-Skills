@@ -326,3 +326,52 @@ Result:
 ```text
 forbidden_package_yaml=none
 ```
+
+## Manifest status evidence
+
+Final observed manifest state from `/tmp/tdp-phase29-parity2.PYLgJA/package/teaching-design-package-manifest.json`:
+
+```text
+teaching_plan_pdf.status=passed
+teaching_plan_pdf.reason=typst_compile
+teaching_plan_pdf.tool=/opt/homebrew/bin/typst
+lesson_plans_pdf.status=passed
+lesson_plans_pdf.reason=typst_compile
+lesson_plans_pdf.tool=/opt/homebrew/bin/typst
+combined_output.status=passed
+combined_output.reason=python_fitz
+combined_output.tool=/opt/homebrew/bin/python3
+final_ready=true
+```
+
+The provenance `phase29_pdf_slots` mirrors the final file-backed statuses for `teaching-plan.pdf`, `lesson-plans.pdf`, and `teaching-design-package.pdf`.
+
+## Standalone public interface regression
+
+Commands:
+
+```bash
+skills/teaching-design-package/scripts/teaching-design-package.sh info
+skills/teaching-design-package/scripts/teaching-design-package.sh version
+skills/jiaoan-jihua/scripts/jiaoan-jihua.sh info
+skills/jiaoan-jihua/scripts/jiaoan-jihua.sh version
+skills/jiaoan-jihua/scripts/jiaoan-jihua.sh manifest
+skills/jiaoan-shicao/scripts/jiaoan-shicao.sh info
+skills/jiaoan-shicao/scripts/jiaoan-shicao.sh version
+skills/jiaoan-shicao/scripts/jiaoan-shicao.sh manifest
+```
+
+Result:
+
+```text
+teaching-design-package info=passed
+teaching-design-package version=passed
+jiaoan-jihua info=passed
+jiaoan-jihua version=passed
+jiaoan-jihua manifest=passed
+jiaoan-shicao info=passed
+jiaoan-shicao version=passed
+jiaoan-shicao manifest=passed
+```
+
+No standalone command names, required inputs, or output semantics were changed. `jiaoan-shicao` was modified only to render each task's own `课时` value in the `学习任务分析` table, preserving the existing public render command and correcting generated content.
