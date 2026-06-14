@@ -24,9 +24,9 @@ The milestone is scoped to shipped behavior repair:
 
 ### Package Scheduling Backfill
 
-- [ ] **TDPR-01**: `teaching-design-package` must propagate inferred scheduling evidence into generated `jiaoan-shicao-full.md` so missing practical lesson-plan `起止日期` fields are filled before `jiaoan-shicao` rendering.
-- [ ] **TDPR-02**: Date backfill must remain teacher-reviewable: source scheduling inputs, derived date ranges, and uncertain/conflicting/missing-input review markers must stay visible in Markdown or adjacent evidence artifacts.
-- [ ] **TDPR-03**: Package date backfill must preserve existing public command surfaces, accepted input contracts, output filenames, manifest semantics, and standalone availability for `teaching-design-package`, `jiaoan-jihua`, and `jiaoan-shicao`.
+- [x] **TDPR-01**: `teaching-design-package` must propagate inferred scheduling evidence into generated `jiaoan-shicao-full.md` so missing practical lesson-plan `起止日期` fields are filled before `jiaoan-shicao` rendering.
+- [x] **TDPR-02**: Date backfill must remain teacher-reviewable: source scheduling inputs, derived date ranges, and uncertain/conflicting/missing-input review markers must stay visible in Markdown or adjacent evidence artifacts.
+- [x] **TDPR-03**: Package date backfill must preserve existing public command surfaces, accepted input contracts, output filenames, manifest semantics, and standalone availability for `teaching-design-package`, `jiaoan-jihua`, and `jiaoan-shicao`.
 
 ### Official Activity Table Width Alignment
 
@@ -35,7 +35,7 @@ The milestone is scoped to shipped behavior repair:
 
 ### Regression Verification
 
-- [ ] **TDPR-06**: Regression verification must generate Markdown, Typst, and PDF artifacts for the affected package path, and must explicitly verify that generated `jiaoan-shicao-full.md` contains filled `起止日期` values.
+- [x] **TDPR-06**: Regression verification must generate Markdown, Typst, and PDF artifacts for the affected package path, and must explicitly verify that generated `jiaoan-shicao-full.md` contains filled `起止日期` values.
 - [ ] **TDPR-07**: Regression verification must generate Markdown, Typst, and PDF artifacts for the affected `jiaoan-shicao` path, and must record official-template width evidence or a clear local reproduction before claiming alignment.
 
 ## Future Requirements
@@ -61,12 +61,12 @@ Deferred to a later milestone unless explicitly requested:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TDPR-01 | Phase 26 | Pending |
-| TDPR-02 | Phase 26 | Pending |
-| TDPR-03 | Phase 26 | Pending |
+| TDPR-01 | Phase 26 | Complete |
+| TDPR-02 | Phase 26 | Complete |
+| TDPR-03 | Phase 26 | Complete |
 | TDPR-04 | Phase 27 | Pending |
 | TDPR-05 | Phase 27 | Pending |
-| TDPR-06 | Phase 26, Phase 27 | Pending |
+| TDPR-06 | Phase 26, Phase 27 | Partially complete - Phase 26 package path passed; Phase 27 path pending |
 | TDPR-07 | Phase 27 | Pending |
 
 **Coverage:**
@@ -76,4 +76,4 @@ Deferred to a later milestone unless explicitly requested:
 
 ---
 *Requirements defined: 2026-06-14*
-*Last updated: 2026-06-14 after v1.12 milestone initialization*
+*Last updated: 2026-06-14 after Phase 26 execution closeout*

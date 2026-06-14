@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-14 after v1.12 milestone initialization
+**Last updated:** 2026-06-14 after Phase 26 execution closeout
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -37,7 +37,8 @@ This is a v1.11 post-close bugfix milestone. It keeps the original `teaching-des
 **Depends on:** Phase 25
 **Plans:** 1 plan
 **Requirements:** TDPR-01, TDPR-02, TDPR-03, TDPR-06
-**Status:** Pending
+**Status:** Complete
+**Completed:** 2026-06-14
 
 Success criteria:
 
@@ -92,14 +93,15 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 23. Integrated Skill Entry and Jiaoan Orchestration | v1.11 | Complete | 2026-06-13 |
 | 24. Optional End-of-Term Module and Package Outputs | v1.11 | Complete | 2026-06-14 |
 | 25. Regression Verification and Documentation Index | v1.11 | Complete | 2026-06-14 |
+| 26. Package Date Backfill Repair | v1.12 | Complete | 2026-06-14 |
 
 ## Current Position
 
-Phase 26 is next. This milestone is initialized and ready for `/gsd:discuss-phase 26` or `/gsd:plan-phase 26`.
+Phase 26 is complete. Phase 27 is next and remains unplanned.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 26` to gather implementation context for the package date backfill repair.
+Run `/gsd:discuss-phase 27` to gather implementation context for the official activity-table width alignment repair.
 
 ---
-*Roadmap updated: 2026-06-14 after v1.12 milestone initialization*
+*Roadmap updated: 2026-06-14 after Phase 26 execution closeout*
