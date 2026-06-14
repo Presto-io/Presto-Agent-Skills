@@ -22,12 +22,13 @@ Usage:
   teaching-design-package.sh plan-end-of-term --input <package.md> --out-dir <dir>
   teaching-design-package.sh render-end-of-term --input <package.md> --out-dir <dir>
   teaching-design-package.sh render-package --input <package.md> --out-dir <dir>
+  teaching-design-package.sh render-package --pdf --input <package.md> --out-dir <dir>
   teaching-design-package.sh manifest --input <package.md> --out-dir <dir>
   teaching-design-package.sh info
   teaching-design-package.sh version
 
 Optional end-of-term behavior delegates to skills/end-of-term-teaching-materials.
-Combined teaching-design-package.pdf is passed only when the actual file exists.
+Combined teaching-design-package.pdf is passed only when an explicit PDF command ran and the actual file exists.
 USAGE
 }
 
@@ -52,8 +53,13 @@ parse_io_args() {
   INPUT=""
   OUT_DIR=""
   OUTPUT=""
+  RENDER_PDF=false
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --pdf)
+        RENDER_PDF=true
+        shift
+        ;;
       --input)
         [[ $# -ge 2 ]] || die "--input requires a path"
         INPUT="$2"
@@ -484,6 +490,100 @@ status_for_file() {
   fi
 }
 
+pdf_status_file() {
+  local out_dir="$1" stem="$2"
+  printf '%s/.%s.status' "$out_dir" "$stem"
+}
+
+write_pdf_status() {
+  local out_dir="$1" stem="$2" status="$3" reason="${4:-}" tool="${5:-}"
+  local status_file
+  status_file="$(pdf_status_file "$out_dir" "$stem")"
+  {
+    printf 'status=%s\n' "$status"
+    printf 'reason=%s\n' "$reason"
+    printf 'tool=%s\n' "$tool"
+  } > "$status_file"
+}
+
+mark_package_compile_allowed() {
+  local out_dir="$1" status_file
+  status_file="$(pdf_status_file "$out_dir" "teaching-design-package")"
+  {
+    printf 'status=not_run\n'
+    printf 'reason=awaiting_pdf_merge\n'
+    printf 'tool=\n'
+  } > "$status_file"
+}
+
+read_status_field() {
+  local status_file="$1" field="$2" default_value="${3:-}"
+  if [[ -f "$status_file" ]]; then
+    awk -F= -v field="$field" -v default_value="$default_value" '
+      $1 == field {
+        sub(/^[^=]*=/, "")
+        print
+        found=1
+        exit
+      }
+      END {
+        if (!found) print default_value
+      }
+    ' "$status_file"
+  else
+    printf '%s' "$default_value"
+  fi
+}
+
+artifact_status() {
+  local out_dir="$1" stem="$2" path="$3" default_status="${4:-not_run}"
+  local status_file status
+  status_file="$(pdf_status_file "$out_dir" "$stem")"
+  status="$(read_status_field "$status_file" status "")"
+  if [[ -n "$status" ]]; then
+    if [[ "$status" == "passed" && ! -f "$path" ]]; then
+      printf 'failed'
+    else
+      printf '%s' "$status"
+    fi
+    return 0
+  fi
+  printf '%s' "$(status_for_file "$path" "$default_status")"
+}
+
+artifact_reason() {
+  local out_dir="$1" stem="$2"
+  read_status_field "$(pdf_status_file "$out_dir" "$stem")" reason ""
+}
+
+artifact_tool() {
+  local out_dir="$1" stem="$2"
+  read_status_field "$(pdf_status_file "$out_dir" "$stem")" tool ""
+}
+
+compile_typst_pdf() {
+  local typ="$1" pdf="$2" out_dir="$3" stem="$4"
+  local log="${out_dir}/${stem}.typst.stderr.log"
+  rm -f "$pdf" "$log"
+  if ! command -v typst >/dev/null 2>&1; then
+    write_pdf_status "$out_dir" "$stem" "missing_compiler" "typst_not_found" ""
+    printf 'missing_compiler:%s\n' "$stem" >&2
+    return 1
+  fi
+  if typst compile "$typ" "$pdf" 2>"$log"; then
+    if [[ -f "$pdf" ]]; then
+      write_pdf_status "$out_dir" "$stem" "passed" "typst_compile" "$(command -v typst)"
+      return 0
+    fi
+    write_pdf_status "$out_dir" "$stem" "failed" "pdf_missing_after_typst_compile" "$(command -v typst)"
+    printf 'failed:%s:pdf_missing_after_typst_compile\n' "$stem" >&2
+    return 1
+  fi
+  write_pdf_status "$out_dir" "$stem" "failed" "typst_compile_failed:${log}" "$(command -v typst)"
+  printf 'failed:%s:typst_compile_failed:%s\n' "$stem" "$log" >&2
+  return 1
+}
+
 write_baseline_provenance_json() {
   local package_md="$1" out_dir="$2"
   local model_tmp
@@ -493,9 +593,21 @@ write_baseline_provenance_json() {
 const fs = require('fs');
 const data = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const outDir = process.argv[3];
+const sidecarStatus = (stem, path) => {
+  const statusPath = `${outDir}/.${stem}.status`;
+  if (!fs.existsSync(statusPath)) return fs.existsSync(path) ? 'passed' : 'not_run';
+  const raw = fs.readFileSync(statusPath, 'utf8');
+  const fields = Object.fromEntries(raw.trim().split(/\n/).filter(Boolean).map((line) => {
+    const index = line.indexOf('=');
+    if (index < 0) return [line, ''];
+    return [line.slice(0, index), line.slice(index + 1)];
+  }));
+  if (fields.status === 'passed' && !fs.existsSync(path)) return 'failed';
+  return fields.status || (fs.existsSync(path) ? 'passed' : 'not_run');
+};
 const pdfSlot = (name) => ({
   path: `${outDir}/${name}`,
-  status: fs.existsSync(`${outDir}/${name}`) ? 'passed' : 'not_run',
+  status: sidecarStatus(name.replace(/\.pdf$/, ''), `${outDir}/${name}`),
 });
 const provenance = {
   generated_from_markdown: true,
@@ -540,51 +652,111 @@ merge_combined_pdf() {
   local teaching_pdf="${out_dir}/teaching-plan.pdf"
   local lesson_pdf="${out_dir}/lesson-plans.pdf"
   local eot_pdf="${out_dir}/end-of-term-output/end-of-term-package.pdf"
-  [[ -f "$combined" ]] && { printf 'passed:existing_file'; return 0; }
+  rm -f "$combined"
   if ! all_split_pdfs_exist "$teaching_pdf" "$lesson_pdf" "$eot_enabled" "$eot_pdf"; then
+    write_pdf_status "$out_dir" "teaching-design-package" "failed" "missing_selected_split_pdfs" ""
     printf 'failed:missing_selected_split_pdfs'
     return 0
   fi
   if command -v pdfunite >/dev/null 2>&1; then
     if [[ "$eot_enabled" == "true" ]]; then
       pdfunite "$teaching_pdf" "$lesson_pdf" "$eot_pdf" "$combined" >/dev/null 2>&1 || {
+        write_pdf_status "$out_dir" "teaching-design-package" "failed" "pdfunite_failed" "$(command -v pdfunite)"
         printf 'failed:pdfunite_failed'
         return 0
       }
     else
       pdfunite "$teaching_pdf" "$lesson_pdf" "$combined" >/dev/null 2>&1 || {
+        write_pdf_status "$out_dir" "teaching-design-package" "failed" "pdfunite_failed" "$(command -v pdfunite)"
         printf 'failed:pdfunite_failed'
         return 0
       }
     fi
-    [[ -f "$combined" ]] && printf 'passed:pdfunite' || printf 'failed:combined_pdf_missing_after_merge'
+    if [[ -f "$combined" ]]; then
+      write_pdf_status "$out_dir" "teaching-design-package" "passed" "pdfunite" "$(command -v pdfunite)"
+      printf 'passed:pdfunite'
+    else
+      write_pdf_status "$out_dir" "teaching-design-package" "failed" "combined_pdf_missing_after_merge" "$(command -v pdfunite)"
+      printf 'failed:combined_pdf_missing_after_merge'
+    fi
     return 0
   fi
   if command -v qpdf >/dev/null 2>&1; then
     if [[ "$eot_enabled" == "true" ]]; then
       qpdf --empty --pages "$teaching_pdf" "$lesson_pdf" "$eot_pdf" -- "$combined" >/dev/null 2>&1 || {
+        write_pdf_status "$out_dir" "teaching-design-package" "failed" "qpdf_failed" "$(command -v qpdf)"
         printf 'failed:qpdf_failed'
         return 0
       }
     else
       qpdf --empty --pages "$teaching_pdf" "$lesson_pdf" -- "$combined" >/dev/null 2>&1 || {
+        write_pdf_status "$out_dir" "teaching-design-package" "failed" "qpdf_failed" "$(command -v qpdf)"
         printf 'failed:qpdf_failed'
         return 0
       }
     fi
-    [[ -f "$combined" ]] && printf 'passed:qpdf' || printf 'failed:combined_pdf_missing_after_merge'
+    if [[ -f "$combined" ]]; then
+      write_pdf_status "$out_dir" "teaching-design-package" "passed" "qpdf" "$(command -v qpdf)"
+      printf 'passed:qpdf'
+    else
+      write_pdf_status "$out_dir" "teaching-design-package" "failed" "combined_pdf_missing_after_merge" "$(command -v qpdf)"
+      printf 'failed:combined_pdf_missing_after_merge'
+    fi
     return 0
   fi
+  if command -v python3 >/dev/null 2>&1; then
+    local merge_log="${out_dir}/teaching-design-package.merge.stderr.log"
+    if python3 - "$combined" "$teaching_pdf" "$lesson_pdf" "$eot_enabled" "$eot_pdf" 2>"$merge_log" <<'PY'
+import sys
+try:
+    import fitz
+except Exception as exc:
+    print(f"python_fitz_unavailable: {exc}", file=sys.stderr)
+    sys.exit(2)
+
+combined, teaching_pdf, lesson_pdf, eot_enabled, eot_pdf = sys.argv[1:6]
+sources = [teaching_pdf, lesson_pdf]
+if eot_enabled == "true":
+    sources.append(eot_pdf)
+target = fitz.open()
+try:
+    for source in sources:
+        with fitz.open(source) as src:
+            target.insert_pdf(src)
+    target.save(combined)
+finally:
+    target.close()
+PY
+    then
+      if [[ -f "$combined" ]]; then
+        write_pdf_status "$out_dir" "teaching-design-package" "passed" "python_fitz" "$(command -v python3)"
+        printf 'passed:python_fitz'
+      else
+        write_pdf_status "$out_dir" "teaching-design-package" "failed" "combined_pdf_missing_after_python_fitz" "$(command -v python3)"
+        printf 'failed:combined_pdf_missing_after_python_fitz'
+      fi
+      return 0
+    fi
+    if grep -q '^python_fitz_unavailable:' "$merge_log"; then
+      :
+    else
+      write_pdf_status "$out_dir" "teaching-design-package" "failed" "python_fitz_failed:${merge_log}" "$(command -v python3)"
+      printf 'failed:python_fitz_failed'
+      return 0
+    fi
+  fi
+  write_pdf_status "$out_dir" "teaching-design-package" "merge_unavailable" "no_pdf_merge_tool" ""
   printf 'merge_unavailable:no_pdf_merge_tool'
 }
 
 write_manifest() {
   local package_md="$1" out_dir="$2" teaching_typ_status="$3" lesson_typ_status="$4"
   local manifest review_markers final_ready teaching_pdf_status lesson_pdf_status
+  local teaching_pdf_reason lesson_pdf_reason teaching_pdf_tool lesson_pdf_tool
   local eot_enabled eot_status eot_handoff eot_source eot_workdir eot_manifest
   local eot_typ eot_pdf eot_typ_status eot_pdf_status eot_review_markers eot_review_cleared
   local calculated_scores_verified table_artifacts_verified workbook_verified
-  local combined_pdf combined_status combined_reason merge_result
+  local combined_pdf combined_status combined_reason combined_tool merge_result
   local baseline_mode=false provenance_json package_typ_status package_markdown_artifact
   mkdir -p "$out_dir"
   manifest="${out_dir}/${MANIFEST_NAME}"
@@ -594,8 +766,12 @@ write_manifest() {
   else
     review_markers="$(review_marker_state "$package_md")"
   fi
-  teaching_pdf_status="$(status_for_file "${out_dir}/teaching-plan.pdf" "not_run")"
-  lesson_pdf_status="$(status_for_file "${out_dir}/lesson-plans.pdf" "not_run")"
+  teaching_pdf_status="$(artifact_status "$out_dir" "teaching-plan" "${out_dir}/teaching-plan.pdf" "not_run")"
+  lesson_pdf_status="$(artifact_status "$out_dir" "lesson-plans" "${out_dir}/lesson-plans.pdf" "not_run")"
+  teaching_pdf_reason="$(artifact_reason "$out_dir" "teaching-plan")"
+  lesson_pdf_reason="$(artifact_reason "$out_dir" "lesson-plans")"
+  teaching_pdf_tool="$(artifact_tool "$out_dir" "teaching-plan")"
+  lesson_pdf_tool="$(artifact_tool "$out_dir" "lesson-plans")"
   eot_enabled="$(end_of_term_enabled "$package_md")"
   [[ "$eot_enabled" == "true" ]] || eot_enabled="false"
   eot_handoff="${out_dir}/end-of-term-full.md"
@@ -627,9 +803,6 @@ write_manifest() {
   package_markdown_artifact="${out_dir}/teaching-design-package-full.md"
   if [[ "$baseline_mode" == true ]]; then
     [[ -f "$package_markdown_artifact" ]] || cp "$package_md" "$package_markdown_artifact"
-    provenance_json="$(write_baseline_provenance_json "$package_md" "$out_dir")"
-  else
-    provenance_json='{}'
   fi
   combined_pdf="${out_dir}/teaching-design-package.pdf"
   merge_result="$(merge_combined_pdf "$out_dir" "$eot_enabled")"
@@ -637,6 +810,13 @@ write_manifest() {
   combined_reason="${merge_result#*:}"
   if [[ "$combined_status" == "$combined_reason" ]]; then
     combined_reason=""
+  fi
+  combined_reason="$(artifact_reason "$out_dir" "teaching-design-package")"
+  combined_tool="$(artifact_tool "$out_dir" "teaching-design-package")"
+  if [[ "$baseline_mode" == true ]]; then
+    provenance_json="$(write_baseline_provenance_json "$package_md" "$out_dir")"
+  else
+    provenance_json='{}'
   fi
   if [[ "$review_markers" == "[]" && "$teaching_pdf_status" == "passed" && "$lesson_pdf_status" == "passed" && "$combined_status" == "passed" && "$eot_status" != "blocked_review" && "$eot_status" != "planned" && "$eot_status" != "not_run" ]]; then
     final_ready="true"
@@ -665,11 +845,15 @@ write_manifest() {
     printf '    },\n'
     printf '    "teaching_plan_pdf": {\n'
     printf '      "path": "%s",\n' "$(json_escape "${out_dir}/teaching-plan.pdf")"
-    printf '      "status": "%s"\n' "$teaching_pdf_status"
+    printf '      "status": "%s",\n' "$teaching_pdf_status"
+    printf '      "reason": "%s",\n' "$(json_escape "$teaching_pdf_reason")"
+    printf '      "tool": "%s"\n' "$(json_escape "$teaching_pdf_tool")"
     printf '    },\n'
     printf '    "lesson_plans_pdf": {\n'
     printf '      "path": "%s",\n' "$(json_escape "${out_dir}/lesson-plans.pdf")"
-    printf '      "status": "%s"\n' "$lesson_pdf_status"
+    printf '      "status": "%s",\n' "$lesson_pdf_status"
+    printf '      "reason": "%s",\n' "$(json_escape "$lesson_pdf_reason")"
+    printf '      "tool": "%s"\n' "$(json_escape "$lesson_pdf_tool")"
     printf '    },\n'
     printf '    "end_of_term_typ": {\n'
     printf '      "path": "%s",\n' "$(json_escape "$eot_typ")"
@@ -688,14 +872,18 @@ write_manifest() {
     printf '    "path": "%s",\n' "$(json_escape "${out_dir}/lesson-plans.typ")"
     printf '    "status": "%s"\n' "$lesson_typ_status"
     printf '  },\n'
-    printf '  "teaching_plan_pdf": {\n'
-    printf '    "path": "%s",\n' "$(json_escape "${out_dir}/teaching-plan.pdf")"
-    printf '    "status": "%s"\n' "$teaching_pdf_status"
-    printf '  },\n'
-    printf '  "lesson_plans_pdf": {\n'
-    printf '    "path": "%s",\n' "$(json_escape "${out_dir}/lesson-plans.pdf")"
-    printf '    "status": "%s"\n' "$lesson_pdf_status"
-    printf '  },\n'
+  printf '  "teaching_plan_pdf": {\n'
+  printf '    "path": "%s",\n' "$(json_escape "${out_dir}/teaching-plan.pdf")"
+  printf '    "status": "%s",\n' "$teaching_pdf_status"
+  printf '    "reason": "%s",\n' "$(json_escape "$teaching_pdf_reason")"
+  printf '    "tool": "%s"\n' "$(json_escape "$teaching_pdf_tool")"
+  printf '  },\n'
+  printf '  "lesson_plans_pdf": {\n'
+  printf '    "path": "%s",\n' "$(json_escape "${out_dir}/lesson-plans.pdf")"
+  printf '    "status": "%s",\n' "$lesson_pdf_status"
+  printf '    "reason": "%s",\n' "$(json_escape "$lesson_pdf_reason")"
+  printf '    "tool": "%s"\n' "$(json_escape "$lesson_pdf_tool")"
+  printf '  },\n'
     printf '  "end_of_term": {\n'
     printf '    "enabled": %s,\n' "$eot_enabled"
     printf '    "status": "%s",\n' "$eot_status"
@@ -725,7 +913,8 @@ write_manifest() {
     printf '  "combined_output": {\n'
     printf '    "path": "%s",\n' "$(json_escape "$combined_pdf")"
     printf '    "status": "%s",\n' "$combined_status"
-    printf '    "reason": "%s"\n' "$(json_escape "$combined_reason")"
+    printf '    "reason": "%s",\n' "$(json_escape "$combined_reason")"
+    printf '    "tool": "%s"\n' "$(json_escape "$combined_tool")"
     printf '  },\n'
     printf '  "review_markers": %s,\n' "$review_markers"
     printf '  "final_ready": %s\n' "$final_ready"
@@ -1222,14 +1411,30 @@ cmd_render_package() {
   [[ -n "$OUT_DIR" ]] || die "render-package requires --out-dir"
   validate_package "$INPUT"
   mkdir -p "$OUT_DIR"
-  local teaching_status="planned" lesson_status="planned"
+  local teaching_status="planned" lesson_status="planned" render_pdf="$RENDER_PDF"
+  local pdf_failed=false
   if is_baseline_package "$INPUT"; then
     cmd_render_split --input "$INPUT" --out-dir "$OUT_DIR"
     write_package_typ "$INPUT" "$OUT_DIR"
   fi
   [[ -f "${OUT_DIR}/teaching-plan.typ" ]] && teaching_status="passed"
   [[ -f "${OUT_DIR}/lesson-plans.typ" ]] && lesson_status="passed"
+  if [[ "$render_pdf" == true ]]; then
+    rm -f \
+      "${OUT_DIR}/teaching-plan.pdf" \
+      "${OUT_DIR}/lesson-plans.pdf" \
+      "${OUT_DIR}/teaching-design-package.pdf" \
+      "$(pdf_status_file "$OUT_DIR" "teaching-plan")" \
+      "$(pdf_status_file "$OUT_DIR" "lesson-plans")" \
+      "$(pdf_status_file "$OUT_DIR" "teaching-design-package")"
+    compile_typst_pdf "${OUT_DIR}/teaching-plan.typ" "${OUT_DIR}/teaching-plan.pdf" "$OUT_DIR" "teaching-plan" || pdf_failed=true
+    compile_typst_pdf "${OUT_DIR}/lesson-plans.typ" "${OUT_DIR}/lesson-plans.pdf" "$OUT_DIR" "lesson-plans" || pdf_failed=true
+    mark_package_compile_allowed "$OUT_DIR"
+  fi
   write_manifest "$INPUT" "$OUT_DIR" "$teaching_status" "$lesson_status" >/dev/null
+  if [[ "$render_pdf" == true && "$pdf_failed" == true ]]; then
+    die "PDF compilation failed; see ${OUT_DIR}/*.typst.stderr.log and ${OUT_DIR}/${MANIFEST_NAME}"
+  fi
 }
 
 cmd_manifest() {
