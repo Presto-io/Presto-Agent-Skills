@@ -375,3 +375,138 @@ jiaoan-shicao manifest=passed
 ```
 
 No standalone command names, required inputs, or output semantics were changed. `jiaoan-shicao` was modified only to render each task's own `课时` value in the `学习任务分析` table, preserving the existing public render command and correcting generated content.
+
+## Generated artifact locations
+
+Final verification used fresh temp directory:
+
+```text
+/tmp/tdp-phase29-final.HlT7QC
+```
+
+Accepted package PDF artifacts:
+
+```text
+/tmp/tdp-phase29-final.HlT7QC/package/teaching-plan.pdf
+/tmp/tdp-phase29-final.HlT7QC/package/lesson-plans.pdf
+/tmp/tdp-phase29-final.HlT7QC/package/teaching-design-package.pdf
+```
+
+Standalone comparison artifacts:
+
+```text
+/tmp/tdp-phase29-final.HlT7QC/standalone-plan/teaching-plan.pdf
+/tmp/tdp-phase29-final.HlT7QC/standalone-lessons/lesson-plans.pdf
+```
+
+Generated artifacts remain under `/tmp` and are not committed.
+
+## Final verification run
+
+Final verification log:
+
+```text
+/tmp/tdp-phase29-final.HlT7QC/final-verification.log
+```
+
+Tool availability:
+
+```text
+typst=/opt/homebrew/bin/typst
+pdfunite=missing
+qpdf=missing
+pdftotext=missing
+pdfinfo=missing
+python3=/opt/homebrew/bin/python3
+fitz=available
+fitz_version=PyMuPDF 1.27.2.2
+```
+
+Package command result:
+
+```text
+/tmp/tdp-phase29-final.HlT7QC/package/teaching-plan.typ=exists
+/tmp/tdp-phase29-final.HlT7QC/package/lesson-plans.typ=exists
+/tmp/tdp-phase29-final.HlT7QC/package/teaching-design-package.typ=exists
+/tmp/tdp-phase29-final.HlT7QC/package/teaching-plan.pdf=exists
+/tmp/tdp-phase29-final.HlT7QC/package/lesson-plans.pdf=exists
+/tmp/tdp-phase29-final.HlT7QC/package/teaching-design-package.pdf=exists
+/tmp/tdp-phase29-final.HlT7QC/package/teaching-design-package-manifest.json=exists
+```
+
+Final parity and PDF evidence:
+
+```text
+teaching-plan.typ parity=passed
+lesson-plans.typ parity=passed
+pkg_plan.pages=2
+standalone_plan.pages=2
+pkg_plan.sha_text=4e82213c706cc93dd1554811386fbededb16d3763232834bbc51c17d20c30ab8
+standalone_plan.sha_text=4e82213c706cc93dd1554811386fbededb16d3763232834bbc51c17d20c30ab8
+pkg_lessons.pages=25
+standalone_lessons.pages=25
+pkg_lessons.sha_text=7d510056b4393d6b842e32df44de14d71cb1c536402b117dcb858e75598cd763
+standalone_lessons.sha_text=7d510056b4393d6b842e32df44de14d71cb1c536402b117dcb858e75598cd763
+combined.pages=27
+combined_pages_equals_split_sum=true
+plan_text_equal=true
+lessons_text_equal=true
+```
+
+Final combined PDF anchors:
+
+```text
+combined_anchor[授课进度计划]=true
+combined_anchor[教学设计方案]=true
+combined_anchor[学习任务分析]=true
+combined_anchor[教学活动设计]=true
+combined_anchor[学业评价]=true
+combined_anchor[160]=true
+combined_anchor[40H]=true
+combined_anchor[60H]=true
+combined_anchor[5 月11 日——5 月15 日]=true
+combined_anchor[5 月18 日——5 月27 日]=true
+combined_anchor[5 月27 日——6 月5 日]=true
+combined_anchor[2025-2026 学年第二学期]=true
+```
+
+Final manifest statuses:
+
+```text
+manifest.teaching_plan_pdf.status=passed
+manifest.lesson_plans_pdf.status=passed
+manifest.combined_output.status=passed
+manifest.combined_output.reason=python_fitz
+manifest.final_ready=true
+```
+
+Final command checks:
+
+```text
+bash -n skills/teaching-design-package/scripts/teaching-design-package.sh=passed
+forbidden_package_yaml=none
+public_interface_smoke=passed
+git diff --check=passed
+git diff --cached --check=passed
+```
+
+## Repository cleanliness
+
+At final verification time, `git status --short` showed only expected tracked Phase 29 edits before this verification file was updated. No generated PDFs, Typst smoke outputs, or `/tmp` deliverables were staged.
+
+## Requirement traceability
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| TDBR-06 | Passed | `render-package --pdf` produced real `teaching-plan.pdf`, `lesson-plans.pdf`, and `teaching-design-package.pdf`. |
+| TDBR-07 | Passed | Combined PDF has 27 pages, equal to 2 plan pages + 25 lesson pages, and contains anchors from both halves. |
+| TDBR-08 | Passed | Package teaching-plan Typst matched standalone render from `jiaoan-jihua-full.md`; PDF text hash and page count matched standalone PDF. |
+| TDBR-09 | Passed | Package lesson-plan Typst matched standalone render from `jiaoan-shicao-full.md`; PDF text hash and page count matched standalone PDF. |
+| TDBR-10 | Passed | `jiaoan-jihua` and `jiaoan-shicao` public `info`, `version`, and `manifest` commands passed; public command surfaces unchanged. |
+| TDBR-11 | Passed | Standalone render commands still consume their own generated handoff Markdown and do not require package Markdown or package flags. |
+| TDBR-12 | Passed | Manifest/Typst/handoff evidence records derived `160H`; package YAML forbidden field check passed. |
+| TDBR-13 | Passed | Manifest/Typst/handoff/PDF evidence records task hours `40H`, `60H`, `60H`. |
+| TDBR-14 | Passed | `activity_hour_mapping` evidence remains in handoff and manifest; unmapped activity hours are not invented. |
+| TDBR-15 | Passed | Manifest/Typst/handoff/PDF evidence records `5月11日——5月15日`, `5月18日——5月27日`, and `5月27日——6月5日`. |
+| TDBR-16 | Passed | Manifest/Typst/handoff/PDF evidence records `2025-2026学年第二学期`; package YAML forbidden field check passed. |
+| TDBR-17 | Passed | `total_hours`, `daily_hours`, `school_year`, `semester`, and related defaults remain absent from package YAML. |
