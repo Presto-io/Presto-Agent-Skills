@@ -508,8 +508,63 @@ if (activityHours !== null && activityHours !== totalHours) {
   });
 }
 
+const strictSumEvidence = {
+  total_hours_source: 'teaching_plan_rows',
+  forbidden_sources: [
+    'teaching_design_section',
+    'yaml_total_hours',
+    'yaml_daily_hours',
+    'handwritten_dates',
+    'renderer_local_calendar',
+  ],
+  rows: tasks.flatMap((task) => task.stages.flatMap((stage) => stage.rows.map((row) => ({
+    source: row.source,
+    task_source: task.source,
+    stage_source: stage.source,
+    task_title: task.title,
+    stage_title: stage.title,
+    raw_title: row.title,
+    raw_hours: row.hours,
+    assigned_hours: row.assigned_hours,
+    start_date: row.start_date,
+    end_date: row.end_date,
+    term_week: row.term_week,
+    weekday: row.weekday,
+    hour_consumption: row.hour_consumption,
+  })))),
+  stages: tasks.flatMap((task) => task.stages.map((stage) => ({
+    source: stage.source,
+    task_source: task.source,
+    title: stage.title,
+    row_sources: stage.rows.map((row) => row.source),
+    row_hours: stage.rows.map((row) => row.hours),
+    total_hours: stage.total_hours,
+    recompute_rule: 'sum(stage.rows[].hours)',
+  }))),
+  tasks: tasks.map((task) => ({
+    source: task.source,
+    title: task.title,
+    row_sources: task.rows.map((row) => row.source),
+    row_hours: task.rows.map((row) => row.hours),
+    total_hours: task.total_hours,
+    assigned_hours: task.assigned_hours,
+    recompute_rule: 'sum(task.stages[].rows[].hours)',
+  })),
+  course: {
+    row_sources: tasks.flatMap((task) => task.rows.map((row) => row.source)),
+    row_hours: tasks.flatMap((task) => task.rows.map((row) => row.hours)),
+    total_hours: totalHours,
+    recompute_rule: 'sum(schedule.tasks[].stages[].rows[].hours)',
+  },
+  renderer_contract: {
+    row_hour_cell: 'row.hours',
+    task_total_cell: 'task.total_hours',
+    scheduling_cells: 'row.hour_consumption from shared scheduling model',
+  },
+};
+
 const model = {
-  model_version: 'phase33.module-registry-scheduling.v1',
+  model_version: 'phase34.teaching-plan-formal-renderer.v1',
   source_markdown: inputPath,
   metadata,
   modules: {
@@ -560,6 +615,7 @@ const model = {
     hours_cross_check: activityHours === null ? 'phase33_not_declared' : 'passed',
     calendar_policy: scheduling.calendar.policy,
     shared_scheduling_model: true,
+    strict_sum_evidence: strictSumEvidence,
     errors: [],
   },
   output_readiness: {
