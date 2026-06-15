@@ -7,6 +7,7 @@ if [[ "$SCRIPT_DIR" == "${BASH_SOURCE[0]}" ]]; then
 fi
 SKILL_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TEMPLATE_MD="${SKILL_DIR}/templates/teaching-design-package-full.md"
+CALENDAR_JSON="${SKILL_DIR}/references/calendar.json"
 STATUS_NAME="status.json"
 DEFAULT_DAILY_HOURS=8
 
@@ -94,277 +95,8 @@ json_escape() {
 package_model_json() {
   local input="$1"
   need_file "$input"
-  node - "$input" "$DEFAULT_DAILY_HOURS" <<'NODE'
-const fs = require('fs');
-
-const inputPath = process.argv[2];
-const dailyHours = Number(process.argv[3] || 8);
-
-function fail(message) {
-  console.error(`teaching-design-package.sh: ${message}`);
-  process.exit(1);
-}
-
-function splitFrontmatter(markdown) {
-  const match = markdown.match(/^---\n([\s\S]*?)\n---\n?/);
-  if (!match) fail('frontmatter is required');
-  return { frontmatter: match[1], body: markdown.slice(match[0].length) };
-}
-
-function scalar(frontmatter, key) {
-  const match = frontmatter.match(new RegExp(`^${key}:\\s*(.*)$`, 'm'));
-  if (!match) return '';
-  return match[1].trim().replace(/^["']|["']$/g, '');
-}
-
-function list(frontmatter, key) {
-  const lines = frontmatter.split(/\n/);
-  const values = [];
-  let inList = false;
-  for (const line of lines) {
-    if (line === `${key}:`) {
-      inList = true;
-      continue;
-    }
-    if (!inList) continue;
-    const item = line.match(/^\s*-\s*(.*)$/);
-    if (item) {
-      values.push(item[1].trim().replace(/^["']|["']$/g, ''));
-      continue;
-    }
-    if (/^[A-Za-z0-9_-]+:/.test(line)) break;
-  }
-  return values;
-}
-
-function addDays(date, days) {
-  const value = new Date(`${date}T00:00:00Z`);
-  value.setUTCDate(value.getUTCDate() + days);
-  return value.toISOString().slice(0, 10);
-}
-
-function labelDate(date) {
-  const match = date.match(/^[0-9]{4}-([0-9]{2})-([0-9]{2})$/);
-  if (!match) return date;
-  return `${Number(match[1])}月${Number(match[2])}日`;
-}
-
-function dateRangeLabel(start, end) {
-  return `${labelDate(start)}--${labelDate(end)}`;
-}
-
-function weekdayName(date) {
-  return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][new Date(`${date}T00:00:00Z`).getUTCDay()];
-}
-
-function inferTerm(firstTeachingDay) {
-  const match = firstTeachingDay.match(/^([0-9]{4})-([0-9]{2})-[0-9]{2}$/);
-  if (!match) fail(`invalid first_teaching_day: ${firstTeachingDay}`);
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  if (month >= 9) return { school_year: `${year}-${year + 1}学年`, semester: '第一学期' };
-  return { school_year: `${year - 1}-${year}学年`, semester: '第二学期' };
-}
-
-function extractSection(markdown, heading, nextHeading) {
-  const start = markdown.match(new RegExp(`^# ${heading}$`, 'm'));
-  if (!start) fail(`missing # ${heading}`);
-  const startIndex = start.index + start[0].length;
-  const rest = markdown.slice(startIndex);
-  const end = nextHeading ? rest.match(new RegExp(`\\n# ${nextHeading}$`, 'm')) : null;
-  return (end ? rest.slice(0, end.index) : rest).replace(/^\n+|\n+$/g, '');
-}
-
-function parsePlanRows(planText) {
-  const tasks = [];
-  let currentTask = null;
-  let currentStage = null;
-  for (const line of planText.split(/\n/)) {
-    const taskMatch = line.match(/^##\s+(.+)$/);
-    if (taskMatch) {
-      currentTask = { title: taskMatch[1], stages: [], rows: [], total_hours: 0 };
-      tasks.push(currentTask);
-      currentStage = null;
-      continue;
-    }
-    const stageMatch = line.match(/^###\s+(.+)$/);
-    if (stageMatch) {
-      currentStage = { title: stageMatch[1], rows: [], total_hours: 0 };
-      if (currentTask) currentTask.stages.push(currentStage);
-      continue;
-    }
-    const rowMatch = line.match(/^(.+)-([0-9]+)$/);
-    if (currentTask && currentStage && rowMatch) {
-      const row = {
-        title: rowMatch[1].trim(),
-        hours: Number(rowMatch[2]),
-        task_title: currentTask.title,
-        stage_title: currentStage.title,
-      };
-      currentStage.rows.push(row);
-      currentStage.total_hours += row.hours;
-      currentTask.rows.push(row);
-      currentTask.total_hours += row.hours;
-    }
-  }
-  if (!tasks.length) fail('no schedule tasks found');
-  for (const task of tasks) {
-    if (!task.rows.length) fail(`schedule task has no hour rows: ${task.title}`);
-  }
-  return tasks;
-}
-
-function assignDates(tasks, firstTeachingDay) {
-  let currentDate = firstTeachingDay;
-  let remaining = dailyHours;
-  let consumedDays = 0;
-  for (const task of tasks) {
-    let start = '';
-    let end = '';
-    for (const row of task.rows) {
-      let left = row.hours;
-      row.consumption = [];
-      while (left > 0) {
-        if (!start) start = currentDate;
-        end = currentDate;
-        const take = Math.min(left, remaining);
-        row.consumption.push({ date: currentDate, weekday: weekdayName(currentDate), hours: take });
-        left -= take;
-        remaining -= take;
-        if (remaining === 0) {
-          consumedDays += 1;
-          currentDate = addDays(firstTeachingDay, consumedDays);
-          remaining = dailyHours;
-        }
-      }
-    }
-    task.start_date = start;
-    task.end_date = end;
-    task.date_range = dateRangeLabel(start, end);
-  }
-}
-
-function reviewMarkers(markdown) {
-  const match = markdown.match(/^## 复核标记\n([\s\S]*?)(?:\n## |\n# |$)/m);
-  if (!match) return [];
-  return match[1].split(/\n/).map((line) => line.trim()).filter((line) => line && line !== '无' && !line.startsWith('<!--'));
-}
-
-function parseActivityHours(designText) {
-  const values = [];
-  for (const match of designText.matchAll(/(?:^|\n)\s*(?:活动课时|教学活动课时|lesson_activity_hours)\s*[:：]\s*([0-9]+(?:\.[0-9]+)?)\s*(?:H|h|课时)?\s*(?=\n|$)/g)) {
-    values.push(Number(match[1]));
-  }
-  return values;
-}
-
-const markdown = fs.readFileSync(inputPath, 'utf8');
-const { frontmatter } = splitFrontmatter(markdown);
-const forbidden = [
-  'total_hours',
-  'school_year',
-  'semester',
-  'start_date',
-  'end_date',
-  'date_range',
-  'daily_hours',
-  'hour_unit',
-  'date_display_format',
-  'date_locale',
-  'calendar_policy',
-  'calendar_source',
-  'holidays',
-  'makeup_days',
-  'source_of_truth',
-  'outputs',
-  'validation',
-  'status',
-  'manifest',
-  'output_readiness',
-  'final_ready',
-  'pdf_ready',
-  'typst_ready',
-];
-const forbiddenPresent = forbidden.filter((key) => new RegExp(`^${key}:`, 'm').test(frontmatter));
-if (forbiddenPresent.length) fail(`package frontmatter must not own derived fields: ${forbiddenPresent.join(', ')}`);
-
-const firstTeachingDay = scalar(frontmatter, 'first_teaching_day');
-if (!firstTeachingDay) fail('first_teaching_day is required');
-const planText = extractSection(markdown, '授课进度计划', '教学设计方案');
-const designText = extractSection(markdown, '教学设计方案');
-const tasks = parsePlanRows(planText);
-assignDates(tasks, firstTeachingDay);
-const teachers = list(frontmatter, 'teachers');
-const term = inferTerm(firstTeachingDay);
-const totalHours = tasks.reduce((sum, task) => sum + task.total_hours, 0);
-const activityHourValues = parseActivityHours(designText);
-const activityHours = activityHourValues.length ? activityHourValues.reduce((sum, value) => sum + value, 0) : null;
-if (activityHours !== null && activityHours !== totalHours) {
-  fail(`teaching-plan total hours (${totalHours}) and teaching-design activity hours (${activityHours}) mismatch`);
-}
-
-const model = {
-  model_version: 'phase30.package-owned.v1',
-  source_markdown: inputPath,
-  metadata: {
-    course_name: scalar(frontmatter, 'course_name'),
-    major_name: scalar(frontmatter, 'major_name'),
-    course_attribute: scalar(frontmatter, 'course_attribute'),
-    textbook_name: scalar(frontmatter, 'textbook_name'),
-    class_name: scalar(frontmatter, 'class_name'),
-    teachers,
-    teacher_name: teachers.join('、'),
-    first_teaching_day: firstTeachingDay,
-  },
-  derived: {
-    total_hours: totalHours,
-    total_hours_label: `${totalHours}H`,
-    daily_hours: dailyHours,
-    calendar_policy: 'sequential_teaching_days_default',
-    school_year: term.school_year,
-    semester: term.semester,
-    term_label: `${term.school_year}${term.semester}`,
-    start_date: tasks[0].start_date,
-    end_date: tasks[tasks.length - 1].end_date,
-    date_range: dateRangeLabel(tasks[0].start_date, tasks[tasks.length - 1].end_date),
-  },
-  schedule: {
-    tasks,
-  },
-  teaching_design: {
-    markdown: designText,
-    analysis_blocks: (designText.match(/^## 学习任务分析$/gm) || []).length,
-    activity_blocks: (designText.match(/^## 教学活动设计/gm) || []).length,
-    activity_hours: {
-      declared: activityHours !== null,
-      values: activityHourValues,
-      total_hours: activityHours,
-      matches_teaching_plan: activityHours === null ? null : activityHours === totalHours,
-    },
-    evaluation_blocks: (designText.match(/^## 学业评价$/gm) || []).length,
-  },
-  resources: {
-    rows: [...designText.matchAll(/^### 五、学习资源\n([\s\S]*?)(?:\n## |\n### |$)/gm)].map((match) => match[1].trim()),
-  },
-  review_markers: reviewMarkers(markdown),
-  validation: {
-    final_ready: false,
-    total_hours_source: 'teaching_plan_rows',
-    teaching_design_activity_hours_source: activityHours === null ? 'not_declared' : 'teaching_design_body',
-    hours_cross_check: activityHours === null ? 'not_declared' : 'passed',
-    calendar_policy: 'sequential_teaching_days_default',
-    errors: [],
-  },
-  output_readiness: {
-    markdown_valid: true,
-    typst_ready: true,
-    pdf_ready: false,
-    final_ready: false,
-  },
-};
-
-console.log(JSON.stringify(model, null, 2));
-NODE
+  need_file "$CALENDAR_JSON"
+  node "${SCRIPT_DIR}/package-model.js" "$input" "$DEFAULT_DAILY_HOURS" "$CALENDAR_JSON"
 }
 
 cmd_example() {
@@ -375,11 +107,71 @@ cmd_example() {
   cp "$TEMPLATE_MD" "$OUTPUT"
 }
 
+write_failure_diagnostics() {
+  local input="$1" out_dir="$2" stderr_path="$3"
+  local diagnostics_path status_path
+  diagnostics_path="${out_dir}/.teaching-design-package/diagnostics.json"
+  status_path="${out_dir}/.teaching-design-package/${STATUS_NAME}"
+  mkdir -p "${out_dir}/.teaching-design-package/failure-diagnostics"
+  node - "$input" "$stderr_path" "$diagnostics_path" "$status_path" <<'NODE'
+const fs = require('fs');
+const input = process.argv[2];
+const stderrPath = process.argv[3];
+const diagnosticsPath = process.argv[4];
+const statusPath = process.argv[5];
+const stderr = fs.existsSync(stderrPath) ? fs.readFileSync(stderrPath, 'utf8') : '';
+const diagnosticLine = stderr.split(/\n/).find((line) => line.startsWith('TDPKG_DIAGNOSTIC_JSON='));
+let error = { code: 'unknown_failure', message: stderr.trim() || 'unknown failure' };
+if (diagnosticLine) {
+  try {
+    error = JSON.parse(diagnosticLine.slice('TDPKG_DIAGNOSTIC_JSON='.length));
+  } catch (_error) {
+    error = { code: 'invalid_diagnostic_payload', message: stderr.trim() };
+  }
+}
+const diagnostics = {
+  status: 'failed',
+  source_markdown: input,
+  errors: [error],
+  stderr_log: stderrPath,
+  failure_classes: [
+    'missing_section',
+    'invalid_frontmatter',
+    'forbidden_derived_frontmatter',
+    'malformed_schedule_row',
+    'missing_module_source',
+    'missing_calendar_resource',
+    'invalid_calendar_json',
+    'first_day_not_found',
+    'calendar_exhausted',
+    'non_positive_hours',
+    'teaching_design_hours_inconsistent',
+    'hidden_artifact_write_failure',
+    'public_root_leakage',
+  ],
+};
+fs.writeFileSync(diagnosticsPath, JSON.stringify(diagnostics, null, 2));
+fs.writeFileSync(statusPath, JSON.stringify({
+  generated_from_markdown: false,
+  status: 'failed',
+  source_markdown: input,
+  diagnostics: diagnosticsPath,
+  errors: [error],
+}, null, 2));
+fs.copyFileSync(diagnosticsPath, diagnosticsPath.replace('/diagnostics.json', '/failure-diagnostics/diagnostics.json'));
+fs.copyFileSync(statusPath, statusPath.replace('/status.json', '/failure-diagnostics/status.json'));
+NODE
+}
+
 write_model_file() {
   local input="$1" out_dir="$2" model_path
   model_path="${out_dir}/.teaching-design-package/model.json"
   mkdir -p "${out_dir}/.teaching-design-package/work" "${out_dir}/.teaching-design-package/debug" "${out_dir}/.teaching-design-package/failure-diagnostics"
-  package_model_json "$input" > "$model_path"
+  if ! package_model_json "$input" > "$model_path" 2>"${out_dir}/.teaching-design-package/debug/model.stderr.log"; then
+    write_failure_diagnostics "$input" "$out_dir" "${out_dir}/.teaching-design-package/debug/model.stderr.log"
+    cat "${out_dir}/.teaching-design-package/debug/model.stderr.log" >&2
+    return 1
+  fi
   printf '%s\n' "$model_path"
 }
 
@@ -455,6 +247,64 @@ fs.writeFileSync(typPath, lines.join('\n'));
 NODE
 }
 
+write_module_markdown_files() {
+  local model_path="$1" out_dir="$2"
+  node - "$model_path" "$out_dir" <<'NODE'
+const fs = require('fs');
+const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const outDir = process.argv[3];
+
+function yamlValue(value) {
+  if (typeof value === 'number') return String(value);
+  return `"${String(value ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+function frontmatterYaml(frontmatter) {
+  return [
+    '---',
+    ...Object.entries(frontmatter).map(([key, value]) => `${key}: ${yamlValue(value)}`),
+    '---',
+    '',
+  ].join('\n');
+}
+
+function moduleById(id) {
+  const found = model.modules.items.find((item) => item.id === id);
+  if (!found) throw new Error(`missing module in model: ${id}`);
+  return found;
+}
+
+const plan = moduleById('teaching-plan');
+const design = moduleById('teaching-design');
+const planLines = [
+  frontmatterYaml(plan.frontmatter),
+  '# 授课进度计划',
+  '',
+];
+for (const task of model.schedule.tasks) {
+  planLines.push(`## ${task.title}`, '');
+  for (const stage of task.stages) {
+    planLines.push(`### ${stage.title}`, '');
+    for (const row of stage.rows) {
+      planLines.push(`${row.title}-${row.assigned_hours}`);
+    }
+    planLines.push('');
+  }
+}
+
+const designLines = [
+  frontmatterYaml(design.frontmatter),
+  '# 教学设计方案',
+  '',
+  model.teaching_design.markdown,
+  '',
+];
+
+fs.writeFileSync(`${outDir}/${plan.work_markdown}`, planLines.join('\n'));
+fs.writeFileSync(`${outDir}/${design.work_markdown}`, designLines.join('\n'));
+NODE
+}
+
 write_placeholder_pdf_typst() {
   local model_path="$1" typ_path="$2" title="$3"
   node - "$model_path" "$typ_path" "$title" <<'NODE'
@@ -464,8 +314,9 @@ const typPath = process.argv[3];
 const title = process.argv[4];
 const esc = (value) => String(value ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 const lines = [
-  '// Package-owned PDF surface.',
-  '// This file is generated from the unified package model.',
+  '// Package-owned Phase 33 module Typst intermediate.',
+  '// Pre-formal surface only; formal renderer migration is Phase 34/35 scope.',
+  '// This file is generated from the shared package model.',
   `#set document(title: "${esc(title)}", author: "${esc(model.metadata.teacher_name)}")`,
   '',
   `= ${title}`,
@@ -513,6 +364,7 @@ const publicOutputs = {
 const status = {
   generated_from_markdown: true,
   package_owned_model: true,
+  phase33_module_registry: true,
   source_markdown: model.source_markdown,
   hidden_model: `${outDir}/.teaching-design-package/model.json`,
   hidden_status: statusPath,
@@ -520,6 +372,20 @@ const status = {
   hidden_debug_dir: `${outDir}/.teaching-design-package/debug`,
   hidden_failure_diagnostics_dir: `${outDir}/.teaching-design-package/failure-diagnostics`,
   derived: model.derived,
+  scheduling: {
+    calendar: model.scheduling.calendar,
+    first_teaching_day: model.scheduling.first_teaching_day,
+    daily_hours: model.scheduling.daily_hours,
+    daily_hours_source: model.scheduling.daily_hours_source,
+    term_week_start: model.scheduling.term_week_start,
+    consumed_calendar_range: model.scheduling.consumed_calendar_range,
+    total_hours: model.scheduling.total_hours,
+    use_time: model.scheduling.course.use_time,
+  },
+  modules: {
+    registry: model.modules.registry,
+    generated_frontmatter: Object.fromEntries(model.modules.items.map((item) => [item.id, item.frontmatter])),
+  },
   validation: model.validation,
   public_outputs: publicOutputs,
   pdf_requested: pdfRequested,
@@ -548,16 +414,54 @@ const fs = require('fs');
 const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const diagnosticsPath = process.argv[3];
 const diagnostics = {
+  status: 'passed',
   package_owned_model: true,
+  phase33_module_registry: true,
   source_markdown: model.source_markdown,
+  calendar: model.scheduling.calendar,
+  first_teaching_day: model.scheduling.first_teaching_day,
+  daily_hours: model.scheduling.daily_hours,
+  daily_hours_source: model.scheduling.daily_hours_source,
+  term_week_start: model.scheduling.term_week_start,
+  consumed_calendar_range: model.scheduling.consumed_calendar_range,
+  row_consumption_summary: model.scheduling.row_consumption_summary,
+  task_totals: model.scheduling.tasks,
+  total_hours: model.scheduling.total_hours,
+  use_time: model.scheduling.course.use_time,
+  module_registry: model.modules.registry,
+  generated_module_frontmatter: Object.fromEntries(model.modules.items.map((item) => [item.id, item.frontmatter])),
   calendar_policy: model.derived.calendar_policy,
   total_hours_source: model.validation.total_hours_source,
   teaching_design_activity_hours_source: model.validation.teaching_design_activity_hours_source,
   hours_cross_check: model.validation.hours_cross_check,
   review_markers_count: model.review_markers.length,
+  failure_classes: [
+    'missing_section',
+    'invalid_frontmatter',
+    'forbidden_derived_frontmatter',
+    'malformed_schedule_row',
+    'missing_module_source',
+    'missing_calendar_resource',
+    'invalid_calendar_json',
+    'first_day_not_found',
+    'calendar_exhausted',
+    'non_positive_hours',
+    'teaching_design_hours_inconsistent',
+    'hidden_artifact_write_failure',
+    'public_root_leakage',
+  ],
 };
 fs.writeFileSync(diagnosticsPath, JSON.stringify(diagnostics, null, 2));
 NODE
+}
+
+assert_no_public_leakage() {
+  local out_dir="$1" leak
+  leak="$(find "$out_dir" -maxdepth 1 -type f -print | rg 'teaching-plan[.]md|teaching-design[.]md|teaching-plan[.]typ|teaching-design[.]typ|calendar[.]json|model[.]json|status[.]json|diagnostics[.]json|log' || true)"
+  if [[ -n "$leak" ]]; then
+    printf 'teaching-design-package.sh: public_root_leakage: %s\n' "$leak" >&2
+    return 1
+  fi
 }
 
 pdf_nonempty() {
@@ -585,6 +489,7 @@ cmd_render_package() {
   cp "$INPUT" "${OUT_DIR}/teaching-design-package-full.md"
   model_path="$(write_model_file "$INPUT" "$OUT_DIR")"
   write_unified_typst "$model_path" "${OUT_DIR}/teaching-design-package.typ"
+  write_module_markdown_files "$model_path" "$OUT_DIR"
   write_placeholder_pdf_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-plan.typ" "授课进度计划"
   write_placeholder_pdf_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-design.typ" "教学设计方案"
   if [[ "$RENDER_PDF" == true ]]; then
@@ -606,6 +511,10 @@ cmd_render_package() {
   fi
   write_status "$model_path" "$OUT_DIR" "$RENDER_PDF" "$full_status" "$plan_status" "$design_status"
   write_diagnostics "$model_path" "$OUT_DIR"
+  if ! assert_no_public_leakage "$OUT_DIR"; then
+    write_failure_diagnostics "$INPUT" "$OUT_DIR" "${OUT_DIR}/.teaching-design-package/debug/model.stderr.log"
+    die "public root leaked hidden package artifacts; diagnostics are under ${OUT_DIR}/.teaching-design-package/"
+  fi
   if [[ "$RENDER_PDF" == true ]]; then
     if [[ "$full_status" != "passed" || "$plan_status" != "passed" || "$design_status" != "passed" ]]; then
       cp "${OUT_DIR}/.teaching-design-package/${STATUS_NAME}" "${OUT_DIR}/.teaching-design-package/failure-diagnostics/${STATUS_NAME}"
@@ -633,14 +542,15 @@ cmd_compat_render() {
 }
 
 cmd_info() {
-  printf 'teaching-design-package: standalone unified Markdown to package-owned model and clean 1+1+3 delivery.\n'
+  printf 'teaching-design-package: standalone unified Markdown to package-owned module registry and shared scheduling model.\n'
   printf 'Package checkpoint: templates/teaching-design-package-full.md\n'
   printf 'Reference: references/format-and-orchestration.md\n'
+  printf 'Calendar: references/calendar.json\n'
   printf 'Normal rendering does not require repository sibling skill folders.\n'
 }
 
 cmd_version() {
-  printf 'teaching-design-package.sh 0.3.0-phase32\n'
+  printf 'teaching-design-package.sh 0.4.0-phase33\n'
 }
 
 main() {
