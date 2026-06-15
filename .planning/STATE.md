@@ -215,6 +215,7 @@ Start the next milestone with `/gsd:new-milestone` when ready.
 - v1.14 closeout acknowledged one open artifact from `gsd-sdk query audit-open`: quick task `260615-0853-correct-v114-doc-boundary` reported `missing` by the legacy audit query even though its plan, summary, and verification files exist and STATE lists it as Verified.
 - v1.15 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
 - v1.15 closeout preserved the same legacy `audit-open` quick-task compatibility item as deferred; no v1.15 audit, requirement, integration, or flow gaps remain.
+- v1.15.1 records the post-close `teaching-design-package` cover/hour formatting fix for `教学设计方案` without reopening v1.15; debug is resolved and user accepted the regenerated delivery artifacts.
 
 ## Deferred Items
 
@@ -229,7 +230,7 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 Phase: Milestone v1.15 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-06-15 — Milestone v1.15 completed and archived
+Last activity: 2026-06-15 — v1.15.1 post-close patch recorded; milestone remains archived
 
 ## Operator Next Steps
 
