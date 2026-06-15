@@ -53,9 +53,9 @@ Success criteria:
 
 **Goal:** Migrate the accepted `jiaoan-jihua` teaching-plan format rules into package-owned internals and prove the generated 授课进度计划表 module is formally equivalent to the legacy baseline.
 **Depends on:** Phase 33
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete
 **Requirements:** TDPKG-LEGACY-01, TDPKG-LEGACY-03, TDPKG-LEGACY-04, TDPKG-VAL-01
-**Status:** Pending
+**Status:** Complete
 
 Success criteria:
 
@@ -137,11 +137,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 33 is complete. The module registry, unified Markdown extraction, YAML conversion, skill-local calendar resource, shared scheduling model, hidden module Markdown/Typst, and diagnostics foundation are ready for Phase 34 formal teaching-plan renderer migration.
+Phase 34 is complete. The package-owned formal `授课进度计划表` renderer, hidden `teaching-plan.typ`, real `teaching-plan.pdf`, strict row-hour evidence, legacy fixture equivalence, standalone-copy check, and legacy skill preservation are ready for Phase 35 teaching-design renderer migration.
 
 ## Next Step
 
-Run `/gsd:execute-phase 34` to migrate the formal `授课进度计划表` renderer into package-owned internals.
+Run `/gsd:discuss-phase 35` to prepare the formal `教学设计方案` renderer migration and cross-module validation.
 
 ---
-*Roadmap updated: 2026-06-15 after v1.15 milestone initialization*
+*Roadmap updated: 2026-06-15 after Phase 34 execution*

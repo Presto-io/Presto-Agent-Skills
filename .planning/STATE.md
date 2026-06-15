@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.15
 milestone_name: teaching-design-package 模块化渲染与旧格式回归
-current_phase: 33
+current_phase: 34
 status: completed
-stopped_at: Phase 34 context gathered
-last_updated: "2026-06-15T06:50:22.951Z"
-last_activity: 2026-06-15 -- Phase 33 execution complete
+stopped_at: Phase 34 complete
+last_updated: "2026-06-15T07:29:23.980Z"
+last_activity: 2026-06-15 -- Phase 34 execution complete
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
   percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 33
-**Status:** Phase 33 complete
+**Current Phase:** 34
+**Status:** Phase 34 complete
 
 ## Project Reference
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone start)
 
 ## Next Up
 
-Discuss and plan the first v1.15 implementation phase:
+Discuss and plan the next v1.15 implementation phase:
 
-- `/gsd:discuss-phase 33`
+- `/gsd:discuss-phase 35`
 
 ## Accumulated Context
 
@@ -148,6 +148,8 @@ Discuss and plan the first v1.15 implementation phase:
 - [Phase 32]: Clean 1+1+3 delivery and scheduling regression gate is implemented. — Successful delivery roots contain only `teaching-design-package-full.md`, `teaching-design-package.typ`, `teaching-design-package.pdf`, `teaching-plan.pdf`, and `teaching-design.pdf`; diagnostics/status/model/logs/split Typst stay hidden; derived scheduling and standalone-copy verification passed.
 - [Phase 33]: teaching-design-package uses a package-owned module registry and skill-local calendar scheduling model. — Registered `teaching-plan` and `teaching-design` now share one scheduling object derived from `references/calendar.json`, `first_teaching_day`, and授课计划 rows.
 - [Phase 33]: Hidden module Markdown/Typst are internal Phase 33 artifacts only. — Formal `jiaoan-jihua` and `jiaoan-shicao` renderer migration remains Phase 34/35 scope, and final public PDF merge remains Phase 36 scope.
+- [Phase 34]: teaching-design-package owns the migrated formal teaching-plan renderer. — Hidden `teaching-plan.typ` now uses the accepted `jiaoan-jihua` official five-column table surface from the shared scheduling model, while legacy `jiaoan-jihua` remains a read-only oracle and not a runtime dependency.
+- [Phase 34]: TDPKG-VAL-01 strict hour authority is model validation evidence. — `validation.strict_sum_evidence` records row, stage, task, and course totals from `# 授课进度计划` row suffixes only.
 
 ## Performance Metrics
 
@@ -179,12 +181,13 @@ Discuss and plan the first v1.15 implementation phase:
 | Phase 29 P01 | 23min | 7 tasks | 5 files |
 | Phase 31 P01 | current session | 5 tasks | 4 files |
 | Phase 33 P01 | 19min | 6 tasks | 6 files |
+| Phase 34 P01 | 16min | 6 tasks | 6 files |
 
 ## Last Session
 
-- **Completed:** Phase 33 module registry, unified extraction, and scheduling model
-- **Stopped At:** Phase 34 context gathered
-- **Resume File:** .planning/phases/34-teaching-plan-formal-renderer-migration/34-CONTEXT.md
+- **Completed:** Phase 34 teaching-plan formal renderer migration
+- **Stopped At:** Phase 34 complete
+- **Resume File:** None
 
 ## Close Notes
 
@@ -215,14 +218,14 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: 33
-Plan: 33-PLAN.md
+Phase: 34
+Plan: 34-PLAN.md
 Status: Complete
-Last activity: 2026-06-15 -- Phase 33 execution complete
+Last activity: 2026-06-15 -- Phase 34 execution complete
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 34`
+- Run `/gsd:discuss-phase 35`
 
 ### Quick Tasks Completed
 
