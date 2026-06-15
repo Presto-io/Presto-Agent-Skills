@@ -26,15 +26,15 @@
 
 **v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约**
 
-This milestone corrects the integrated package experience so `teaching-design-package` is a standalone, teacher-facing unified skill. It must not require users to install sibling repo skills, must make the source-materials-to-full-Markdown workflow the canonical entry, and must keep renderer scripts as strict finalized-Markdown validation/delivery tools.
+This milestone corrects the integrated package experience so `teaching-design-package` is a standalone, teacher-facing unified two-in-one skill. It must not require users to install sibling repo skills, must not copy old templates or old split handoff structure into the package, must make the source-materials-to-full-Markdown workflow the canonical entry, and must keep renderer scripts as strict finalized-Markdown validation/delivery tools.
 
-Acceptance centers on a clean default 1+1+3 delivery contract: one unified Markdown, one unified Typst, and three PDFs. Internal handoff Markdown, split Typst, manifests, stderr logs, status files, and temporary state belong in hidden work/debug/failure diagnostics, not the default delivery directory. Derived scheduling behavior from v1.13 remains mandatory: hours, academic year/semester, and date ranges must come from plan/activity/calendar evidence rather than manual YAML facts.
+Acceptance centers on a clean default 1+1+3 delivery contract: one unified Markdown, one unified Typst, and three PDFs. Package-owned diagnostics, split render intermediates, manifests, stderr logs, status files, and temporary state belong in hidden work/debug/failure diagnostics, not the default delivery directory. Derived scheduling behavior from v1.13 remains mandatory: hours, academic year/semester, and date ranges must come from plan/activity/calendar evidence rather than manual YAML facts.
 
 ## Phases
 
 ### Phase 30: Standalone Skill Boundary and Internalized Dependencies
 
-**Goal:** Make `teaching-design-package` installable and understandable as one self-contained, package-owned skill while preserving legacy standalone skills outside the package.
+**Goal:** Make `teaching-design-package` installable and understandable as one self-contained, package-owned skill while preserving legacy standalone skills only as external compatibility surfaces outside the package.
 **Depends on:** Phase 29
 **Plans:** 1/1 plans complete
 **Requirements:** TDPKG-01, TDPKG-02, TDPKG-03, TDPKG-15
@@ -43,9 +43,9 @@ Acceptance centers on a clean default 1+1+3 delivery contract: one unified Markd
 Success criteria:
 
 1. Installation and runtime guidance prove `teaching-design-package` can be used without asking users to install repo sibling skill directories.
-2. Package behavior is implemented through a package-owned data model and package-owned Markdown/Typst/PDF rendering path, not by copying old standalone templates into package internals.
+2. Package behavior is implemented through a package-owned unified data model and package-owned Markdown/Typst/PDF rendering path, not by copying old standalone templates, old split Markdown layouts, or old handoff thinking into package internals.
 3. Runtime adapter notes cover Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent under the standalone install/use boundary.
-4. Existing legacy standalone entries and public contracts remain preserved outside the package.
+4. Existing legacy standalone entries and public contracts remain preserved outside the package and are not used as package internals, package resources, parity baselines, or future implementation direction.
 
 ### Phase 31: Teacher-Facing Unified Markdown Workflow
 
@@ -60,7 +60,7 @@ Success criteria:
 1. `SKILL.md` presents the primary workflow as ingesting many source materials, asking/clarifying, organizing, and producing one reviewable full-package Markdown.
 2. The output Markdown is described as `teaching-design-package-full.md` or a course-specific `某某某课教学资料.md`, and as the human-editable source of truth before rendering.
 3. Script usage is clearly bounded to finalized Markdown validation and delivery generation, not teacher interaction or content organization.
-4. The user-facing flow no longer asks teachers to mentally run and stitch together separate old standalone skills.
+4. The user-facing flow no longer asks teachers to mentally run and stitch together separate old standalone skills, and it does not wrap those old workflows inside package internals.
 
 ### Phase 32: Clean 1+1+3 Delivery and Scheduling Regression Gate
 
@@ -73,7 +73,7 @@ Success criteria:
 Success criteria:
 
 1. A default successful render produces only the unified Markdown, unified Typst, full package PDF, teaching-plan PDF, and teaching-design/lesson-plan PDF in the delivery directory.
-2. Internal legacy handoff Markdown, split Typst, manifests, stderr logs, status sidecars, temporary state, and handoff artifacts are absent from the default delivery directory.
+2. Copied legacy Markdown, split Typst, manifests, stderr logs, status sidecars, temporary state, and internal diagnostic artifacts are absent from the default delivery directory.
 3. Debug mode, hidden work directories, temporary directories, or failure diagnostics retain enough internal evidence to troubleshoot without polluting the default successful output.
 4. Total hours are computed from plan/activity data, not trusted from YAML as the authoritative source.
 5. Teaching-plan hours and lesson-plan activity hours are cross-checked, and mismatches fail or mark output non-final/review-needed.
@@ -117,11 +117,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.14 is initialized and ready for Phase 30 discussion or planning.
+Milestone v1.14 is initialized and Phase 30 planning has been corrected toward a package-owned two-in-one implementation boundary.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 30` or `/gsd:plan-phase 30` when ready.
+Run `/gsd:execute-phase 30` only when ready to implement the corrected package-owned boundary. Do not execute Phase 30 from quick-documentation correction tasks.
 
 ---
 *Roadmap updated: 2026-06-15 after v1.14 milestone initialization*

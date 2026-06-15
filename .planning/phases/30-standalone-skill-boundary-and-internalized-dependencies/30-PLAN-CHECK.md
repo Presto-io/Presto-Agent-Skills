@@ -11,7 +11,7 @@ The corrected Phase 30 plan is executable and satisfies the user's hard boundary
 - It forbids copying old standalone Markdown templates into `teaching-design-package`.
 - It forbids old-name package internals and old handoff naming.
 - It changes the target architecture to unified Markdown -> package-owned data model -> package-owned Typst/PDF rendering.
-- It keeps legacy standalone skills as external compatibility surfaces only.
+- It keeps legacy standalone skills as external compatibility surfaces only, not package internals or parity baselines.
 - It requires standalone-copy verification that installs only `teaching-design-package`.
 
 ## Coverage
@@ -33,8 +33,8 @@ The plan references D-01 through D-17 in `must_haves.truths`, then maps them int
 - Every task contains `read_first`, `action`, and `acceptance_criteria`.
 - Actions name concrete files, commands, and target boundaries.
 - Verification checks copy only `skills/teaching-design-package/`.
-- Verification includes a blocked-token scan for old handoff filenames and old-name internal paths.
-- The plan keeps Phase 31 teacher workflow rewrite and Phase 32 clean delivery enforcement out of Phase 30 scope while ensuring Phase 30 no longer points toward old-template vendoring.
+- Verification includes the v1.14 planning scan for old handoff filenames, old-name internal paths, and ambiguous old-copy wording.
+- The plan keeps Phase 31 teacher workflow rewrite and Phase 32 clean delivery enforcement out of Phase 30 scope while ensuring Phase 30 no longer points toward old-template copying or old handoff architecture.
 
 ## Residual Risk
 
