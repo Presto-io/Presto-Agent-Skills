@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.14
 milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
 current_phase: 31
-status: ready-for-planning
-stopped_at: Phase 30 complete
-last_updated: "2026-06-15T01:30:17Z"
-last_activity: 2026-06-15 -- Phase 30 completed standalone package-owned rendering boundary
+status: ready-for-execution
+stopped_at: Phase 31 planned
+last_updated: "2026-06-15T02:05:00Z"
+last_activity: 2026-06-15 -- Phase 31 planned teacher-facing unified Markdown workflow
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 2
+  completed_plans: 2
   percent: 33
 ---
 
@@ -19,7 +19,7 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 31
-**Status:** Phase 30 complete; ready for Phase 31 planning
+**Status:** Phase 31 planned; ready for Phase 31 execution
 
 ## Project Reference
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initializa
 
 ## Next Up
 
-Plan the next v1.14 workflow when ready:
+Execute the next v1.14 workflow when ready:
 
-- `/gsd:plan-phase 31`
+- `/gsd:execute-phase 31`
 
 ## Accumulated Context
 
@@ -198,13 +198,13 @@ Plan the next v1.14 workflow when ready:
 ## Current Position
 
 Phase: 31 - Teacher-Facing Unified Markdown Workflow
-Plan: 0/1 planned
-Status: Ready for planning
-Last activity: 2026-06-15 -- Phase 30 completed standalone package-owned rendering boundary
+Plan: 1/1 planned
+Status: Ready for execution
+Last activity: 2026-06-15 -- Phase 31 planned teacher-facing unified Markdown workflow
 
 ## Operator Next Steps
 
-- Run `/gsd:plan-phase 31` when ready to plan the next phase.
+- Run `/gsd:execute-phase 31` when ready to implement the teacher-facing workflow rewrite.
 
 ### Quick Tasks Completed
 
