@@ -16,8 +16,8 @@ The skill folder must remain usable when installed by itself. Script commands va
 - `TDPKG-04`: The canonical workflow starts from teacher source materials, clarification, organization, and one reviewable full-package Markdown.
 - `TDPKG-05`: The unified Markdown is the human-editable source of truth before rendering.
 - `TDPKG-06`: Scripts are finalized-Markdown validation and delivery tools, not the teacher's interactive organizing entry.
-- `TDPKG-07`: A successful public delivery directory contains exactly one unified Markdown, one unified Typst, and three PDFs.
-- `TDPKG-08`: Successful public delivery directories do not contain status, manifest, stderr log, model JSON, split Typst, or temporary state files.
+- `TDPKG-07`: A successful public delivery directory contains only course-name-prefixed `1 + 1 + N` files: one unified Markdown, one merged package PDF, and one PDF per registered module.
+- `TDPKG-08`: Successful public delivery directories do not contain `.typ`, status, manifest, stderr log, model JSON, diagnostics JSON, calendar JSON, module Markdown/Typst, staging files, old English success filenames, or temporary state files.
 - `TDPKG-09`: Package-owned diagnostics stay in hidden work/debug/failure paths.
 - `TDPKG-10`: Total hours are derived from body schedule/activity evidence, not YAML.
 - `TDPKG-11`: Teaching-plan hours and teaching-design activity hours are cross-checked when activity-hour evidence is declared.
@@ -234,84 +234,99 @@ The output root has two surfaces:
 1. **Public delivery directory**: only final teacher-facing files.
 2. **Hidden internal directory**: `.teaching-design-package/`, with stable subdirectories for `work`, `debug`, and `failure-diagnostics`.
 
-Default successful `render-package --pdf` uses stable English filenames for the public 1+1+3 set:
+Default successful `render-package --pdf` uses course-name-prefixed public filenames. The current public contract is `1 + 1 + N`; N is the number of registered modules. Current N=2:
 
-- `teaching-design-package-full.md` for the unified Markdown. The user may provide a course-specific input filename such as `某某某课教学资料.md`; the delivery root still receives the stable public copy.
-- `teaching-design-package.typ` for the unified Typst.
-- `teaching-design-package.pdf` for the full package PDF.
-- `teaching-plan.pdf` for the 授课进度计划 PDF.
-- `teaching-design.pdf` for the 教学设计方案 PDF.
+- `课程名教学资料.md` for the unified Markdown public copy.
+- `课程名教学资料.pdf` for the full package PDF created by merging registered module PDFs.
+- `课程名授课进度计划表.pdf` for the `teaching-plan` module PDF.
+- `课程名教学设计方案.pdf` for the `teaching-design` module PDF.
 
-Chinese teacher-facing names map to these stable script names:
+For the default template, the public root contains exactly:
 
-| Teacher-facing deliverable | Default script filename |
-|----------------------------|-------------------------|
-| `某某某课教学资料.md` | `teaching-design-package-full.md` |
-| `某某某课教学资料.typ` | `teaching-design-package.typ` |
-| `某某某课教学资料.pdf` | `teaching-design-package.pdf` |
-| `授课进度计划.pdf` | `teaching-plan.pdf` |
-| `教学设计方案.pdf` | `teaching-design.pdf` |
+- `电气设备控制线路安装与调试教学资料.md`
+- `电气设备控制线路安装与调试教学资料.pdf`
+- `电气设备控制线路安装与调试授课进度计划表.pdf`
+- `电气设备控制线路安装与调试教学设计方案.pdf`
+
+The old English filenames `teaching-design-package-full.md`, `teaching-design-package.typ`, `teaching-design-package.pdf`, `teaching-plan.pdf`, and `teaching-design.pdf` are no longer successful public output names. English names may remain internal helper names, staging names, or compatibility command names, but they must not appear at the successful public root.
 
 Internal evidence is never a successful public-root file:
 
 - `.teaching-design-package/model.json`
 - `.teaching-design-package/status.json`
-- `.teaching-design-package/work/` for split Typst and temporary render files
-- `.teaching-design-package/debug/` for stderr logs
+- `.teaching-design-package/work/` for module Markdown, module Typst, debug-only unified Typst, and temporary render files
+- `.teaching-design-package/staging/` for module PDFs and merged package PDF before public publication
+- `.teaching-design-package/debug/` for stderr logs, merge status, merge stderr, and tool evidence
 - `.teaching-design-package/failure-diagnostics/` for non-final status snapshots and failure evidence
 
-Root-level status files, manifests, stderr logs, model JSON, split Typst, temporary state, and failure diagnostics indicate a bug in the delivery boundary.
+Root-level `.typ`, status files, manifests, stderr logs, model JSON, diagnostics JSON, calendar JSON, module intermediates, staging files, old English success filenames, temporary state, and failure diagnostics indicate a bug in the delivery boundary.
 
 ## Rendering Rules
 
 `render-package` performs these steps:
 
-1. Copy the unified Markdown into the output directory as the human-readable source artifact.
+1. Clean expected public outputs and obsolete English success filenames so stale files cannot make a failed run look successful.
 2. Write hidden diagnostics under `.teaching-design-package/`.
 3. Generate hidden module Markdown under `.teaching-design-package/work/`.
 4. Generate formal hidden `teaching-plan.typ` from the package model and shared scheduling model.
 5. Generate formal hidden `teaching-design.typ` from the package model and shared scheduling model.
-6. Generate `teaching-design-package.typ` from the package model.
-7. Write `.teaching-design-package/status.json`.
-8. If `--pdf` is present, attempt package-owned PDF generation and record actual status.
+6. Generate debug-only unified Typst under `.teaching-design-package/work/`.
+7. If `--pdf` is present, compile every registered module Typst into a staging PDF under `.teaching-design-package/staging/`.
+8. Verify every registered module PDF exists, is non-empty, and has passed module status.
+9. Merge the staging module PDFs in module registry order into a staging `课程名教学资料.pdf`.
+10. Verify the merged package PDF exists and is non-empty.
+11. Publish the course-name-prefixed Markdown, merged package PDF, and module PDFs to the public root.
+12. Run public-root leakage checks and write `.teaching-design-package/status.json`.
 
 Typst-only rendering is the default. PDF status values are honest:
 
 - `not_run`: PDF was not requested.
-- `missing_compiler_or_failed`: local compiler is missing or failed.
+- `module_pdf_missing`: a registered module PDF was not produced before merge.
+- `module_pdf_empty`: a registered module PDF exists but is empty.
+- `merge_tool_unavailable`: no allowed merge tool was available.
+- `merge_tool_failed`: the selected merge tool returned non-zero.
+- `merged_pdf_empty`: the merge command returned but produced no non-empty output.
 - `passed`: an explicit compile ran and the expected file exists.
 
-`render-package --pdf` cannot report final success or exit 0 as a final delivery unless `teaching-design-package.pdf`, `teaching-plan.pdf`, and `teaching-design.pdf` all exist and are non-empty. If any PDF is missing or empty, the command exits non-zero, writes hidden status/failure diagnostics, and leaves enough evidence under `.teaching-design-package/` to troubleshoot without making the public root look complete.
+`render-package --pdf` cannot report final success or exit 0 as a final delivery unless all registered module PDFs exist and are non-empty, `课程名教学资料.pdf` is created by merging those module PDFs in registry order, the merged output is non-empty, public leakage checks pass, review markers are empty, and model validation has no errors. If any module PDF or merge step fails, the command exits non-zero, writes hidden status/failure diagnostics, and removes expected public outputs so the public root cannot look complete.
+
+Allowed merge tools are selected by availability in this order:
+
+1. `pdfunite`
+2. `qpdf`
+3. Python PyMuPDF fallback, recorded as `python_fitz`
+
+`status.json` records `merge_tool`, `command_summary`, `merge_inputs`, module ids, display names, staging paths, public paths, source Typst paths, input byte sizes, output path, exit code, stderr log path, output byte size, and non-empty result. `final_ready` is true only when this merge status is `passed`.
 
 Phase 34 migrates the formal `jiaoan-jihua` teaching-plan table rules into the
 package-owned renderer. Phase 35 migrates the formal `jiaoan-shicao`
 teaching-design rules into the package-owned renderer and adds strict
 cross-module validation. Historical standalone skills remain external
 compatibility surfaces and fixture oracles, not package runtime dependencies.
-Phase 35 does not perform final public course-name-prefixed delivery and does
-not finalize PDF merge semantics; that remains Phase 36 scope.
-semantics. Those remain Phase 35 and Phase 36 scopes.
+Phase 36 performs final public course-name-prefixed delivery and PDF merge
+semantics. Historical standalone skills remain external compatibility surfaces
+and are not runtime dependencies.
 
 ## Public Output Direction
 
-The target delivery direction remains 1+1+3:
+The target delivery direction is course-name-prefixed `1 + 1 + N`:
 
 - one unified Markdown
-- one unified Typst
-- three PDFs: full package, teaching-plan, teaching-design/lesson-plan
+- one merged package PDF
+- N registered module PDFs
 
-Successful public roots must not contain status, manifest, stderr log, model JSON, split Typst, or temporary diagnostic files.
+Successful public roots must not contain `.typ`, status, manifest, stderr log, model JSON, diagnostics JSON, calendar JSON, module Markdown/Typst, staging files, old English success filenames, or temporary diagnostic files.
 
 ## Standalone Boundary
 
 A valid standalone verification copies only the `teaching-design-package` skill folder into a fresh skill root. From inside that copied folder, run commands only after a full Markdown exists:
 
 ```text
-scripts/teaching-design-package.sh example --output <tmp>/teaching-design-package-full.md
-scripts/teaching-design-package.sh render-package --input <tmp>/teaching-design-package-full.md --out-dir <tmp>/out
+scripts/teaching-design-package.sh example --output <tmp>/package.md
+scripts/teaching-design-package.sh render-package --pdf --input <tmp>/package.md --out-dir <tmp>/out
 ```
 
-This verification must succeed without repo sibling paths and without hidden external skill installation. Generated stdout, stderr, and output files must not leak the original repository path.
+This verification must succeed without repo sibling paths and without hidden external skill installation. The copied package must use its own `references/calendar.json`, produce exactly the course-name-prefixed public files, keep hidden evidence under `.teaching-design-package/`, and avoid runtime references to sibling `jiaoan-jihua` or `jiaoan-shicao` skills.
 
 ## External Compatibility Boundary
 
@@ -345,6 +360,6 @@ scripts/teaching-design-package.sh render-package \
 Expected results:
 
 - the model command emits JSON with package-owned module and strict sum evidence
-- the render command writes the public 1+1+3 files when `--pdf` succeeds
-- diagnostics, status, split Typst, and stderr logs stay under `.teaching-design-package/`
+- the render command writes the public course-name-prefixed `1 + 1 + N` files when `--pdf` succeeds
+- diagnostics, status, module Markdown/Typst, staging files, merge evidence, and stderr logs stay under `.teaching-design-package/`
 - no normal-path output contains repo sibling paths
