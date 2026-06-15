@@ -300,6 +300,49 @@
 
 ---
 
+## Milestone: v1.14 - teaching-design-package 单技能独立交付与 1+1+3 输出契约
+
+**Shipped:** 2026-06-15
+**Phases:** 3 | **Plans:** 3 | **Sessions:** 3+
+
+### What Was Built
+
+- A standalone `teaching-design-package` normal path that runs from a copied-only skill folder without sibling skill calls.
+- A teacher-facing source-materials-to-full-Markdown workflow in the canonical skill entry.
+- A clean public 1+1+3 delivery root: one Markdown, one Typst, and three PDFs.
+- Hidden diagnostics, strict PDF success semantics, derived scheduling facts, and activity-hour mismatch validation.
+
+### What Worked
+
+- Correcting the package boundary before close kept legacy standalone skills external instead of turning them into hidden internals.
+- Standalone-copy verification gave high confidence that the package can be installed and used by itself.
+- Treating scripts as finalized-Markdown validators kept the teacher workflow readable while preserving strict delivery automation.
+
+### What Was Inefficient
+
+- The quick-task closeout query still reported `260615-0853-correct-v114-doc-boundary` as missing even though its files and STATE record mark it verified.
+- The SDK milestone close generated archive files and base state, but ROADMAP, PROJECT, MILESTONES, STATE, and retrospective still needed manual closeout review.
+- Earlier package history used legacy standalone parity evidence, so v1.14 needed explicit language to supersede that direction.
+
+### Patterns Established
+
+- A package skill that claims standalone installability should be tested from a copied-only skill folder.
+- Public delivery directories should expose only teacher-facing final artifacts; model, status, logs, split Typst, and failure evidence belong in hidden diagnostics.
+- Derived scheduling fields should be computed from body evidence and `first_teaching_day`, not owned by teacher-maintained YAML.
+
+### Key Lessons
+
+1. Keep package-owned boundaries explicit when an integrated workflow grows out of earlier standalone skills.
+2. Verify clean public output and hidden diagnostic retention together; either one alone is not enough.
+3. Continue manually reviewing closeout output until audit-open and milestone-complete agree on quick-task artifact status.
+
+### Cost Observations
+
+- Model mix: balanced profile.
+- Notable: The highest-value checks were standalone-copy execution, exact root-file assertions, hidden diagnostic assertions, and failure-mode validation.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -313,6 +356,7 @@
 | v1.10 | 4+ | 2 | Added strict skill-local jiaoan Markdown-to-Typst fixture conversion with byte-for-byte verification. |
 | v1.11 | 4+ | 4 | Added integrated teaching-design package orchestration with scheduling evidence, optional end-of-term module pointers, and honest manifest readiness. |
 | v1.12 | 2+ | 2 | Repaired post-close teaching-design regressions for package date backfill and official activity-table width alignment. |
+| v1.14 | 3+ | 3 | Corrected `teaching-design-package` into a standalone teacher-first package with clean 1+1+3 delivery and hidden diagnostics. |
 
 ### Cumulative Quality
 
@@ -325,6 +369,7 @@
 | v1.10 | Skill render commands, strict diff, SHA-256, anti-copy source inspection, milestone audit | 11/11 jiaoan requirements shipped | No new runtime dependencies added |
 | v1.11 | Scheduling fixture derivation, public command regression, manifest truthfulness checks, documentation/runtime coverage, milestone audit | 16/16 TDP requirements shipped | No new runtime dependencies added |
 | v1.12 | Markdown handoff assertions, Typst width parsing, direct/package PDF compilation, public command smoke checks, milestone audit | 7/7 TDPR requirements shipped | No new runtime dependencies added |
+| v1.14 | Standalone-copy execution, exact public root assertions, hidden diagnostics checks, derived scheduling/failure gates, milestone audit | 15/15 TDPKG requirements shipped | No new runtime dependencies added |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -335,3 +380,4 @@
 5. Review generated milestone archives manually before committing closeout.
 6. Make package final-ready status depend on actual final artifacts and explicit manifest reasons.
 7. Verify post-close repairs through both direct skill paths and integrated package paths.
+8. Test standalone package claims from a copied-only skill folder before shipping.
