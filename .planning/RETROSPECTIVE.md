@@ -343,6 +343,49 @@
 
 ---
 
+## Milestone: v1.15 - teaching-design-package 模块化渲染与旧格式回归
+
+**Shipped:** 2026-06-15
+**Phases:** 4 | **Plans:** 4 | **Sessions:** 4+
+
+### What Was Built
+
+- A package-owned module registry that derives hidden `teaching-plan` and `teaching-design` Markdown/Typst intermediates from the unified package Markdown.
+- Formal package-owned renderers for 授课进度计划表 and 教学设计方案, with legacy format equivalence evidence and no runtime sibling-skill dependency.
+- One scheduling model that owns calendar, hour totals, task/activity mapping, date ranges, and cross-module validation.
+- Course-name-prefixed public `1 + 1 + N` delivery, registry-order PDF merge, hidden diagnostics, and standalone success/failure regression evidence.
+
+### What Worked
+
+- Keeping the unified Markdown as the only content source made module extraction, validation, and public delivery traceable.
+- Migrating legacy formal rendering rules into package internals closed the previous gap between standalone jiaoan outputs and package delivery.
+- Forced failure checks for missing PDFs, empty PDFs, merge failure, empty merge output, public leakage, and standalone negative behavior kept success semantics honest.
+
+### What Was Inefficient
+
+- The first v1.15 audit failed because Phase 33 verification lacked requirement-ID traceability metadata, requiring a follow-up audit pass.
+- `STATE.md` still carried the old audit blocker after the passed audit, so complete closeout needed manual state correction.
+- `milestone.complete` archived core files but did not fully update ROADMAP, PROJECT, MILESTONES, or retrospective without manual review.
+
+### Patterns Established
+
+- Package modules should expose final public PDFs while keeping module Markdown, module Typst, status, diagnostics, logs, and calendar evidence hidden.
+- Legacy skills can serve as format oracles during migration without becoming runtime dependencies.
+- Public-root cleanliness and hidden diagnostic retention should be tested together for all successful and failed package runs.
+
+### Key Lessons
+
+1. Put requirement IDs directly into verification artifacts before milestone audit, especially for large phase requirement groups.
+2. Treat `STATE.md` as a closeout target whenever audit artifacts supersede older blocker text.
+3. Keep module registry order as the single source for final package merge order.
+
+### Cost Observations
+
+- Model mix: balanced profile.
+- Notable: The highest-value checks were fresh black-box package render, module PDF size/status assertions, negative failure cases, and standalone-copy regression.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -357,6 +400,7 @@
 | v1.11 | 4+ | 4 | Added integrated teaching-design package orchestration with scheduling evidence, optional end-of-term module pointers, and honest manifest readiness. |
 | v1.12 | 2+ | 2 | Repaired post-close teaching-design regressions for package date backfill and official activity-table width alignment. |
 | v1.14 | 3+ | 3 | Corrected `teaching-design-package` into a standalone teacher-first package with clean 1+1+3 delivery and hidden diagnostics. |
+| v1.15 | 4+ | 4 | Converted `teaching-design-package` into a modular all-in-one renderer with migrated formal outputs and strict PDF merge semantics. |
 
 ### Cumulative Quality
 
@@ -370,6 +414,7 @@
 | v1.11 | Scheduling fixture derivation, public command regression, manifest truthfulness checks, documentation/runtime coverage, milestone audit | 16/16 TDP requirements shipped | No new runtime dependencies added |
 | v1.12 | Markdown handoff assertions, Typst width parsing, direct/package PDF compilation, public command smoke checks, milestone audit | 7/7 TDPR requirements shipped | No new runtime dependencies added |
 | v1.14 | Standalone-copy execution, exact public root assertions, hidden diagnostics checks, derived scheduling/failure gates, milestone audit | 15/15 TDPKG requirements shipped | No new runtime dependencies added |
+| v1.15 | Fresh package render, module PDF/status checks, forced failure semantics, public leakage scan, standalone-copy regression, milestone audit | 31/31 TDPKG requirements shipped | No new runtime dependencies added |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -381,3 +426,4 @@
 6. Make package final-ready status depend on actual final artifacts and explicit manifest reasons.
 7. Verify post-close repairs through both direct skill paths and integrated package paths.
 8. Test standalone package claims from a copied-only skill folder before shipping.
+9. Require verification artifacts to carry requirement IDs before running a closeout audit.

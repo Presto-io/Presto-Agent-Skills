@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.15
 milestone_name: teaching-design-package 模块化渲染与旧格式回归
 current_phase: 36
-status: audit_gaps_found
-stopped_at: Milestone v1.15 audit gaps found
-last_updated: "2026-06-15T09:36:40Z"
-last_activity: 2026-06-15 -- v1.15 milestone audit found Phase 33 verification traceability gap
+status: completed
+stopped_at: "Milestone v1.15 completed and archived"
+last_updated: "2026-06-15T09:57:15.717Z"
+last_activity: 2026-06-15 — Milestone v1.15 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 36
-**Status:** Milestone audit gaps found
+**Status:** v1.15 milestone complete
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone start)
+See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone archive)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.15 teaching-design-package 模块化渲染与旧格式回归
+**Current focus:** Planning next milestone
 
 ## Workflow Preferences
 
@@ -50,10 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone start)
 
 ## Next Up
 
-Close the v1.15 audit blocker, then rerun milestone audit:
-
-- Phase 33 verification traceability gap: `33-VERIFICATION.md` lacks requirement-ID mapping for `TDPKG-MOD-01..07`, `TDPKG-YAML-01..04`, and `TDPKG-SCHED-01..05`.
-- Do not complete v1.15 until `/gsd:audit-milestone v1.15` passes.
+Start the next milestone with `/gsd:new-milestone` when ready.
 
 ## Accumulated Context
 
@@ -82,6 +79,7 @@ Close the v1.15 audit blocker, then rerun milestone audit:
 - Milestone v1.13 started: use the committed `skills/teaching-design-package/templates/teaching-design-package-full.md` Markdown template as the baseline, keep its teacher-facing structure unchanged, and plan renderer work around one Markdown, one Typst, and three PDF outputs.
 - Milestone v1.14 started: correct `teaching-design-package` so it is a standalone, teacher-facing unified skill with a final-render script boundary, clean 1+1+3 delivery outputs, hidden diagnostics, and derived scheduling validation.
 - Milestone v1.15 started: convert `teaching-design-package` from unified Markdown flat rendering to package-owned modular all-in-one rendering, with hidden module Markdown/Typst, migrated formal jiaoan rendering rules, one scheduling model, course-name-prefixed public outputs, and strict PDF merge semantics.
+- Milestone v1.15 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
 
 ## Decisions
 
@@ -193,8 +191,8 @@ Close the v1.15 audit blocker, then rerun milestone audit:
 
 ## Last Session
 
-- **Completed:** v1.15 milestone audit
-- **Stopped At:** Audit gaps found: Phase 33 verification traceability metadata is incomplete
+- **Completed:** v1.15 milestone completion and archive
+- **Stopped At:** Ready for next milestone definition
 - **Resume File:** None
 
 ## Close Notes
@@ -215,6 +213,8 @@ Close the v1.15 audit blocker, then rerun milestone audit:
 - v1.11 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
 - v1.14 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
 - v1.14 closeout acknowledged one open artifact from `gsd-sdk query audit-open`: quick task `260615-0853-correct-v114-doc-boundary` reported `missing` by the legacy audit query even though its plan, summary, and verification files exist and STATE lists it as Verified.
+- v1.15 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
+- v1.15 closeout preserved the same legacy `audit-open` quick-task compatibility item as deferred; no v1.15 audit, requirement, integration, or flow gaps remain.
 
 ## Deferred Items
 
@@ -226,15 +226,14 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: 36
-Plan: 36-PLAN.md
-Status: Audit gaps found
-Last activity: 2026-06-15 -- v1.15 milestone audit found Phase 33 verification traceability gap
+Phase: Milestone v1.15 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-15 — Milestone v1.15 completed and archived
 
 ## Operator Next Steps
 
-- Close the Phase 33 verification traceability blocker in a separate command-level task, then rerun `/gsd:audit-milestone v1.15`.
-- Do not run `/gsd:complete-milestone v1.15` until the audit passes.
+- Start the next milestone with /gsd-new-milestone
 
 ### Quick Tasks Completed
 
