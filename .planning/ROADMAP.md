@@ -85,7 +85,7 @@ Success criteria:
 **Depends on:** Phase 35
 **Plans:** 1/1 plans complete
 **Requirements:** TDPKG-ART-01, TDPKG-ART-02, TDPKG-ART-03, TDPKG-PDF-01, TDPKG-PDF-02, TDPKG-PDF-03, TDPKG-PDF-04
-**Status:** Planned
+**Status:** Complete
 
 Success criteria:
 
@@ -137,11 +137,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 36 is planned. The package-owned formal module renderers from Phases 34 and 35 are ready for the public delivery, registry-order PDF merge, hidden evidence, failure semantics, and standalone-copy regression implementation plan in `.planning/phases/36-public-delivery-pdf-merge-and-standalone-regression/36-PLAN.md`.
+Phase 36 is complete. `teaching-design-package` now publishes course-name-prefixed `1 + 1 + N` public delivery files, merges registered module PDFs in registry order, records honest hidden merge/status/diagnostics evidence, and passes standalone-copy success plus negative failure regression.
 
 ## Next Step
 
-Run `/gsd:execute-phase 36` to implement course-name-prefixed public delivery, final PDF merge semantics, hidden evidence, failure behavior, and standalone regression.
+Run milestone verification or audit for v1.15 before closing the milestone.
 
 ---
-*Roadmap updated: 2026-06-15 after Phase 34 execution*
+*Roadmap updated: 2026-06-15 after Phase 36 execution*

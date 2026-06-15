@@ -42,9 +42,9 @@
 
 ### Public and Hidden Artifacts
 
-- [ ] **TDPKG-ART-01**: 默认公开目录只包含课程名前缀的 `1 + 1 + N` 文件，不公开 `.typ`、status、manifest、model、diagnostics、log、calendar JSON 或模块中间产物。
-- [ ] **TDPKG-ART-02**: 当前 N=2 时，默认公开目录生成 `电气设备控制线路安装与调试教学资料.md`、`电气设备控制线路安装与调试教学资料.pdf`、`电气设备控制线路安装与调试授课进度计划表.pdf`、`电气设备控制线路安装与调试教学设计方案.pdf`。
-- [ ] **TDPKG-ART-03**: 隐藏目录包含模块 Markdown、模块 Typst、统一 scheduling model、status、diagnostics、log、calendar 路径/hash 和推导摘要。
+- [x] **TDPKG-ART-01**: 默认公开目录只包含课程名前缀的 `1 + 1 + N` 文件，不公开 `.typ`、status、manifest、model、diagnostics、log、calendar JSON 或模块中间产物。
+- [x] **TDPKG-ART-02**: 当前 N=2 时，默认公开目录生成 `电气设备控制线路安装与调试教学资料.md`、`电气设备控制线路安装与调试教学资料.pdf`、`电气设备控制线路安装与调试授课进度计划表.pdf`、`电气设备控制线路安装与调试教学设计方案.pdf`。
+- [x] **TDPKG-ART-03**: 隐藏目录包含模块 Markdown、模块 Typst、统一 scheduling model、status、diagnostics、log、calendar 路径/hash 和推导摘要。
 
 ### Legacy Formal Format Migration
 
@@ -77,10 +77,10 @@
 
 ### PDF Generation and Merge
 
-- [ ] **TDPKG-PDF-01**: 所有模块 PDF 都真实生成且非空后，才允许合并 `课程名教学资料.pdf`。
-- [ ] **TDPKG-PDF-02**: 合并顺序由模块注册顺序决定，当前先 `授课进度计划表`，再 `教学设计方案`。
-- [ ] **TDPKG-PDF-03**: PDF 合并可使用 `pdfunite`、`qpdf` 或 Python PyMuPDF fallback，但 status 必须诚实记录实际工具和结果。
-- [ ] **TDPKG-PDF-04**: 任一模块 PDF 失败或合并失败时，最终命令必须非零退出，公开目录不能伪装成成功。
+- [x] **TDPKG-PDF-01**: 所有模块 PDF 都真实生成且非空后，才允许合并 `课程名教学资料.pdf`。
+- [x] **TDPKG-PDF-02**: 合并顺序由模块注册顺序决定，当前先 `授课进度计划表`，再 `教学设计方案`。
+- [x] **TDPKG-PDF-03**: PDF 合并可使用 `pdfunite`、`qpdf` 或 Python PyMuPDF fallback，但 status 必须诚实记录实际工具和结果。
+- [x] **TDPKG-PDF-04**: 任一模块 PDF 失败或合并失败时，最终命令必须非零退出，公开目录不能伪装成成功。
 
 ## Future Requirements
 
@@ -128,13 +128,13 @@
 | TDPKG-VAL-02 | Phase 35 | Complete |
 | TDPKG-VAL-03 | Phase 35 | Complete |
 | TDPKG-VAL-04 | Phase 35 | Complete |
-| TDPKG-ART-01 | Phase 36 | Pending |
-| TDPKG-ART-02 | Phase 36 | Pending |
-| TDPKG-ART-03 | Phase 36 | Pending |
-| TDPKG-PDF-01 | Phase 36 | Pending |
-| TDPKG-PDF-02 | Phase 36 | Pending |
-| TDPKG-PDF-03 | Phase 36 | Pending |
-| TDPKG-PDF-04 | Phase 36 | Pending |
+| TDPKG-ART-01 | Phase 36 | Complete |
+| TDPKG-ART-02 | Phase 36 | Complete |
+| TDPKG-ART-03 | Phase 36 | Complete |
+| TDPKG-PDF-01 | Phase 36 | Complete |
+| TDPKG-PDF-02 | Phase 36 | Complete |
+| TDPKG-PDF-03 | Phase 36 | Complete |
+| TDPKG-PDF-04 | Phase 36 | Complete |
 
 **Coverage:**
 - v1.15 requirements: 31 total

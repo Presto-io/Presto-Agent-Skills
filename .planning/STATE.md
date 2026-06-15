@@ -4,22 +4,22 @@ milestone: v1.15
 milestone_name: teaching-design-package 模块化渲染与旧格式回归
 current_phase: 36
 status: executing
-stopped_at: Phase 36 planned
-last_updated: "2026-06-15T08:58:53.728Z"
-last_activity: 2026-06-15 -- Phase 36 planning complete
+stopped_at: Phase 36 complete
+last_updated: "2026-06-15T09:25:57.222Z"
+last_activity: 2026-06-15 -- Phase 36 execution complete
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 36
-**Status:** Ready to execute
+**Status:** Phase complete
 
 ## Project Reference
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone start)
 
 ## Next Up
 
-Execute the planned v1.15 implementation phase:
+Run milestone verification or audit for v1.15:
 
-- `/gsd:execute-phase 36`
+- `/gsd:audit-milestone`
 
 ## Accumulated Context
 
@@ -152,6 +152,9 @@ Execute the planned v1.15 implementation phase:
 - [Phase 34]: TDPKG-VAL-01 strict hour authority is model validation evidence. — `validation.strict_sum_evidence` records row, stage, task, and course totals from `# 授课进度计划` row suffixes only.
 - [Phase 35]: teaching-design-package owns the migrated formal teaching-design renderer. — Hidden `teaching-design.typ` now uses package-owned `jiaoan-shicao`-style output from the shared scheduling model, while legacy `jiaoan-shicao` remains read-only and outside runtime dependencies.
 - [Phase 35]: Cross-module validation is structural and hard-fail. — Task/stage/activity mapping uses learning task + learning stage + activity order, with schedule row hours and task date ranges as authority.
+- [Phase 36]: Public delivery uses course-name-prefixed 1 + 1 + N files. — Current N=2 produces `课程名教学资料.md`, `课程名教学资料.pdf`, `课程名授课进度计划表.pdf`, and `课程名教学设计方案.pdf`.
+- [Phase 36]: The full package PDF is created only by merging registered module PDFs in module registry order. — Successful status records `merge_tool: "python_fitz"` in the local verification run, ordered inputs, byte sizes, output path, exit code, and non-empty result.
+- [Phase 36]: Hidden staging and cleanup prevent failed runs from leaving a complete-looking public root. — Invalid course name, missing/empty module PDF, merge failure, empty merge output, public leakage, and standalone negative checks all exit non-zero with hidden diagnostics.
 
 ## Performance Metrics
 
@@ -185,12 +188,13 @@ Execute the planned v1.15 implementation phase:
 | Phase 33 P01 | 19min | 6 tasks | 6 files |
 | Phase 34 P01 | 16min | 6 tasks | 6 files |
 | Phase 35 P01 | 42min | 7 tasks | 7 files |
+| Phase 36 P01 | 18min | 7 tasks | 6 files |
 
 ## Last Session
 
-- **Completed:** Phase 35 teaching-design formal renderer migration and cross-module validation
-- **Stopped At:** Phase 36 context gathered
-- **Resume File:** .planning/phases/36-public-delivery-pdf-merge-and-standalone-regression/36-CONTEXT.md
+- **Completed:** Phase 36 public delivery, PDF merge, and standalone regression
+- **Stopped At:** Phase 36 complete
+- **Resume File:** None
 
 ## Close Notes
 
@@ -223,12 +227,12 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 Phase: 36
 Plan: 36-PLAN.md
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 36 planning complete
+Status: Complete
+Last activity: 2026-06-15 -- Phase 36 execution complete
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 36`
+- Run `/gsd:audit-milestone` for v1.15
 
 ### Quick Tasks Completed
 
