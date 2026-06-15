@@ -117,6 +117,9 @@ After Markdown finalization, `scripts/teaching-design-package.sh model` parses t
 
 - `metadata`: course, major, attribute, textbook, class, teachers, teacher display name, first teaching day.
 - `schedule.tasks[]`: learning task title, stages, rows, row hours, row date-consumption evidence, task total hours, task date range.
+- `modules.registry[]`: package-owned module metadata for `teaching-plan` and `teaching-design`, including display name, order, hidden Markdown path, hidden Typst path, and future PDF metadata.
+- `modules.items[]`: module frontmatter generated from unified YAML and the shared scheduling model.
+- `scheduling`: the single calendar-backed scheduling model consumed by all modules.
 - `teaching_design`: original teaching-design Markdown content plus block counts.
 - `resources`: resource snippets extracted from the teaching-design section.
 - `derived`: total hours, daily-hour default, school year, semester, term label, start/end dates, package date range.
@@ -125,20 +128,37 @@ After Markdown finalization, `scripts/teaching-design-package.sh model` parses t
 
 The model is package-owned. It must not encode external compatibility paths as its normal execution contract.
 
+## Module Registry
+
+Phase 33 introduces a package-owned module registry. The current registered modules are:
+
+| id | Display name | Order | Hidden Markdown | Hidden Typst |
+|----|--------------|-------|-----------------|--------------|
+| `teaching-plan` | `授课进度计划表` | 1 | `.teaching-design-package/work/teaching-plan.md` | `.teaching-design-package/work/teaching-plan.typ` |
+| `teaching-design` | `教学设计方案` | 2 | `.teaching-design-package/work/teaching-design.md` | `.teaching-design-package/work/teaching-design.typ` |
+
+Registry order is the orchestration order and the future PDF merge order. New modules should be added by extending registry metadata and module generation code rather than by creating a second source-of-truth Markdown workflow.
+
+The hidden module Markdown files are package internals. They are generated from the finalized unified Markdown and shared scheduling model, then stored under `.teaching-design-package/work/`. They are not teacher-maintained source files and must not appear in the successful public output root.
+
 ## Scheduling Rules
 
-The current package-local default is deterministic:
+Phase 33 and later use a real package-owned teaching calendar:
 
-- `first_teaching_day` starts the hour-consumption sequence.
-- `DEFAULT_DAILY_HOURS=8` unless a later phase exposes a package-owned configuration surface.
+- The active calendar resource is `skills/teaching-design-package/references/calendar.json`.
+- `calendar.json` must be inside the `teaching-design-package` skill folder so a standalone copy of that folder can still derive schedule facts.
+- The hidden model records `calendar.policy: "skill_local_calendar"` and the SHA-256 hash of the calendar file.
+- `first_teaching_day` is required and must exist in `calendar.json`.
+- `DEFAULT_DAILY_HOURS=8` unless a later package-owned configuration surface changes it.
 - Each `授课进度计划` row ending in `-N` contributes `N` hours.
-- Rows consume hours in source order.
-- Dates advance by one calendar day whenever the day budget is exhausted.
-- Spring dates infer previous-year/current-year second semester; autumn dates infer current-year/next-year first semester.
-- The hidden model records `calendar_policy: "sequential_teaching_days_default"`.
+- Rows consume hours in source order, using only entries from `calendar.json`.
+- Calendar exhaustion, malformed rows, non-positive hours, invalid calendar JSON, or a missing first teaching day is a hard failure.
+- Natural-day sequential scheduling is not valid for Phase 33+ package scheduling. The renderer must not extrapolate with ordinary calendar-day increments when `calendar.json` does not contain enough teaching dates.
+- Term weeks are derived from the first date in `calendar.json`, not ISO week numbers.
+- Spring dates infer previous-year/current-year second semester; autumn dates infer current-year/next-year first semester unless a later package calendar explicitly carries term metadata.
 - Optional body lines such as `活动课时：80` or `教学活动课时：80` declare teaching-design activity-hour evidence; when present, their sum must equal the teaching-plan row total or validation fails.
 
-This is sufficient for the standalone model/render path. Later scheduling work can refine holidays and makeup days without depending on external sibling folders.
+The `teaching-design` module reads dates, total hours, and `use_time` from the shared scheduling model. It does not recompute date ranges, weeks, weekdays, task hours, or activity hours independently.
 
 ## Script Boundary
 
@@ -195,9 +215,10 @@ Root-level status files, manifests, stderr logs, model JSON, split Typst, tempor
 
 1. Copy the unified Markdown into the output directory as the human-readable source artifact.
 2. Write hidden diagnostics under `.teaching-design-package/`.
-3. Generate `teaching-design-package.typ` from the package model.
-4. Write `.teaching-design-package/status.json`.
-5. If `--pdf` is present, attempt package-owned PDF generation and record actual status.
+3. Generate hidden module Markdown and Phase 33 pre-formal module Typst under `.teaching-design-package/work/`.
+4. Generate `teaching-design-package.typ` from the package model.
+5. Write `.teaching-design-package/status.json`.
+6. If `--pdf` is present, attempt package-owned PDF generation and record actual status.
 
 Typst-only rendering is the default. PDF status values are honest:
 
@@ -206,6 +227,8 @@ Typst-only rendering is the default. PDF status values are honest:
 - `passed`: an explicit compile ran and the expected file exists.
 
 `render-package --pdf` cannot report final success or exit 0 as a final delivery unless `teaching-design-package.pdf`, `teaching-plan.pdf`, and `teaching-design.pdf` all exist and are non-empty. If any PDF is missing or empty, the command exits non-zero, writes hidden status/failure diagnostics, and leaves enough evidence under `.teaching-design-package/` to troubleshoot without making the public root look complete.
+
+Phase 33 does not migrate the formal `jiaoan-jihua` renderer, does not migrate the formal `jiaoan-shicao` renderer, does not perform final public course-name-prefixed delivery, and does not finalize PDF merge semantics. Those are Phase 34, Phase 35, and Phase 36 scopes.
 
 ## Public Output Direction
 
