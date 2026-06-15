@@ -5,7 +5,7 @@
 
 ## Milestone Summary
 
-Make `teaching-design-package` a true unified teaching-design package skill rather than a user-visible wrapper around sibling repo skills. The milestone corrects the v1.13 package line so teachers start from source materials, interactively clarify and organize them into one reviewable Markdown, and then render the finalized Markdown through a strict delivery contract.
+Make `teaching-design-package` a true unified teaching-design package skill rather than a user-visible wrapper around sibling repo skills or copied legacy internals. The milestone corrects the v1.13 package line so teachers start from source materials, interactively clarify and organize them into one reviewable Markdown, and then render the finalized Markdown through `teaching-design-package`'s own validation and Typst/PDF delivery path.
 
 The default delivery contract is 1+1+3:
 
@@ -19,6 +19,7 @@ The default delivery contract is 1+1+3:
 - **Questioning gate:** The user supplied the milestone name, target behavior, and seven mandatory correction constraints directly; no additional scope prompt is required.
 - **Research gate:** External research is skipped. The scope is an internal contract and workflow correction for existing repository skills.
 - **Requirements gate:** This command initializes the milestone only and must not implement code or modify `skills/teaching-design-package`, legacy standalone skill files, or existing dirty skill files.
+- **Correction gate:** Current and future v1.14 work must not copy old standalone Markdown templates, keep old split handoff files inside the package, or treat legacy standalone skills as package internals, internal resources, parity baselines, or implementation direction.
 - **Roadmap gate:** Phase numbering continues from the previous milestone, so this roadmap starts at Phase 30.
 
 ## v1.14 Requirements
@@ -26,7 +27,7 @@ The default delivery contract is 1+1+3:
 ### Standalone Skill Packaging
 
 - [ ] **TDPKG-01**: `teaching-design-package` can be installed and used as a single skill without requiring users to install sibling repository skill directories.
-- [ ] **TDPKG-02**: Required package capability is implemented through `teaching-design-package`'s own data model, Markdown contract, validation, and Typst/PDF rendering path; old standalone Markdown templates and old handoff layouts are not copied into the package.
+- [ ] **TDPKG-02**: Required package capability is implemented through `teaching-design-package`'s own unified data model, Markdown contract, validation, and Typst/PDF rendering path; old standalone Markdown templates, old split Markdown layouts, and old handoff thinking are not copied into the package.
 - [ ] **TDPKG-03**: Runtime adapter notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent explain the standalone install/use boundary without relying on repo-local sibling paths.
 
 ### Teacher Markdown Workflow
@@ -38,8 +39,8 @@ The default delivery contract is 1+1+3:
 ### Delivery Artifact Contract
 
 - [ ] **TDPKG-07**: The default successful output directory contains exactly the 1+1+3 deliverables: unified Markdown, unified Typst, full package PDF, teaching-plan PDF, and teaching-design/lesson-plan PDF.
-- [ ] **TDPKG-08**: Default output directories do not contain legacy handoff Markdown, split Typst files, manifests, stderr logs, status sidecars, or other internal implementation artifacts.
-- [ ] **TDPKG-09**: Internal handoffs, manifests, stderr logs, state files, split artifacts, and temporary files are written only to hidden work directories, temporary directories, debug mode locations, or explicit failure diagnostics.
+- [ ] **TDPKG-08**: Default output directories do not contain copied legacy Markdown, split Typst files, manifests, stderr logs, status sidecars, or other internal implementation artifacts.
+- [ ] **TDPKG-09**: Package-owned diagnostics, manifests, stderr logs, state files, split render intermediates, and temporary files are written only to hidden work directories, temporary directories, debug mode locations, or explicit failure diagnostics.
 
 ### Scheduling and Validation Contract
 
@@ -50,8 +51,8 @@ The default delivery contract is 1+1+3:
 
 ### Legacy Skill Preservation
 
-- [ ] **TDPKG-14**: The user-facing package workflow does not regress into asking users to run or mentally stitch together old standalone skills.
-- [ ] **TDPKG-15**: Existing legacy standalone skill entries, public commands, accepted inputs, and output contracts remain preserved unless a later explicit requirement changes them.
+- [ ] **TDPKG-14**: The user-facing package workflow does not regress into asking users to run or mentally stitch together old standalone skills, and does not hide old skill structure inside the package.
+- [ ] **TDPKG-15**: Existing legacy standalone skill entries, public commands, accepted inputs, and output contracts remain preserved as external compatibility surfaces unless a later explicit requirement changes them; they are not package internals or v1.14 acceptance baselines.
 
 ## Future Requirements
 
@@ -71,7 +72,7 @@ Deferred to a later milestone unless explicitly requested:
 | Modifying current dirty legacy standalone skill files | The user explicitly asked to avoid staging, committing, or changing those files. |
 | Requiring sibling skill installation for package use | This is the primary bug this milestone is meant to correct. |
 | Polluting default delivery directories with internal artifacts | The user requires a clean 1+1+3 default output contract. |
-| Deleting or replacing the old standalone jiaoan skills | The unified package is new/current UX, but the legacy skills remain preserved. |
+| Deleting legacy standalone teaching skills | The unified package is the new/current package UX, but legacy standalone entries remain preserved outside the package. |
 
 ## Traceability
 

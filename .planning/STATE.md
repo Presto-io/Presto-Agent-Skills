@@ -4,9 +4,9 @@ milestone: v1.14
 milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
 current_phase: 30
 status: executing
-stopped_at: Phase 30 corrected planning complete
-last_updated: "2026-06-15T00:35:00.000Z"
-last_activity: 2026-06-15 -- Phase 30 corrected plan replaces failed old-template vendor plan
+stopped_at: v1.14 documentation boundary corrected
+last_updated: "2026-06-15T08:53:00.000Z"
+last_activity: 2026-06-15 -- Quick task corrected v1.14 planning docs away from old skill naming and old handoff architecture
 progress:
   total_phases: 3
   completed_phases: 0
@@ -26,7 +26,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initialization)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.14 is initialized: `teaching-design-package` must become a standalone teacher-facing unified skill with a clean 1+1+3 delivery contract and hidden/internal diagnostics boundary.
+**Current focus:** v1.14 is initialized: `teaching-design-package` must become a standalone teacher-facing unified two-in-one skill with its own data model, own Markdown contract, own Typst/PDF rendering path, a clean 1+1+3 delivery contract, and hidden/internal diagnostics boundary.
 
 ## Workflow Preferences
 
@@ -71,12 +71,12 @@ Execute the planned Phase 30 workflow when ready:
 - Milestone v1.10 started: strict 1:1 Markdown-to-Typst conversion is scoped to the existing `jiaoan-shicao` and `jiaoan-jihua` skills, with separate parallel phases for the教案 and授课计划 fixture pairs under `test/1.10/`.
 - Milestone v1.10 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; Phase 20 and Phase 21 evidence directories remain in `.planning/phases/`.
 - Milestone v1.11 started: create a new integrated teaching-design package skill plan that preserves existing jiaoan and end-of-term skills while adding shared scheduling evidence, a teacher-reviewable Markdown intermediate, optional end-of-term module integration, split/combined PDF outputs, and regression/documentation gates.
-- Phase 23 completed: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, jiaoan module handoff rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage.
-- Phase 24 completed: `teaching-design-package` now supports optional end-of-term module handoff, module-owned review gates, deterministic table/workbook pointers, `end-of-term-package.pdf` split status, and honest `teaching-design-package.pdf` combined-output status evidence.
+- Phase 23 completed: `teaching-design-package` now has a portable skill entry, teacher-reviewable package Markdown checkpoint, pre-v1.14 module exchange rules, split Typst/PDF status helper, fixture evidence, and six-runtime adapter coverage.
+- Phase 24 completed: `teaching-design-package` now supports optional end-of-term module exchange, module-owned review gates, deterministic table/workbook pointers, `end-of-term-package.pdf` split status, and honest `teaching-design-package.pdf` combined-output status evidence.
 - Phase 25 completed: public command regression, package manifest truthfulness, six-runtime adapter coverage, OpenClaw/Hermes practical notes, and documentation/index discoverability are verified with no gaps.
 - Milestone v1.11 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; no next milestone has been started.
-- Milestone v1.12 started: post-close repair for two v1.11 teaching-design bugs. Phase 26 will backfill inferred `起止日期` values into `jiaoan-shicao-full.md`; Phase 27 will align `jiaoan-shicao` `教学活动设计` table widths with official-template evidence.
-- Phase 26 completed: `teaching-design-package` now backfills concrete package scheduling evidence into generated `jiaoan-shicao-full.md`, preserves review-marker gating, and records Markdown, Typst, and PDF verification evidence.
+- Milestone v1.12 started: post-close repair for two v1.11 teaching-design bugs. Phase 26 will backfill inferred `起止日期` values into generated practical lesson-plan Markdown; Phase 27 will align the practical lesson-plan `教学活动设计` table widths with official-template evidence.
+- Phase 26 completed: `teaching-design-package` now backfills concrete package scheduling evidence into generated practical lesson-plan Markdown, preserves review-marker gating, and records Markdown, Typst, and PDF verification evidence.
 - Phase 27 completed: `jiaoan-shicao` now computes `教学活动设计` activity-table widths by official-style chapter/pagebreak grouping, verifies `25.04cm` total width and narrow `课时分配`, and preserves the Phase 26 package date backfill through integrated package PDF verification.
 - Milestone v1.13 started: use the committed `skills/teaching-design-package/templates/teaching-design-package-full.md` Markdown template as the baseline, keep its teacher-facing structure unchanged, and plan renderer work around one Markdown, one Typst, and three PDF outputs.
 - Milestone v1.14 started: correct `teaching-design-package` so it is a standalone, teacher-facing unified skill with a final-render script boundary, clean 1+1+3 delivery outputs, hidden diagnostics, and derived scheduling validation.
@@ -131,15 +131,16 @@ Execute the planned Phase 30 workflow when ready:
 - [Milestone v1.13]: The full-package Markdown reference is the baseline contract. — The user corrected scope so implementation must adapt render ingestion around `skills/teaching-design-package/templates/teaching-design-package-full.md`, not change that Markdown's teacher-facing format.
 - [Milestone v1.13]: Three PDF outputs are acceptance criteria. — The combined PDF must merge the original授课进度计划 and教案 outputs; the plan and lesson PDFs must match standalone `jiaoan-jihua` and `jiaoan-shicao` outputs except timestamps.
 - [Phase 28]: Renderer ingestion adapts around the committed teacher-facing package baseline instead of changing the template. — Baseline hash/diff evidence proves skills/teaching-design-package/templates/teaching-design-package-full.md stayed byte-identical.
-- [Phase 28]: Derived scheduling facts live in generated handoffs, Typst comments, and manifest provenance, not package YAML. — Phase 28 keeps total_hours, school_year, semester, daily_hours, and output/validation knobs out of package frontmatter.
-- [Phase 28]: Phase 29 PDF outputs remain not_run slots until real PDF generation and parity verification run. — Phase 28 creates Typst and provenance only; it does not claim PDF parity.
+- [Phase 28]: Derived scheduling facts live in generated intermediate evidence, Typst comments, and manifest provenance, not package YAML. — Phase 28 keeps total_hours, school_year, semester, daily_hours, and output/validation knobs out of package frontmatter.
+- [Phase 28]: Phase 29 PDF outputs remain not_run slots until real PDF generation and comparison verification run. — Phase 28 creates Typst and provenance only; it does not claim PDF equivalence.
 - [Phase 29]: Final package PDF generation is explicit via `render-package --pdf`; Typst-only rendering remains the default. — This prevents callers from confusing Typst generation with accepted PDF output.
 - [Phase 29]: Combined package PDF is merged from accepted split PDFs in source order. — When `pdfunite` and `qpdf` are unavailable, installed PyMuPDF provides a real local merge fallback recorded as `python_fitz`.
-- [Phase 29]: Standalone parity is proven against the same generated handoff Markdown. — Package split Typst/PDF outputs matched legacy standalone renders from generated handoff Markdown.
-- [Milestone v1.14]: `teaching-design-package` is the unified user experience, not a requirement to install or stitch together sibling repo skills. — User clarified that needed package capability must come from a package-owned path rather than hidden old skill internals.
+- [Phase 29]: Pre-v1.14 comparison evidence was recorded against legacy standalone outputs. — v1.14 supersedes that direction with a package-owned implementation boundary.
+- [Milestone v1.14]: `teaching-design-package` is the unified user experience, not a requirement to install, stitch together, or hide sibling repo skills inside the package. — User clarified that package capability must be rebuilt through a package-owned unified model, Markdown contract, and Typst/PDF rendering path.
 - [Milestone v1.14]: The teacher workflow is source materials -> clarification/organization -> one editable full Markdown -> strict delivery render. — Scripts consume finalized Markdown for validation and output generation only.
-- [Milestone v1.14]: Default delivery is exactly 1+1+3. — Internal handoffs, manifests, logs, status files, split Typst, and sidecars must stay hidden/debug/failure-only and out of successful delivery directories.
-- [Phase 30 correction]: The package must not copy old standalone Markdown templates or create old-name package internals. — The corrected plan targets unified Markdown -> package-owned data model -> package-owned Typst/PDF rendering, with legacy standalone skills preserved only as external compatibility surfaces.
+- [Milestone v1.14]: Default delivery is exactly 1+1+3. — Package-owned diagnostics, manifests, logs, status files, split render intermediates, and sidecars must stay hidden/debug/failure-only and out of successful delivery directories.
+- [Phase 30 correction]: The package must not copy old standalone Markdown templates, create old-name package internals, or use old handoff architecture. — The corrected plan targets unified Markdown -> package-owned data model -> package-owned Typst/PDF rendering, with legacy standalone skills preserved only as external compatibility surfaces.
+- [Quick 260615-0853]: v1.14 planning docs were corrected to cut old skill naming and old handoff strategy from current/future requirements. — Legacy standalone skills remain historical and external only; they are not package internals, resources, parity baselines, or future implementation direction.
 
 ## Performance Metrics
 
@@ -172,7 +173,7 @@ Execute the planned Phase 30 workflow when ready:
 
 ## Last Session
 
-- **Completed:** Phase 29 PDF parity and standalone regression
+- **Completed:** Phase 29 PDF comparison and standalone regression
 - **Stopped At:** Phase 30 context gathered
 - **Resume File:** .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies/30-CONTEXT.md
 
@@ -198,7 +199,7 @@ Execute the planned Phase 30 workflow when ready:
 Phase: 30 - Standalone Skill Boundary and Internalized Dependencies
 Plan: 1/1 ready
 Status: Ready to execute corrected plan
-Last activity: 2026-06-15 -- Phase 30 corrected planning complete
+Last activity: 2026-06-15 -- Quick task corrected v1.14 planning docs away from old skill naming and old handoff architecture
 
 ## Operator Next Steps
 
@@ -206,6 +207,7 @@ Last activity: 2026-06-15 -- Phase 30 corrected planning complete
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260613-134 | school-presentation full_page_image 页面样式 | 2026-06-13 | eb27efb | [260613-134-school-presentation-full-page-image](./quick/260613-134-school-presentation-full-page-image/) |
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260613-134 | school-presentation full_page_image 页面样式 | 2026-06-13 | eb27efb |  | [260613-134-school-presentation-full-page-image](./quick/260613-134-school-presentation-full-page-image/) |
+| 260615-0853 | 纠偏 v1.14 里程碑相关文档，彻底切割旧技能命名与旧 handoff 思路 | 2026-06-15 | docs-only | Verified | [260615-0853-correct-v114-doc-boundary](./quick/260615-0853-correct-v114-doc-boundary/) |
