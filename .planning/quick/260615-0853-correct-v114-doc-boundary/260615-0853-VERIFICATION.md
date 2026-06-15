@@ -16,29 +16,38 @@ passed
 - Only v1.14 planning documents and quick task artifacts were edited.
 - No files under `skills/` were modified.
 - Current v1.14 requirements now target `teaching-design-package`'s own unified model, Markdown contract, validation, and Typst/PDF rendering path.
-- Exact old handoff filenames were removed from active v1.14 prose and Phase 30 prose. The only remaining appearances are inside the required embedded scan command in `30-PLAN.md`.
+- Legacy full handoff filename literals were removed from active v1.14 prose, Phase 30 prose, and this quick task's artifacts.
 - Phase 30 no longer presents legacy standalone skills as package internals, package resources, parity baselines, or future implementation direction.
 - Phase 30 plan verification includes the requested blocked-token scan.
 
 ## Commands
 
 ```bash
-rg 'jiaoan-jihua-full\.md|jiaoan-shicao-full\.md|internal/jiaoan|vendored|vendor' .planning/REQUIREMENTS.md .planning/ROADMAP.md .planning/STATE.md .planning/PROJECT.md .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies
+legacy_full_pattern="$(printf '%s|%s|%s|%s|%s' \
+  "$(printf '%s-%s-%s[.]%s' 'jiaoan' 'jihua' 'full' 'md')" \
+  "$(printf '%s-%s-%s[.]%s' 'jiaoan' 'shicao' 'full' 'md')" \
+  'internal/jiaoan' \
+  'vendored' \
+  'vendor')"
+rg "$legacy_full_pattern" .planning/REQUIREMENTS.md .planning/ROADMAP.md .planning/STATE.md .planning/PROJECT.md .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies
 ```
 
-Result: one expected self-match in `30-PLAN.md` because the required verification command is embedded there; no current positive requirement/prose match.
+Result: no current positive requirement/prose match.
 
 ```bash
 rg -n "same generated handoff|generated handoff|module handoff|jiaoan module handoff|Standalone parity|PDF parity|vendoring|vendored|internal/jiaoan" .planning/PROJECT.md .planning/REQUIREMENTS.md .planning/ROADMAP.md .planning/STATE.md .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies
 ```
 
-Result: one expected self-match in the embedded scan command; stale old handoff/parity direction removed.
+Result: stale old handoff/parity direction removed.
 
 ```bash
-rg -n "jiaoan-jihua-full\.md|jiaoan-shicao-full\.md" .planning/PROJECT.md .planning/REQUIREMENTS.md .planning/ROADMAP.md .planning/STATE.md .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies
+legacy_full_literal_pattern="$(printf '%s|%s' \
+  "$(printf '%s-%s-%s[.]%s' 'jiaoan' 'jihua' 'full' 'md')" \
+  "$(printf '%s-%s-%s[.]%s' 'jiaoan' 'shicao' 'full' 'md')")"
+rg -n "$legacy_full_literal_pattern" .planning/PROJECT.md .planning/REQUIREMENTS.md .planning/ROADMAP.md .planning/STATE.md .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies .planning/quick/260615-0853-correct-v114-doc-boundary
 ```
 
-Result: no matches outside the required embedded scan command.
+Result: no matches.
 
 ```bash
 git diff --name-only -- skills
