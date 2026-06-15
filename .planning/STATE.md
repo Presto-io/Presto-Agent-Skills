@@ -3,23 +3,23 @@ gsd_state_version: 1.0
 milestone: v1.15
 milestone_name: teaching-design-package 模块化渲染与旧格式回归
 current_phase: 33
-status: ready-to-execute
-stopped_at: Planned 33-PLAN.md
-last_updated: "2026-06-15T05:39:43.534Z"
-last_activity: 2026-06-15 -- Phase 33 planning complete
+status: Phase 33 complete
+stopped_at: Completed 33-PLAN.md
+last_updated: "2026-06-15T06:26:07.155Z"
+last_activity: 2026-06-15 -- Phase 33 execution complete
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 33
-**Status:** Phase 33 planned; ready for Phase 33 execution
+**Status:** Phase 33 complete
 
 ## Project Reference
 
@@ -146,6 +146,8 @@ Discuss and plan the first v1.15 implementation phase:
 - [Phase 31]: Teacher-facing unified Markdown workflow is implemented. — The canonical skill entry now starts from source materials, targeted clarification, one editable full Markdown, teacher review/editing, finalized Markdown, then package script validation/rendering.
 - [Phase 32]: Clean 1+1+3 delivery and scheduling regression gate is planned. — The plan requires a public delivery directory containing only one unified Markdown, one unified Typst, and three PDFs; hidden work/debug/failure diagnostics; derived hours/date/semester validation; no old precise handoff filenames; and standalone-copy verification with only `teaching-design-package` installed.
 - [Phase 32]: Clean 1+1+3 delivery and scheduling regression gate is implemented. — Successful delivery roots contain only `teaching-design-package-full.md`, `teaching-design-package.typ`, `teaching-design-package.pdf`, `teaching-plan.pdf`, and `teaching-design.pdf`; diagnostics/status/model/logs/split Typst stay hidden; derived scheduling and standalone-copy verification passed.
+- [Phase 33]: teaching-design-package uses a package-owned module registry and skill-local calendar scheduling model. — Registered `teaching-plan` and `teaching-design` now share one scheduling object derived from `references/calendar.json`, `first_teaching_day`, and授课计划 rows.
+- [Phase 33]: Hidden module Markdown/Typst are internal Phase 33 artifacts only. — Formal `jiaoan-jihua` and `jiaoan-shicao` renderer migration remains Phase 34/35 scope, and final public PDF merge remains Phase 36 scope.
 
 ## Performance Metrics
 
@@ -176,12 +178,13 @@ Discuss and plan the first v1.15 implementation phase:
 | Phase 28 P01 | 24min | 6 tasks | 5 files |
 | Phase 29 P01 | 23min | 7 tasks | 5 files |
 | Phase 31 P01 | current session | 5 tasks | 4 files |
+| Phase 33 P01 | 19min | 6 tasks | 6 files |
 
 ## Last Session
 
-- **Completed:** Phase 29 PDF comparison and standalone regression
-- **Stopped At:** Phase 33 context gathered
-- **Resume File:** .planning/phases/33-module-registry-unified-extraction-and-scheduling-model/33-CONTEXT.md
+- **Completed:** Phase 33 module registry, unified extraction, and scheduling model
+- **Stopped At:** Completed 33-PLAN.md
+- **Resume File:** None
 
 ## Close Notes
 
@@ -214,12 +217,12 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 Phase: 33
 Plan: 33-PLAN.md
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 33 planning complete
+Status: Complete
+Last activity: 2026-06-15 -- Phase 33 execution complete
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 33`
+- Run `/gsd:execute-phase 34`
 
 ### Quick Tasks Completed
 

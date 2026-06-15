@@ -57,7 +57,7 @@ completed: 2026-06-15
 ## Task Commits
 
 1. **Tasks 1-5: Module registry, extraction, scheduling, hidden artifacts, diagnostics** - `541b74d` (feat)
-2. **Task 6: Reference docs, verification, and summary** - committed with plan metadata
+2. **Task 6: Reference docs, verification, and summary** - `e6c7cef` (docs)
 
 ## Files Created/Modified
 
@@ -91,6 +91,7 @@ completed: 2026-06-15
 ## Issues Encountered
 
 - The first patch attempt against the large Bash heredoc did not apply cleanly. I switched to a skill-local Node helper, which matches the plan's module-boundary intent and keeps the shell command surface stable.
+- Some `gsd-sdk query state.*` handlers did not parse the current `STATE.md` layout, so ROADMAP/REQUIREMENTS were updated through successful handlers and STATE was aligned with a minimal manual patch.
 
 ## User Setup Required
 
