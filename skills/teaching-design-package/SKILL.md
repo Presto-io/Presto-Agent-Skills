@@ -1,9 +1,9 @@
 ---
 name: "teaching-design-package"
-description: "Use when creating one standalone teaching-design package from finalized unified Markdown into package-owned Typst/PDF outputs."
+description: "Use when turning teacher source materials into one reviewable teaching-design-package Markdown, then validating/rendering the finalized Markdown with package-owned tools."
 metadata:
-  short-description: "教学设计整包统一 Markdown 渲染工作流"
-  version: "0.2.0"
+  short-description: "教师源材料到统一教学资料 Markdown 的整包工作流"
+  version: "0.3.0"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -18,34 +18,45 @@ metadata:
 
 ## Objective
 
-把已经审定的教学设计整包 Markdown 解析为 package-owned data model，并由本技能自己的渲染规则生成 unified Typst 与 PDF 状态。正常使用路径只需要安装 `teaching-design-package` 这一整个 skill folder，不要求额外安装同仓库的其他技能目录。
+把教师提供的课程标准、授课计划、学习任务、教材资源、评价要求、学校格式要求和零散说明整理成一份教师可审阅、可编辑的统一 Markdown；教师确认这份 Markdown 后，再用本技能自己的脚本做严格验证、Typst/PDF 渲染和交付证据记录。
 
-Phase 30 的边界是先建立独立包内路径：unified Markdown -> package-owned data model -> package-owned Typst/PDF rendering。完整教师交互文案与最终清洁 1+1+3 交付目录会在后续阶段继续收束。
+正常使用路径只需要安装 `teaching-design-package` 这一整个 skill folder。脚本层消费审定后的 Markdown，不替代教师沟通、内容组织或审阅编辑。
 
 ## Use When
 
-- 用户已经有 `teaching-design-package-full.md`，或有同一合同形状的课程教学资料 Markdown。
-- 用户需要从一份统一 Markdown 派生课程元数据、授课进度、教学活动、资源、课时、日期、学期和输出状态。
-- 用户需要验证 standalone 安装边界：只复制本 skill folder 后，仍能运行 example、model、render-package。
-- 用户要生成整包 Typst，或在本地工具可用时尝试 PDF，并要求缺失工具时诚实记录非最终状态。
+- 教师给出多份源材料，需要整理为一份完整教学资料包。
+- 教师已经有 `teaching-design-package-full.md`，或课程专属文件名，例如 `某某某课教学资料.md`，并希望作为后续渲染的人工可编辑事实源。
+- 用户需要先确认课程事实、授课进度、教学活动、资源、评价方式、复核标记和学校格式要求，再生成整包 Typst/PDF。
+- 用户需要验证 standalone 安装边界：只复制本 skill folder 后，仍能在审定 Markdown 上运行 package-owned validation/rendering。
 
 ## Inputs
 
-- `source_material`: 教师提供的课程说明、授课进度、教学活动、资源、评价要求和补充事实。
-- `templates/teaching-design-package-full.md`: 统一 Markdown 示例，也是包内 parser 的基线合同。
-- `references/format-and-orchestration.md`: 统一 Markdown、data model、渲染状态、standalone 边界与安全规则。
-- `scripts/teaching-design-package.sh`: 包内脚本，只读取本 skill folder 与调用方传入的 Markdown/output path。
+- `source_materials`: 教师提供的课程说明、课程标准、教材信息、授课进度、活动设计、工作页、考核要求、校内模板要求、教师备注和已有 Markdown 片段。
+- `templates/teaching-design-package-full.md`: 可参考的统一 Markdown 形状。不要把它当成必须复制的旧模板；按教师材料组织课程自己的完整 Markdown。
+- `references/format-and-orchestration.md`: 源材料编排、教师可编辑 Markdown 契约、YAML/正文边界、复核标记、脚本边界与验证规则。
+- `scripts/teaching-design-package.sh`: 包内脚本，只在 Markdown 定稿后读取调用方传入的 Markdown/output path。
 
-## Process
+## Teacher Workflow
 
-1. 先把源材料整理为一份可审阅 unified Markdown。Phase 30 脚本只消费 finalized Markdown，不负责代替教师互动整理材料。
-2. 运行 `example` 生成包内示例，或使用课程自己的整包 Markdown。
-3. 运行 `model` 检查 package-owned data model。模型会派生课程元数据、授课进度行、教学活动块、资源片段、总课时、日期范围、学年学期、复核标记和输出 readiness。
-4. 运行 `render-package` 从同一个模型生成 `teaching-design-package.typ`，并把内部模型写到隐藏诊断目录。
-5. 需要 PDF 时显式加 `--pdf`。如果本地缺少 Typst 或编译失败，脚本写入诚实状态，不回退到外部技能或旧渲染路径。
-6. 旧的独立技能只作为仓库外部兼容入口继续存在；它们不是本技能正常路径、内部资源、验收基准或后续实现方向。
+1. **收集源材料**：接收课程标准、教材、任务清单、进度安排、活动过程、评价要求、学校格式约束和教师补充说明。先把可读文本内容作为事实来源；OCR 或任意二进制提取不作为本技能必需能力。
+2. **抽取并归一化**：把多份材料映射到一个课程资料包，合并重复事实，保留可追溯的正文证据，不按源文件碎片继续组织。
+3. **澄清/提问**：先从正文证据里找答案；只对缺失、冲突、不确定或依赖教师选择的事实提问。问题按课程身份、班级/教师、时间课时、学习任务、活动设计、资源评价、学校格式和复核标记分组。
+4. **生成统一 Markdown**：产出一份完整的 `teaching-design-package-full.md`，或使用课程专属文件名如 `某某某课教学资料.md`。这份 Markdown 是教师可编辑的 source of truth。
+5. **教师审阅/编辑**：暂停让教师审阅、改写、补充或保留复核标记。不要要求教师运行、排序或拼接其他独立技能；不要把脚本状态当成内容审阅。
+6. **定稿 Markdown**：只有当教师确认内容可进入交付，且阻塞性复核标记已解决或明确保留为非最终状态时，才把 Markdown 视为 finalized Markdown。
+7. **脚本验证/渲染**：对定稿 Markdown 运行包内脚本，生成 package-owned data model、unified Typst、PDF 状态和交付证据。脚本只做 finalized Markdown validation/rendering，不承担教师互动和内容组织 UX。
 
-## Script Usage
+## Clarification Strategy
+
+- **必问阻塞项**：课程名称、专业/班级、教师、教材、首个授课日、学习任务结构、课时来源、关键评价要求、学校强制格式等缺失时，必须先问清。
+- **冲突项**：当多个来源给出不同课程名、日期、课时、任务顺序或评价口径时，简要说明冲突来源和差异，请教师确认采用哪一项。
+- **可复核项**：能安全进入草稿但尚未确认的内容，写入正文复核标记，让教师在 Markdown 中直接改。不要为可延后偏好反复打断。
+- **可选偏好**：封面称谓、局部措辞、资源补充、展示顺序等可作为集中问题询问，也可先生成可编辑草稿。
+- **不要索要派生事实**：总课时、学年、学期、起止日期、输出配置、内部验证开关和诊断状态应从正文证据、脚本配置或后续验证派生，不要求教师手工维护 YAML 值。
+
+## Finalized Markdown Validation And Delivery Commands
+
+在教师审阅并确认 Markdown 可进入交付后，才运行以下命令：
 
 ```bash
 scripts/teaching-design-package.sh example \
@@ -68,45 +79,49 @@ scripts/teaching-design-package.sh manifest \
   --out-dir build/teaching-design-package
 ```
 
+如果课程使用专属文件名，把 `--input teaching-design-package-full.md` 换成对应的 `某某某课教学资料.md` 路径。
+
 ## Runtime Adapter Notes
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | 读取本入口、reference、template 和 script；在 shell 中显式运行包内脚本；只把用户指定 Markdown 和输出目录传给脚本；PDF 成功必须由实际文件和状态 JSON 证明。 |
-| Claude Code | 可把本 skill folder 安装到 `.claude/skills/teaching-design-package/`；frontmatter `description` 触发后按渐进披露读取 reference/template/script；不要补读仓库外部技能作为正常执行条件。 |
-| Gemini CLI | 在 `GEMINI.md` 或项目上下文中指向本 `SKILL.md`；自动技能加载不可用时按 `Script Usage` 手动执行；交互确认用普通文本完成。 |
-| OpenCode | 使用 OpenCode 可发现的 skill path；如果走 Claude-compatible fallback，保持 `references/`、`templates/`、`scripts/` 同步复制并验证当前选中的是本技能。 |
-| OpenClaw | 作为 AgentSkills-compatible skill folder 使用；安装时验证 skill root、frontmatter、sandbox/allowlist、support files 和 shell 脚本权限；正常路径不要求同仓库其他技能目录存在。 |
-| Hermes Agent | 使用 Hermes Agent 可发现的 `SKILL.md` skill folder；安装时验证 project/global 路径、reference/template/script 可读性、脚本执行权限和失败时人工 fallback；不要把外部兼容入口当包内依赖。 |
+| Codex | 先读取本入口、reference 和 template，按教师源材料完成澄清、统一 Markdown、教师审阅/编辑；仅在 Markdown 定稿后运行包内脚本。PDF 成功必须由实际文件和状态 JSON 证明。 |
+| Claude Code | 可把本 skill folder 安装到 `.claude/skills/teaching-design-package/`；frontmatter `description` 触发后渐进读取 reference/template/script；先执行教师 workflow，再执行 finalized Markdown validation/rendering。 |
+| Gemini CLI | 在 `GEMINI.md` 或项目上下文中指向本 `SKILL.md`；自动技能加载不可用时用普通文本完成澄清和教师确认；脚本命令只作为定稿后的交付步骤。 |
+| OpenCode | 使用 OpenCode 可发现的 skill path；保持 `references/`、`templates/`、`scripts/` 同步复制；先确认教师可编辑 Markdown，再运行脚本验证。 |
+| OpenClaw | 作为 AgentSkills-compatible skill folder 使用；安装时验证 skill root、frontmatter、support files、sandbox/allowlist 和脚本权限；教师确认 Markdown 前不要触发渲染交付。 |
+| Hermes Agent | 使用 Hermes Agent 可发现的 `SKILL.md` skill folder；验证 reference/template/script 可读性和执行权限；遇到材料冲突时走文本澄清，定稿后再运行包内脚本。 |
 
 ## Outputs
 
-默认 Typst-only 成功路径会写出：
+教师审阅阶段的核心输出：
 
-- `teaching-design-package-full.md`：复制到输出目录的 unified Markdown。
+- `teaching-design-package-full.md` 或 `某某某课教学资料.md`：统一、完整、教师可编辑的 Markdown source of truth。
+
+脚本验证/渲染阶段可能写出：
+
 - `teaching-design-package.typ`：由 package-owned data model 生成的 unified Typst。
 - `.teaching-design-package/model.json`：隐藏诊断模型。
 - `teaching-design-package-status.json`：输出状态与 readiness。
-
-显式 `--pdf` 时还会尝试：
-
 - `teaching-design-package.pdf`
 - `teaching-plan.pdf`
 - `teaching-design.pdf`
 
-Phase 30 可以诚实记录 PDF `not_run`、`missing_compiler_or_failed` 或 `passed`。完整 1+1+3 最终交付清洁化由后续阶段完成。
+Phase 32 负责继续收束默认成功交付目录的 1+1+3 清洁化；本阶段只要求主入口先服务教师 Markdown 工作流，并把脚本保持在定稿后的验证/渲染边界内。
 
 ## Verification
 
-- [ ] `Codex`、`Claude Code`、`Gemini CLI`、`OpenCode`、`OpenClaw`、`Hermes Agent` 均出现在 Runtime Adapter Notes。
-- [ ] `scripts/teaching-design-package.sh example --output <file>` 生成 unified Markdown。
-- [ ] `scripts/teaching-design-package.sh model --input <file>` 输出 package-owned data model。
-- [ ] `scripts/teaching-design-package.sh render-package --input <file> --out-dir <dir>` 输出 unified Typst 与状态 JSON。
-- [ ] standalone 验证只复制本 skill folder，并能运行 example 与 render-package。
+- [ ] `SKILL.md` 的主流程从源材料、澄清/提问、统一 Markdown、教师审阅/编辑、定稿 Markdown 到脚本验证/渲染。
+- [ ] `teaching-design-package-full.md` 和课程专属 `某某某课教学资料.md` 都被描述为教师可编辑 source of truth。
+- [ ] `references/format-and-orchestration.md` 说明 teacher-editable Markdown、YAML/frontmatter 边界、正文/body 提取、派生事实、复核标记和 script boundary。
+- [ ] `scripts/teaching-design-package.sh model --input <finalized-markdown>` 输出 package-owned data model。
+- [ ] `scripts/teaching-design-package.sh render-package --input <finalized-markdown> --out-dir <dir>` 输出 unified Typst 与状态 JSON。
 
 ## Safety
 
-- 不要把外部兼容入口改造成本包内部依赖。
-- 不要新增旧式内部目录或旧式拆分交接结构。
+- 不要把脚本命令放在教师内容组织之前。
+- 不要要求用户安装、运行、排序或拼接其他独立技能来完成本包。
+- 不要把外部兼容入口改造成本包内部依赖、资源、验收基准或实现方向。
+- 不要把总课时、学年、学期、起止日期、输出 readiness、诊断状态等派生事实放进教师必须维护的 YAML。
 - 不要从 unified Markdown 一跳声称 PDF 最终通过；只有显式 `--pdf` 且实际文件存在时才记录 `passed`。
 - 不要把脚本诊断文件混入教师默认交付说明；Phase 32 会继续收束清洁输出目录。

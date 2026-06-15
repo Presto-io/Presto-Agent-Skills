@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-15 after Phase 31 planning
+**Last updated:** 2026-06-15 after Phase 31 execution
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -53,7 +53,7 @@ Success criteria:
 **Depends on:** Phase 30
 **Plans:** 1/1 plans complete
 **Requirements:** TDPKG-04, TDPKG-05, TDPKG-06, TDPKG-14
-**Status:** Planned
+**Status:** Complete
 
 Success criteria:
 
@@ -117,11 +117,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.14 has completed Phase 30 and planned Phase 31. `teaching-design-package` now has a standalone package-owned unified Markdown -> data model -> Typst/PDF status path, and Phase 31 is ready to execute the teacher-facing source-materials-to-full-Markdown workflow rewrite.
+Milestone v1.14 has completed Phase 30 and Phase 31. `teaching-design-package` now has a standalone package-owned unified Markdown -> data model -> Typst/PDF status path, and its canonical entry starts from teacher source materials, targeted clarification, one reviewable Markdown, teacher review/editing, finalized Markdown, then script validation/rendering.
 
 ## Next Step
 
-Run `/gsd:execute-phase 31` when ready to implement the teacher-facing unified Markdown workflow.
+Run `/gsd:plan-phase 32` when ready to plan clean 1+1+3 delivery and scheduling regression enforcement.
 
 ---
-*Roadmap updated: 2026-06-15 after Phase 31 planning*
+*Roadmap updated: 2026-06-15 after Phase 31 execution*

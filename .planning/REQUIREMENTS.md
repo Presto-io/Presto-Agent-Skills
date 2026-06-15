@@ -32,9 +32,9 @@ The default delivery contract is 1+1+3:
 
 ### Teacher Markdown Workflow
 
-- [ ] **TDPKG-04**: The canonical `SKILL.md` presents the main workflow as a teacher interaction: ingest many source materials, ask or clarify missing facts, organize content, and produce one reviewable full-package Markdown.
-- [ ] **TDPKG-05**: The workflow treats `teaching-design-package-full.md` or a course-specific `某某某课教学资料.md` as the human-editable source of truth before rendering.
-- [ ] **TDPKG-06**: The skill makes clear that the script layer is not the teacher's interactive organizing entry; scripts only consume finalized Markdown for strict validation and delivery generation.
+- [x] **TDPKG-04**: The canonical `SKILL.md` presents the main workflow as a teacher interaction: ingest many source materials, ask or clarify missing facts, organize content, and produce one reviewable full-package Markdown.
+- [x] **TDPKG-05**: The workflow treats `teaching-design-package-full.md` or a course-specific `某某某课教学资料.md` as the human-editable source of truth before rendering.
+- [x] **TDPKG-06**: The skill makes clear that the script layer is not the teacher's interactive organizing entry; scripts only consume finalized Markdown for strict validation and delivery generation.
 
 ### Delivery Artifact Contract
 
@@ -51,7 +51,7 @@ The default delivery contract is 1+1+3:
 
 ### Legacy Skill Preservation
 
-- [ ] **TDPKG-14**: The user-facing package workflow does not regress into asking users to run or mentally stitch together old standalone skills, and does not hide old skill structure inside the package.
+- [x] **TDPKG-14**: The user-facing package workflow does not regress into asking users to run or mentally stitch together old standalone skills, and does not hide old skill structure inside the package.
 - [x] **TDPKG-15**: Existing legacy standalone skill entries, public commands, accepted inputs, and output contracts remain preserved as external compatibility surfaces unless a later explicit requirement changes them; they are not package internals or v1.14 acceptance baselines.
 
 ## Future Requirements
@@ -81,9 +81,9 @@ Deferred to a later milestone unless explicitly requested:
 | TDPKG-01 | Phase 30 | Complete |
 | TDPKG-02 | Phase 30 | Complete |
 | TDPKG-03 | Phase 30 | Complete |
-| TDPKG-04 | Phase 31 | Pending |
-| TDPKG-05 | Phase 31 | Pending |
-| TDPKG-06 | Phase 31 | Pending |
+| TDPKG-04 | Phase 31 | Complete |
+| TDPKG-05 | Phase 31 | Complete |
+| TDPKG-06 | Phase 31 | Complete |
 | TDPKG-07 | Phase 32 | Pending |
 | TDPKG-08 | Phase 32 | Pending |
 | TDPKG-09 | Phase 32 | Pending |
@@ -91,7 +91,7 @@ Deferred to a later milestone unless explicitly requested:
 | TDPKG-11 | Phase 32 | Pending |
 | TDPKG-12 | Phase 32 | Pending |
 | TDPKG-13 | Phase 32 | Pending |
-| TDPKG-14 | Phase 31 | Pending |
+| TDPKG-14 | Phase 31 | Complete |
 | TDPKG-15 | Phase 30 | Complete |
 
 **Coverage:**
