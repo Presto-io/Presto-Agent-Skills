@@ -1,5 +1,25 @@
 # Milestones
 
+## v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约 (Shipped: 2026-06-15)
+
+**Phases completed:** 3 phases, 3 plans, 16 tasks
+
+**Key accomplishments:**
+
+- Standalone teaching-design-package now renders unified Markdown through a package-owned model and Typst/PDF status path without sibling skill calls.
+- `teaching-design-package` now reads as a teacher source-materials-to-full-Markdown workflow before it reads as a renderer.
+- `teaching-design-package` now enforces a clean public 1+1+3 delivery root and hidden diagnostics boundary, with derived scheduling validation.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.14-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.14-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.14-MILESTONE-AUDIT.md`
+
+**Known deferred items at close:** 1 audit-open quick-task compatibility item recorded in `.planning/STATE.md` Deferred Items.
+
+---
+
 ## v1.13 Teaching Design Package Markdown Baseline Rendering (Shipped: 2026-06-14)
 
 **Phases completed:** 2 phases, 2 plans, 13 tasks

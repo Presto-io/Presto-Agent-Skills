@@ -2,25 +2,25 @@
 
 ## Current State
 
-**Latest shipped milestone:** v1.13 Teaching Design Package Markdown Baseline Rendering
+**Latest shipped milestone:** v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约
 
-**Shipped:** 2026-06-14
+**Shipped:** 2026-06-15
 
-**Active milestone:** v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约
+**Active milestone:** None
 
-**Status:** v1.14 is in planning. The milestone is a corrective contract milestone for `teaching-design-package`: it must be independently installable and usable as one unified teaching-design skill, with a teacher-first Markdown organization workflow and a clean default 1+1+3 delivery surface.
+**Status:** v1.14 shipped. `teaching-design-package` is now a standalone, package-owned, teacher-facing unified teaching-design skill with a clean default 1+1+3 delivery surface and hidden diagnostics.
 
-**Delivered in v1.13:**
-- `teaching-design-package` now renders from the committed teacher-facing Markdown baseline at `skills/teaching-design-package/templates/teaching-design-package-full.md`.
-- The package workflow preserves the baseline Markdown structure while producing one copyable Markdown artifact, one package Typst artifact, and three real PDFs.
-- Split package outputs were historically checked against the legacy standalone rendering path before v1.14 corrected the package boundary.
-- Total hours, task hours, lesson-plan activity hours, task date ranges, and academic year/semester are derived from teaching-plan rows, `first_teaching_day`, built-in calendar/default contracts, and generated evidence instead of package YAML.
+**Delivered in v1.14:**
+- `teaching-design-package` installs and runs as a single skill without sibling repo skill dependencies in the normal path.
+- The canonical skill workflow starts from teacher source materials, targeted clarification, one editable full Markdown, teacher review, finalized Markdown, then strict script validation/rendering.
+- The package script owns its unified model, Typst/PDF output path, hidden diagnostics, PDF success semantics, and derived scheduling validation.
+- Successful public delivery roots contain exactly one Markdown, one Typst, and three PDFs; model/status/logs/split Typst/failure evidence stay hidden.
 
 ## Milestone History
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets. v1.11 added the integrated `teaching-design-package` orchestration path while preserving the original teaching skills and keeping package outputs honest through manifest evidence. v1.12 repaired two post-close teaching-design regressions: package date backfill into practical lesson-plan Markdown and official-style activity-table width alignment. v1.13 shipped the committed full-package Markdown template as the teacher-facing source of truth for package rendering, with real split/combined PDF outputs and legacy standalone comparison evidence.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets. v1.11 added the integrated `teaching-design-package` orchestration path while preserving the original teaching skills and keeping package outputs honest through manifest evidence. v1.12 repaired two post-close teaching-design regressions: package date backfill into practical lesson-plan Markdown and official-style activity-table width alignment. v1.13 shipped the committed full-package Markdown template as the teacher-facing source of truth for package rendering, with real split/combined PDF outputs and legacy standalone comparison evidence. v1.14 completed the package boundary correction: the package is now self-contained, teacher-first, script-finalized, clean in public output, and strict about hidden diagnostics and derived scheduling validation.
 
 ## What This Is
 
@@ -34,13 +34,13 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-Define and execute v1.14 so `teaching-design-package` becomes the user-facing unified two-in-one skill rather than a thin script wrapper around repo-local sibling skills. The milestone must protect the teacher's real workflow: ingest messy source materials, ask and organize, produce one editable full-package Markdown, and only then use a strict package-owned script entry to validate and render the finalized Markdown into the default 1+1+3 deliverables.
+No active milestone. The next milestone should start from fresh requirements after v1.14's standalone package contract.
 
-## Current Milestone: v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约
+## Latest Milestone: v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约
 
 **Goal:** Make `teaching-design-package` a self-contained, teacher-first unified skill with clean default delivery artifacts and strict hidden/internal diagnostics boundaries.
 
-**Target features:**
+**Delivered features:**
 - Standalone install/use contract: the skill cannot require users to install sibling repo skills; required package capability must be rebuilt from `teaching-design-package`'s own unified model, own Markdown contract, and own Typst/PDF rendering path.
 - Teacher-facing main workflow in `SKILL.md`: source materials are clarified, organized, and consolidated into one reviewable full Markdown document before rendering.
 - Strict render contract: finalized `teaching-design-package-full.md` is the script input and default outputs are exactly one Markdown, one Typst, and three PDFs, with package-owned diagnostics hidden unless debug or failure diagnostics require exposure.
@@ -101,18 +101,24 @@ Define and execute v1.14 so `teaching-design-package` becomes the user-facing un
 - [x] Verify split package outputs against legacy standalone comparison evidence while preserving legacy public interfaces. - v1.13 Phase 29
 - [x] Keep machine defaults and validation/output settings out of teacher-maintained package YAML. - v1.13 Phases 28-29
 
+### Validated in v1.14
+
+- [x] `teaching-design-package` can be installed and used as a single skill without requiring users to install sibling repository skills. - v1.14 Phase 30
+- [x] Package capability is implemented through `teaching-design-package`'s own unified data model, Markdown contract, validation rules, and Typst/PDF rendering path. - v1.14 Phase 30
+- [x] Runtime adapter notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent explain the standalone install/use boundary. - v1.14 Phase 30
+- [x] The canonical skill entry describes the teacher's real interactive workflow: ingest many source materials, ask or clarify missing facts, organize content, and produce one editable full-package Markdown. - v1.14 Phase 31
+- [x] `teaching-design-package-full.md` or a course-specific Markdown file is the human-editable source of truth before rendering. - v1.14 Phase 31
+- [x] The script entry is a strict final-render gate that accepts finalized Markdown rather than acting as the teacher's interactive organization entry. - v1.14 Phase 31
+- [x] Default delivery emits the clean 1+1+3 artifact set only: one unified Markdown, one unified Typst, and three PDFs. - v1.14 Phase 32
+- [x] Package-owned diagnostics, manifests, logs, status sidecars, split render intermediates, and similar implementation artifacts stay out of the default delivery directory except in hidden work/debug locations or explicit failure diagnostics. - v1.14 Phase 32
+- [x] Scheduling evidence remains derived and mutually verified across plan and lesson-plan data, including hours, academic year/semester, first teaching day, and real teaching-day date ranges. - v1.14 Phase 32
+- [x] The unified package user experience does not regress into instructing users to run or mentally stitch together old standalone skills, while legacy standalone entries remain preserved only as external compatibility surfaces. - v1.14 Phase 31
+
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] **TDPKG-01**: `teaching-design-package` can be installed and used as a single skill without requiring users to install sibling repository skills.
-- [ ] **TDPKG-02**: Package capability is rebuilt through `teaching-design-package`'s own unified data model, own Markdown contract, validation rules, and Typst/PDF rendering path; old standalone templates, old split Markdown layouts, and old handoff architecture are not copied into the package.
-- [ ] **TDPKG-03**: The canonical skill entry describes the teacher's real interactive workflow: ingest many source materials, ask or clarify missing facts, organize content, and produce one editable full-package Markdown.
-- [ ] **TDPKG-04**: The script entry is documented and implemented as a strict final-render gate that accepts an already finalized `teaching-design-package-full.md` rather than acting as the teacher's interactive organization entry.
-- [ ] **TDPKG-05**: Default delivery emits the clean 1+1+3 artifact set only: one unified Markdown, one unified Typst, and three PDFs.
-- [ ] **TDPKG-06**: Package-owned diagnostics, manifests, logs, status sidecars, split render intermediates, and similar implementation artifacts stay out of the default delivery directory except in hidden work/debug locations or explicit failure diagnostics.
-- [ ] **TDPKG-07**: Scheduling evidence remains derived and mutually verified across plan and lesson-plan data, including hours, academic year/semester, first teaching day, and real teaching-day date ranges.
-- [ ] **TDPKG-08**: The unified package user experience must not regress into instructing users to run or mentally stitch together two independent legacy skills, while legacy standalone entries remain preserved only as external compatibility surfaces.
+(None. Define fresh requirements with the next milestone.)
 
 ### Out of Scope
 
@@ -156,9 +162,11 @@ v1.12 completed the post-close repair slice for the integrated teaching-design p
 
 v1.13 shipped from the committed Markdown baseline `skills/teaching-design-package/templates/teaching-design-package-full.md` rather than a new Markdown schema. The reference Markdown format stays teacher-facing and copyable, while the pre-v1.14 package render path consumes that Markdown and produces split and combined outputs.
 
+v1.14 shipped the corrected `teaching-design-package` boundary. The package now owns its normal rendering path instead of relying on sibling skills, the skill entry starts with teacher source-material organization before scripts, and the default successful output directory is exactly the public 1+1+3 set. Derived scheduling facts and PDF readiness are validated from evidence, while status/model/logs/split Typst and failure diagnostics stay hidden.
+
 ## Next Milestone Goals
 
-v1.14 is active. The milestone should turn the post-v1.13 corrections into a strict contract: `teaching-design-package` is one self-contained skill with a teacher-first Markdown authoring workflow, a final-render-only script gate, and a clean 1+1+3 delivery directory.
+No next milestone is defined yet. Start with fresh requirements before adding more package or skill changes.
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -228,7 +236,9 @@ v1.14 is active. The milestone should turn the post-v1.13 corrections into a str
 | Keep old jiaoan skills standalone during the pre-v1.14 package line | The v1.13 work preserved their direct use and public command contracts while recording comparison evidence | Superseded by v1.14 package-owned boundary |
 | Keep package PDF generation explicit | Typst generation alone should not be confused with final accepted PDFs | Good - v1.13 Phase 29 added `render-package --pdf` |
 | Merge combined package PDFs from accepted split outputs | The combined package should be file-backed and ordered from the teaching-plan and lesson-plan PDFs | Good - v1.13 Phase 29 records `python_fitz` fallback evidence |
-| Rebuild `teaching-design-package` as its own two-in-one skill | User clarified the package must not copy old templates, keep old internal Markdown files, or continue old handoff thinking under a new folder | Active - v1.14 |
+| Rebuild `teaching-design-package` as its own two-in-one skill | User clarified the package must not copy old templates, keep old internal Markdown files, or continue old handoff thinking under a new folder | Good - shipped in v1.14 |
+| Keep the package workflow teacher-first and script-finalized | Teachers should organize source materials into one editable Markdown before strict validation/rendering runs | Good - shipped in v1.14 |
+| Keep successful package delivery roots clean | Default output should contain only one Markdown, one Typst, and three PDFs, with diagnostics hidden for audit/debug/failure use | Good - shipped in v1.14 |
 
 ## Evolution
 
@@ -248,4 +258,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-15 after v1.14 milestone initialization*
+*Last updated: 2026-06-15 after v1.14 milestone close*
