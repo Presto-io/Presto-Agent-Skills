@@ -334,6 +334,11 @@ fs.writeFileSync(typPath, lines.join('\n'));
 NODE
 }
 
+write_teaching_plan_typst() {
+  local model_path="$1" typ_path="$2"
+  node "${SCRIPT_DIR}/teaching-plan-renderer.js" "$model_path" "$typ_path"
+}
+
 compile_pdf() {
   local typ="$1" pdf="$2" log="$3"
   rm -f "$pdf" "$log"
@@ -387,6 +392,16 @@ const status = {
     generated_frontmatter: Object.fromEntries(model.modules.items.map((item) => [item.id, item.frontmatter])),
   },
   validation: model.validation,
+  teaching_plan_formal_renderer: {
+    status: 'passed',
+    renderer: 'package-owned teaching-plan-renderer.js',
+    legacy_surface: 'jiaoan-jihua official five-column table',
+    source: 'shared_scheduling_model',
+    total_hours_source: model.validation.total_hours_source,
+    hidden_typst: `${outDir}/.teaching-design-package/work/teaching-plan.typ`,
+    public_pdf: publicOutputs.teaching_plan_pdf,
+    pdf_compile_status: planStatus,
+  },
   public_outputs: publicOutputs,
   pdf_requested: pdfRequested,
   pdf_status: {
@@ -428,6 +443,14 @@ const diagnostics = {
   task_totals: model.scheduling.tasks,
   total_hours: model.scheduling.total_hours,
   use_time: model.scheduling.course.use_time,
+  strict_sum_evidence: model.validation.strict_sum_evidence,
+  teaching_plan_formal_renderer: {
+    status: 'passed',
+    renderer: 'package-owned teaching-plan-renderer.js',
+    legacy_surface: 'jiaoan-jihua official five-column table',
+    scheduling_source: 'shared_scheduling_model',
+    hidden_typst: model.modules.items.find((item) => item.id === 'teaching-plan').work_typst,
+  },
   module_registry: model.modules.registry,
   generated_module_frontmatter: Object.fromEntries(model.modules.items.map((item) => [item.id, item.frontmatter])),
   calendar_policy: model.derived.calendar_policy,
@@ -490,7 +513,7 @@ cmd_render_package() {
   model_path="$(write_model_file "$INPUT" "$OUT_DIR")"
   write_unified_typst "$model_path" "${OUT_DIR}/teaching-design-package.typ"
   write_module_markdown_files "$model_path" "$OUT_DIR"
-  write_placeholder_pdf_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-plan.typ" "授课进度计划"
+  write_teaching_plan_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-plan.typ"
   write_placeholder_pdf_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-design.typ" "教学设计方案"
   if [[ "$RENDER_PDF" == true ]]; then
     if compile_pdf "${OUT_DIR}/teaching-design-package.typ" "${OUT_DIR}/teaching-design-package.pdf" "${OUT_DIR}/.teaching-design-package/debug/full-pdf.stderr.log" && pdf_nonempty "${OUT_DIR}/teaching-design-package.pdf"; then
