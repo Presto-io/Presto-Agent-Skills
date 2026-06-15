@@ -7,7 +7,7 @@ if [[ "$SCRIPT_DIR" == "${BASH_SOURCE[0]}" ]]; then
 fi
 SKILL_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TEMPLATE_MD="${SKILL_DIR}/templates/teaching-design-package-full.md"
-MANIFEST_NAME="teaching-design-package-status.json"
+STATUS_NAME="status.json"
 DEFAULT_DAILY_HOURS=8
 
 usage() {
@@ -23,8 +23,9 @@ Usage:
   teaching-design-package.sh info
   teaching-design-package.sh version
 
-The normal path is unified Markdown -> package data model -> package Typst/PDF status.
-PDF files are produced only when local tools are available; otherwise status is honest and non-final.
+The normal path is unified Markdown -> package data model -> clean 1+1+3 delivery.
+Diagnostics, status, stderr logs, split Typst files, and failure evidence stay under .teaching-design-package/.
+render-package --pdf exits successfully only when all three PDF files exist and are non-empty.
 USAGE
 }
 
@@ -249,22 +250,40 @@ function reviewMarkers(markdown) {
   return match[1].split(/\n/).map((line) => line.trim()).filter((line) => line && line !== '无' && !line.startsWith('<!--'));
 }
 
+function parseActivityHours(designText) {
+  const values = [];
+  for (const match of designText.matchAll(/(?:^|\n)\s*(?:活动课时|教学活动课时|lesson_activity_hours)\s*[:：]\s*([0-9]+(?:\.[0-9]+)?)\s*(?:H|h|课时)?\s*(?=\n|$)/g)) {
+    values.push(Number(match[1]));
+  }
+  return values;
+}
+
 const markdown = fs.readFileSync(inputPath, 'utf8');
 const { frontmatter } = splitFrontmatter(markdown);
 const forbidden = [
   'total_hours',
   'school_year',
   'semester',
+  'start_date',
+  'end_date',
+  'date_range',
   'daily_hours',
   'hour_unit',
   'date_display_format',
   'date_locale',
+  'calendar_policy',
   'calendar_source',
   'holidays',
   'makeup_days',
   'source_of_truth',
   'outputs',
   'validation',
+  'status',
+  'manifest',
+  'output_readiness',
+  'final_ready',
+  'pdf_ready',
+  'typst_ready',
 ];
 const forbiddenPresent = forbidden.filter((key) => new RegExp(`^${key}:`, 'm').test(frontmatter));
 if (forbiddenPresent.length) fail(`package frontmatter must not own derived fields: ${forbiddenPresent.join(', ')}`);
@@ -278,6 +297,11 @@ assignDates(tasks, firstTeachingDay);
 const teachers = list(frontmatter, 'teachers');
 const term = inferTerm(firstTeachingDay);
 const totalHours = tasks.reduce((sum, task) => sum + task.total_hours, 0);
+const activityHourValues = parseActivityHours(designText);
+const activityHours = activityHourValues.length ? activityHourValues.reduce((sum, value) => sum + value, 0) : null;
+if (activityHours !== null && activityHours !== totalHours) {
+  fail(`teaching-plan total hours (${totalHours}) and teaching-design activity hours (${activityHours}) mismatch`);
+}
 
 const model = {
   model_version: 'phase30.package-owned.v1',
@@ -296,6 +320,7 @@ const model = {
     total_hours: totalHours,
     total_hours_label: `${totalHours}H`,
     daily_hours: dailyHours,
+    calendar_policy: 'sequential_teaching_days_default',
     school_year: term.school_year,
     semester: term.semester,
     term_label: `${term.school_year}${term.semester}`,
@@ -310,12 +335,26 @@ const model = {
     markdown: designText,
     analysis_blocks: (designText.match(/^## 学习任务分析$/gm) || []).length,
     activity_blocks: (designText.match(/^## 教学活动设计/gm) || []).length,
+    activity_hours: {
+      declared: activityHours !== null,
+      values: activityHourValues,
+      total_hours: activityHours,
+      matches_teaching_plan: activityHours === null ? null : activityHours === totalHours,
+    },
     evaluation_blocks: (designText.match(/^## 学业评价$/gm) || []).length,
   },
   resources: {
     rows: [...designText.matchAll(/^### 五、学习资源\n([\s\S]*?)(?:\n## |\n### |$)/gm)].map((match) => match[1].trim()),
   },
   review_markers: reviewMarkers(markdown),
+  validation: {
+    final_ready: false,
+    total_hours_source: 'teaching_plan_rows',
+    teaching_design_activity_hours_source: activityHours === null ? 'not_declared' : 'teaching_design_body',
+    hours_cross_check: activityHours === null ? 'not_declared' : 'passed',
+    calendar_policy: 'sequential_teaching_days_default',
+    errors: [],
+  },
   output_readiness: {
     markdown_valid: true,
     typst_ready: true,
@@ -339,7 +378,7 @@ cmd_example() {
 write_model_file() {
   local input="$1" out_dir="$2" model_path
   model_path="${out_dir}/.teaching-design-package/model.json"
-  mkdir -p "${out_dir}/.teaching-design-package"
+  mkdir -p "${out_dir}/.teaching-design-package/work" "${out_dir}/.teaching-design-package/debug" "${out_dir}/.teaching-design-package/failure-diagnostics"
   package_model_json "$input" > "$model_path"
   printf '%s\n' "$model_path"
 }
@@ -425,7 +464,7 @@ const typPath = process.argv[3];
 const title = process.argv[4];
 const esc = (value) => String(value ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 const lines = [
-  '// Package-owned Phase 30 PDF surface.',
+  '// Package-owned PDF surface.',
   '// This file is generated from the unified package model.',
   `#set document(title: "${esc(title)}", author: "${esc(model.metadata.teacher_name)}")`,
   '',
@@ -437,7 +476,7 @@ const lines = [
   '',
   `学期：${model.derived.term_label}`,
   '',
-  'Phase 30 provides the package-owned rendering path. Full official PDF layout remains scheduled for Phase 32.',
+  'This file is generated from the unified package model.',
   '',
 ];
 fs.writeFileSync(typPath, lines.join('\n'));
@@ -455,7 +494,8 @@ compile_pdf() {
 
 write_status() {
   local model_path="$1" out_dir="$2" pdf_requested="$3" full_status="$4" plan_status="$5" design_status="$6"
-  local status_path="${out_dir}/${MANIFEST_NAME}"
+  local status_path="${out_dir}/.teaching-design-package/${STATUS_NAME}"
+  mkdir -p "${out_dir}/.teaching-design-package"
   node - "$model_path" "$status_path" "$out_dir" "$pdf_requested" "$full_status" "$plan_status" "$design_status" <<'NODE'
 const fs = require('fs');
 const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -475,7 +515,12 @@ const status = {
   package_owned_model: true,
   source_markdown: model.source_markdown,
   hidden_model: `${outDir}/.teaching-design-package/model.json`,
+  hidden_status: statusPath,
+  hidden_work_dir: `${outDir}/.teaching-design-package/work`,
+  hidden_debug_dir: `${outDir}/.teaching-design-package/debug`,
+  hidden_failure_diagnostics_dir: `${outDir}/.teaching-design-package/failure-diagnostics`,
   derived: model.derived,
+  validation: model.validation,
   public_outputs: publicOutputs,
   pdf_requested: pdfRequested,
   pdf_status: {
@@ -484,14 +529,39 @@ const status = {
     teaching_design_pdf: designStatus,
   },
   review_markers: model.review_markers,
-  final_ready: pdfRequested && fullStatus === 'passed' && planStatus === 'passed' && designStatus === 'passed' && model.review_markers.length === 0,
+  final_ready: pdfRequested && fullStatus === 'passed' && planStatus === 'passed' && designStatus === 'passed' && model.review_markers.length === 0 && model.validation.errors.length === 0,
   notes: [
-    'Phase 30 uses a package-owned model and rendering path.',
-    'Full official PDF layout and clean final delivery enforcement are completed in later planned phases.',
+    'Default successful delivery root is exactly one unified Markdown, one unified Typst, and three PDFs.',
+    'Diagnostics, status, stderr logs, split Typst, model JSON, and failure evidence stay under .teaching-design-package/.',
   ],
 };
 fs.writeFileSync(statusPath, JSON.stringify(status, null, 2));
 NODE
+}
+
+write_diagnostics() {
+  local model_path="$1" out_dir="$2" diagnostics_path
+  diagnostics_path="${out_dir}/.teaching-design-package/diagnostics.json"
+  mkdir -p "${out_dir}/.teaching-design-package"
+  node - "$model_path" "$diagnostics_path" <<'NODE'
+const fs = require('fs');
+const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const diagnosticsPath = process.argv[3];
+const diagnostics = {
+  package_owned_model: true,
+  source_markdown: model.source_markdown,
+  calendar_policy: model.derived.calendar_policy,
+  total_hours_source: model.validation.total_hours_source,
+  teaching_design_activity_hours_source: model.validation.teaching_design_activity_hours_source,
+  hours_cross_check: model.validation.hours_cross_check,
+  review_markers_count: model.review_markers.length,
+};
+fs.writeFileSync(diagnosticsPath, JSON.stringify(diagnostics, null, 2));
+NODE
+}
+
+pdf_nonempty() {
+  [[ -s "$1" ]]
 }
 
 cmd_model() {
@@ -515,26 +585,33 @@ cmd_render_package() {
   cp "$INPUT" "${OUT_DIR}/teaching-design-package-full.md"
   model_path="$(write_model_file "$INPUT" "$OUT_DIR")"
   write_unified_typst "$model_path" "${OUT_DIR}/teaching-design-package.typ"
-  write_placeholder_pdf_typst "$model_path" "${OUT_DIR}/.teaching-design-package/teaching-plan.typ" "授课进度计划"
-  write_placeholder_pdf_typst "$model_path" "${OUT_DIR}/.teaching-design-package/teaching-design.typ" "教学设计方案"
+  write_placeholder_pdf_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-plan.typ" "授课进度计划"
+  write_placeholder_pdf_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-design.typ" "教学设计方案"
   if [[ "$RENDER_PDF" == true ]]; then
-    if compile_pdf "${OUT_DIR}/teaching-design-package.typ" "${OUT_DIR}/teaching-design-package.pdf" "${OUT_DIR}/.teaching-design-package/full-pdf.stderr.log"; then
+    if compile_pdf "${OUT_DIR}/teaching-design-package.typ" "${OUT_DIR}/teaching-design-package.pdf" "${OUT_DIR}/.teaching-design-package/debug/full-pdf.stderr.log" && pdf_nonempty "${OUT_DIR}/teaching-design-package.pdf"; then
       full_status="passed"
     else
       full_status="missing_compiler_or_failed"
     fi
-    if compile_pdf "${OUT_DIR}/.teaching-design-package/teaching-plan.typ" "${OUT_DIR}/teaching-plan.pdf" "${OUT_DIR}/.teaching-design-package/plan-pdf.stderr.log"; then
+    if compile_pdf "${OUT_DIR}/.teaching-design-package/work/teaching-plan.typ" "${OUT_DIR}/teaching-plan.pdf" "${OUT_DIR}/.teaching-design-package/debug/plan-pdf.stderr.log" && pdf_nonempty "${OUT_DIR}/teaching-plan.pdf"; then
       plan_status="passed"
     else
       plan_status="missing_compiler_or_failed"
     fi
-    if compile_pdf "${OUT_DIR}/.teaching-design-package/teaching-design.typ" "${OUT_DIR}/teaching-design.pdf" "${OUT_DIR}/.teaching-design-package/design-pdf.stderr.log"; then
+    if compile_pdf "${OUT_DIR}/.teaching-design-package/work/teaching-design.typ" "${OUT_DIR}/teaching-design.pdf" "${OUT_DIR}/.teaching-design-package/debug/design-pdf.stderr.log" && pdf_nonempty "${OUT_DIR}/teaching-design.pdf"; then
       design_status="passed"
     else
       design_status="missing_compiler_or_failed"
     fi
   fi
   write_status "$model_path" "$OUT_DIR" "$RENDER_PDF" "$full_status" "$plan_status" "$design_status"
+  write_diagnostics "$model_path" "$OUT_DIR"
+  if [[ "$RENDER_PDF" == true ]]; then
+    if [[ "$full_status" != "passed" || "$plan_status" != "passed" || "$design_status" != "passed" ]]; then
+      cp "${OUT_DIR}/.teaching-design-package/${STATUS_NAME}" "${OUT_DIR}/.teaching-design-package/failure-diagnostics/${STATUS_NAME}"
+      die "render-package --pdf did not produce all three non-empty PDF deliverables; diagnostics are under ${OUT_DIR}/.teaching-design-package/"
+    fi
+  fi
 }
 
 cmd_manifest() {
@@ -545,7 +622,7 @@ cmd_manifest() {
   local model_path
   model_path="$(write_model_file "$INPUT" "$OUT_DIR")"
   write_status "$model_path" "$OUT_DIR" "false" "not_run" "not_run" "not_run"
-  printf '%s/%s\n' "$OUT_DIR" "$MANIFEST_NAME"
+  printf '%s/.teaching-design-package/%s\n' "$OUT_DIR" "$STATUS_NAME"
 }
 
 cmd_compat_render() {
@@ -556,14 +633,14 @@ cmd_compat_render() {
 }
 
 cmd_info() {
-  printf 'teaching-design-package: standalone unified Markdown to package-owned model and Typst/PDF status.\n'
+  printf 'teaching-design-package: standalone unified Markdown to package-owned model and clean 1+1+3 delivery.\n'
   printf 'Package checkpoint: templates/teaching-design-package-full.md\n'
   printf 'Reference: references/format-and-orchestration.md\n'
   printf 'Normal rendering does not require repository sibling skill folders.\n'
 }
 
 cmd_version() {
-  printf 'teaching-design-package.sh 0.2.0-phase30\n'
+  printf 'teaching-design-package.sh 0.3.0-phase32\n'
 }
 
 main() {

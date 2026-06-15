@@ -38,16 +38,16 @@ The default delivery contract is 1+1+3:
 
 ### Delivery Artifact Contract
 
-- [ ] **TDPKG-07**: The default successful output directory contains exactly the 1+1+3 deliverables: unified Markdown, unified Typst, full package PDF, teaching-plan PDF, and teaching-design/lesson-plan PDF.
-- [ ] **TDPKG-08**: Default output directories do not contain copied legacy Markdown, split Typst files, manifests, stderr logs, status sidecars, or other internal implementation artifacts.
-- [ ] **TDPKG-09**: Package-owned diagnostics, manifests, stderr logs, state files, split render intermediates, and temporary files are written only to hidden work directories, temporary directories, debug mode locations, or explicit failure diagnostics.
+- [x] **TDPKG-07**: The default successful output directory contains exactly the 1+1+3 deliverables: unified Markdown, unified Typst, full package PDF, teaching-plan PDF, and teaching-design/lesson-plan PDF.
+- [x] **TDPKG-08**: Default output directories do not contain copied legacy Markdown, split Typst files, manifests, stderr logs, status sidecars, or other internal implementation artifacts.
+- [x] **TDPKG-09**: Package-owned diagnostics, manifests, stderr logs, state files, split render intermediates, and temporary files are written only to hidden work directories, temporary directories, debug mode locations, or explicit failure diagnostics.
 
 ### Scheduling and Validation Contract
 
-- [ ] **TDPKG-10**: Total course hours are calculated from teaching-plan or activity data and are not accepted as a manually authoritative YAML field.
-- [ ] **TDPKG-11**: Teaching-plan hours and lesson-plan activity hours are mutually verified; mismatches fail validation or produce a non-final review-needed status.
-- [ ] **TDPKG-12**: `first_teaching_day` can infer `school_year` and `semester` without requiring teachers to hand-maintain those fields.
-- [ ] **TDPKG-13**: Start and end dates are inferred from real teaching days, parsed hours, holidays/makeup days where available, and documented default calendar behavior.
+- [x] **TDPKG-10**: Total course hours are calculated from teaching-plan or activity data and are not accepted as a manually authoritative YAML field.
+- [x] **TDPKG-11**: Teaching-plan hours and lesson-plan activity hours are mutually verified; mismatches fail validation or produce a non-final review-needed status.
+- [x] **TDPKG-12**: `first_teaching_day` can infer `school_year` and `semester` without requiring teachers to hand-maintain those fields.
+- [x] **TDPKG-13**: Start and end dates are inferred from real teaching days, parsed hours, holidays/makeup days where available, and documented default calendar behavior.
 
 ### Legacy Skill Preservation
 
@@ -84,13 +84,13 @@ Deferred to a later milestone unless explicitly requested:
 | TDPKG-04 | Phase 31 | Complete |
 | TDPKG-05 | Phase 31 | Complete |
 | TDPKG-06 | Phase 31 | Complete |
-| TDPKG-07 | Phase 32 | Pending |
-| TDPKG-08 | Phase 32 | Pending |
-| TDPKG-09 | Phase 32 | Pending |
-| TDPKG-10 | Phase 32 | Pending |
-| TDPKG-11 | Phase 32 | Pending |
-| TDPKG-12 | Phase 32 | Pending |
-| TDPKG-13 | Phase 32 | Pending |
+| TDPKG-07 | Phase 32 | Complete |
+| TDPKG-08 | Phase 32 | Complete |
+| TDPKG-09 | Phase 32 | Complete |
+| TDPKG-10 | Phase 32 | Complete |
+| TDPKG-11 | Phase 32 | Complete |
+| TDPKG-12 | Phase 32 | Complete |
+| TDPKG-13 | Phase 32 | Complete |
 | TDPKG-14 | Phase 31 | Complete |
 | TDPKG-15 | Phase 30 | Complete |
 
@@ -101,4 +101,4 @@ Deferred to a later milestone unless explicitly requested:
 
 ---
 *Requirements defined: 2026-06-15*
-*Last updated: 2026-06-15 after v1.14 milestone initialization*
+*Last updated: 2026-06-15 after Phase 32 execution*
