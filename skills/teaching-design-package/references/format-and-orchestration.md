@@ -130,7 +130,9 @@ The model is package-owned. It must not encode external compatibility paths as i
 
 ## Module Registry
 
-Phase 33 introduces a package-owned module registry. The current registered modules are:
+Phase 33 introduces a package-owned module registry. Phase 34 migrates the
+`teaching-plan` formal renderer into package internals. The current registered
+modules are:
 
 | id | Display name | Order | Hidden Markdown | Hidden Typst |
 |----|--------------|-------|-----------------|--------------|
@@ -140,6 +142,17 @@ Phase 33 introduces a package-owned module registry. The current registered modu
 Registry order is the orchestration order and the future PDF merge order. New modules should be added by extending registry metadata and module generation code rather than by creating a second source-of-truth Markdown workflow.
 
 The hidden module Markdown files are package internals. They are generated from the finalized unified Markdown and shared scheduling model, then stored under `.teaching-design-package/work/`. They are not teacher-maintained source files and must not appear in the successful public output root.
+
+The hidden `teaching-plan.typ` is now a package-owned formal `授课进度计划表`
+renderer output. It uses the migrated official `jiaoan-jihua` five-column table
+surface, including the title block, course information grid, fixed columns
+`(3.15cm, 8.51cm, 1.12cm, 1.29cm, 1.27cm)`, learning-task total rows, stage
+rowspans, row week/weekday/hour cells, and signature grid. The renderer reads the
+shared package model and scheduling evidence; it does not invoke the historical
+standalone `jiaoan-jihua` skill or read sibling skill calendars at runtime.
+
+The hidden `teaching-design.typ` remains a pre-formal module surface until the
+teaching-design formal renderer migration phase.
 
 ## Scheduling Rules
 
@@ -159,6 +172,16 @@ Phase 33 and later use a real package-owned teaching calendar:
 - Optional body lines such as `活动课时：80` or `教学活动课时：80` declare teaching-design activity-hour evidence; when present, their sum must equal the teaching-plan row total or validation fails.
 
 The `teaching-design` module reads dates, total hours, and `use_time` from the shared scheduling model. It does not recompute date ranges, weeks, weekdays, task hours, or activity hours independently.
+
+The `teaching-plan` formal renderer also reads term labels, title week ranges,
+row weeks, row weekdays, row hours, task totals, and course totals from the same
+shared scheduling model. It must not recalculate calendar consumption inside the
+renderer.
+
+For `TDPKG-VAL-01`, `# 授课进度计划` row suffixes are the only raw hour source.
+The hidden model records `validation.total_hours_source:
+"teaching_plan_rows"` and strict sum evidence for rows, stages, tasks, and the
+course total.
 
 ## Script Boundary
 
@@ -215,10 +238,12 @@ Root-level status files, manifests, stderr logs, model JSON, split Typst, tempor
 
 1. Copy the unified Markdown into the output directory as the human-readable source artifact.
 2. Write hidden diagnostics under `.teaching-design-package/`.
-3. Generate hidden module Markdown and Phase 33 pre-formal module Typst under `.teaching-design-package/work/`.
-4. Generate `teaching-design-package.typ` from the package model.
-5. Write `.teaching-design-package/status.json`.
-6. If `--pdf` is present, attempt package-owned PDF generation and record actual status.
+3. Generate hidden module Markdown under `.teaching-design-package/work/`.
+4. Generate formal hidden `teaching-plan.typ` from the package model and shared scheduling model.
+5. Generate pre-formal hidden `teaching-design.typ` until the teaching-design formal migration phase.
+6. Generate `teaching-design-package.typ` from the package model.
+7. Write `.teaching-design-package/status.json`.
+8. If `--pdf` is present, attempt package-owned PDF generation and record actual status.
 
 Typst-only rendering is the default. PDF status values are honest:
 
@@ -228,7 +253,12 @@ Typst-only rendering is the default. PDF status values are honest:
 
 `render-package --pdf` cannot report final success or exit 0 as a final delivery unless `teaching-design-package.pdf`, `teaching-plan.pdf`, and `teaching-design.pdf` all exist and are non-empty. If any PDF is missing or empty, the command exits non-zero, writes hidden status/failure diagnostics, and leaves enough evidence under `.teaching-design-package/` to troubleshoot without making the public root look complete.
 
-Phase 33 does not migrate the formal `jiaoan-jihua` renderer, does not migrate the formal `jiaoan-shicao` renderer, does not perform final public course-name-prefixed delivery, and does not finalize PDF merge semantics. Those are Phase 34, Phase 35, and Phase 36 scopes.
+Phase 34 migrates the formal `jiaoan-jihua` teaching-plan table rules into the
+package-owned renderer. The historical standalone skill remains an external
+compatibility surface and fixture oracle, not a package runtime dependency.
+Phase 34 does not migrate the formal `jiaoan-shicao` renderer, does not perform
+final public course-name-prefixed delivery, and does not finalize PDF merge
+semantics. Those remain Phase 35 and Phase 36 scopes.
 
 ## Public Output Direction
 
@@ -282,7 +312,7 @@ scripts/teaching-design-package.sh render-package \
 
 Expected results:
 
-- the model command emits JSON with `model_version: phase30.package-owned.v1`
+- the model command emits JSON with package-owned module and strict sum evidence
 - the render command writes the public 1+1+3 files when `--pdf` succeeds
 - diagnostics, status, split Typst, and stderr logs stay under `.teaching-design-package/`
 - no normal-path output contains repo sibling paths
