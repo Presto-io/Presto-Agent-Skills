@@ -83,9 +83,9 @@ Success criteria:
 
 **Goal:** Enforce the course-name-prefixed `1 + 1 + N` public delivery contract, honest PDF merge semantics, hidden diagnostics, and standalone-copy verification.
 **Depends on:** Phase 35
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete
 **Requirements:** TDPKG-ART-01, TDPKG-ART-02, TDPKG-ART-03, TDPKG-PDF-01, TDPKG-PDF-02, TDPKG-PDF-03, TDPKG-PDF-04
-**Status:** Pending
+**Status:** Planned
 
 Success criteria:
 
@@ -137,11 +137,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 35 is complete. The package-owned formal `教学设计方案` renderer, hidden `teaching-design.typ`, real `teaching-design.pdf`, strict task/stage/activity/hour/date validation, hidden mismatch diagnostics, standalone-copy check, and legacy `jiaoan-shicao` preservation are ready for Phase 36 public delivery and merge semantics.
+Phase 36 is planned. The package-owned formal module renderers from Phases 34 and 35 are ready for the public delivery, registry-order PDF merge, hidden evidence, failure semantics, and standalone-copy regression implementation plan in `.planning/phases/36-public-delivery-pdf-merge-and-standalone-regression/36-PLAN.md`.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 36` to prepare course-name-prefixed public delivery, final PDF merge semantics, and standalone regression.
+Run `/gsd:execute-phase 36` to implement course-name-prefixed public delivery, final PDF merge semantics, hidden evidence, failure behavior, and standalone regression.
 
 ---
 *Roadmap updated: 2026-06-15 after Phase 34 execution*
