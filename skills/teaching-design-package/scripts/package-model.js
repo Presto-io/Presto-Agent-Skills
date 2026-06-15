@@ -14,6 +14,7 @@ const MODULE_REGISTRY = [
     work_markdown: '.teaching-design-package/work/teaching-plan.md',
     work_typst: '.teaching-design-package/work/teaching-plan.typ',
     pdf_filename: 'teaching-plan.pdf',
+    public_pdf_suffix: '授课进度计划表',
   },
   {
     id: 'teaching-design',
@@ -22,6 +23,7 @@ const MODULE_REGISTRY = [
     work_markdown: '.teaching-design-package/work/teaching-design.md',
     work_typst: '.teaching-design-package/work/teaching-design.typ',
     pdf_filename: 'teaching-design.pdf',
+    public_pdf_suffix: '教学设计方案',
   },
 ];
 
@@ -68,6 +70,51 @@ function stripQuotes(value) {
     return trimmed.slice(1, -1);
   }
   return trimmed;
+}
+
+function safeCourseFilenamePrefix(courseName) {
+  const raw = String(courseName ?? '');
+  const trimmed = raw.trim();
+  const rejected = (code, message, extra = {}) => fail('invalid_course_name_for_filename', message, {
+    source_markdown: inputPath,
+    rejected_course_name: raw,
+    sanitized_course_name: trimmed,
+    reason: code,
+    ...extra,
+  });
+  if (!trimmed) rejected('empty_after_trim', 'course_name is required for public delivery filenames');
+  if (/[\/\\]/.test(trimmed)) rejected('path_separator', 'course_name must not contain path separators');
+  if (/[\u0000-\u001f\u007f]/.test(trimmed)) rejected('control_character', 'course_name must not contain control characters');
+  if (trimmed.includes('..')) rejected('path_traversal', 'course_name must not contain path traversal markers');
+  if (/[<>:"|?*$`]/.test(trimmed)) rejected('hostile_character', 'course_name contains characters that are unsafe for public filenames');
+  if (trimmed === '.' || trimmed === '..') rejected('relative_path_marker', 'course_name must not be a relative path marker');
+  return trimmed;
+}
+
+function buildPublicDelivery(metadata) {
+  const prefix = safeCourseFilenamePrefix(metadata.course_name);
+  const modulePdfs = MODULE_REGISTRY.map((entry) => ({
+    module_id: entry.id,
+    display_name: entry.display_name,
+    order: entry.order,
+    public_pdf_suffix: entry.public_pdf_suffix || entry.display_name,
+    public_pdf_filename: `${prefix}${entry.public_pdf_suffix || entry.display_name}.pdf`,
+  }));
+  return {
+    course_name: metadata.course_name,
+    filename_prefix: prefix,
+    contract: 'course-name-prefixed-1+1+N',
+    current_n: modulePdfs.length,
+    public_markdown_filename: `${prefix}教学资料.md`,
+    public_package_pdf_filename: `${prefix}教学资料.pdf`,
+    module_pdfs: modulePdfs,
+    expected_public_filenames: [
+      `${prefix}教学资料.md`,
+      `${prefix}教学资料.pdf`,
+      ...modulePdfs.map((item) => item.public_pdf_filename),
+    ],
+    hidden_root: '.teaching-design-package',
+  };
 }
 
 function splitFrontmatter(markdown) {
@@ -912,6 +959,7 @@ const metadata = {
   teacher_name: unified.teachers.join('、'),
   first_teaching_day: firstTeachingDay,
 };
+const publicDelivery = buildPublicDelivery(metadata);
 const moduleFrontmatter = buildModuleFrontmatter(metadata, scheduling);
 const totalHours = scheduling.total_hours;
 const teachingDesign = buildTeachingDesignModel(designText, tasks, scheduling);
@@ -988,11 +1036,13 @@ const model = {
     registry: MODULE_REGISTRY,
     items: MODULE_REGISTRY.map((entry) => ({
       ...entry,
+      public_pdf_filename: publicDelivery.module_pdfs.find((item) => item.module_id === entry.id).public_pdf_filename,
       frontmatter: moduleFrontmatter[entry.id],
       source_section: entry.id === 'teaching-plan' ? '# 授课进度计划' : '# 教学设计方案',
       scheduling_source: 'shared_scheduling_model',
     })),
   },
+  public_delivery: publicDelivery,
   scheduling,
   derived: {
     total_hours: totalHours,
