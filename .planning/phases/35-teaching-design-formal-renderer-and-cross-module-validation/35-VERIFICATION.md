@@ -2,7 +2,7 @@
 phase: 35
 plan: 01
 status: passed
-verified_at: "2026-06-15T08:34:00Z"
+verified_at: "2026-06-15T08:37:16Z"
 commits: [6feef9d, 87d4b05, 61f18f2]
 requirements: [TDPKG-LEGACY-02, TDPKG-VAL-02, TDPKG-VAL-03, TDPKG-VAL-04]
 ---
@@ -15,6 +15,10 @@ Passed. `teaching-design-package` now generates a package-owned formal hidden
 `teaching-design.typ` and real `teaching-design.pdf` from the unified Markdown
 and shared scheduling model. Cross-module validation fails hard on task, stage,
 activity, title, hour, and date mismatches with hidden diagnostics.
+
+Recovery update: the GSD execution-state check was refreshed after the plan
+summary existed on disk. Current `gsd-sdk query init.execute-phase 35` reports
+`incomplete_count: 0` and `incomplete_plans: []`.
 
 Verification root:
 
@@ -176,6 +180,10 @@ skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render \
   --input test/1.10/电气设备控制线路安装与调试教案.md \
   --typ "$verify_root/jiaoan-smoke.typ"
 test -s "$verify_root/jiaoan-smoke.typ"
+skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render \
+  --input test/1.10/电气设备控制线路安装与调试教案.md \
+  --typ "$verify_root/jiaoan-smoke-expected.typ" \
+  --expected-typ test/1.10/电气设备控制线路安装与调试教案.typ
 test -z "$(git diff --name-only -- skills/jiaoan-shicao)"
 ! rg 'skills/jiaoan-shicao|jiaoan-shicao[.]sh|skills/jiaoan-shicao/references/calendar[.]json|test/1[.]10/.+教案[.]typ' \
   skills/teaching-design-package/scripts
@@ -186,6 +194,10 @@ Observed:
 ```text
 wrote .../jiaoan-smoke.md
 wrote .../jiaoan-smoke.typ
+legacy_example_rc=0
+legacy_render_rc=0
+legacy_expected_typ_rc=1
+ordinary_typ_nonempty_rc=0
 ```
 
 `git diff --name-only -- skills/jiaoan-shicao` printed nothing.
@@ -194,12 +206,20 @@ The legacy `--expected-typ` oracle currently returns `1` in the unmodified old
 skill:
 
 ```text
-legacy_expected_typ_rc=1
+b6518d6e824c525935dce44e78802bd5ec0a2030d2ea99b002b7f36e56ca5c66  generated legacy Typst
+d4a794f0d6b7f87bcc91756252a5ba983a678fdb6371c1915bf511339bb6155b  test/1.10/电气设备控制线路安装与调试教案.typ
+67916 generated legacy Typst
+67916 test/1.10/电气设备控制线路安装与调试教案.typ
 ```
 
-This was not auto-fixed because Phase 35 forbids modifying `skills/jiaoan-shicao/`.
-The ordinary legacy `example` and `render` paths remain runnable, and the package
-uses the old skill only as a read-only reference/oracle, not as runtime dependency.
+Diff inspection shows the failure is not a command-argument issue: the old script
+generates a non-empty Typst file, but its current output differs from the committed
+expected oracle in rendered task-hour text and table column calculations. This is
+a Phase 35 plan deviation / residual legacy evidence item, not an inline fix,
+because Phase 35 forbids modifying `skills/jiaoan-shicao/`. The ordinary legacy
+`example` and `render` paths remain runnable, `git diff --name-only -- skills/jiaoan-shicao`
+is empty, and the package uses the old skill only as a read-only reference/oracle,
+not as runtime dependency.
 
 ## GSD And Git Checks
 
@@ -212,7 +232,12 @@ git diff --cached --check
 Observed:
 
 ```text
-init_phase=35 incomplete=35-PLAN.md
+phase_found=true
+plans=["35-PLAN.md"]
+summaries=["35-SUMMARY.md"]
+incomplete_plans=[]
+plan_count=1
+incomplete_count=0
 ```
 
 Both git whitespace checks passed.

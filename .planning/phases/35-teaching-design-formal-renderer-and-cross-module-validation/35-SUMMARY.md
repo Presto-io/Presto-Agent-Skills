@@ -102,7 +102,8 @@ completed: 2026-06-15
 ## Issues Encountered
 
 - Raw `test/1.10/电气设备控制线路安装与调试教案.md` is not directly Phase 35-valid because titles drift from the schedule oracle. This is documented as acceptable equivalence evidence, not hidden.
-- The unmodified legacy `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render --expected-typ` exits `1` against the current oracle, while `example` and ordinary `render` still succeed. The plan forbids modifying `skills/jiaoan-shicao/`, so this remains documented evidence rather than an inline fix.
+- The unmodified legacy `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render --expected-typ` exits `1` against the current oracle, while `example` and ordinary `render` still succeed. Recovery verification confirmed this is not a command-argument issue: generated Typst is non-empty and same-sized as the oracle, but differs in task-hour text and table column calculations. The plan forbids modifying `skills/jiaoan-shicao/`, so this is a documented plan deviation / residual legacy evidence item rather than an inline fix.
+- The original `35-VERIFICATION.md` GSD check recorded stale pre-summary output (`init_phase=35 incomplete=35-PLAN.md`). Recovery verification refreshed the record with current `gsd-sdk query init.execute-phase 35` output: `incomplete_count: 0` and `incomplete_plans: []`.
 
 ## Known Stubs
 
@@ -126,6 +127,7 @@ Phase 36 can now enforce course-name-prefixed public `1 + 1 + N` delivery and fi
 - Commits `6feef9d`, `87d4b05`, and `61f18f2` exist in git history.
 - Verification commands in `35-VERIFICATION.md` passed.
 - `git diff --name-only -- skills/jiaoan-shicao` printed nothing.
+- Recovery evidence confirms current GSD state has no incomplete Phase 35 plans and legacy preservation evidence is self-consistent despite the documented `--expected-typ` residual.
 
 ---
 *Phase: 35-teaching-design-formal-renderer-and-cross-module-validation*
