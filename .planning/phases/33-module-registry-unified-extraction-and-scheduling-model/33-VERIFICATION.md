@@ -123,6 +123,29 @@ malformed_schedule_row
 malformed row hours, expected text-N: 安技教育
 ```
 
+Additional failure diagnostics were verified in a temporary standalone copy:
+
+```bash
+# Missing # 授课进度计划
+! "$standalone/skills/teaching-design-package/scripts/teaching-design-package.sh" model --input "$missing_section"
+
+# Invalid calendar JSON
+printf '{bad json' > "$standalone/skills/teaching-design-package/references/calendar.json"
+! "$standalone/skills/teaching-design-package/scripts/teaching-design-package.sh" model --input "$package"
+
+# Calendar exhaustion
+printf '["2026-05-11"]\n' > "$standalone/skills/teaching-design-package/references/calendar.json"
+! "$standalone/skills/teaching-design-package/scripts/teaching-design-package.sh" model --input "$package"
+```
+
+Observed diagnostics:
+
+```text
+missing_section: missing # 授课进度计划
+invalid_calendar_json: calendar is not valid JSON
+calendar_exhausted: calendar ended before all row hours were assigned
+```
+
 ## Standalone Copy Check
 
 ```bash

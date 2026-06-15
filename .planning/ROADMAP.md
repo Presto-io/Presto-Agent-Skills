@@ -39,7 +39,7 @@ The successful public delivery surface is course-name-prefixed `1 + 1 + N`: the 
 **Depends on:** Phase 32
 **Plans:** 1/1 plans complete
 **Requirements:** TDPKG-MOD-01, TDPKG-MOD-02, TDPKG-MOD-03, TDPKG-MOD-04, TDPKG-MOD-05, TDPKG-MOD-06, TDPKG-MOD-07, TDPKG-YAML-01, TDPKG-YAML-02, TDPKG-YAML-03, TDPKG-YAML-04, TDPKG-SCHED-01, TDPKG-SCHED-02, TDPKG-SCHED-03, TDPKG-SCHED-04, TDPKG-SCHED-05
-**Status:** Planned
+**Status:** Complete
 
 Success criteria:
 
@@ -137,11 +137,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.15 has been initialized. Phase 33 has a checked execution plan for the module registry, unified Markdown extraction, YAML conversion, skill-local calendar resource, and shared scheduling model before any formal PDF parity work begins.
+Phase 33 is complete. The module registry, unified Markdown extraction, YAML conversion, skill-local calendar resource, shared scheduling model, hidden module Markdown/Typst, and diagnostics foundation are ready for Phase 34 formal teaching-plan renderer migration.
 
 ## Next Step
 
-Run `/gsd:execute-phase 33` to implement the planned module registry, extraction, YAML conversion, skill-local calendar, shared scheduling model, and hidden module artifact infrastructure.
+Run `/gsd:execute-phase 34` to migrate the formal `授课进度计划表` renderer into package-owned internals.
 
 ---
 *Roadmap updated: 2026-06-15 after v1.15 milestone initialization*

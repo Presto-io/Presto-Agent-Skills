@@ -29,16 +29,16 @@
 
 ### Unified Markdown Source
 
-- [ ] **TDPKG-MOD-01**: `skills/teaching-design-package/templates/teaching-design-package-full.md` 形状继续作为统一 Markdown 契约，并作为后续模块提取和正式产物生成的唯一内容源。
-- [ ] **TDPKG-MOD-02**: 统一 Markdown 被明确为结构化中间文档，既可供老师之后阅读，也可供脚本解析生成正式产物，但不再作为强制教师确认关卡。
-- [ ] **TDPKG-MOD-03**: `# 授课进度计划` 是课时和排课的唯一原始内容来源；`# 教学设计方案` 提供教案正文结构，但其中所有时间和课时字段必须由授课计划和日历推导补齐。
+- [x] **TDPKG-MOD-01**: `skills/teaching-design-package/templates/teaching-design-package-full.md` 形状继续作为统一 Markdown 契约，并作为后续模块提取和正式产物生成的唯一内容源。
+- [x] **TDPKG-MOD-02**: 统一 Markdown 被明确为结构化中间文档，既可供老师之后阅读，也可供脚本解析生成正式产物，但不再作为强制教师确认关卡。
+- [x] **TDPKG-MOD-03**: `# 授课进度计划` 是课时和排课的唯一原始内容来源；`# 教学设计方案` 提供教案正文结构，但其中所有时间和课时字段必须由授课计划和日历推导补齐。
 
 ### Module Architecture
 
-- [ ] **TDPKG-MOD-04**: `teaching-design-package` 新增 package-owned module renderer 编排，当前注册 `teaching-plan` 和 `teaching-design` 两个模块，并能通过模块注册或模块配置扩展未来模块。
-- [ ] **TDPKG-MOD-05**: 渲染流程生成隐藏模块 Markdown：`.teaching-design-package/work/teaching-plan.md` 和 `.teaching-design-package/work/teaching-design.md`。
-- [ ] **TDPKG-MOD-06**: 渲染流程生成隐藏模块 Typst：`.teaching-design-package/work/teaching-plan.typ` 和 `.teaching-design-package/work/teaching-design.typ`。
-- [ ] **TDPKG-MOD-07**: 模块编排不能退化成单体脚本堆砌；新增模块时应能沿用模块注册、模块配置和共享调度模型边界。
+- [x] **TDPKG-MOD-04**: `teaching-design-package` 新增 package-owned module renderer 编排，当前注册 `teaching-plan` 和 `teaching-design` 两个模块，并能通过模块注册或模块配置扩展未来模块。
+- [x] **TDPKG-MOD-05**: 渲染流程生成隐藏模块 Markdown：`.teaching-design-package/work/teaching-plan.md` 和 `.teaching-design-package/work/teaching-design.md`。
+- [x] **TDPKG-MOD-06**: 渲染流程生成隐藏模块 Typst：`.teaching-design-package/work/teaching-plan.typ` 和 `.teaching-design-package/work/teaching-design.typ`。
+- [x] **TDPKG-MOD-07**: 模块编排不能退化成单体脚本堆砌；新增模块时应能沿用模块注册、模块配置和共享调度模型边界。
 
 ### Public and Hidden Artifacts
 
@@ -55,18 +55,18 @@
 
 ### YAML and Module Conversion
 
-- [ ] **TDPKG-YAML-01**: 统一 Markdown YAML 接受 `course_name`、`major_name`、`course_attribute`、`textbook_name`、`class_name`、`teachers`、`first_teaching_day`。
-- [ ] **TDPKG-YAML-02**: 生成授课进度计划模块 Markdown 时补齐 `major_name`、`course_name`、`teacher_name`、`class_name`、`first_teaching_day`、`daily_hours`、`template: "jiaoan-jihua"`。
-- [ ] **TDPKG-YAML-03**: 生成教学设计方案模块 Markdown 时补齐 `template: "jiaoan-shicao"`、`course_name`、`course_attribute`、`textbook_name`、`class_name`、`total_hours`、`teacher_name`、`use_time`。
-- [ ] **TDPKG-YAML-04**: `teachers` 列表合并为 `teacher_name`；`daily_hours` 来自技能自身日历或配置约定；`total_hours` 严格从授课进度计划逐行课时求和；`use_time` 使用推导出的课程总起止日期。
+- [x] **TDPKG-YAML-01**: 统一 Markdown YAML 接受 `course_name`、`major_name`、`course_attribute`、`textbook_name`、`class_name`、`teachers`、`first_teaching_day`。
+- [x] **TDPKG-YAML-02**: 生成授课进度计划模块 Markdown 时补齐 `major_name`、`course_name`、`teacher_name`、`class_name`、`first_teaching_day`、`daily_hours`、`template: "jiaoan-jihua"`。
+- [x] **TDPKG-YAML-03**: 生成教学设计方案模块 Markdown 时补齐 `template: "jiaoan-shicao"`、`course_name`、`course_attribute`、`textbook_name`、`class_name`、`total_hours`、`teacher_name`、`use_time`。
+- [x] **TDPKG-YAML-04**: `teachers` 列表合并为 `teacher_name`；`daily_hours` 来自技能自身日历或配置约定；`total_hours` 严格从授课进度计划逐行课时求和；`use_time` 使用推导出的课程总起止日期。
 
 ### Calendar and Scheduling Model
 
-- [ ] **TDPKG-SCHED-01**: `calendar.json` 放在 `teaching-design-package` 技能自身目录中，例如 `skills/teaching-design-package/references/calendar.json`，standalone copy 只包含该 skill folder 时仍可完成推导。
-- [ ] **TDPKG-SCHED-02**: `first_teaching_day` 必须存在并能在 `calendar.json` 中定位；日历范围不够或日期缺失必须失败。
-- [ ] **TDPKG-SCHED-03**: 学年、学期、课程总起止日期、每个学习任务起止日期、周次、星期、每日课时消耗均由 `calendar.json`、`first_teaching_day` 和授课计划逐行课时推导。
-- [ ] **TDPKG-SCHED-04**: 不能用自然日顺推代替真实日历；所有时间相关内容只能由统一 scheduling model 推导，两个模块不能各算各的。
-- [ ] **TDPKG-SCHED-05**: 隐藏诊断/status/model 记录 calendar 路径、hash、推导摘要和错误。
+- [x] **TDPKG-SCHED-01**: `calendar.json` 放在 `teaching-design-package` 技能自身目录中，例如 `skills/teaching-design-package/references/calendar.json`，standalone copy 只包含该 skill folder 时仍可完成推导。
+- [x] **TDPKG-SCHED-02**: `first_teaching_day` 必须存在并能在 `calendar.json` 中定位；日历范围不够或日期缺失必须失败。
+- [x] **TDPKG-SCHED-03**: 学年、学期、课程总起止日期、每个学习任务起止日期、周次、星期、每日课时消耗均由 `calendar.json`、`first_teaching_day` 和授课计划逐行课时推导。
+- [x] **TDPKG-SCHED-04**: 不能用自然日顺推代替真实日历；所有时间相关内容只能由统一 scheduling model 推导，两个模块不能各算各的。
+- [x] **TDPKG-SCHED-05**: 隐藏诊断/status/model 记录 calendar 路径、hash、推导摘要和错误。
 
 ### Hours and Cross-Module Validation
 
@@ -104,22 +104,22 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TDPKG-MOD-01 | Phase 33 | Pending |
-| TDPKG-MOD-02 | Phase 33 | Pending |
-| TDPKG-MOD-03 | Phase 33 | Pending |
-| TDPKG-MOD-04 | Phase 33 | Pending |
-| TDPKG-MOD-05 | Phase 33 | Pending |
-| TDPKG-MOD-06 | Phase 33 | Pending |
-| TDPKG-MOD-07 | Phase 33 | Pending |
-| TDPKG-YAML-01 | Phase 33 | Pending |
-| TDPKG-YAML-02 | Phase 33 | Pending |
-| TDPKG-YAML-03 | Phase 33 | Pending |
-| TDPKG-YAML-04 | Phase 33 | Pending |
-| TDPKG-SCHED-01 | Phase 33 | Pending |
-| TDPKG-SCHED-02 | Phase 33 | Pending |
-| TDPKG-SCHED-03 | Phase 33 | Pending |
-| TDPKG-SCHED-04 | Phase 33 | Pending |
-| TDPKG-SCHED-05 | Phase 33 | Pending |
+| TDPKG-MOD-01 | Phase 33 | Complete |
+| TDPKG-MOD-02 | Phase 33 | Complete |
+| TDPKG-MOD-03 | Phase 33 | Complete |
+| TDPKG-MOD-04 | Phase 33 | Complete |
+| TDPKG-MOD-05 | Phase 33 | Complete |
+| TDPKG-MOD-06 | Phase 33 | Complete |
+| TDPKG-MOD-07 | Phase 33 | Complete |
+| TDPKG-YAML-01 | Phase 33 | Complete |
+| TDPKG-YAML-02 | Phase 33 | Complete |
+| TDPKG-YAML-03 | Phase 33 | Complete |
+| TDPKG-YAML-04 | Phase 33 | Complete |
+| TDPKG-SCHED-01 | Phase 33 | Complete |
+| TDPKG-SCHED-02 | Phase 33 | Complete |
+| TDPKG-SCHED-03 | Phase 33 | Complete |
+| TDPKG-SCHED-04 | Phase 33 | Complete |
+| TDPKG-SCHED-05 | Phase 33 | Complete |
 | TDPKG-LEGACY-01 | Phase 34 | Pending |
 | TDPKG-LEGACY-03 | Phase 34 | Pending |
 | TDPKG-LEGACY-04 | Phase 34 | Pending |
