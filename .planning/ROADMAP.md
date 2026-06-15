@@ -36,9 +36,9 @@ Acceptance centers on a clean default 1+1+3 delivery contract: one unified Markd
 
 **Goal:** Make `teaching-design-package` installable and understandable as one self-contained skill while preserving legacy standalone jiaoan skills.
 **Depends on:** Phase 29
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete
 **Requirements:** TDPKG-01, TDPKG-02, TDPKG-03, TDPKG-15
-**Status:** Pending
+**Status:** Planned
 
 Success criteria:
 
