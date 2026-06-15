@@ -26,9 +26,9 @@ The default delivery contract is 1+1+3:
 
 ### Standalone Skill Packaging
 
-- [ ] **TDPKG-01**: `teaching-design-package` can be installed and used as a single skill without requiring users to install sibling repository skill directories.
-- [ ] **TDPKG-02**: Required package capability is implemented through `teaching-design-package`'s own unified data model, Markdown contract, validation, and Typst/PDF rendering path; old standalone Markdown templates, old split Markdown layouts, and old handoff thinking are not copied into the package.
-- [ ] **TDPKG-03**: Runtime adapter notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent explain the standalone install/use boundary without relying on repo-local sibling paths.
+- [x] **TDPKG-01**: `teaching-design-package` can be installed and used as a single skill without requiring users to install sibling repository skill directories.
+- [x] **TDPKG-02**: Required package capability is implemented through `teaching-design-package`'s own unified data model, Markdown contract, validation, and Typst/PDF rendering path; old standalone Markdown templates, old split Markdown layouts, and old handoff thinking are not copied into the package.
+- [x] **TDPKG-03**: Runtime adapter notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent explain the standalone install/use boundary without relying on repo-local sibling paths.
 
 ### Teacher Markdown Workflow
 
@@ -52,7 +52,7 @@ The default delivery contract is 1+1+3:
 ### Legacy Skill Preservation
 
 - [ ] **TDPKG-14**: The user-facing package workflow does not regress into asking users to run or mentally stitch together old standalone skills, and does not hide old skill structure inside the package.
-- [ ] **TDPKG-15**: Existing legacy standalone skill entries, public commands, accepted inputs, and output contracts remain preserved as external compatibility surfaces unless a later explicit requirement changes them; they are not package internals or v1.14 acceptance baselines.
+- [x] **TDPKG-15**: Existing legacy standalone skill entries, public commands, accepted inputs, and output contracts remain preserved as external compatibility surfaces unless a later explicit requirement changes them; they are not package internals or v1.14 acceptance baselines.
 
 ## Future Requirements
 
@@ -78,9 +78,9 @@ Deferred to a later milestone unless explicitly requested:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TDPKG-01 | Phase 30 | Pending |
-| TDPKG-02 | Phase 30 | Pending |
-| TDPKG-03 | Phase 30 | Pending |
+| TDPKG-01 | Phase 30 | Complete |
+| TDPKG-02 | Phase 30 | Complete |
+| TDPKG-03 | Phase 30 | Complete |
 | TDPKG-04 | Phase 31 | Pending |
 | TDPKG-05 | Phase 31 | Pending |
 | TDPKG-06 | Phase 31 | Pending |
@@ -92,7 +92,7 @@ Deferred to a later milestone unless explicitly requested:
 | TDPKG-12 | Phase 32 | Pending |
 | TDPKG-13 | Phase 32 | Pending |
 | TDPKG-14 | Phase 31 | Pending |
-| TDPKG-15 | Phase 30 | Pending |
+| TDPKG-15 | Phase 30 | Complete |
 
 **Coverage:**
 - v1.14 requirements: 15 total

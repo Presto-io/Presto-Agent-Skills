@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.14
 milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
-current_phase: 30
-status: executing
-stopped_at: v1.14 documentation boundary corrected
-last_updated: "2026-06-15T08:53:00.000Z"
-last_activity: 2026-06-15 -- Quick task corrected v1.14 planning docs away from old skill naming and old handoff architecture
+current_phase: 31
+status: ready-for-planning
+stopped_at: Phase 30 complete
+last_updated: "2026-06-15T01:30:17Z"
+last_activity: 2026-06-15 -- Phase 30 completed standalone package-owned rendering boundary
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 33
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 30
-**Status:** Ready to execute corrected Phase 30 plan
+**Current Phase:** 31
+**Status:** Phase 30 complete; ready for Phase 31 planning
 
 ## Project Reference
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initializa
 
 ## Next Up
 
-Execute the planned Phase 30 workflow when ready:
+Plan the next v1.14 workflow when ready:
 
-- `/gsd:execute-phase 30`
+- `/gsd:plan-phase 31`
 
 ## Accumulated Context
 
@@ -141,6 +141,7 @@ Execute the planned Phase 30 workflow when ready:
 - [Milestone v1.14]: Default delivery is exactly 1+1+3. — Package-owned diagnostics, manifests, logs, status files, split render intermediates, and sidecars must stay hidden/debug/failure-only and out of successful delivery directories.
 - [Phase 30 correction]: The package must not copy old standalone Markdown templates, create old-name package internals, or use old handoff architecture. — The corrected plan targets unified Markdown -> package-owned data model -> package-owned Typst/PDF rendering, with legacy standalone skills preserved only as external compatibility surfaces.
 - [Quick 260615-0853]: v1.14 planning docs were corrected to cut old skill naming and old handoff strategy from current/future requirements. — Legacy standalone skills remain historical and external only; they are not package internals, resources, parity baselines, or future implementation direction.
+- [Phase 30]: Standalone package-owned boundary is implemented. — `teaching-design-package` now runs from a copied-only skill folder through unified Markdown, package-owned data model, package-owned Typst, and honest PDF status without sibling skill calls.
 
 ## Performance Metrics
 
@@ -174,8 +175,8 @@ Execute the planned Phase 30 workflow when ready:
 ## Last Session
 
 - **Completed:** Phase 29 PDF comparison and standalone regression
-- **Stopped At:** Phase 30 context gathered
-- **Resume File:** .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies/30-CONTEXT.md
+- **Stopped At:** Phase 30 complete
+- **Resume File:** None
 
 ## Close Notes
 
@@ -196,14 +197,14 @@ Execute the planned Phase 30 workflow when ready:
 
 ## Current Position
 
-Phase: 30 - Standalone Skill Boundary and Internalized Dependencies
-Plan: 1/1 ready
-Status: Ready to execute corrected plan
-Last activity: 2026-06-15 -- Quick task corrected v1.14 planning docs away from old skill naming and old handoff architecture
+Phase: 31 - Teacher-Facing Unified Markdown Workflow
+Plan: 0/1 planned
+Status: Ready for planning
+Last activity: 2026-06-15 -- Phase 30 completed standalone package-owned rendering boundary
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 30` only when ready to implement the corrected package-owned rendering boundary.
+- Run `/gsd:plan-phase 31` when ready to plan the next phase.
 
 ### Quick Tasks Completed
 

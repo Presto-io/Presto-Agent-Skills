@@ -38,7 +38,7 @@ Acceptance centers on a clean default 1+1+3 delivery contract: one unified Markd
 **Depends on:** Phase 29
 **Plans:** 1/1 plans complete
 **Requirements:** TDPKG-01, TDPKG-02, TDPKG-03, TDPKG-15
-**Status:** Planned
+**Status:** Complete
 
 Success criteria:
 
@@ -117,11 +117,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.14 is initialized and Phase 30 planning has been corrected toward a package-owned two-in-one implementation boundary.
+Milestone v1.14 has completed Phase 30: `teaching-design-package` now has a standalone package-owned unified Markdown -> data model -> Typst/PDF status path. Phase 31 is the next planned scope.
 
 ## Next Step
 
-Run `/gsd:execute-phase 30` only when ready to implement the corrected package-owned boundary. Do not execute Phase 30 from quick-documentation correction tasks.
+Run `/gsd:plan-phase 31` when ready to plan the teacher-facing unified Markdown workflow.
 
 ---
 *Roadmap updated: 2026-06-15 after v1.14 milestone initialization*
