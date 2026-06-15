@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.14
 milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
+current_phase: 30
 status: planning
-last_updated: "2026-06-14T23:39:49.058Z"
-last_activity: 2026-06-15 — Milestone v1.14 started
+stopped_at: Phase 30 context gathered
+last_updated: "2026-06-15T00:05:32.486Z"
+last_activity: 2026-06-15 — Milestone v1.14 initialized
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 0
 ---
 
 # State: Presto Agent Skills
@@ -171,8 +172,8 @@ Start the first v1.14 workflow step when ready:
 ## Last Session
 
 - **Completed:** Phase 29 PDF parity and standalone regression
-- **Stopped At:** Completed 29-PLAN.md
-- **Resume File:** None
+- **Stopped At:** Phase 30 context gathered
+- **Resume File:** .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies/30-CONTEXT.md
 
 ## Close Notes
 
