@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.14
 milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
 current_phase: 32
-status: ready-for-planning
-stopped_at: Completed 31-01-PLAN.md
-last_updated: "2026-06-15T01:51:56.310Z"
-last_activity: 2026-06-15 -- Phase 31 executed teacher-facing unified Markdown workflow
+status: ready-to-execute
+stopped_at: Planned 32-01-PLAN.md
+last_updated: "2026-06-15T02:32:00.000Z"
+last_activity: 2026-06-15 -- Phase 32 planned clean delivery and scheduling regression gate
 progress:
   total_phases: 3
   completed_phases: 2
@@ -19,7 +19,7 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 32
-**Status:** Phase 31 complete; ready for Phase 32 planning
+**Status:** Phase 32 planned; ready for Phase 32 execution
 
 ## Project Reference
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initializa
 
 Execute the next v1.14 workflow when ready:
 
-- `/gsd:plan-phase 32`
+- `/gsd:execute-phase 32`
 
 ## Accumulated Context
 
@@ -143,6 +143,7 @@ Execute the next v1.14 workflow when ready:
 - [Quick 260615-0853]: v1.14 planning docs were corrected to cut old skill naming and old handoff strategy from current/future requirements. — Legacy standalone skills remain historical and external only; they are not package internals, resources, parity baselines, or future implementation direction.
 - [Phase 30]: Standalone package-owned boundary is implemented. — `teaching-design-package` now runs from a copied-only skill folder through unified Markdown, package-owned data model, package-owned Typst, and honest PDF status without sibling skill calls.
 - [Phase 31]: Teacher-facing unified Markdown workflow is implemented. — The canonical skill entry now starts from source materials, targeted clarification, one editable full Markdown, teacher review/editing, finalized Markdown, then package script validation/rendering.
+- [Phase 32]: Clean 1+1+3 delivery and scheduling regression gate is planned. — The plan requires a public delivery directory containing only one unified Markdown, one unified Typst, and three PDFs; hidden work/debug/failure diagnostics; derived hours/date/semester validation; no old precise handoff filenames; and standalone-copy verification with only `teaching-design-package` installed.
 
 ## Performance Metrics
 
@@ -200,13 +201,13 @@ Execute the next v1.14 workflow when ready:
 ## Current Position
 
 Phase: 32 - Clean 1+1+3 Delivery and Scheduling Regression Gate
-Plan: 0/1 planned
-Status: Ready for planning
-Last activity: 2026-06-15 -- Phase 31 executed teacher-facing unified Markdown workflow
+Plan: 1/1 planned
+Status: Ready to execute
+Last activity: 2026-06-15 -- Phase 32 planned clean delivery and scheduling regression gate
 
 ## Operator Next Steps
 
-- Run `/gsd:plan-phase 32` when ready to plan clean delivery and scheduling regression enforcement.
+- Run `/gsd:execute-phase 32` when ready to implement clean delivery and scheduling regression enforcement.
 
 ### Quick Tasks Completed
 
