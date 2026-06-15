@@ -21,6 +21,24 @@
 
 ---
 
+## v1.15.1 Teaching Design Cover Hour Format Patch (Resolved: 2026-06-15)
+
+**Patch scope:** post-close formatting fix after v1.15 milestone archive
+
+**Key fixes:**
+
+- Preserved `H` in `教学设计方案` cover `计划总课时` and task-analysis `课时` values.
+- Aligned cover labels so four-character and five-character labels share the same width and colon column.
+- Kept the fix inside the package-owned `teaching-design-package` renderer without modifying legacy `jiaoan-shicao`.
+- Regenerated and user-accepted a clean delivery artifact set under `generated/teaching-design-package-acceptance-20260615-195318/`.
+
+**Record:**
+
+- Patch notes: `.planning/milestones/v1.15.1-POST-CLOSE-PATCH.md`
+- Debug: `.planning/debug/resolved/teaching-design-cover-hours.md`
+
+---
+
 ## v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约 (Shipped: 2026-06-15)
 
 **Phases completed:** 3 phases, 3 plans, 16 tasks
