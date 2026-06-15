@@ -4,6 +4,7 @@ plan: 01
 status: passed
 verified_at: "2026-06-15T06:21:48Z"
 commit: 541b74d
+requirements: [TDPKG-MOD-01, TDPKG-MOD-02, TDPKG-MOD-03, TDPKG-MOD-04, TDPKG-MOD-05, TDPKG-MOD-06, TDPKG-MOD-07, TDPKG-YAML-01, TDPKG-YAML-02, TDPKG-YAML-03, TDPKG-YAML-04, TDPKG-SCHED-01, TDPKG-SCHED-02, TDPKG-SCHED-03, TDPKG-SCHED-04, TDPKG-SCHED-05]
 ---
 
 # Phase 33 Verification
@@ -11,6 +12,29 @@ commit: 541b74d
 ## Result
 
 Passed. Phase 33 implementation covers module registry, unified Markdown extraction, skill-local calendar scheduling, YAML conversion, hidden module Markdown/Typst, standalone-copy behavior, and classified diagnostics.
+
+## Requirement Coverage
+
+This table maps the Phase 33 requirement IDs to the existing verification evidence in this file. No new execution results are claimed here; each row references an already-recorded command, output highlight, or check section.
+
+| Requirement | Evidence in this verification |
+|-------------|-------------------------------|
+| TDPKG-MOD-01 | `example --output /tmp/tdpkg-phase33-example.md` and `model --input /tmp/tdpkg-phase33-example.md` in Commands Run verify the unified Markdown template as the model input. |
+| TDPKG-MOD-02 | Commands Run and Hidden Artifact Checks verify the unified Markdown is parsed into model data and hidden module artifacts without adding a teacher confirmation gate. |
+| TDPKG-MOD-03 | Model assertions show `total_hours: 160`, `use_time: 5月11日--6月5日`, and `first parsed row source: task:1/stage:1/row:1`; failure diagnostics also reject malformed schedule rows. |
+| TDPKG-MOD-04 | Model assertions show `registry: teaching-plan, teaching-design`, and Hidden Artifact Checks verify both registered modules are generated. |
+| TDPKG-MOD-05 | Hidden Artifact Checks verify `.teaching-design-package/work/teaching-plan.md` and `.teaching-design-package/work/teaching-design.md`. |
+| TDPKG-MOD-06 | Hidden Artifact Checks verify `.teaching-design-package/work/teaching-plan.typ` and `.teaching-design-package/work/teaching-design.typ`. |
+| TDPKG-MOD-07 | Commands Run route through `scripts/package-model.js`, model assertions show registered module IDs, and Scope Exclusion Checks verify the package model boundary does not call legacy sibling skills. |
+| TDPKG-YAML-01 | Commands Run generate the example package and model from unified Markdown YAML; model assertions verify accepted fields such as teacher, calendar policy, total hours, use time, and module IDs. |
+| TDPKG-YAML-02 | Hidden Artifact Checks verify `teaching-plan.md` frontmatter includes `template: "jiaoan-jihua"` and shared schedule-derived fields. |
+| TDPKG-YAML-03 | Hidden Artifact Checks verify `teaching-design.md` frontmatter includes `template: "jiaoan-shicao"`, `total_hours: 160`, and `use_time: "5月11日--6月5日"`. |
+| TDPKG-YAML-04 | Model assertions verify teacher-name conversion and schedule-derived `total_hours`/`use_time`; hidden module frontmatter verifies those derived values are written to module Markdown. |
+| TDPKG-SCHED-01 | Standalone Copy Check verifies a copied `skills/teaching-design-package` folder uses its own `references/calendar.json` and does not read sibling skill paths. |
+| TDPKG-SCHED-02 | Failure Diagnostics Checks verify `first_day_not_found` and `calendar_exhausted` failures when the first teaching day or calendar range is invalid. |
+| TDPKG-SCHED-03 | Model assertions verify the skill-local calendar hash, `total_hours`, `use_time`, and first parsed row source derived from schedule rows and calendar data. |
+| TDPKG-SCHED-04 | Model assertions verify `calendar.policy: skill_local_calendar`; Scope Exclusion Checks verify the package uses `references/calendar.json` and does not depend on legacy sequential-day behavior. |
+| TDPKG-SCHED-05 | Hidden Artifact Checks verify hidden `model.json`, `status.json`, and `diagnostics.json`; model assertions verify calendar hash and derived scheduling summary. |
 
 ## Commands Run
 
