@@ -153,7 +153,18 @@ function parseFrontmatter(frontmatter) {
     currentListKey = '';
   }
   for (const key of ALLOWED_FRONTMATTER) {
-    if (!(key in data)) fail('invalid_frontmatter', `missing required frontmatter key: ${key}`, { key });
+    if (!(key in data)) {
+      if (key === 'course_name') {
+        fail('invalid_course_name_for_filename', 'course_name is required for public delivery filenames', {
+          source_markdown: inputPath,
+          rejected_course_name: null,
+          sanitized_course_name: '',
+          reason: 'missing_course_name',
+          key,
+        });
+      }
+      fail('invalid_frontmatter', `missing required frontmatter key: ${key}`, { key });
+    }
   }
   if (!Array.isArray(data.teachers) || !data.teachers.length) {
     fail('invalid_frontmatter', 'teachers must be a non-empty YAML list');
