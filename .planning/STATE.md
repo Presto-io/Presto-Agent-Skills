@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.14
 milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
-current_phase: 31
-status: ready-for-execution
-stopped_at: Phase 31 planned
-last_updated: "2026-06-15T02:05:00Z"
-last_activity: 2026-06-15 -- Phase 31 planned teacher-facing unified Markdown workflow
+current_phase: 32
+status: ready-for-planning
+stopped_at: Completed 31-01-PLAN.md
+last_updated: "2026-06-15T01:51:56.310Z"
+last_activity: 2026-06-15 -- Phase 31 executed teacher-facing unified Markdown workflow
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 2
+  completed_phases: 2
+  total_plans: 3
   completed_plans: 2
-  percent: 33
+  percent: 67
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 31
-**Status:** Phase 31 planned; ready for Phase 31 execution
+**Current Phase:** 32
+**Status:** Phase 31 complete; ready for Phase 32 planning
 
 ## Project Reference
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initializa
 
 Execute the next v1.14 workflow when ready:
 
-- `/gsd:execute-phase 31`
+- `/gsd:plan-phase 32`
 
 ## Accumulated Context
 
@@ -142,6 +142,7 @@ Execute the next v1.14 workflow when ready:
 - [Phase 30 correction]: The package must not copy old standalone Markdown templates, create old-name package internals, or use old handoff architecture. — The corrected plan targets unified Markdown -> package-owned data model -> package-owned Typst/PDF rendering, with legacy standalone skills preserved only as external compatibility surfaces.
 - [Quick 260615-0853]: v1.14 planning docs were corrected to cut old skill naming and old handoff strategy from current/future requirements. — Legacy standalone skills remain historical and external only; they are not package internals, resources, parity baselines, or future implementation direction.
 - [Phase 30]: Standalone package-owned boundary is implemented. — `teaching-design-package` now runs from a copied-only skill folder through unified Markdown, package-owned data model, package-owned Typst, and honest PDF status without sibling skill calls.
+- [Phase 31]: Teacher-facing unified Markdown workflow is implemented. — The canonical skill entry now starts from source materials, targeted clarification, one editable full Markdown, teacher review/editing, finalized Markdown, then package script validation/rendering.
 
 ## Performance Metrics
 
@@ -171,11 +172,12 @@ Execute the next v1.14 workflow when ready:
 | Phase 27 P01 | 20min | 5 tasks | 5 files |
 | Phase 28 P01 | 24min | 6 tasks | 5 files |
 | Phase 29 P01 | 23min | 7 tasks | 5 files |
+| Phase 31 P01 | current session | 5 tasks | 4 files |
 
 ## Last Session
 
 - **Completed:** Phase 29 PDF comparison and standalone regression
-- **Stopped At:** Phase 30 complete
+- **Stopped At:** Completed 31-01-PLAN.md
 - **Resume File:** None
 
 ## Close Notes
@@ -197,14 +199,14 @@ Execute the next v1.14 workflow when ready:
 
 ## Current Position
 
-Phase: 31 - Teacher-Facing Unified Markdown Workflow
-Plan: 1/1 planned
-Status: Ready for execution
-Last activity: 2026-06-15 -- Phase 31 planned teacher-facing unified Markdown workflow
+Phase: 32 - Clean 1+1+3 Delivery and Scheduling Regression Gate
+Plan: 0/1 planned
+Status: Ready for planning
+Last activity: 2026-06-15 -- Phase 31 executed teacher-facing unified Markdown workflow
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 31` when ready to implement the teacher-facing workflow rewrite.
+- Run `/gsd:plan-phase 32` when ready to plan clean delivery and scheduling regression enforcement.
 
 ### Quick Tasks Completed
 
