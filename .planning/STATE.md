@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.15
 milestone_name: teaching-design-package 模块化渲染与旧格式回归
-current_phase: 34
+current_phase: 35
 status: completed
-stopped_at: Phase 35 context gathered
-last_updated: "2026-06-15T07:39:38.905Z"
-last_activity: 2026-06-15 -- Phase 34 execution complete
+stopped_at: None
+last_updated: "2026-06-15T08:31:07.000Z"
+last_activity: 2026-06-15 -- Phase 35 execution complete
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
   percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 34
-**Status:** Phase 34 complete
+**Current Phase:** 35
+**Status:** Phase 35 complete
 
 ## Project Reference
 
@@ -52,7 +52,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone start)
 
 Discuss and plan the next v1.15 implementation phase:
 
-- `/gsd:discuss-phase 35`
+- `/gsd:discuss-phase 36`
 
 ## Accumulated Context
 
@@ -150,6 +150,8 @@ Discuss and plan the next v1.15 implementation phase:
 - [Phase 33]: Hidden module Markdown/Typst are internal Phase 33 artifacts only. — Formal `jiaoan-jihua` and `jiaoan-shicao` renderer migration remains Phase 34/35 scope, and final public PDF merge remains Phase 36 scope.
 - [Phase 34]: teaching-design-package owns the migrated formal teaching-plan renderer. — Hidden `teaching-plan.typ` now uses the accepted `jiaoan-jihua` official five-column table surface from the shared scheduling model, while legacy `jiaoan-jihua` remains a read-only oracle and not a runtime dependency.
 - [Phase 34]: TDPKG-VAL-01 strict hour authority is model validation evidence. — `validation.strict_sum_evidence` records row, stage, task, and course totals from `# 授课进度计划` row suffixes only.
+- [Phase 35]: teaching-design-package owns the migrated formal teaching-design renderer. — Hidden `teaching-design.typ` now uses package-owned `jiaoan-shicao`-style output from the shared scheduling model, while legacy `jiaoan-shicao` remains read-only and outside runtime dependencies.
+- [Phase 35]: Cross-module validation is structural and hard-fail. — Task/stage/activity mapping uses learning task + learning stage + activity order, with schedule row hours and task date ranges as authority.
 
 ## Performance Metrics
 
@@ -182,12 +184,13 @@ Discuss and plan the next v1.15 implementation phase:
 | Phase 31 P01 | current session | 5 tasks | 4 files |
 | Phase 33 P01 | 19min | 6 tasks | 6 files |
 | Phase 34 P01 | 16min | 6 tasks | 6 files |
+| Phase 35 P01 | 42min | 7 tasks | 7 files |
 
 ## Last Session
 
-- **Completed:** Phase 34 teaching-plan formal renderer migration
-- **Stopped At:** Phase 35 context gathered
-- **Resume File:** .planning/phases/35-teaching-design-formal-renderer-and-cross-module-validation/35-CONTEXT.md
+- **Completed:** Phase 35 teaching-design formal renderer migration and cross-module validation
+- **Stopped At:** Completed 35-PLAN.md
+- **Resume File:** None
 
 ## Close Notes
 
@@ -218,14 +221,14 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: 34
-Plan: 34-PLAN.md
+Phase: 35
+Plan: 35-PLAN.md
 Status: Complete
-Last activity: 2026-06-15 -- Phase 34 execution complete
+Last activity: 2026-06-15 -- Phase 35 execution complete
 
 ## Operator Next Steps
 
-- Run `/gsd:discuss-phase 35`
+- Run `/gsd:discuss-phase 36`
 
 ### Quick Tasks Completed
 
