@@ -1,4 +1,4 @@
-# Phase 30: Standalone Skill Boundary and Internalized Dependencies - Context
+# Phase 30: Standalone Skill Boundary and Package-Owned Contract - Context
 
 **Gathered:** 2026-06-15
 **Status:** Ready for corrected planning
@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Phase 30 corrects the standalone boundary for `teaching-design-package`. The integrated skill must become a self-contained package workflow with its own data model, Markdown normalization, validation, Typst generation, and PDF delivery path. It must not preserve the old architecture by copying old skill Markdown templates, old handoff names, or old skill-internal directory structure into the package.
+Phase 30 corrects the standalone boundary for `teaching-design-package`. The integrated skill must become a self-contained package workflow with its own unified data model, own Markdown contract, validation, Typst generation, and PDF delivery path. It must not preserve the old architecture by copying old skill Markdown templates, old split Markdown layouts, old handoff names, or old skill-internal directory structure into the package.
 
 This phase may update planning and implementation guidance for `teaching-design-package`, but it must not execute the phase during this command. Existing legacy standalone skills remain available outside the package as historical compatibility surfaces. They are not package internals, not package dependencies, and not the target architecture for the new integrated skill.
 
@@ -29,11 +29,11 @@ This phase may update planning and implementation guidance for `teaching-design-
 - **D-06:** The normal path starts from unified source Markdown: either `teaching-design-package-full.md` or a course-specific teaching-materials Markdown with the same package contract.
 - **D-07:** The script layer consumes finalized unified Markdown and derives a package-owned intermediate data model. The derived model is the internal source for teaching schedule, teaching design, Typst, PDF, and manifest/status evidence.
 - **D-08:** Typst generation must be package-owned. The package may learn from legacy behavior as historical reference, but execution must not invoke old standalone skill scripts or require old standalone skill folders for the normal path.
-- **D-09:** Calendar, scheduling defaults, hour validation, and derived dates must be package-local or explicitly configured as package resources. They must not be borrowed through sibling skill paths.
+- **D-09:** Calendar, scheduling defaults, hour validation, and derived dates must be defined by the package's own contract or explicitly configured package resources. They must not be borrowed through sibling skill paths or old internal structures.
 
 ### Legacy Boundary
 
-- **D-10:** Legacy standalone skills may remain in this repository for backward compatibility and comparison outside the package. Phase 30 must not delete, rename, or rewrite their public command contracts.
+- **D-10:** Legacy standalone skills may remain in this repository for backward compatibility outside the package. Phase 30 must not delete, rename, or rewrite their public command contracts.
 - **D-11:** Documentation may mention legacy standalone skills only as external historical compatibility surfaces. It must not name old handoff files or present them as package internals.
 - **D-12:** Regression checks may confirm legacy surfaces are untouched, but the package's standalone-copy verification must succeed without copying or invoking those legacy skill folders.
 
@@ -73,7 +73,7 @@ This phase may update planning and implementation guidance for `teaching-design-
 ### Legacy Compatibility Boundary
 
 - Legacy standalone skill folders in this repository are external historical compatibility surfaces only.
-- They may be inspected to understand prior output expectations, but Phase 30 execution must not copy their full Markdown templates, create mirrored package internals, or require them for standalone package verification.
+- They may be inspected only for historical context if needed, but Phase 30 execution must not copy their full Markdown templates, create mirrored package internals, use them as parity baselines, or require them for standalone package verification.
 
 </canonical_refs>
 
@@ -84,7 +84,7 @@ This phase may update planning and implementation guidance for `teaching-design-
 
 - The unified package Markdown template already exists and should remain the source contract for package parsing.
 - The package script already contains parsing and scheduling logic that can be redirected into a package-owned model rather than old handoff generation.
-- Current references already describe orchestration details; execution should revise them into a standalone package contract instead of adding old-template vendor docs.
+- Current references already describe orchestration details; execution should revise them into a standalone package contract instead of adding old-template copy guidance.
 
 ### Conflict To Remove
 

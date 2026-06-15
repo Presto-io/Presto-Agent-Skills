@@ -13,10 +13,10 @@ requirements: [TDPKG-01, TDPKG-02, TDPKG-03, TDPKG-15]
 requirements_addressed: [TDPKG-01, TDPKG-02, TDPKG-03, TDPKG-15]
 ---
 
-# Phase 30 Plan: Standalone Package-Owned Rendering Boundary
+# Phase 30 Plan: Standalone Package-Owned Contract Boundary
 
 <objective>
-Correct `teaching-design-package` so the normal package path is self-contained and package-owned: unified Markdown -> package data model -> unified Typst -> three PDFs. Execution must not copy old standalone skill Markdown templates, must not create old-name internal directories, and must not depend on legacy standalone skill folders for the normal standalone install path.
+Correct `teaching-design-package` so the normal package path is self-contained and package-owned: unified Markdown -> package data model -> unified Typst -> three PDFs. Execution must not copy old standalone skill Markdown templates, must not create old-name internal directories, must not preserve old handoff architecture, and must not depend on legacy standalone skill folders for the normal standalone install path.
 </objective>
 
 <must_haves>
@@ -29,8 +29,8 @@ Correct `teaching-design-package` so the normal package path is self-contained a
 - D-05: A standalone copy containing only `skills/teaching-design-package/` must support the normal verification path.
 - D-06: Inputs are unified package Markdown files, either `teaching-design-package-full.md` or course-specific teaching-materials Markdown using the same contract.
 - D-07: The package script must derive a package-owned data model from unified Markdown.
-- D-08: Typst generation must be implemented from package-owned model data and package-local resources.
-- D-09: Calendar/scheduling defaults must be package-local or explicitly configured package resources.
+- D-08: Typst generation must be implemented from package-owned model data and package-owned rendering rules.
+- D-09: Calendar/scheduling defaults must be defined by the package's own contract or explicitly configured package resources, never by sibling skill paths or mirrored old structures.
 - D-10: Legacy standalone skills remain external compatibility surfaces and must not be deleted or renamed.
 - D-11: Documentation may mention legacy standalone skills only generically as external compatibility surfaces.
 - D-12: Standalone verification must not copy or invoke legacy standalone skill folders.
@@ -42,7 +42,7 @@ Correct `teaching-design-package` so the normal package path is self-contained a
 </must_haves>
 
 <tasks>
-## Task 1: Remove old-handoff architecture from package docs
+## Task 1: Replace old-handoff architecture with package-owned docs
 
 <read_first>
 - `AGENTS.md`
@@ -56,11 +56,11 @@ Correct `teaching-design-package` so the normal package path is self-contained a
 </read_first>
 
 <action>
-Update `SKILL.md` and `references/format-and-orchestration.md` so the normal workflow is described as unified source Markdown parsed into a package-owned model and rendered by package-owned Typst/PDF logic. Remove instructions that tell users or agents to install, call, wrap, copy, or mentally stitch together legacy standalone skills. If legacy standalone skills must be mentioned, use only generic compatibility wording and make clear they are outside the package's normal path. Do not add a `standalone-install` reference built around old-template vendoring.
+Update `SKILL.md` and `references/format-and-orchestration.md` so the normal workflow is described as unified source Markdown parsed into a package-owned model and rendered by package-owned Typst/PDF logic. Remove instructions that tell users or agents to install, call, wrap, copy, or mentally stitch together legacy standalone skills. If legacy standalone skills must be mentioned, use only generic compatibility wording and make clear they are outside the package's normal path. Do not add package docs built around copying old templates, old split Markdown layouts, or old handoff architecture.
 </action>
 
 <acceptance_criteria>
-- The blocked-token scan described in the verification section exits non-zero after execution.
+- The blocked-token scan described in the verification section has no current v1.14 positive-requirement matches after execution.
 - `rg 'skills/[a-z-]*|../[a-z-]*|standalone skills.*install|copy.*legacy' skills/teaching-design-package/SKILL.md skills/teaching-design-package/references/format-and-orchestration.md` exits non-zero unless the match explicitly describes external compatibility only.
 - `rg 'Codex|Claude Code|Gemini CLI|OpenCode|OpenClaw|Hermes Agent' skills/teaching-design-package/SKILL.md` reports all six runtime names.
 - `rg 'unified Markdown|package-owned|data model|Typst|PDF' skills/teaching-design-package/SKILL.md skills/teaching-design-package/references/format-and-orchestration.md` exits 0.
@@ -75,7 +75,7 @@ Update `SKILL.md` and `references/format-and-orchestration.md` so the normal wor
 </read_first>
 
 <action>
-Refactor the script so the package normalizes finalized unified Markdown into one package-owned model containing course metadata, schedule rows, activity rows, resource rows, derived hours, date facts, review markers, and output readiness. Use this model as the source for validation and rendering. Remove normal-path generation of old split handoff Markdown and remove fallback copies from sibling skill templates. Keep CLI commands teacher-safe: `example`, validation/model inspection if present, and package rendering must operate on unified Markdown and package-owned outputs.
+Refactor the script so the package normalizes finalized unified Markdown into one package-owned model containing course metadata, schedule rows, activity rows, resource rows, derived hours, date facts, review markers, and output readiness. Use this model as the source for validation and rendering. Remove normal-path generation of old split Markdown and remove fallback copies from sibling skill templates. Keep CLI commands teacher-safe: `example`, validation/model inspection if present, and package rendering must operate on unified Markdown and package-owned outputs.
 </action>
 
 <acceptance_criteria>
@@ -114,7 +114,7 @@ Implement package-owned Typst generation from the derived model. The renderer mu
 </read_first>
 
 <action>
-Do not modify legacy standalone skill folders as part of implementing the package normal path. If regression evidence is useful, verify their public command surfaces remain unchanged through `git diff` and existing command smoke tests, but do not make those checks part of package standalone installation. Package documentation must frame legacy standalone skills as external compatibility only.
+Do not modify legacy standalone skill folders as part of implementing the package normal path. If regression evidence is useful, verify their public command surfaces remain unchanged through `git diff` and existing command smoke tests, but do not make those checks part of package standalone installation and do not use them as package parity baselines. Package documentation must frame legacy standalone skills as external compatibility only.
 </action>
 
 <acceptance_criteria>
@@ -140,7 +140,7 @@ Create verification evidence by copying only `skills/teaching-design-package/` i
 - A standalone verification command copies only `skills/teaching-design-package/` to a temporary skill root.
 - In the standalone copy, `example` succeeds and the generated Markdown is the unified package Markdown.
 - In the standalone copy, package validation/model preparation and Typst generation succeed or produce honest non-final status without sibling-path failures.
-- The blocked-token scan described in the verification section exits non-zero.
+- The blocked-token scan described in the verification section has no current v1.14 positive-requirement matches.
 - Standalone verification records that legacy standalone folders were not copied.
 </acceptance_criteria>
 </tasks>
@@ -149,6 +149,8 @@ Create verification evidence by copying only `skills/teaching-design-package/` i
 Run these checks after implementation:
 
 ```bash
+rg 'jiaoan-jihua-full\.md|jiaoan-shicao-full\.md|internal/jiaoan|vendored|vendor' .planning/REQUIREMENTS.md .planning/ROADMAP.md .planning/STATE.md .planning/PROJECT.md .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies
+
 bash -n skills/teaching-design-package/scripts/teaching-design-package.sh
 
 tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/tdpkg-standalone-root.XXXXXX")"
@@ -161,25 +163,17 @@ cp -R skills/teaching-design-package "$tmp_root/skills/"
   --out-dir "$tmp_root/out"
 rg '../jiaoan|skills/jiaoan|/Presto-Agent-Skills' "$tmp_root/out" "$tmp_root"/*.log
 
-old_plan_name='jiaoan-''jihua'
-old_design_name='jiaoan-''shicao'
-blocked_dir_left='internal'
-blocked_dir_right='jiaoan'
-blocked_re="${old_plan_name}-full\\.md|${old_design_name}-full\\.md|${blocked_dir_left}/${blocked_dir_right}"
-rg "$blocked_re" \
-  skills/teaching-design-package \
-  .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies/30-*.md
-
 git diff -- <legacy-plan-skill-path> <legacy-design-skill-path>
 ```
 
-For the two `rg` checks above, a non-zero exit is the desired result. If the log glob has no files, rerun the path-leak scan against generated stdout/stderr captures from the standalone verification command.
+For the first `rg` check above, matches should be limited to the check command itself and this explanatory note; no current v1.14 positive requirements or Phase 30 planning prose may contain those blocked strings. Prefer using Chinese wording such as "禁止复制旧模板" and "禁止内嵌旧技能结构" instead of ambiguous English copy terms. For the standalone path-leak `rg`, a non-zero exit is the desired result. If the log glob has no files, rerun the path-leak scan against generated stdout/stderr captures from the standalone verification command.
 </verification>
 
 <success_criteria>
 - `teaching-design-package` has a plan for a verified normal path when only its own folder is installed.
 - The package implementation target is unified Markdown to package-owned data model to package-owned Typst/PDF rendering.
 - No old standalone Markdown template copying, old handoff naming, or old-name internal directory structure is required or allowed.
+- Legacy standalone skills remain external compatibility surfaces only and are not package internals, package resources, parity baselines, or future implementation direction.
 - Six runtime adapters document the standalone package boundary.
 - Legacy standalone skills remain external compatibility surfaces and unchanged.
 </success_criteria>
