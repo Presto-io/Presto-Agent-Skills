@@ -81,18 +81,18 @@ scripts/teaching-design-package.sh manifest \
 
 如果课程使用专属文件名，把 `--input teaching-design-package-full.md` 换成对应的 `某某某课教学资料.md` 路径。
 
-`render-package --pdf` 是最终交付命令。它只有在三份 PDF 都真实生成且非空时才返回成功；否则命令非零退出，并把 status、stderr log、model JSON、split Typst 和失败诊断保存在输出目录内的隐藏 `.teaching-design-package/` 下。
+`render-package --pdf` 是最终交付命令。它只有在所有注册模块 PDF 都真实生成且非空，并且整包 PDF 由这些模块 PDF 按 registry 顺序合并成功后才返回成功；否则命令非零退出，并把 status、stderr log、model JSON、模块 Markdown/Typst、staging 文件和失败诊断保存在输出目录内的隐藏 `.teaching-design-package/` 下。
 
 ## Runtime Adapter Notes
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | 先读取本入口、reference 和 template，按教师源材料完成澄清、统一 Markdown、教师审阅/编辑；仅在 Markdown 定稿后运行包内脚本。PDF 成功必须由实际文件和隐藏 status JSON 证明。 |
+| Codex | 先读取本入口、reference 和 template，按教师源材料完成澄清、统一 Markdown、教师审阅/编辑；仅在 Markdown 定稿后运行包内脚本。PDF 成功必须由课程名前缀公开文件、隐藏 status JSON 和 registry-order merge 证据证明。 |
 | Claude Code | 可把本 skill folder 安装到 `.claude/skills/teaching-design-package/`；frontmatter `description` 触发后渐进读取 reference/template/script；先执行教师 workflow，再执行 finalized Markdown validation/rendering。 |
 | Gemini CLI | 在 `GEMINI.md` 或项目上下文中指向本 `SKILL.md`；自动技能加载不可用时用普通文本完成澄清和教师确认；脚本命令只作为定稿后的交付步骤。 |
 | OpenCode | 使用 OpenCode 可发现的 skill path；保持 `references/`、`templates/`、`scripts/` 同步复制；先确认教师可编辑 Markdown，再运行脚本验证。 |
-| OpenClaw | 作为 AgentSkills-compatible skill folder 使用；安装时验证 skill root、frontmatter、support files、sandbox/allowlist 和脚本权限；教师确认 Markdown 前不要触发渲染交付。 |
-| Hermes Agent | 使用 Hermes Agent 可发现的 `SKILL.md` skill folder；验证 reference/template/script 可读性和执行权限；遇到材料冲突时走文本澄清，定稿后再运行包内脚本。 |
+| OpenClaw | 作为 AgentSkills-compatible skill folder 使用；安装时复制整个 `teaching-design-package` folder，验证 frontmatter、support files、脚本权限、Typst/Python merge fallback、sandbox/allowlist 和隐藏 `.teaching-design-package/` 可写性；教师确认 Markdown 前不要触发渲染交付。 |
+| Hermes Agent | 使用 Hermes Agent 可发现的 `SKILL.md` skill folder；验证 reference/template/script 可读性、执行权限、PDF merge 工具 fallback 和隐藏诊断目录可写性；遇到材料冲突时走文本澄清，定稿后再运行包内脚本。 |
 
 ## Outputs
 
@@ -100,23 +100,23 @@ scripts/teaching-design-package.sh manifest \
 
 - `teaching-design-package-full.md` 或 `某某某课教学资料.md`：统一、完整、教师可编辑的 Markdown source of truth。
 
-默认成功交付目录只包含 1+1+3 五个公开文件：
+默认成功交付目录只包含课程名前缀 `1 + 1 + N` 公开文件。当前 N=2 时为四个文件：
 
-- `teaching-design-package-full.md`：统一 Markdown。教师也可以先使用课程专属输入名，例如 `某某某课教学资料.md`；脚本交付根目录使用稳定英文交付名。
-- `teaching-design-package.typ`：由 package-owned data model 生成的 unified Typst。
-- `teaching-design-package.pdf`：完整整包 PDF。
-- `teaching-plan.pdf`：授课进度计划 PDF。
-- `teaching-design.pdf`：教学设计方案 PDF。
+- `课程名教学资料.md`：统一 Markdown 的公开副本，例如 `电气设备控制线路安装与调试教学资料.md`。
+- `课程名教学资料.pdf`：由所有注册模块 PDF 按 module registry 顺序合并得到的整包 PDF。
+- `课程名授课进度计划表.pdf`：`teaching-plan` 注册模块的正式 PDF。
+- `课程名教学设计方案.pdf`：`teaching-design` 注册模块的正式 PDF。
 
 隐藏诊断目录：
 
 - `.teaching-design-package/model.json`：派生模型和调度证据。
 - `.teaching-design-package/status.json`：输出状态、PDF readiness 和 final_ready。
-- `.teaching-design-package/work/`：split Typst 等内部中间文件。
-- `.teaching-design-package/debug/`：stderr log 等调试证据。
+- `.teaching-design-package/work/`：模块 Markdown、模块 Typst 和 debug-only unified Typst 等内部中间文件。
+- `.teaching-design-package/staging/`：模块 PDF 与整包合并 PDF 的发布前 staging 产物。
+- `.teaching-design-package/debug/`：stderr log、merge status、merge stderr 等调试证据。
 - `.teaching-design-package/failure-diagnostics/`：失败时保留的诊断快照。
 
-status、manifest、stderr log、model JSON、split Typst、临时状态和 failure diagnostics 不属于成功交付根目录的公开文件。
+`.typ`、status、manifest、stderr log、model JSON、diagnostics JSON、calendar JSON、模块 Markdown/Typst、staging 文件、旧英文成功文件名和 failure diagnostics 不属于成功交付根目录的公开文件。
 
 ## Verification
 
@@ -124,8 +124,8 @@ status、manifest、stderr log、model JSON、split Typst、临时状态和 fail
 - [ ] `teaching-design-package-full.md` 和课程专属 `某某某课教学资料.md` 都被描述为教师可编辑 source of truth。
 - [ ] `references/format-and-orchestration.md` 说明 teacher-editable Markdown、YAML/frontmatter 边界、正文/body 提取、派生事实、复核标记和 script boundary。
 - [ ] `scripts/teaching-design-package.sh model --input <finalized-markdown>` 输出 package-owned data model。
-- [ ] `scripts/teaching-design-package.sh render-package --pdf --input <finalized-markdown> --out-dir <dir>` 成功后，公开根目录只有 `teaching-design-package-full.md`、`teaching-design-package.typ`、`teaching-design-package.pdf`、`teaching-plan.pdf`、`teaching-design.pdf`。
-- [ ] `.teaching-design-package/model.json` 和 `.teaching-design-package/status.json` 存在，且公开根目录没有 status、manifest、stderr log、model JSON、split Typst 或临时状态文件。
+- [ ] `scripts/teaching-design-package.sh render-package --pdf --input <finalized-markdown> --out-dir <dir>` 成功后，公开根目录只有 `课程名教学资料.md`、`课程名教学资料.pdf`、`课程名授课进度计划表.pdf`、`课程名教学设计方案.pdf`。
+- [ ] `.teaching-design-package/model.json` 和 `.teaching-design-package/status.json` 存在，且公开根目录没有 `.typ`、status、manifest、stderr log、model JSON、diagnostics JSON、calendar JSON、模块中间产物、staging 文件或旧英文成功文件名。
 
 ## Safety
 
@@ -133,5 +133,5 @@ status、manifest、stderr log、model JSON、split Typst、临时状态和 fail
 - 不要要求用户安装、运行、排序或拼接其他独立技能来完成本包。
 - 不要把外部兼容入口改造成本包内部依赖、资源、验收基准或实现方向。
 - 不要把总课时、学年、学期、起止日期、输出 readiness、诊断状态等派生事实放进教师必须维护的 YAML。
-- 不要从 unified Markdown 一跳声称 PDF 最终通过；只有显式 `--pdf` 且实际文件存在时才记录 `passed`。
-- 不要把脚本诊断文件混入教师默认交付说明；成功交付根目录只允许 1+1+3 五个公开文件。
+- 不要从 unified Markdown 一跳声称 PDF 最终通过；`课程名教学资料.pdf` 必须由注册模块 PDF 真实合并得到。
+- 不要把脚本诊断文件混入教师默认交付说明；成功交付根目录只允许课程名前缀 `1 + 1 + N` 公开文件。
