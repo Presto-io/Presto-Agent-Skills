@@ -37,9 +37,9 @@ The successful public delivery surface is course-name-prefixed `1 + 1 + N`: the 
 
 **Goal:** Establish the package-owned modular architecture that parses the unified Markdown, derives YAML/module inputs, and produces hidden module Markdown/Typst plus one shared scheduling model.
 **Depends on:** Phase 32
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete
 **Requirements:** TDPKG-MOD-01, TDPKG-MOD-02, TDPKG-MOD-03, TDPKG-MOD-04, TDPKG-MOD-05, TDPKG-MOD-06, TDPKG-MOD-07, TDPKG-YAML-01, TDPKG-YAML-02, TDPKG-YAML-03, TDPKG-YAML-04, TDPKG-SCHED-01, TDPKG-SCHED-02, TDPKG-SCHED-03, TDPKG-SCHED-04, TDPKG-SCHED-05
-**Status:** Pending
+**Status:** Planned
 
 Success criteria:
 
@@ -137,11 +137,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.15 has been initialized. Phase 33 is the first implementation phase and should define the module registry, unified Markdown extraction, YAML conversion, skill-local calendar resource, and shared scheduling model before any formal PDF parity work begins.
+Milestone v1.15 has been initialized. Phase 33 has a checked execution plan for the module registry, unified Markdown extraction, YAML conversion, skill-local calendar resource, and shared scheduling model before any formal PDF parity work begins.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 33` to clarify the module registry and scheduling implementation approach before planning Phase 33.
+Run `/gsd:execute-phase 33` to implement the planned module registry, extraction, YAML conversion, skill-local calendar, shared scheduling model, and hidden module artifact infrastructure.
 
 ---
 *Roadmap updated: 2026-06-15 after v1.15 milestone initialization*
