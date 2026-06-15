@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-15 after Phase 32 planning
+**Last updated:** 2026-06-15 after Phase 32 execution
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -68,7 +68,7 @@ Success criteria:
 **Depends on:** Phase 31
 **Plans:** 1/1 plans complete
 **Requirements:** TDPKG-07, TDPKG-08, TDPKG-09, TDPKG-10, TDPKG-11, TDPKG-12, TDPKG-13
-**Status:** Planned
+**Status:** Complete
 
 Success criteria:
 
@@ -117,11 +117,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.14 has completed Phase 30 and Phase 31, and Phase 32 is planned. `teaching-design-package` now has a standalone package-owned unified Markdown -> data model -> Typst/PDF status path, and its canonical entry starts from teacher source materials, targeted clarification, one reviewable Markdown, teacher review/editing, finalized Markdown, then script validation/rendering. Phase 32 execution is ready to enforce clean 1+1+3 delivery and derived scheduling regression gates.
+Milestone v1.14 has completed Phase 30, Phase 31, and Phase 32. `teaching-design-package` now has a standalone package-owned unified Markdown -> data model -> clean 1+1+3 Typst/PDF delivery path, and its canonical entry starts from teacher source materials, targeted clarification, one reviewable Markdown, teacher review/editing, finalized Markdown, then script validation/rendering. Phase 32 enforces hidden diagnostics, strict PDF success semantics, derived scheduling facts, and standalone-copy regression evidence.
 
 ## Next Step
 
-Run `/gsd:execute-phase 32` when ready to implement clean 1+1+3 delivery and scheduling regression enforcement.
+Run `/gsd:verify-work 32` when ready to independently verify Phase 32 execution.
 
 ---
-*Roadmap updated: 2026-06-15 after Phase 32 planning*
+*Roadmap updated: 2026-06-15 after Phase 32 execution*
