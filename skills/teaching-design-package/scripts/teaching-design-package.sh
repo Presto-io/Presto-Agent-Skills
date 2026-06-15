@@ -321,35 +321,6 @@ fs.writeFileSync(`${outDir}/${design.work_markdown}`, designLines.join('\n'));
 NODE
 }
 
-write_placeholder_pdf_typst() {
-  local model_path="$1" typ_path="$2" title="$3"
-  node - "$model_path" "$typ_path" "$title" <<'NODE'
-const fs = require('fs');
-const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const typPath = process.argv[3];
-const title = process.argv[4];
-const esc = (value) => String(value ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-const lines = [
-  '// Package-owned Phase 33 module Typst intermediate.',
-  '// Pre-formal surface only; formal renderer migration is Phase 34/35 scope.',
-  '// This file is generated from the shared package model.',
-  `#set document(title: "${esc(title)}", author: "${esc(model.metadata.teacher_name)}")`,
-  '',
-  `= ${title}`,
-  '',
-  `课程：${model.metadata.course_name}`,
-  '',
-  `总课时：${model.derived.total_hours_label}`,
-  '',
-  `学期：${model.derived.term_label}`,
-  '',
-  'This file is generated from the unified package model.',
-  '',
-];
-fs.writeFileSync(typPath, lines.join('\n'));
-NODE
-}
-
 write_teaching_plan_typst() {
   local model_path="$1" typ_path="$2"
   node "${SCRIPT_DIR}/teaching-plan-renderer.js" "$model_path" "$typ_path"
