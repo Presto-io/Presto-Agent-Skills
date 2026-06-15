@@ -6,9 +6,9 @@
 
 **Shipped:** 2026-06-15
 
-**Active milestone:** None
+**Active milestone:** v1.15 teaching-design-package 模块化渲染与旧格式回归
 
-**Status:** v1.14 shipped. `teaching-design-package` is now a standalone, package-owned, teacher-facing unified teaching-design skill with a clean default 1+1+3 delivery surface and hidden diagnostics.
+**Status:** v1.15 started. The next package slice turns `teaching-design-package` from a unified Markdown-to-flat package renderer into an all-in-one module orchestration system that renders formal module PDFs through package-owned migrated legacy format rules.
 
 **Delivered in v1.14:**
 - `teaching-design-package` installs and runs as a single skill without sibling repo skill dependencies in the normal path.
@@ -34,7 +34,18 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-No active milestone. The next milestone should start from fresh requirements after v1.14's standalone package contract.
+v1.15 focuses on modular package rendering and legacy formal-format regression for `teaching-design-package`. The unified Markdown remains the only content source, but the script must derive module Markdown, module Typst, scheduling evidence, formal module PDFs, and the merged package PDF through package-owned internals.
+
+## Current Milestone: v1.15 teaching-design-package 模块化渲染与旧格式回归
+
+**Goal:** Refactor `teaching-design-package` into an extensible all-in-one module renderer that derives formal teaching-plan and teaching-design PDFs from one unified Markdown source while preserving clean public delivery and hidden diagnostics.
+
+**Target features:**
+- Package-owned module registry and orchestration for the current two modules: 授课进度计划表 and 教学设计方案.
+- Hidden module Markdown and Typst generation under `.teaching-design-package/work/`, with public delivery limited to course-name-prefixed `1 + 1 + N` artifacts.
+- Migration of the accepted legacy `jiaoan-jihua` and `jiaoan-shicao` rendering rules into `teaching-design-package` internals without runtime sibling-skill dependency.
+- A single scheduling model that derives calendar ranges, task/activity hours, academic year/semester, and cross-module validation evidence from `calendar.json`, `first_teaching_day`, and the teaching-plan rows.
+- Strict PDF generation and merge semantics: all module PDFs must be real and non-empty before the combined `课程名教学资料.pdf` is created.
 
 ## Latest Milestone: v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约
 
@@ -118,7 +129,12 @@ No active milestone. The next milestone should start from fresh requirements aft
 
 <!-- Current scope. Building toward these. -->
 
-(None. Define fresh requirements with the next milestone.)
+- [ ] `teaching-design-package` uses `skills/teaching-design-package/templates/teaching-design-package-full.md` as the single structured Markdown source for module extraction and final rendering. - v1.15
+- [ ] Package internals generate hidden module Markdown and Typst for `teaching-plan` and `teaching-design` through an extensible module registry. - v1.15
+- [ ] Public delivery follows the course-name-prefixed `1 + 1 + N` contract and does not expose `.typ`, module intermediates, status, model, diagnostics, logs, or calendar resources. - v1.15
+- [ ] The package owns migrated rendering rules equivalent to the accepted `jiaoan-jihua` and `jiaoan-shicao` formal outputs while preserving those legacy skills as standalone external surfaces. - v1.15
+- [ ] YAML conversion, scheduling, hour totals, activity mapping, date ranges, and validation failures are derived by one shared scheduling model and recorded in hidden evidence. - v1.15
+- [ ] Module PDFs and the merged package PDF are generated only from successful real module renders, with honest non-zero failures on missing/invalid inputs. - v1.15
 
 ### Out of Scope
 
@@ -164,9 +180,11 @@ v1.13 shipped from the committed Markdown baseline `skills/teaching-design-packa
 
 v1.14 shipped the corrected `teaching-design-package` boundary. The package now owns its normal rendering path instead of relying on sibling skills, the skill entry starts with teacher source-material organization before scripts, and the default successful output directory is exactly the public 1+1+3 set. Derived scheduling facts and PDF readiness are validated from evidence, while status/model/logs/split Typst and failure diagnostics stay hidden.
 
+v1.15 starts from that package-owned boundary and tightens the output model. The unified Markdown remains teacher-readable and script-parseable, but the renderer must first split it into package-owned module intermediates, migrate the old accepted jiaoan formal rendering rules into `teaching-design-package`, derive all time and hour facts through one scheduling model, and publish only course-name-prefixed Markdown/PDF deliverables.
+
 ## Next Milestone Goals
 
-No next milestone is defined yet. Start with fresh requirements before adding more package or skill changes.
+v1.15 should deliver modular all-in-one rendering for the current two teaching-design modules and leave a clear registry/config path for future modules.
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -195,6 +213,11 @@ No next milestone is defined yet. Start with fresh requirements before adding mo
 - **v1.14 script boundary discipline**: Scripts consume finalized `teaching-design-package-full.md` for contract validation and delivery generation only; they are not the interactive content-organization entry.
 - **v1.14 delivery discipline**: Default output directories must contain only the 1+1+3 delivery set: unified Markdown, unified Typst, combined package PDF, teaching-plan PDF, and lesson-plan PDF.
 - **v1.14 diagnostic discipline**: Package-owned manifests, stderr logs, status files, split render intermediates, and similar artifacts belong in hidden work directories, temporary directories, debug mode, or failure diagnostics, not the default delivery directory.
+- **v1.15 public delivery discipline**: Successful package output directories must contain only course-name-prefixed public artifacts: `课程名教学资料.md`, `课程名教学资料.pdf`, `课程名授课进度计划表.pdf`, `课程名教学设计方案.pdf`, and future `课程名<模块名>.pdf` files.
+- **v1.15 hidden module discipline**: Module Markdown, module Typst, scheduling model, status, diagnostics, logs, and calendar evidence belong under hidden `.teaching-design-package/` paths and must not leak into successful public delivery roots.
+- **v1.15 legacy-format discipline**: Legacy `jiaoan-jihua` and `jiaoan-shicao` skills may be used as format baselines and test oracles, but the package must not depend on them at runtime.
+- **v1.15 scheduling discipline**: Calendar, academic year/semester, course/task date ranges, week/day labels, daily hour consumption, total hours, and activity hours must come from one package-owned scheduling model using `calendar.json`, `first_teaching_day`, and teaching-plan rows.
+- **v1.15 failure discipline**: Missing calendar dates, range gaps, hour mismatches, task/activity mapping mismatches, failed module renders, or failed PDF merges must produce non-zero failure and hidden diagnostics rather than partial success output.
 
 ## Key Decisions
 
@@ -239,6 +262,9 @@ No next milestone is defined yet. Start with fresh requirements before adding mo
 | Rebuild `teaching-design-package` as its own two-in-one skill | User clarified the package must not copy old templates, keep old internal Markdown files, or continue old handoff thinking under a new folder | Good - shipped in v1.14 |
 | Keep the package workflow teacher-first and script-finalized | Teachers should organize source materials into one editable Markdown before strict validation/rendering runs | Good - shipped in v1.14 |
 | Keep successful package delivery roots clean | Default output should contain only one Markdown, one Typst, and three PDFs, with diagnostics hidden for audit/debug/failure use | Good - shipped in v1.14 |
+| Start v1.15 as modular package rendering with legacy formal-format regression | User confirmed the package must derive hidden module Markdown/Typst and formal module PDFs from one unified Markdown source | Pending - v1.15 started |
+| Treat old jiaoan skills as format baselines, not runtime dependencies | Package rendering must be standalone while proving migrated rules match or are equivalent to accepted old outputs | Pending - v1.15 started |
+| Use one scheduling model for both modules | Calendar and hour facts must not be calculated independently by the two modules | Pending - v1.15 started |
 
 ## Evolution
 
@@ -258,4 +284,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-15 after v1.14 milestone close*
+*Last updated: 2026-06-15 after v1.15 milestone start*

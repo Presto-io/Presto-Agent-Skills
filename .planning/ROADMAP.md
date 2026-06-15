@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-15 after v1.14 milestone close
+**Last updated:** 2026-06-15 after v1.15 milestone initialization
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -25,11 +25,76 @@
 
 ## Active Milestone
 
-No active milestone. Start the next milestone with `/gsd:new-milestone` when fresh requirements are ready.
+**v1.15 teaching-design-package 模块化渲染与旧格式回归**
+
+This milestone converts `teaching-design-package` into a package-owned all-in-one module renderer. The unified Markdown remains the only content source. The package must derive hidden module Markdown and Typst, migrate the accepted `jiaoan-jihua` and `jiaoan-shicao` formal rendering rules into package internals, generate real module PDFs, and merge the final course package PDF only after all modules succeed.
+
+The successful public delivery surface is course-name-prefixed `1 + 1 + N`: the unified Markdown and final PDFs only. Module Markdown, module Typst, scheduling model, status, diagnostics, logs, and calendar evidence stay in hidden `.teaching-design-package/` paths.
 
 ## Phases
 
-No active phases. Completed phase details are preserved in milestone archives and phase summary files.
+### Phase 33: Module Registry, Unified Extraction, and Scheduling Model
+
+**Goal:** Establish the package-owned modular architecture that parses the unified Markdown, derives YAML/module inputs, and produces hidden module Markdown/Typst plus one shared scheduling model.
+**Depends on:** Phase 32
+**Plans:** 0/1 plans complete
+**Requirements:** TDPKG-MOD-01, TDPKG-MOD-02, TDPKG-MOD-03, TDPKG-MOD-04, TDPKG-MOD-05, TDPKG-MOD-06, TDPKG-MOD-07, TDPKG-YAML-01, TDPKG-YAML-02, TDPKG-YAML-03, TDPKG-YAML-04, TDPKG-SCHED-01, TDPKG-SCHED-02, TDPKG-SCHED-03, TDPKG-SCHED-04, TDPKG-SCHED-05
+**Status:** Pending
+
+Success criteria:
+
+1. `teaching-design-package-full.md` shaped input is parsed as the only content source and split into registered module data for `teaching-plan` and `teaching-design`.
+2. Hidden module Markdown and Typst paths are produced under `.teaching-design-package/work/` without exposing them in the public delivery directory.
+3. YAML conversion fills module-specific frontmatter from unified YAML and derived scheduling facts, including `teacher_name`, `daily_hours`, `total_hours`, and `use_time`.
+4. `calendar.json` lives inside the `teaching-design-package` skill folder and is usable from a standalone copy of that folder.
+5. A single scheduling model derives academic year, semester, total course date range, task date ranges, week/day labels, and daily hour consumption from real calendar data.
+
+### Phase 34: Teaching Plan Formal Renderer Migration
+
+**Goal:** Migrate the accepted `jiaoan-jihua` teaching-plan format rules into package-owned internals and prove the generated 授课进度计划表 module is formally equivalent to the legacy baseline.
+**Depends on:** Phase 33
+**Plans:** 0/1 plans complete
+**Requirements:** TDPKG-LEGACY-01, TDPKG-LEGACY-03, TDPKG-LEGACY-04, TDPKG-VAL-01
+**Status:** Pending
+
+Success criteria:
+
+1. The package generates `课程名授课进度计划表.pdf` using internal migrated rendering rules, without invoking the sibling `jiaoan-jihua` skill at runtime.
+2. Fixture evidence demonstrates equality or accepted equivalence with the current standalone `jiaoan-jihua` output format.
+3. The legacy `jiaoan-jihua` skill remains available with its public interface unchanged.
+4. Teaching-plan row hours remain the only authoritative raw hour source, and task/course totals are strict sums from those rows.
+
+### Phase 35: Teaching Design Formal Renderer and Cross-Module Validation
+
+**Goal:** Migrate the accepted `jiaoan-shicao` teaching-design format rules into package-owned internals and enforce strict task/activity/hour/date consistency against the teaching-plan module.
+**Depends on:** Phase 34
+**Plans:** 0/1 plans complete
+**Requirements:** TDPKG-LEGACY-02, TDPKG-VAL-02, TDPKG-VAL-03, TDPKG-VAL-04
+**Status:** Pending
+
+Success criteria:
+
+1. The package generates `课程名教学设计方案.pdf` using internal migrated rendering rules, without invoking the sibling `jiaoan-shicao` skill at runtime.
+2. Fixture evidence demonstrates equality or accepted equivalence with the current standalone `jiaoan-shicao` output format.
+3. Lesson-plan task hours and activity `##### xH` values are derived from the teaching-plan scheduling model rather than independently calculated.
+4. Mismatched task counts, link counts, activity counts, titles, hour totals, or date ranges fail with hidden diagnostics and no final success output.
+
+### Phase 36: Public Delivery, PDF Merge, and Standalone Regression
+
+**Goal:** Enforce the course-name-prefixed `1 + 1 + N` public delivery contract, honest PDF merge semantics, hidden diagnostics, and standalone-copy verification.
+**Depends on:** Phase 35
+**Plans:** 0/1 plans complete
+**Requirements:** TDPKG-ART-01, TDPKG-ART-02, TDPKG-ART-03, TDPKG-PDF-01, TDPKG-PDF-02, TDPKG-PDF-03, TDPKG-PDF-04
+**Status:** Pending
+
+Success criteria:
+
+1. Default output for the current template contains `电气设备控制线路安装与调试教学资料.md`, `电气设备控制线路安装与调试教学资料.pdf`, `电气设备控制线路安装与调试授课进度计划表.pdf`, and `电气设备控制线路安装与调试教学设计方案.pdf`.
+2. Public output contains no `.typ`, status, manifest, model, diagnostics, log, calendar JSON, or module intermediate files.
+3. Hidden `.teaching-design-package/` evidence includes module Markdown, module Typst, model, status, diagnostics, calendar path/hash, scheduling summary, and any failure evidence.
+4. Combined PDF merge runs only after all registered module PDFs exist and are non-empty, using module registration order and honestly recorded merge tooling.
+5. Any module render or merge failure exits non-zero and does not leave a public directory that appears successful.
+6. A standalone-copy check proves the package works when only the `teaching-design-package` skill folder is installed.
 
 ## Completed Phase Archive
 
@@ -72,11 +137,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.14 has shipped. `teaching-design-package` now has a standalone package-owned unified Markdown -> data model -> clean 1+1+3 Typst/PDF delivery path, and its canonical entry starts from teacher source materials, targeted clarification, one reviewable Markdown, teacher review/editing, finalized Markdown, then script validation/rendering. Phase 32 enforces hidden diagnostics, strict PDF success semantics, derived scheduling facts, and standalone-copy regression evidence.
+Milestone v1.15 has been initialized. Phase 33 is the first implementation phase and should define the module registry, unified Markdown extraction, YAML conversion, skill-local calendar resource, and shared scheduling model before any formal PDF parity work begins.
 
 ## Next Step
 
-Start the next milestone with `/gsd:new-milestone` when fresh requirements are ready.
+Run `/gsd:discuss-phase 33` to clarify the module registry and scheduling implementation approach before planning Phase 33.
 
 ---
-*Roadmap updated: 2026-06-15 after v1.14 milestone close*
+*Roadmap updated: 2026-06-15 after v1.15 milestone initialization*
