@@ -4,9 +4,9 @@ milestone: v1.14
 milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
 current_phase: 30
 status: executing
-stopped_at: Phase 30 planning complete
-last_updated: "2026-06-15T00:15:58.391Z"
-last_activity: 2026-06-15 -- Phase 30 planning complete
+stopped_at: Phase 30 corrected planning complete
+last_updated: "2026-06-15T00:35:00.000Z"
+last_activity: 2026-06-15 -- Phase 30 corrected plan replaces failed old-template vendor plan
 progress:
   total_phases: 3
   completed_phases: 0
@@ -19,7 +19,7 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 30
-**Status:** Ready to execute
+**Status:** Ready to execute corrected Phase 30 plan
 
 ## Project Reference
 
@@ -135,10 +135,11 @@ Execute the planned Phase 30 workflow when ready:
 - [Phase 28]: Phase 29 PDF outputs remain not_run slots until real PDF generation and parity verification run. — Phase 28 creates Typst and provenance only; it does not claim PDF parity.
 - [Phase 29]: Final package PDF generation is explicit via `render-package --pdf`; Typst-only rendering remains the default. — This prevents callers from confusing Typst generation with accepted PDF output.
 - [Phase 29]: Combined package PDF is merged from accepted split PDFs in source order. — When `pdfunite` and `qpdf` are unavailable, installed PyMuPDF provides a real local merge fallback recorded as `python_fitz`.
-- [Phase 29]: Standalone parity is proven against the same generated handoff Markdown. — Package split Typst/PDF outputs match standalone `jiaoan-jihua` and `jiaoan-shicao` renders from `jiaoan-jihua-full.md` and `jiaoan-shicao-full.md`.
-- [Milestone v1.14]: `teaching-design-package` is the unified user experience, not a requirement to install or stitch together sibling repo skills. — User clarified that any needed `jiaoan-jihua` or `jiaoan-shicao` capability must be vendored/internalized or discoverable from self-contained package resources.
+- [Phase 29]: Standalone parity is proven against the same generated handoff Markdown. — Package split Typst/PDF outputs matched legacy standalone renders from generated handoff Markdown.
+- [Milestone v1.14]: `teaching-design-package` is the unified user experience, not a requirement to install or stitch together sibling repo skills. — User clarified that needed package capability must come from a package-owned path rather than hidden old skill internals.
 - [Milestone v1.14]: The teacher workflow is source materials -> clarification/organization -> one editable full Markdown -> strict delivery render. — Scripts consume finalized Markdown for validation and output generation only.
 - [Milestone v1.14]: Default delivery is exactly 1+1+3. — Internal handoffs, manifests, logs, status files, split Typst, and sidecars must stay hidden/debug/failure-only and out of successful delivery directories.
+- [Phase 30 correction]: The package must not copy old standalone Markdown templates or create old-name package internals. — The corrected plan targets unified Markdown -> package-owned data model -> package-owned Typst/PDF rendering, with legacy standalone skills preserved only as external compatibility surfaces.
 
 ## Performance Metrics
 
@@ -196,12 +197,12 @@ Execute the planned Phase 30 workflow when ready:
 
 Phase: 30 - Standalone Skill Boundary and Internalized Dependencies
 Plan: 1/1 ready
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 30 planning complete
+Status: Ready to execute corrected plan
+Last activity: 2026-06-15 -- Phase 30 corrected planning complete
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 30` to implement the standalone skill boundary plan.
+- Run `/gsd:execute-phase 30` only when ready to implement the corrected package-owned rendering boundary.
 
 ### Quick Tasks Completed
 
