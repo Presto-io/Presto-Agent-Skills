@@ -132,6 +132,8 @@ if (diagnosticLine) {
 const diagnostics = {
   status: 'failed',
   source_markdown: input,
+  calendar: error.calendar || null,
+  model_version: error.model_version || null,
   errors: [error],
   stderr_log: stderrPath,
   failure_classes: [
@@ -146,6 +148,20 @@ const diagnostics = {
     'calendar_exhausted',
     'non_positive_hours',
     'teaching_design_hours_inconsistent',
+    'teaching_design_task_count_mismatch',
+    'teaching_design_stage_count_mismatch',
+    'teaching_design_activity_count_mismatch',
+    'teaching_design_task_title_mismatch',
+    'teaching_design_stage_title_mismatch',
+    'teaching_design_activity_title_mismatch',
+    'teaching_design_task_hours_mismatch',
+    'teaching_design_activity_hours_mismatch',
+    'teaching_design_task_date_range_mismatch',
+    'missing_teaching_design_analysis_block',
+    'missing_teaching_design_activity_block',
+    'missing_teaching_design_evaluation_block',
+    'teaching_design_formal_render_failed',
+    'teaching_design_pdf_compile_failed',
     'hidden_artifact_write_failure',
     'public_root_leakage',
   ],
@@ -339,6 +355,11 @@ write_teaching_plan_typst() {
   node "${SCRIPT_DIR}/teaching-plan-renderer.js" "$model_path" "$typ_path"
 }
 
+write_teaching_design_typst() {
+  local model_path="$1" typ_path="$2"
+  node "${SCRIPT_DIR}/teaching-design-renderer.js" "$model_path" "$typ_path"
+}
+
 compile_pdf() {
   local typ="$1" pdf="$2" log="$3"
   rm -f "$pdf" "$log"
@@ -402,6 +423,19 @@ const status = {
     public_pdf: publicOutputs.teaching_plan_pdf,
     pdf_compile_status: planStatus,
   },
+  teaching_design_formal_renderer: {
+    status: 'passed',
+    renderer: 'package-owned teaching-design-renderer.js',
+    legacy_surface: 'jiaoan-shicao formal teaching-design layout',
+    source: 'shared_scheduling_model',
+    total_hours_source: model.validation.total_hours_source,
+    task_hours_source: 'schedule.tasks[].total_hours',
+    activity_hours_source: 'schedule.tasks[].stages[].rows[].hours',
+    cross_module_validation: 'passed',
+    hidden_typst: `${outDir}/.teaching-design-package/work/teaching-design.typ`,
+    public_pdf: publicOutputs.teaching_design_pdf,
+    pdf_compile_status: designStatus,
+  },
   public_outputs: publicOutputs,
   pdf_requested: pdfRequested,
   pdf_status: {
@@ -451,6 +485,14 @@ const diagnostics = {
     scheduling_source: 'shared_scheduling_model',
     hidden_typst: model.modules.items.find((item) => item.id === 'teaching-plan').work_typst,
   },
+  teaching_design_formal_renderer: {
+    status: 'passed',
+    renderer: 'package-owned teaching-design-renderer.js',
+    legacy_surface: 'jiaoan-shicao formal teaching-design layout',
+    scheduling_source: 'shared_scheduling_model',
+    hidden_typst: model.modules.items.find((item) => item.id === 'teaching-design').work_typst,
+  },
+  cross_module_validation: model.validation.cross_module_evidence,
   module_registry: model.modules.registry,
   generated_module_frontmatter: Object.fromEntries(model.modules.items.map((item) => [item.id, item.frontmatter])),
   calendar_policy: model.derived.calendar_policy,
@@ -470,6 +512,20 @@ const diagnostics = {
     'calendar_exhausted',
     'non_positive_hours',
     'teaching_design_hours_inconsistent',
+    'teaching_design_task_count_mismatch',
+    'teaching_design_stage_count_mismatch',
+    'teaching_design_activity_count_mismatch',
+    'teaching_design_task_title_mismatch',
+    'teaching_design_stage_title_mismatch',
+    'teaching_design_activity_title_mismatch',
+    'teaching_design_task_hours_mismatch',
+    'teaching_design_activity_hours_mismatch',
+    'teaching_design_task_date_range_mismatch',
+    'missing_teaching_design_analysis_block',
+    'missing_teaching_design_activity_block',
+    'missing_teaching_design_evaluation_block',
+    'teaching_design_formal_render_failed',
+    'teaching_design_pdf_compile_failed',
     'hidden_artifact_write_failure',
     'public_root_leakage',
   ],
@@ -514,7 +570,12 @@ cmd_render_package() {
   write_unified_typst "$model_path" "${OUT_DIR}/teaching-design-package.typ"
   write_module_markdown_files "$model_path" "$OUT_DIR"
   write_teaching_plan_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-plan.typ"
-  write_placeholder_pdf_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-design.typ" "教学设计方案"
+  if ! write_teaching_design_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-design.typ" 2>"${OUT_DIR}/.teaching-design-package/debug/teaching-design-renderer.stderr.log"; then
+    printf 'TDPKG_DIAGNOSTIC_JSON={"code":"teaching_design_formal_render_failed","mismatch_class":"teaching_design_formal_render_failed","module_id":"teaching-design","message":"package-owned teaching-design renderer failed","source_markdown":"%s"}\n' "$(json_escape "$INPUT")" >>"${OUT_DIR}/.teaching-design-package/debug/teaching-design-renderer.stderr.log"
+    write_failure_diagnostics "$INPUT" "$OUT_DIR" "${OUT_DIR}/.teaching-design-package/debug/teaching-design-renderer.stderr.log"
+    cat "${OUT_DIR}/.teaching-design-package/debug/teaching-design-renderer.stderr.log" >&2
+    return 1
+  fi
   if [[ "$RENDER_PDF" == true ]]; then
     if compile_pdf "${OUT_DIR}/teaching-design-package.typ" "${OUT_DIR}/teaching-design-package.pdf" "${OUT_DIR}/.teaching-design-package/debug/full-pdf.stderr.log" && pdf_nonempty "${OUT_DIR}/teaching-design-package.pdf"; then
       full_status="passed"
@@ -530,6 +591,7 @@ cmd_render_package() {
       design_status="passed"
     else
       design_status="missing_compiler_or_failed"
+      printf 'TDPKG_DIAGNOSTIC_JSON={"code":"teaching_design_pdf_compile_failed","mismatch_class":"teaching_design_pdf_compile_failed","module_id":"teaching-design","message":"teaching-design PDF compile failed or output was empty","source_markdown":"%s"}\n' "$(json_escape "$INPUT")" >>"${OUT_DIR}/.teaching-design-package/debug/design-pdf.stderr.log"
     fi
   fi
   write_status "$model_path" "$OUT_DIR" "$RENDER_PDF" "$full_status" "$plan_status" "$design_status"

@@ -476,6 +476,421 @@ function parseActivityHours(designText) {
   return values;
 }
 
+function normalizeTitle(value) {
+  return String(value ?? '')
+    .replace(/[\s　]/g, '')
+    .replace(/[，,。；;：:（）()《》“”"'、]/g, '');
+}
+
+function displayTitleFromHeading(value) {
+  return String(value ?? '').replace(/^学习任务[0-9一二三四五六七八九十]+[:：]/, '').replace(/（[0-9]+H）$/, '').trim();
+}
+
+function parseHourLabel(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return null;
+  const match = text.match(/^([0-9]+(?:\.[0-9]+)?)\s*(?:H|h|课时)?$/);
+  return match ? Number(match[1]) : null;
+}
+
+function splitDesignBlocks(designText) {
+  const tasks = [];
+  let current = null;
+  let currentPart = '';
+  const pushTask = () => {
+    if (current) tasks.push(current);
+  };
+  for (const rawLine of designText.split(/\n/)) {
+    const line = rawLine.replace(/\r$/, '');
+    if (line === '## 学习任务分析') {
+      pushTask();
+      current = { analysis_lines: [], activity_lines: [], evaluation_lines: [] };
+      currentPart = 'analysis';
+      continue;
+    }
+    if (!current) continue;
+    if (line.startsWith('## 教学活动设计')) {
+      current.activity_heading = line.slice(3).trim();
+      currentPart = 'activity';
+      continue;
+    }
+    if (line === '## 学业评价') {
+      currentPart = 'evaluation';
+      continue;
+    }
+    if (currentPart === 'analysis') current.analysis_lines.push(line);
+    else if (currentPart === 'activity') current.activity_lines.push(line);
+    else if (currentPart === 'evaluation') current.evaluation_lines.push(line);
+  }
+  pushTask();
+  return tasks;
+}
+
+function parseTaskMeta(lines) {
+  const meta = { title: '', raw_hours: null, raw_date_range: null };
+  for (const line of lines) {
+    if (line.startsWith('学习任务：')) meta.title = line.slice('学习任务：'.length).trim();
+    else if (line.startsWith('课时：')) meta.raw_hours = line.slice('课时：'.length).trim();
+    else if (line.startsWith('起止日期：')) meta.raw_date_range = line.slice('起止日期：'.length).trim();
+  }
+  return meta;
+}
+
+function analysisSectionKey(title) {
+  if (title.startsWith('一、')) return 'description';
+  if (title.startsWith('二、')) return 'goals';
+  if (title.startsWith('三、')) return 'content';
+  if (title.startsWith('四、')) return 'students';
+  if (title.startsWith('五、')) return 'resources';
+  return '';
+}
+
+function parseAnalysisSections(lines) {
+  const sections = { description: '', goals: '', content: '', students: '', resources: '' };
+  let key = '';
+  for (const line of lines) {
+    if (line.startsWith('### ')) {
+      key = analysisSectionKey(line.slice(4).trim());
+      continue;
+    }
+    if (!key) continue;
+    if (!line.trim()) {
+      if (sections[key]) sections[key] += '\n';
+      continue;
+    }
+    sections[key] += (sections[key] && !sections[key].endsWith('\n') ? '\n' : '') + line;
+  }
+  for (const name of Object.keys(sections)) sections[name] = sections[name].trim();
+  return sections;
+}
+
+function splitActivityBlocks(lines) {
+  const stages = [];
+  let currentStage = null;
+  let currentActivity = null;
+  let currentChapter = 1;
+  const flushActivity = () => {
+    if (!currentStage || !currentActivity) return;
+    currentActivity.blocks = currentActivity.raw_body.join('\n').split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
+    currentActivity.learning_content = currentActivity.blocks[0] || '';
+    currentActivity.student_activity = currentActivity.blocks[1] || '';
+    currentActivity.teacher_activity = currentActivity.blocks[2] || '';
+    currentActivity.method = currentActivity.blocks.slice(3).join('\n\n');
+    currentActivity.content_title = (currentActivity.learning_content.split(/\n/).find((line) => line.trim()) || '').trim();
+    currentActivity.validation_title = currentActivity.title.trim();
+    currentStage.activities.push(currentActivity);
+    currentActivity = null;
+  };
+  const flushStage = () => {
+    flushActivity();
+    if (currentStage) stages.push(currentStage);
+    currentStage = null;
+  };
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/\r$/, '');
+    if (line.trim() === '{pagebreak}') {
+      flushActivity();
+      currentChapter += 1;
+      continue;
+    }
+    if (line.startsWith('### ')) {
+      flushStage();
+      const heading = line.slice(4).trim();
+      const parts = heading.split('——');
+      currentStage = {
+        source: '',
+        raw_heading: heading,
+        title: (parts[0] || '').trim(),
+        unit: (parts.slice(1).join('——') || '').trim(),
+        chapter: currentChapter,
+        activities: [],
+      };
+      continue;
+    }
+    if (line.startsWith('#### ')) {
+      if (!currentStage) currentStage = { source: '', raw_heading: '', title: '', unit: '', chapter: currentChapter, activities: [] };
+      flushActivity();
+      currentActivity = { title: line.slice(5).trim(), raw_hours: null, chapter: currentChapter, raw_body: [] };
+      continue;
+    }
+    if (line.startsWith('##### ') && currentActivity) {
+      currentActivity.raw_hours = line.slice(6).trim();
+      continue;
+    }
+    if (currentActivity) currentActivity.raw_body.push(line);
+  }
+  flushStage();
+  return stages;
+}
+
+function parseEvaluation(lines) {
+  const items = [];
+  let summary = '';
+  for (const line of lines) {
+    const item = line.match(/^([0-9]+)[.]\s*(.+)$/);
+    if (item) {
+      const parts = item[2].split('；');
+      items.push({ number: Number(item[1]), item: (parts[0] || '').trim(), detail: (parts[1] || '').trim(), method: (parts[2] || '').trim(), raw: item[2].trim() });
+    } else if (line.startsWith('小结：')) {
+      summary = line.slice('小结：'.length).trim();
+    }
+  }
+  return { items, summary, markdown: lines.join('\n').trim() };
+}
+
+function crossModuleFail(code, message, scheduling, extra = {}) {
+  fail(code, message, {
+    code,
+    mismatch_class: code,
+    module_id: 'teaching-design',
+    source_markdown: inputPath,
+    calendar: scheduling.calendar,
+    model_version: 'phase35.teaching-design-formal-renderer.v1',
+    total_hours_source: 'teaching_plan_rows',
+    ...extra,
+  });
+}
+
+function compareTitleOrFail(code, message, scheduling, planTitle, designTitle, extra) {
+  const planNormalized = normalizeTitle(planTitle);
+  const designNormalized = normalizeTitle(designTitle);
+  if (planNormalized !== designNormalized) {
+    crossModuleFail(code, message, scheduling, {
+      ...extra,
+      plan_title: planTitle,
+      design_title: designTitle,
+      plan_normalized_title: planNormalized,
+      design_normalized_title: designNormalized,
+      expected: planTitle,
+      actual: designTitle,
+    });
+  }
+  return { planNormalized, designNormalized };
+}
+
+function buildTeachingDesignModel(designText, scheduleTasks, scheduling) {
+  const rawTasks = splitDesignBlocks(designText);
+  if (rawTasks.length !== scheduleTasks.length) {
+    crossModuleFail('teaching_design_task_count_mismatch', `expected ${scheduleTasks.length} teaching-design tasks, found ${rawTasks.length}`, scheduling, {
+      expected: scheduleTasks.length,
+      actual: rawTasks.length,
+    });
+  }
+
+  const designTasks = [];
+  const stagesEvidence = [];
+  const activitiesEvidence = [];
+  for (let taskIndex = 0; taskIndex < scheduleTasks.length; taskIndex += 1) {
+    const scheduleTask = scheduleTasks[taskIndex];
+    const rawTask = rawTasks[taskIndex];
+    const taskPointer = `task:${taskIndex + 1}`;
+    if (!rawTask || !rawTask.analysis_lines.length) {
+      crossModuleFail('missing_teaching_design_analysis_block', `missing analysis block at ${taskPointer}`, scheduling, { plan_pointer: taskPointer });
+    }
+    if (!rawTask.activity_lines.length) {
+      crossModuleFail('missing_teaching_design_activity_block', `missing activity block at ${taskPointer}`, scheduling, { plan_pointer: taskPointer });
+    }
+    if (!rawTask.evaluation_lines.length) {
+      crossModuleFail('missing_teaching_design_evaluation_block', `missing evaluation block at ${taskPointer}`, scheduling, { plan_pointer: taskPointer });
+    }
+
+    const meta = parseTaskMeta(rawTask.analysis_lines);
+    const designTaskTitle = meta.title || displayTitleFromHeading(rawTask.activity_heading || '');
+    const taskNorm = compareTitleOrFail('teaching_design_task_title_mismatch', `task title mismatch at ${taskPointer}`, scheduling, scheduleTask.title, designTaskTitle, {
+      plan_pointer: taskPointer,
+      design_pointer: taskPointer,
+      plan_hours: scheduleTask.total_hours,
+      plan_date_range: scheduleTask.date_range,
+      design_date_range: meta.raw_date_range || null,
+    });
+    const taskHours = parseHourLabel(meta.raw_hours);
+    if (taskHours !== null && taskHours !== scheduleTask.total_hours) {
+      crossModuleFail('teaching_design_task_hours_mismatch', `task hours mismatch at ${taskPointer}`, scheduling, {
+        plan_pointer: taskPointer,
+        design_pointer: taskPointer,
+        plan_title: scheduleTask.title,
+        design_title: designTaskTitle,
+        plan_hours: scheduleTask.total_hours,
+        design_hours: taskHours,
+        expected: scheduleTask.total_hours,
+        actual: taskHours,
+      });
+    }
+    if (meta.raw_date_range && meta.raw_date_range !== scheduleTask.date_range) {
+      crossModuleFail('teaching_design_task_date_range_mismatch', `task date range mismatch at ${taskPointer}`, scheduling, {
+        plan_pointer: taskPointer,
+        design_pointer: taskPointer,
+        plan_title: scheduleTask.title,
+        design_title: designTaskTitle,
+        plan_date_range: scheduleTask.date_range,
+        design_date_range: meta.raw_date_range,
+        expected: scheduleTask.date_range,
+        actual: meta.raw_date_range,
+      });
+    }
+
+    const designStages = splitActivityBlocks(rawTask.activity_lines);
+    if (designStages.length !== scheduleTask.stages.length) {
+      crossModuleFail('teaching_design_stage_count_mismatch', `stage count mismatch at ${taskPointer}`, scheduling, {
+        plan_pointer: taskPointer,
+        design_pointer: taskPointer,
+        plan_title: scheduleTask.title,
+        design_title: designTaskTitle,
+        expected: scheduleTask.stages.length,
+        actual: designStages.length,
+      });
+    }
+
+    const mappedStages = [];
+    for (let stageIndex = 0; stageIndex < scheduleTask.stages.length; stageIndex += 1) {
+      const scheduleStage = scheduleTask.stages[stageIndex];
+      const designStage = designStages[stageIndex];
+      const stagePointer = `task:${taskIndex + 1}/stage:${stageIndex + 1}`;
+      const stageNorm = compareTitleOrFail('teaching_design_stage_title_mismatch', `stage title mismatch at ${stagePointer}`, scheduling, scheduleStage.title, designStage.title, {
+        plan_pointer: stagePointer,
+        design_pointer: stagePointer,
+        plan_title: scheduleStage.title,
+        design_title: designStage.title,
+        plan_hours: scheduleStage.total_hours,
+      });
+      if (designStage.activities.length !== scheduleStage.rows.length) {
+        crossModuleFail('teaching_design_activity_count_mismatch', `activity count mismatch at ${stagePointer}`, scheduling, {
+          plan_pointer: stagePointer,
+          design_pointer: stagePointer,
+          plan_title: scheduleStage.title,
+          design_title: designStage.title,
+          expected: scheduleStage.rows.length,
+          actual: designStage.activities.length,
+        });
+      }
+
+      const mappedActivities = [];
+      for (let rowIndex = 0; rowIndex < scheduleStage.rows.length; rowIndex += 1) {
+        const row = scheduleStage.rows[rowIndex];
+        const activity = designStage.activities[rowIndex];
+        const designPointer = `task:${taskIndex + 1}/stage:${stageIndex + 1}/activity:${rowIndex + 1}`;
+        const activityNorm = compareTitleOrFail('teaching_design_activity_title_mismatch', `activity title mismatch at ${designPointer}`, scheduling, row.title, activity.validation_title, {
+          plan_pointer: row.source,
+          design_pointer: designPointer,
+          plan_title: row.title,
+          design_title: activity.validation_title,
+          plan_hours: row.hours,
+          design_hours: parseHourLabel(activity.raw_hours),
+        });
+        const activityHours = parseHourLabel(activity.raw_hours);
+        if (activityHours !== null && activityHours !== row.hours) {
+          crossModuleFail('teaching_design_activity_hours_mismatch', `activity hours mismatch at ${designPointer}`, scheduling, {
+            plan_pointer: row.source,
+            design_pointer: designPointer,
+            plan_title: row.title,
+            design_title: activity.validation_title,
+            plan_hours: row.hours,
+            design_hours: activityHours,
+            expected: row.hours,
+            actual: activityHours,
+          });
+        }
+
+        const activityEvidence = {
+          schedule_row_source: row.source,
+          design_activity_source: designPointer,
+          schedule_title: row.title,
+          design_title: activity.validation_title,
+          display_title: activity.title,
+          schedule_normalized_title: activityNorm.planNormalized,
+          design_normalized_title: activityNorm.designNormalized,
+          schedule_hour: row.hours,
+          design_hour: activityHours,
+          expected_hour: row.hours,
+          actual_hour: activityHours,
+          derived_hours: row.hours,
+          hour_source: 'schedule.tasks[].stages[].rows[].hours',
+          schedule_date_range: row.date_range,
+          design_date_range: null,
+          expected_title: row.title,
+          actual_title: activity.validation_title,
+          validation: 'passed',
+        };
+        activitiesEvidence.push(activityEvidence);
+        mappedActivities.push({
+          ...activity,
+          source: designPointer,
+          schedule_row_source: row.source,
+          schedule_title: row.title,
+          normalized_title: activityNorm.designNormalized,
+          schedule_normalized_title: activityNorm.planNormalized,
+          derived_hours: row.hours,
+          hour_label: `${row.hours}H`,
+          date_range: row.date_range,
+          expected: { title: row.title, hours: row.hours, date_range: row.date_range },
+          actual: { title: activity.validation_title, hours: activityHours, date_range: null },
+          validation: 'passed',
+        });
+      }
+
+      const stageItem = {
+        schedule_source: scheduleStage.source,
+        design_source: stagePointer,
+        title: scheduleStage.title,
+        design_title: designStage.title,
+        raw_title: designStage.title,
+        normalized_title: stageNorm.designNormalized,
+        schedule_normalized_title: stageNorm.planNormalized,
+        row_count: scheduleStage.rows.length,
+        activity_count: designStage.activities.length,
+        derived_total_hours: scheduleStage.total_hours,
+        chapter: designStage.chapter,
+        unit: designStage.unit,
+        activities: mappedActivities,
+        validation: 'passed',
+      };
+      stagesEvidence.push(stageItem);
+      mappedStages.push(stageItem);
+    }
+
+    const taskItem = {
+      source: taskPointer,
+      schedule_source: scheduleTask.source,
+      title: scheduleTask.title,
+      raw_title: designTaskTitle,
+      normalized_title: taskNorm.designNormalized,
+      schedule_normalized_title: taskNorm.planNormalized,
+      task_total_hours: scheduleTask.total_hours,
+      derived_total_hours: scheduleTask.total_hours,
+      raw_hours: meta.raw_hours,
+      date_range: scheduleTask.date_range,
+      raw_date_range: meta.raw_date_range,
+      analysis_block: { source: `${taskPointer}/analysis`, raw: rawTask.analysis_lines.join('\n').trim(), sections: parseAnalysisSections(rawTask.analysis_lines) },
+      activity_block: { source: `${taskPointer}/activity`, heading: rawTask.activity_heading || '', stages: mappedStages },
+      evaluation_block: { source: `${taskPointer}/evaluation`, ...parseEvaluation(rawTask.evaluation_lines) },
+      validation: 'passed',
+    };
+    designTasks.push(taskItem);
+  }
+
+  return {
+    markdown: designText,
+    scheduling_source: 'shared_scheduling_model',
+    tasks: designTasks,
+    task_count: designTasks.length,
+    analysis_blocks: rawTasks.filter((task) => task.analysis_lines.length).length,
+    activity_blocks: rawTasks.filter((task) => task.activity_lines.length).length,
+    evaluation_blocks: rawTasks.filter((task) => task.evaluation_lines.length).length,
+    mapping: {
+      total_hours_source: 'teaching_plan_rows',
+      task_hours_source: 'schedule.tasks[].total_hours',
+      activity_hours_source: 'schedule.tasks[].stages[].rows[].hours',
+      date_range_source: 'shared_scheduling_model',
+      mapping_key: 'learning_task + learning_stage + activity_order',
+      title_normalization_role: 'diagnostic_equality_only_no_reordering',
+    },
+    evidence: {
+      stages: stagesEvidence,
+      activities: activitiesEvidence,
+    },
+  };
+}
+
 const markdown = fs.readFileSync(inputPath, 'utf8');
 const { frontmatter } = splitFrontmatter(markdown);
 const unified = parseFrontmatter(frontmatter);
@@ -499,10 +914,12 @@ const metadata = {
 };
 const moduleFrontmatter = buildModuleFrontmatter(metadata, scheduling);
 const totalHours = scheduling.total_hours;
-const activityHourValues = parseActivityHours(designText);
-const activityHours = activityHourValues.length ? activityHourValues.reduce((sum, value) => sum + value, 0) : null;
-if (activityHours !== null && activityHours !== totalHours) {
-  fail('teaching_design_hours_inconsistent', `teaching-plan total hours (${totalHours}) and teaching-design activity hours (${activityHours}) mismatch`, {
+const teachingDesign = buildTeachingDesignModel(designText, tasks, scheduling);
+const declaredActivityHourValues = parseActivityHours(designText);
+const activityHourValues = teachingDesign.evidence.activities.map((item) => item.derived_hours);
+const activityHours = activityHourValues.reduce((sum, value) => sum + value, 0);
+if (activityHours !== totalHours) {
+  fail('teaching_design_hours_inconsistent', `teaching-plan total hours (${totalHours}) and teaching-design mapped activity hours (${activityHours}) mismatch`, {
     teaching_plan_total_hours: totalHours,
     teaching_design_activity_hours: activityHours,
   });
@@ -564,7 +981,7 @@ const strictSumEvidence = {
 };
 
 const model = {
-  model_version: 'phase34.teaching-plan-formal-renderer.v1',
+  model_version: 'phase35.teaching-design-formal-renderer.v1',
   source_markdown: inputPath,
   metadata,
   modules: {
@@ -592,17 +1009,15 @@ const model = {
   },
   schedule: { tasks },
   teaching_design: {
-    markdown: designText,
-    scheduling_source: 'shared_scheduling_model',
-    analysis_blocks: (designText.match(/^## 学习任务分析$/gm) || []).length,
-    activity_blocks: (designText.match(/^## 教学活动设计/gm) || []).length,
+    ...teachingDesign,
     activity_hours: {
-      declared: activityHours !== null,
+      declared: declaredActivityHourValues.length > 0,
+      declared_values: declaredActivityHourValues,
       values: activityHourValues,
       total_hours: activityHours,
-      matches_teaching_plan: activityHours === null ? null : activityHours === totalHours,
+      matches_teaching_plan: activityHours === totalHours,
+      source: 'schedule.tasks[].stages[].rows[].hours',
     },
-    evaluation_blocks: (designText.match(/^## 学业评价$/gm) || []).length,
   },
   resources: {
     rows: [...designText.matchAll(/^### 五、学习资源\n([\s\S]*?)(?:\n## |\n### |$)/gm)].map((match) => match[1].trim()),
@@ -611,8 +1026,26 @@ const model = {
   validation: {
     final_ready: false,
     total_hours_source: 'teaching_plan_rows',
-    teaching_design_activity_hours_source: activityHours === null ? 'not_declared' : 'teaching_design_body',
-    hours_cross_check: activityHours === null ? 'phase33_not_declared' : 'passed',
+    teaching_design_activity_hours_source: 'schedule.tasks[].stages[].rows[].hours',
+    hours_cross_check: 'passed',
+    cross_module_evidence: {
+      total_hours_source: 'teaching_plan_rows',
+      task_hours_source: 'schedule.tasks[].total_hours',
+      activity_hours_source: 'schedule.tasks[].stages[].rows[].hours',
+      mapping_key: 'learning_task + learning_stage + activity_order',
+      tasks: teachingDesign.tasks.map((task) => ({
+        source: task.source,
+        schedule_source: task.schedule_source,
+        title: task.title,
+        normalized_title: task.normalized_title,
+        task_total_hours: task.task_total_hours,
+        derived_total_hours: task.derived_total_hours,
+        date_range: task.date_range,
+        validation: task.validation,
+      })),
+      stages: teachingDesign.evidence.stages,
+      activities: teachingDesign.evidence.activities,
+    },
     calendar_policy: scheduling.calendar.policy,
     shared_scheduling_model: true,
     strict_sum_evidence: strictSumEvidence,
