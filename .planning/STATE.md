@@ -1,32 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.14
-milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
-current_phase: 32
-status: completed
-stopped_at: Completed 32-01-PLAN.md
-last_updated: "2026-06-15T02:56:29.040Z"
-last_activity: 2026-06-15 — Milestone v1.14 completed and archived
+milestone: v1.15
+milestone_name: teaching-design-package 模块化渲染与旧格式回归
+status: planning
+last_updated: "2026-06-15T05:10:29.853Z"
+last_activity: 2026-06-15
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 32
-**Status:** v1.14 milestone complete
+**Current Phase:** Not started (next: Phase 33)
+**Status:** v1.15 planning
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone close)
+See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone start)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Planning next milestone
+**Current focus:** v1.15 teaching-design-package 模块化渲染与旧格式回归
 
 ## Workflow Preferences
 
@@ -50,9 +48,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone close)
 
 ## Next Up
 
-Start the next milestone when fresh requirements are ready:
+Discuss and plan the first v1.15 implementation phase:
 
-- `/gsd:new-milestone`
+- `/gsd:discuss-phase 33`
 
 ## Accumulated Context
 
@@ -80,6 +78,7 @@ Start the next milestone when fresh requirements are ready:
 - Phase 27 completed: `jiaoan-shicao` now computes `教学活动设计` activity-table widths by official-style chapter/pagebreak grouping, verifies `25.04cm` total width and narrow `课时分配`, and preserves the Phase 26 package date backfill through integrated package PDF verification.
 - Milestone v1.13 started: use the committed `skills/teaching-design-package/templates/teaching-design-package-full.md` Markdown template as the baseline, keep its teacher-facing structure unchanged, and plan renderer work around one Markdown, one Typst, and three PDF outputs.
 - Milestone v1.14 started: correct `teaching-design-package` so it is a standalone, teacher-facing unified skill with a final-render script boundary, clean 1+1+3 delivery outputs, hidden diagnostics, and derived scheduling validation.
+- Milestone v1.15 started: convert `teaching-design-package` from unified Markdown flat rendering to package-owned modular all-in-one rendering, with hidden module Markdown/Typst, migrated formal jiaoan rendering rules, one scheduling model, course-name-prefixed public outputs, and strict PDF merge semantics.
 
 ## Decisions
 
@@ -211,14 +210,14 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: Milestone v1.14 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-15 — Milestone v1.14 completed and archived
+Status: Defining requirements
+Last activity: 2026-06-15 — Milestone v1.15 started
 
 ## Operator Next Steps
 
-- Start the next milestone with `/gsd:new-milestone`
+- Run `/gsd:discuss-phase 33`
 
 ### Quick Tasks Completed
 
