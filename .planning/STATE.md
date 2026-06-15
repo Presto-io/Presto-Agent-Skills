@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.15
 milestone_name: teaching-design-package 模块化渲染与旧格式回归
 current_phase: 36
-status: executing
-stopped_at: Phase 36 complete
-last_updated: "2026-06-15T09:25:57.222Z"
-last_activity: 2026-06-15 -- Phase 36 execution complete
+status: audit_gaps_found
+stopped_at: Milestone v1.15 audit gaps found
+last_updated: "2026-06-15T09:36:40Z"
+last_activity: 2026-06-15 -- v1.15 milestone audit found Phase 33 verification traceability gap
 progress:
   total_phases: 4
   completed_phases: 4
@@ -19,7 +19,7 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 36
-**Status:** Phase complete
+**Status:** Milestone audit gaps found
 
 ## Project Reference
 
@@ -50,9 +50,10 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone start)
 
 ## Next Up
 
-Run milestone verification or audit for v1.15:
+Close the v1.15 audit blocker, then rerun milestone audit:
 
-- `/gsd:audit-milestone`
+- Phase 33 verification traceability gap: `33-VERIFICATION.md` lacks requirement-ID mapping for `TDPKG-MOD-01..07`, `TDPKG-YAML-01..04`, and `TDPKG-SCHED-01..05`.
+- Do not complete v1.15 until `/gsd:audit-milestone v1.15` passes.
 
 ## Accumulated Context
 
@@ -192,8 +193,8 @@ Run milestone verification or audit for v1.15:
 
 ## Last Session
 
-- **Completed:** Phase 36 public delivery, PDF merge, and standalone regression
-- **Stopped At:** Phase 36 complete
+- **Completed:** v1.15 milestone audit
+- **Stopped At:** Audit gaps found: Phase 33 verification traceability metadata is incomplete
 - **Resume File:** None
 
 ## Close Notes
@@ -227,12 +228,13 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 Phase: 36
 Plan: 36-PLAN.md
-Status: Complete
-Last activity: 2026-06-15 -- Phase 36 execution complete
+Status: Audit gaps found
+Last activity: 2026-06-15 -- v1.15 milestone audit found Phase 33 verification traceability gap
 
 ## Operator Next Steps
 
-- Run `/gsd:audit-milestone` for v1.15
+- Close the Phase 33 verification traceability blocker in a separate command-level task, then rerun `/gsd:audit-milestone v1.15`.
+- Do not run `/gsd:complete-milestone v1.15` until the audit passes.
 
 ### Quick Tasks Completed
 
