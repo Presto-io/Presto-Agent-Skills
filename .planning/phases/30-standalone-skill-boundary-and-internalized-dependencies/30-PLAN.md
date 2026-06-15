@@ -149,7 +149,13 @@ Create verification evidence by copying only `skills/teaching-design-package/` i
 Run these checks after implementation:
 
 ```bash
-rg 'jiaoan-jihua-full\.md|jiaoan-shicao-full\.md|internal/jiaoan|vendored|vendor' .planning/REQUIREMENTS.md .planning/ROADMAP.md .planning/STATE.md .planning/PROJECT.md .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies
+legacy_full_pattern="$(printf '%s|%s|%s|%s|%s' \
+  "$(printf '%s-%s-%s[.]%s' 'jiaoan' 'jihua' 'full' 'md')" \
+  "$(printf '%s-%s-%s[.]%s' 'jiaoan' 'shicao' 'full' 'md')" \
+  'internal/jiaoan' \
+  'vendored' \
+  'vendor')"
+rg "$legacy_full_pattern" .planning/REQUIREMENTS.md .planning/ROADMAP.md .planning/STATE.md .planning/PROJECT.md .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies
 
 bash -n skills/teaching-design-package/scripts/teaching-design-package.sh
 
