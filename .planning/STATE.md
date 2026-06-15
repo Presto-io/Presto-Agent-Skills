@@ -4,8 +4,8 @@ milestone: v1.15
 milestone_name: teaching-design-package 模块化渲染与旧格式回归
 current_phase: 35
 status: completed
-stopped_at: None
-last_updated: "2026-06-15T08:31:07.000Z"
+stopped_at: Phase 36 context gathered
+last_updated: "2026-06-15T08:48:06.792Z"
 last_activity: 2026-06-15 -- Phase 35 execution complete
 progress:
   total_phases: 4
@@ -189,8 +189,8 @@ Discuss and plan the next v1.15 implementation phase:
 ## Last Session
 
 - **Completed:** Phase 35 teaching-design formal renderer migration and cross-module validation
-- **Stopped At:** Completed 35-PLAN.md
-- **Resume File:** None
+- **Stopped At:** Phase 36 context gathered
+- **Resume File:** .planning/phases/36-public-delivery-pdf-merge-and-standalone-regression/36-CONTEXT.md
 
 ## Close Notes
 
