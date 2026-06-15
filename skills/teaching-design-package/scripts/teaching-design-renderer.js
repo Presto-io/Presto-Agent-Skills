@@ -32,8 +32,10 @@ function normalizeCourseAttribute(value) {
   return value;
 }
 
-function normalizeTotalHours(value) {
-  return String(value ?? '').replace(/[Hh]$/, '');
+function hourLabel(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return '';
+  return /[Hh]$/.test(text) ? text.replace(/h$/, 'H') : `${text}H`;
 }
 
 function normalizeUseTime(value) {
@@ -177,7 +179,7 @@ function emitLandscapePage(lines) {
 
 function emitCover(lines) {
   const metadata = model.metadata;
-  const totalHours = normalizeTotalHours(model.derived.total_hours_label);
+  const totalHours = hourLabel(model.derived.total_hours_label);
   lines.push(
     '#v(3.20cm)',
     '#align(center)[#text(font: FONT_SONG, size: 22pt, weight: "bold")[教学设计方案（二）]]',
@@ -212,10 +214,20 @@ function emitCover(lines) {
   for (const [label, value] of rows) {
     lines.push(
       `      // cover-label: ${label}`,
-      `      table.cell(stroke: (left: 0pt, right: 0pt, top: 0pt, bottom: 0pt))[#box(width: cover-label-width, height: 1.50cm, inset: (bottom: 0.16cm))[#align(bottom)[#text(font: FONT_SONG, size: zh(4), weight: "bold")[${content(label)}：]]]], table.cell(stroke: (left: 0pt, right: 0pt, top: 0pt, bottom: 0pt))[#box(width: cover-value-width, height: 1.50cm, stroke: (bottom: 0.5pt), inset: (bottom: 0.16cm))[#align(center + bottom)[#text(font: FONT_SONG, size: zh(4), weight: "bold")[${content(value)}]]]],`,
+      `      ${coverLabelCell(label)}, table.cell(stroke: (left: 0pt, right: 0pt, top: 0pt, bottom: 0pt))[#box(width: cover-value-width, height: 1.50cm, stroke: (bottom: 0.5pt), inset: (bottom: 0.16cm))[#align(center + bottom)[#text(font: FONT_SONG, size: zh(4), weight: "bold")[${content(value)}]]]],`,
     );
   }
   lines.push('    )', '  ]', '}', '', '#pagebreak()', '');
+}
+
+function coverLabelCell(label) {
+  const chars = Array.from(`${label}：`);
+  const columns = Array(chars.length * 2 - 1).fill(0).map((_, index) => (index % 2 === 0 ? 'auto' : '1fr')).join(', ');
+  const cells = chars.flatMap((char, index) => {
+    const text = `[#text(font: FONT_SONG, size: zh(4), weight: "bold")[${content(char)}]]`;
+    return index === chars.length - 1 ? [text] : [text, '[]'];
+  }).join(', ');
+  return `table.cell(stroke: (left: 0pt, right: 0pt, top: 0pt, bottom: 0pt))[#box(width: cover-label-width, height: 1.50cm, inset: (bottom: 0.16cm))[#align(bottom)[#box(width: cover-label-width)[#grid(columns: (${columns}), column-gutter: 0pt, ${cells})]]]]`;
 }
 
 function emitTaskAnalysis(lines, task, index) {
@@ -232,7 +244,7 @@ function emitTaskAnalysis(lines, task, index) {
     '    stroke: 0.5pt,',
     '    align: center + horizon,',
     `    [学习任务], table.cell(colspan: 5)[${content(task.title)}],`,
-    `    [课时], table.cell(colspan: 2)[${task.derived_total_hours}], [起止日期], table.cell(colspan: 2)[${content(task.date_range)}],`,
+    `    [课时], table.cell(colspan: 2)[${hourLabel(task.derived_total_hours)}], [起止日期], table.cell(colspan: 2)[${content(task.date_range)}],`,
     '    table.cell(colspan: 6)[*一、学习任务描述*],',
     `    table.cell(colspan: 6, align: left + horizon)[${paragraph(sections.description)}],`,
     '    table.cell(colspan: 6)[*二、学习目标*],',
