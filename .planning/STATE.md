@@ -3,30 +3,30 @@ gsd_state_version: 1.0
 milestone: v1.14
 milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
 current_phase: 32
-status: ready-to-execute
-stopped_at: Planned 32-01-PLAN.md
-last_updated: "2026-06-15T02:32:00.000Z"
-last_activity: 2026-06-15 -- Phase 32 planned clean delivery and scheduling regression gate
+status: verifying
+stopped_at: Completed 32-01-PLAN.md
+last_updated: "2026-06-15T02:31:44.643Z"
+last_activity: 2026-06-15
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 3
-  completed_plans: 2
-  percent: 67
+  completed_plans: 3
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 32
-**Status:** Phase 32 planned; ready for Phase 32 execution
+**Status:** Phase 32 execute complete — ready for verification
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initialization)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.14 is initialized: `teaching-design-package` must become a standalone teacher-facing unified two-in-one skill with its own data model, own Markdown contract, own Typst/PDF rendering path, a clean 1+1+3 delivery contract, and hidden/internal diagnostics boundary.
+**Current focus:** Phase 32 — clean-1-1-3-delivery-and-scheduling-regression-gate
 
 ## Workflow Preferences
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initializa
 
 ## Next Up
 
-Execute the next v1.14 workflow when ready:
+Verify the v1.14 Phase 32 execution when ready:
 
-- `/gsd:execute-phase 32`
+- `/gsd:verify-work 32`
 
 ## Accumulated Context
 
@@ -144,6 +144,7 @@ Execute the next v1.14 workflow when ready:
 - [Phase 30]: Standalone package-owned boundary is implemented. — `teaching-design-package` now runs from a copied-only skill folder through unified Markdown, package-owned data model, package-owned Typst, and honest PDF status without sibling skill calls.
 - [Phase 31]: Teacher-facing unified Markdown workflow is implemented. — The canonical skill entry now starts from source materials, targeted clarification, one editable full Markdown, teacher review/editing, finalized Markdown, then package script validation/rendering.
 - [Phase 32]: Clean 1+1+3 delivery and scheduling regression gate is planned. — The plan requires a public delivery directory containing only one unified Markdown, one unified Typst, and three PDFs; hidden work/debug/failure diagnostics; derived hours/date/semester validation; no old precise handoff filenames; and standalone-copy verification with only `teaching-design-package` installed.
+- [Phase 32]: Clean 1+1+3 delivery and scheduling regression gate is implemented. — Successful delivery roots contain only `teaching-design-package-full.md`, `teaching-design-package.typ`, `teaching-design-package.pdf`, `teaching-plan.pdf`, and `teaching-design.pdf`; diagnostics/status/model/logs/split Typst stay hidden; derived scheduling and standalone-copy verification passed.
 
 ## Performance Metrics
 
@@ -178,7 +179,7 @@ Execute the next v1.14 workflow when ready:
 ## Last Session
 
 - **Completed:** Phase 29 PDF comparison and standalone regression
-- **Stopped At:** Completed 31-01-PLAN.md
+- **Stopped At:** Completed 32-01-PLAN.md
 - **Resume File:** None
 
 ## Close Notes
@@ -200,14 +201,14 @@ Execute the next v1.14 workflow when ready:
 
 ## Current Position
 
-Phase: 32 - Clean 1+1+3 Delivery and Scheduling Regression Gate
-Plan: 1/1 planned
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 32 planned clean delivery and scheduling regression gate
+Phase: 32 (clean-1-1-3-delivery-and-scheduling-regression-gate) — EXECUTE COMPLETE
+Plan: 1 of 1
+Status: Phase 32 execute complete — ready for verification
+Last activity: 2026-06-15
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 32` when ready to implement clean delivery and scheduling regression enforcement.
+- Run `/gsd:verify-work 32` when ready to independently verify clean delivery and scheduling regression enforcement.
 
 ### Quick Tasks Completed
 
