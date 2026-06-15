@@ -31,9 +31,7 @@ function compact(values) {
   for (const value of values) {
     if (!unique.includes(value)) unique.push(value);
   }
-  if (unique.length === 0) return '';
-  if (unique.length === 1) return String(unique[0]);
-  return `${unique[0]} ${unique[unique.length - 1]}`;
+  return unique.map((value) => String(value)).join(' ');
 }
 
 function weekCell(row) {
