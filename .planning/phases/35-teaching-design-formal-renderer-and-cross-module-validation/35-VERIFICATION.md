@@ -3,7 +3,7 @@ phase: 35
 plan: 01
 status: passed
 verified_at: "2026-06-15T08:34:00Z"
-commits: [6feef9d]
+commits: [6feef9d, 87d4b05, 61f18f2]
 requirements: [TDPKG-LEGACY-02, TDPKG-VAL-02, TDPKG-VAL-03, TDPKG-VAL-04]
 ---
 

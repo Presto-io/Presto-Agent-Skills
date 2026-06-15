@@ -68,9 +68,9 @@ Success criteria:
 
 **Goal:** Migrate the accepted `jiaoan-shicao` teaching-design format rules into package-owned internals and enforce strict task/activity/hour/date consistency against the teaching-plan module.
 **Depends on:** Phase 34
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete
 **Requirements:** TDPKG-LEGACY-02, TDPKG-VAL-02, TDPKG-VAL-03, TDPKG-VAL-04
-**Status:** Pending
+**Status:** Complete
 
 Success criteria:
 
@@ -137,11 +137,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 34 is complete. The package-owned formal `授课进度计划表` renderer, hidden `teaching-plan.typ`, real `teaching-plan.pdf`, strict row-hour evidence, legacy fixture equivalence, standalone-copy check, and legacy skill preservation are ready for Phase 35 teaching-design renderer migration.
+Phase 35 is complete. The package-owned formal `教学设计方案` renderer, hidden `teaching-design.typ`, real `teaching-design.pdf`, strict task/stage/activity/hour/date validation, hidden mismatch diagnostics, standalone-copy check, and legacy `jiaoan-shicao` preservation are ready for Phase 36 public delivery and merge semantics.
 
 ## Next Step
 
-Run `/gsd:discuss-phase 35` to prepare the formal `教学设计方案` renderer migration and cross-module validation.
+Run `/gsd:discuss-phase 36` to prepare course-name-prefixed public delivery, final PDF merge semantics, and standalone regression.
 
 ---
 *Roadmap updated: 2026-06-15 after Phase 34 execution*
