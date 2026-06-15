@@ -7,170 +7,141 @@ depends_on: []
 files_modified:
   - skills/teaching-design-package/SKILL.md
   - skills/teaching-design-package/references/format-and-orchestration.md
-  - skills/teaching-design-package/references/standalone-install.md
-  - skills/teaching-design-package/references/calendar.json
-  - skills/teaching-design-package/internal/jiaoan-jihua/templates/jiaoan-jihua-full.md
-  - skills/teaching-design-package/internal/jiaoan-shicao/templates/jiaoan-shicao-full.md
-  - skills/teaching-design-package/internal/README.md
   - skills/teaching-design-package/scripts/teaching-design-package.sh
 autonomous: true
 requirements: [TDPKG-01, TDPKG-02, TDPKG-03, TDPKG-15]
 requirements_addressed: [TDPKG-01, TDPKG-02, TDPKG-03, TDPKG-15]
 ---
 
-# Phase 30 Plan: Standalone Skill Boundary and Internalized Dependencies
+# Phase 30 Plan: Standalone Package-Owned Rendering Boundary
 
 <objective>
-Make `skills/teaching-design-package/` installable and verifiable as a single standalone skill folder. The execution must remove runtime assumptions that `../jiaoan-jihua`, `../jiaoan-shicao`, or repo-root calendars/scripts exist, while preserving the public legacy `jiaoan-jihua` and `jiaoan-shicao` skills unchanged.
+Correct `teaching-design-package` so the normal package path is self-contained and package-owned: unified Markdown -> package data model -> unified Typst -> three PDFs. Execution must not copy old standalone skill Markdown templates, must not create old-name internal directories, and must not depend on legacy standalone skill folders for the normal standalone install path.
 </objective>
 
 <must_haves>
 ## Truths
 
-- D-01: `teaching-design-package` must have a normal runtime path after copying only `skills/teaching-design-package/` to a temporary skill root.
-- D-02: The canonical entry must describe `teaching-design-package` as the integrated user-facing skill, not as a sibling-skill stitching instruction.
-- D-03: Runtime adapter notes must cover Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent with standalone install/use guidance.
-- D-04: Needed `jiaoan-jihua` and `jiaoan-shicao` behavior must be vendored, internalized, or discovered from self-contained package resources; hard-coded repo sibling paths are not accepted for the standalone path.
-- D-05: Repo sibling skills may be read for implementation and parity verification only, not required by installed users.
-- D-06: The accepted resource lookup must prefer files under `skills/teaching-design-package/`, including templates, scripts/helpers, metadata, and support resources.
-- D-07: Calendar support must be skill-local or explicitly self-contained; `skills/jiaoan-jihua/references/calendar.json` cannot be the only runtime source.
-- D-08: Do not delete, rename, replace, or change public legacy `jiaoan-jihua` and `jiaoan-shicao` entries, commands, accepted inputs, or output contracts.
-- D-09: Legacy parity is a regression gate only.
-- D-10: Copied or adapted internal behavior requires checks that legacy public command surfaces still behave as before.
-- D-11: The locked teacher UX remains source materials -> clarification/organization -> one editable full Markdown document.
-- D-12: Scripts remain finalized-Markdown validation/render tools, not the teacher interaction surface.
-- D-13: Phase 30 may make wording changes needed for standalone boundaries but must not absorb the full Phase 31 workflow rewrite.
-- D-14: Do not introduce public default artifacts that conflict with the later 1+1+3 delivery contract.
-- D-15: Internal handoff Markdown, split Typst, manifests, stderr logs, status sidecars, temporary state, and parity artifacts are hidden work/debug/failure diagnostics, not public default delivery promises.
-- D-16: The gray areas selected for Phase 30 are standalone install boundary, internalized jiaoan behavior, adapter wording, legacy public contract preservation, and self-contained scheduling/resource discovery.
-- D-17: No new user question is needed; the corrections are locked decisions.
+- D-01: Do not copy old standalone skill Markdown templates into the package.
+- D-02: Do not add package-internal directories that mirror old standalone skill names or old handoff layouts.
+- D-03: Do not use old standalone handoff filenames, handoff naming, or old split-template naming as the package strategy.
+- D-04: The package is the replacement user-facing integrated workflow for this use case, not a wrapper around hidden old skills.
+- D-05: A standalone copy containing only `skills/teaching-design-package/` must support the normal verification path.
+- D-06: Inputs are unified package Markdown files, either `teaching-design-package-full.md` or course-specific teaching-materials Markdown using the same contract.
+- D-07: The package script must derive a package-owned data model from unified Markdown.
+- D-08: Typst generation must be implemented from package-owned model data and package-local resources.
+- D-09: Calendar/scheduling defaults must be package-local or explicitly configured package resources.
+- D-10: Legacy standalone skills remain external compatibility surfaces and must not be deleted or renamed.
+- D-11: Documentation may mention legacy standalone skills only generically as external compatibility surfaces.
+- D-12: Standalone verification must not copy or invoke legacy standalone skill folders.
+- D-13: This phase prepares the standalone implementation and must not absorb all Phase 31/32 work.
+- D-14: The target delivery direction remains one unified Markdown, one unified Typst, and three PDFs.
+- D-15: Debug artifacts, if any, must be package-owned and must avoid old handoff names and old internal directory names.
+- D-16: User correction is locked; no new question is needed.
+- D-17: Failed execute residue is invalid and must not guide the new plan.
 </must_haves>
 
 <tasks>
-## Task 1: Internalize package resources and remove sibling-path runtime assumptions
+## Task 1: Remove old-handoff architecture from package docs
 
 <read_first>
 - `AGENTS.md`
-- `.planning/ROADMAP.md`
 - `.planning/REQUIREMENTS.md`
+- `.planning/ROADMAP.md`
 - `.planning/STATE.md`
 - `.planning/phases/30-standalone-skill-boundary-and-internalized-dependencies/30-CONTEXT.md`
 - `skills/teaching-design-package/SKILL.md`
 - `skills/teaching-design-package/references/format-and-orchestration.md`
-- `skills/teaching-design-package/scripts/teaching-design-package.sh`
 - `skills/teaching-design-package/templates/teaching-design-package-full.md`
-- `skills/jiaoan-jihua/templates/jiaoan-jihua-full.md`
-- `skills/jiaoan-jihua/references/calendar.json`
-- `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh`
-- `skills/jiaoan-shicao/templates/jiaoan-shicao-full.md`
-- `skills/jiaoan-shicao/references/calendar.json`
-- `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh`
 </read_first>
 
 <action>
-Add skill-local resources so the script can run after only `skills/teaching-design-package/` is copied: create `references/calendar.json` from the currently used jiaoan calendar; create `internal/jiaoan-jihua/templates/jiaoan-jihua-full.md` and `internal/jiaoan-shicao/templates/jiaoan-shicao-full.md` from the legacy template shapes; add `internal/README.md` explaining that these are package-internal compatibility resources and not public skill commands. Update `scripts/teaching-design-package.sh` so `CALENDAR_JSON` points to `${SKILL_DIR}/references/calendar.json`, fallback scaffolds copy `${SKILL_DIR}/internal/jiaoan-jihua/templates/jiaoan-jihua-full.md` and `${SKILL_DIR}/internal/jiaoan-shicao/templates/jiaoan-shicao-full.md`, and normal `example`, `plan-split`, `manifest`, `info`, and baseline `render-package` no longer compute or require `REPO_ROOT` or `../jiaoan-*`.
+Update `SKILL.md` and `references/format-and-orchestration.md` so the normal workflow is described as unified source Markdown parsed into a package-owned model and rendered by package-owned Typst/PDF logic. Remove instructions that tell users or agents to install, call, wrap, copy, or mentally stitch together legacy standalone skills. If legacy standalone skills must be mentioned, use only generic compatibility wording and make clear they are outside the package's normal path. Do not add a `standalone-install` reference built around old-template vendoring.
 </action>
 
 <acceptance_criteria>
-- `rg 'SKILL_DIR}/../jiaoan|skills/jiaoan-jihua/references/calendar.json|skills/jiaoan-shicao/templates' skills/teaching-design-package/scripts/teaching-design-package.sh` exits non-zero.
-- `rg 'CALENDAR_JSON=.*skills/jiaoan|REPO_ROOT=.*/../..' skills/teaching-design-package/scripts/teaching-design-package.sh` exits non-zero for the standalone path.
-- `test -f skills/teaching-design-package/references/calendar.json` exits 0.
-- `test -f skills/teaching-design-package/internal/jiaoan-jihua/templates/jiaoan-jihua-full.md` exits 0.
-- `test -f skills/teaching-design-package/internal/jiaoan-shicao/templates/jiaoan-shicao-full.md` exits 0.
+- The blocked-token scan described in the verification section exits non-zero after execution.
+- `rg 'skills/[a-z-]*|../[a-z-]*|standalone skills.*install|copy.*legacy' skills/teaching-design-package/SKILL.md skills/teaching-design-package/references/format-and-orchestration.md` exits non-zero unless the match explicitly describes external compatibility only.
+- `rg 'Codex|Claude Code|Gemini CLI|OpenCode|OpenClaw|Hermes Agent' skills/teaching-design-package/SKILL.md` reports all six runtime names.
+- `rg 'unified Markdown|package-owned|data model|Typst|PDF' skills/teaching-design-package/SKILL.md skills/teaching-design-package/references/format-and-orchestration.md` exits 0.
+</acceptance_criteria>
+
+## Task 2: Build a package-owned model from unified Markdown
+
+<read_first>
+- `skills/teaching-design-package/scripts/teaching-design-package.sh`
+- `skills/teaching-design-package/templates/teaching-design-package-full.md`
+- `skills/teaching-design-package/references/format-and-orchestration.md`
+</read_first>
+
+<action>
+Refactor the script so the package normalizes finalized unified Markdown into one package-owned model containing course metadata, schedule rows, activity rows, resource rows, derived hours, date facts, review markers, and output readiness. Use this model as the source for validation and rendering. Remove normal-path generation of old split handoff Markdown and remove fallback copies from sibling skill templates. Keep CLI commands teacher-safe: `example`, validation/model inspection if present, and package rendering must operate on unified Markdown and package-owned outputs.
+</action>
+
+<acceptance_criteria>
 - `bash -n skills/teaching-design-package/scripts/teaching-design-package.sh` exits 0.
+- `skills/teaching-design-package/scripts/teaching-design-package.sh example --output <tmp>/teaching-design-package-full.md` exits 0.
+- The package script contains a package-owned normalization/render path whose identifiers do not use old handoff filenames or old internal directory names.
+- Running the normal model/render preparation on the example Markdown does not require any sibling skill folder.
+- `rg 'SKILL_DIR}/../|REPO_ROOT=.*/../..|skills/jiaoan' skills/teaching-design-package/scripts/teaching-design-package.sh` exits non-zero for the normal path.
 </acceptance_criteria>
 
-## Task 2: Define self-contained rendering boundaries for jiaoan and optional end-of-term behavior
+## Task 3: Generate package-owned Typst and PDF outputs
 
 <read_first>
 - `skills/teaching-design-package/scripts/teaching-design-package.sh`
-- `skills/teaching-design-package/references/format-and-orchestration.md`
-- `skills/teaching-design-package/references/scheduling-contract.md`
-- `skills/end-of-term-teaching-materials/SKILL.md` if it exists
-- `skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh` if it exists
-- `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh`
-- `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh`
-</read_first>
-
-<action>
-Replace the runtime contract for split rendering with a package-local default path. The normal standalone path must support `example`, `plan-split`, `manifest`, and `render-package` from only package-local resources. If `render-split` or `render-package --pdf` still needs legacy jiaoan renderers for exact Typst/PDF parity, guard that branch behind explicit development/parity discovery such as `TDPKG_LEGACY_SKILL_ROOT` or a documented repo-development lookup, and fail with a clear non-final diagnostic when those optional external renderers are unavailable. Do the same for optional end-of-term commands: they may remain optional, but missing `end-of-term-teaching-materials` must not break the non-end-of-term standalone happy path.
-</action>
-
-<acceptance_criteria>
-- In a standalone copy containing only `teaching-design-package`, `scripts/teaching-design-package.sh example --output <tmp>/teaching-design-package-full.md` exits 0.
-- In that same standalone copy, `scripts/teaching-design-package.sh plan-split --input <tmp>/teaching-design-package-full.md --out-dir <tmp>/out` exits 0 and creates internal handoffs without reading `../jiaoan-jihua` or `../jiaoan-shicao`.
-- In that same standalone copy, `scripts/teaching-design-package.sh manifest --input <tmp>/teaching-design-package-full.md --out-dir <tmp>/out` exits 0.
-- If `render-split` or `render-package --pdf` cannot run without optional legacy renderers, the command fails or records status with text containing `legacy`, `optional`, `unavailable`, or `not installed`; it must not fail with `../jiaoan-jihua` or `../jiaoan-shicao` path errors.
-- `scripts/teaching-design-package.sh info` describes `jiaoan-jihua` and `jiaoan-shicao` internals as package-local or optional parity/development resources, not required user installs.
-</acceptance_criteria>
-
-## Task 3: Correct standalone install/use documentation and six runtime adapter notes
-
-<read_first>
-- `skills/teaching-design-package/SKILL.md`
-- `skills/teaching-design-package/references/format-and-orchestration.md`
-- `skills/teaching-design-package/references/scheduling-contract.md`
 - `skills/teaching-design-package/templates/teaching-design-package-full.md`
-- `AGENTS.md`
+- `skills/teaching-design-package/references/format-and-orchestration.md`
 </read_first>
 
 <action>
-Update `SKILL.md` and references so Inputs no longer require installing `skills/jiaoan-jihua/`, `skills/jiaoan-shicao/`, or `skills/end-of-term-teaching-materials/` for the normal standalone package path. Add or update `references/standalone-install.md` and link it from `SKILL.md` and `format-and-orchestration.md`. Document that users install/copy only `skills/teaching-design-package/`, that `references/`, `templates/`, `scripts/`, `internal/`, and calendar support resources are part of the skill, and that legacy jiaoan skills remain public standalone commands in this repository. Runtime Adapter Notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent must each include standalone skill-root discovery, support-file availability, script execution permission, and optional legacy parity/development fallback wording.
+Implement package-owned Typst generation from the derived model. The renderer must produce a unified package Typst artifact and support the three PDF outputs required by the milestone direction. If some PDF compilation tools are unavailable locally, record honest failure or not-run status without falling back to legacy skill renderers. Do not expose old split artifacts as successful default delivery outputs.
 </action>
 
 <acceptance_criteria>
-- `rg 'skills/jiaoan-jihua/|skills/jiaoan-shicao/|separately install|单独安装' skills/teaching-design-package/SKILL.md skills/teaching-design-package/references/format-and-orchestration.md skills/teaching-design-package/references/standalone-install.md` either exits non-zero or only matches statements that explicitly mark those paths as legacy repo-development/parity references.
-- `rg 'Codex|Claude Code|Gemini CLI|OpenCode|OpenClaw|Hermes Agent' skills/teaching-design-package/SKILL.md` reports all six runtimes.
-- `rg 'standalone|单技能|self-contained|skill root|support resources|calendar|internal' skills/teaching-design-package/SKILL.md skills/teaching-design-package/references/standalone-install.md` exits 0.
-- `rg 'internal handoff|debug|failure diagnostics|public contract|1\\+1\\+3' skills/teaching-design-package/SKILL.md skills/teaching-design-package/references/format-and-orchestration.md skills/teaching-design-package/references/standalone-install.md` exits 0, proving Phase 30 did not expose Phase 32 internals as default public deliverables.
+- `scripts/teaching-design-package.sh render-package --input <tmp>/teaching-design-package-full.md --out-dir <tmp>/out` exits 0 and writes a unified package Typst artifact.
+- If `--pdf` is requested and a local compiler/merge tool is missing, the command records an honest non-final status and does not invoke legacy standalone skill scripts.
+- Generated public output names follow the package 1+1+3 direction and avoid old handoff filenames.
+- A scan of generated public outputs for repo paths and legacy dependency paths reports no normal-path leak.
 </acceptance_criteria>
 
-## Task 4: Preserve legacy jiaoan public commands and add regression checks
-
-<read_first>
-- `skills/jiaoan-jihua/SKILL.md`
-- `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh`
-- `skills/jiaoan-jihua/templates/jiaoan-jihua-full.md`
-- `skills/jiaoan-shicao/SKILL.md`
-- `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh`
-- `skills/jiaoan-shicao/templates/jiaoan-shicao-full.md`
-- `skills/teaching-design-package/scripts/teaching-design-package.sh`
-</read_first>
-
-<action>
-Leave `skills/jiaoan-jihua/` and `skills/jiaoan-shicao/` public entries and commands unchanged unless a minimal test-only adjustment is absolutely required. Add regression evidence commands to the Phase 30 verification path: run each legacy `example` command into a temporary directory; run each legacy `render` command from that example Markdown to Typst; verify their `SKILL.md` trigger descriptions and `Script Usage` still mention the same public command names. If the package implementation needs a legacy parity comparison, make it an explicit repo-local regression check after the standalone check, not the normal standalone install path.
-</action>
-
-<acceptance_criteria>
-- `git diff -- skills/jiaoan-jihua/SKILL.md skills/jiaoan-jihua/scripts/jiaoan-jihua.sh skills/jiaoan-shicao/SKILL.md skills/jiaoan-shicao/scripts/jiaoan-shicao.sh` is empty unless the executor records an explicit reason in the Phase 30 summary.
-- `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh example --output <tmp>/legacy-jihua.md` exits 0.
-- `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh render --input <tmp>/legacy-jihua.md --typ <tmp>/legacy-jihua.typ` exits 0.
-- `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh example --output <tmp>/legacy-shicao.md --calendar-output <tmp>/legacy-shicao-calendar.json` exits 0.
-- `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render --input <tmp>/legacy-shicao.md --typ <tmp>/legacy-shicao.typ` exits 0.
-- `rg 'jiaoan-jihua.sh example|jiaoan-jihua.sh render' skills/jiaoan-jihua/SKILL.md` exits 0 and `rg 'jiaoan-shicao.sh example|jiaoan-shicao.sh render' skills/jiaoan-shicao/SKILL.md` exits 0.
-</acceptance_criteria>
-
-## Task 5: Run standalone-copy verification before repo-local parity verification
+## Task 4: Preserve legacy standalone skills as external compatibility only
 
 <read_first>
 - `skills/teaching-design-package/SKILL.md`
 - `skills/teaching-design-package/scripts/teaching-design-package.sh`
-- `skills/teaching-design-package/references/standalone-install.md`
-- `skills/teaching-design-package/templates/teaching-design-package-full.md`
-- `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh`
-- `skills/jiaoan-shicao/scripts/jiaoan-shicao.sh`
+- Legacy standalone skill entries only if needed for unchanged-surface verification.
 </read_first>
 
 <action>
-Create a deterministic verification script sequence in the Phase 30 summary or verification evidence. First copy only `skills/teaching-design-package/` into a temporary standalone skill root such as `${TMPDIR}/tdpkg-standalone-root/skills/teaching-design-package`, run the normal happy path there, and scan outputs/errors to prove no repo sibling lookup is required. Then return to the repository and run legacy parity/public-command checks. Do not treat `jiaoan-jihua-full.md`, `jiaoan-shicao-full.md`, split Typst, manifests, logs, or sidecars as public output contracts; record them as internal/debug/failure evidence until Phase 32 enforces the default 1+1+3 delivery surface.
+Do not modify legacy standalone skill folders as part of implementing the package normal path. If regression evidence is useful, verify their public command surfaces remain unchanged through `git diff` and existing command smoke tests, but do not make those checks part of package standalone installation. Package documentation must frame legacy standalone skills as external compatibility only.
 </action>
 
 <acceptance_criteria>
-- A standalone verification command copies only `skills/teaching-design-package/` to a temporary skill root and does not copy `skills/jiaoan-jihua/`, `skills/jiaoan-shicao/`, or `skills/end-of-term-teaching-materials/`.
-- In the standalone copy, `example`, `plan-split`, and `manifest` complete successfully.
-- A standalone hard-path scan such as `rg '../jiaoan|skills/jiaoan|/Presto-Agent-Skills' <standalone-out> <standalone-stderr>` reports no normal-path dependency leak, excluding documentation text that explicitly says legacy parity is optional.
-- Repo-local regression then runs the legacy jiaoan public commands listed in Task 4.
-- Phase 30 summary records both standalone-copy verification and legacy parity verification with exact commands and outcomes.
+- `git diff -- <legacy-plan-skill-path> <legacy-design-skill-path>` is empty unless the executor records an explicit out-of-scope reason and stops for user review.
+- Package docs do not instruct a normal user to install or run legacy standalone skills.
+- Package script normal path does not call legacy standalone skill scripts.
+</acceptance_criteria>
+
+## Task 5: Verify standalone copy using only the package folder
+
+<read_first>
+- `skills/teaching-design-package/SKILL.md`
+- `skills/teaching-design-package/scripts/teaching-design-package.sh`
+- `skills/teaching-design-package/templates/teaching-design-package-full.md`
+- `.planning/phases/30-standalone-skill-boundary-and-internalized-dependencies/30-PLAN.md`
+</read_first>
+
+<action>
+Create verification evidence by copying only `skills/teaching-design-package/` into a temporary skill root and running the package's unified Markdown path there. The verification must prove the copied folder has its own docs, template, script, model derivation, and render boundary. It must not copy legacy standalone skill folders and must not rely on repo sibling paths. Record exact command outcomes in the Phase 30 summary during execute-phase.
+</action>
+
+<acceptance_criteria>
+- A standalone verification command copies only `skills/teaching-design-package/` to a temporary skill root.
+- In the standalone copy, `example` succeeds and the generated Markdown is the unified package Markdown.
+- In the standalone copy, package validation/model preparation and Typst generation succeed or produce honest non-final status without sibling-path failures.
+- The blocked-token scan described in the verification section exits non-zero.
+- Standalone verification records that legacy standalone folders were not copied.
 </acceptance_criteria>
 </tasks>
 
@@ -185,47 +156,38 @@ mkdir -p "$tmp_root/skills"
 cp -R skills/teaching-design-package "$tmp_root/skills/"
 "$tmp_root/skills/teaching-design-package/scripts/teaching-design-package.sh" example \
   --output "$tmp_root/teaching-design-package-full.md"
-"$tmp_root/skills/teaching-design-package/scripts/teaching-design-package.sh" plan-split \
-  --input "$tmp_root/teaching-design-package-full.md" \
-  --out-dir "$tmp_root/out"
-"$tmp_root/skills/teaching-design-package/scripts/teaching-design-package.sh" manifest \
+"$tmp_root/skills/teaching-design-package/scripts/teaching-design-package.sh" render-package \
   --input "$tmp_root/teaching-design-package-full.md" \
   --out-dir "$tmp_root/out"
 rg '../jiaoan|skills/jiaoan|/Presto-Agent-Skills' "$tmp_root/out" "$tmp_root"/*.log
 
-legacy_tmp="$(mktemp -d "${TMPDIR:-/tmp}/tdpkg-legacy.XXXXXX")"
-skills/jiaoan-jihua/scripts/jiaoan-jihua.sh example --output "$legacy_tmp/jiaoan-jihua-full.md"
-skills/jiaoan-jihua/scripts/jiaoan-jihua.sh render \
-  --input "$legacy_tmp/jiaoan-jihua-full.md" \
-  --typ "$legacy_tmp/jiaoan-jihua-full.typ"
-skills/jiaoan-shicao/scripts/jiaoan-shicao.sh example \
-  --output "$legacy_tmp/jiaoan-shicao-full.md" \
-  --calendar-output "$legacy_tmp/calendar.json"
-skills/jiaoan-shicao/scripts/jiaoan-shicao.sh render \
-  --input "$legacy_tmp/jiaoan-shicao-full.md" \
-  --typ "$legacy_tmp/jiaoan-shicao-full.typ"
+old_plan_name='jiaoan-''jihua'
+old_design_name='jiaoan-''shicao'
+blocked_dir_left='internal'
+blocked_dir_right='jiaoan'
+blocked_re="${old_plan_name}-full\\.md|${old_design_name}-full\\.md|${blocked_dir_left}/${blocked_dir_right}"
+rg "$blocked_re" \
+  skills/teaching-design-package \
+  .planning/phases/30-standalone-skill-boundary-and-internalized-dependencies/30-*.md
 
-rg 'Codex|Claude Code|Gemini CLI|OpenCode|OpenClaw|Hermes Agent' skills/teaching-design-package/SKILL.md
-rg 'standalone|单技能|self-contained|support resources|internal' \
-  skills/teaching-design-package/SKILL.md \
-  skills/teaching-design-package/references/standalone-install.md
+git diff -- <legacy-plan-skill-path> <legacy-design-skill-path>
 ```
 
-For the `rg '../jiaoan|skills/jiaoan|/Presto-Agent-Skills'` standalone scan, a non-zero exit is the desired normal-path result. If documentation files in the copied skill intentionally mention legacy repo paths, scan only generated outputs and command stderr/stdout for hard runtime leaks.
+For the two `rg` checks above, a non-zero exit is the desired result. If the log glob has no files, rerun the path-leak scan against generated stdout/stderr captures from the standalone verification command.
 </verification>
 
 <success_criteria>
-- `teaching-design-package` has a verified normal path when only its own folder is installed.
-- `jiaoan-jihua` and `jiaoan-shicao` behavior needed for package scaffolding/calendar support is internalized or made explicitly optional/self-contained.
-- Six runtime adapters document standalone install/use boundaries.
-- Legacy `jiaoan-jihua` and `jiaoan-shicao` public command surfaces remain unchanged and pass regression commands.
-- The plan does not make Phase 32 internal artifacts a public default delivery contract.
+- `teaching-design-package` has a plan for a verified normal path when only its own folder is installed.
+- The package implementation target is unified Markdown to package-owned data model to package-owned Typst/PDF rendering.
+- No old standalone Markdown template copying, old handoff naming, or old-name internal directory structure is required or allowed.
+- Six runtime adapters document the standalone package boundary.
+- Legacy standalone skills remain external compatibility surfaces and unchanged.
 </success_criteria>
 
 <threat_model>
-This phase is local documentation and shell-script packaging work. Primary risks are supply-chain-like path confusion and data leakage through absolute local paths in generated artifacts.
+This phase is local documentation and shell-script packaging work. Primary risks are path confusion and contract confusion.
 
-- Path confusion: a standalone install could accidentally run repo sibling scripts from a developer machine. Mitigation: default all normal paths to `${SKILL_DIR}` resources and reserve legacy discovery for explicit parity/development mode.
-- Public contract leakage: internal handoff/status artifacts could become documented as required user deliverables. Mitigation: label them internal/debug/failure diagnostics and preserve Phase 32 as the clean delivery enforcement phase.
-- Regression of legacy skills: copying internals could tempt changes to `skills/jiaoan-*`. Mitigation: do not modify legacy public commands and run legacy examples/renders after package standalone verification.
+- Path confusion: the package could silently use sibling skill scripts on the developer machine and fail after standalone installation. Mitigation: standalone-copy verification must copy only the package folder and scan generated outputs for repo-path leaks.
+- Contract confusion: old split handoff concepts could be reintroduced as package internals. Mitigation: blocked-token scans must fail the plan if old handoff filenames or old-name internal directory paths appear.
+- Legacy regression: external compatibility surfaces could be accidentally edited. Mitigation: `git diff -- <legacy-plan-skill-path> <legacy-design-skill-path>` must remain empty unless the executor stops for explicit user review.
 </threat_model>

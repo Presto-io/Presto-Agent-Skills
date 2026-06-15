@@ -18,7 +18,7 @@ The default delivery contract is 1+1+3:
 - **Validation gate:** v1.13 is shipped and archived; current state frontmatter was switched to v1.14 via `gsd-sdk query state.milestone-switch`.
 - **Questioning gate:** The user supplied the milestone name, target behavior, and seven mandatory correction constraints directly; no additional scope prompt is required.
 - **Research gate:** External research is skipped. The scope is an internal contract and workflow correction for existing repository skills.
-- **Requirements gate:** This command initializes the milestone only and must not implement code or modify `skills/teaching-design-package`, `skills/jiaoan-shicao`, or existing dirty skill files.
+- **Requirements gate:** This command initializes the milestone only and must not implement code or modify `skills/teaching-design-package`, legacy standalone skill files, or existing dirty skill files.
 - **Roadmap gate:** Phase numbering continues from the previous milestone, so this roadmap starts at Phase 30.
 
 ## v1.14 Requirements
@@ -26,7 +26,7 @@ The default delivery contract is 1+1+3:
 ### Standalone Skill Packaging
 
 - [ ] **TDPKG-01**: `teaching-design-package` can be installed and used as a single skill without requiring users to install sibling repository skill directories.
-- [ ] **TDPKG-02**: Any required `jiaoan-jihua` or `jiaoan-shicao` capability is vendored, internalized, or exposed through self-contained package resources and dependency discovery documented inside `teaching-design-package`.
+- [ ] **TDPKG-02**: Required package capability is implemented through `teaching-design-package`'s own data model, Markdown contract, validation, and Typst/PDF rendering path; old standalone Markdown templates and old handoff layouts are not copied into the package.
 - [ ] **TDPKG-03**: Runtime adapter notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent explain the standalone install/use boundary without relying on repo-local sibling paths.
 
 ### Teacher Markdown Workflow
@@ -38,7 +38,7 @@ The default delivery contract is 1+1+3:
 ### Delivery Artifact Contract
 
 - [ ] **TDPKG-07**: The default successful output directory contains exactly the 1+1+3 deliverables: unified Markdown, unified Typst, full package PDF, teaching-plan PDF, and teaching-design/lesson-plan PDF.
-- [ ] **TDPKG-08**: Default output directories do not contain `jiaoan-jihua-full.md`, `jiaoan-shicao-full.md`, split Typst files, manifests, stderr logs, status sidecars, or other internal implementation artifacts.
+- [ ] **TDPKG-08**: Default output directories do not contain legacy handoff Markdown, split Typst files, manifests, stderr logs, status sidecars, or other internal implementation artifacts.
 - [ ] **TDPKG-09**: Internal handoffs, manifests, stderr logs, state files, split artifacts, and temporary files are written only to hidden work directories, temporary directories, debug mode locations, or explicit failure diagnostics.
 
 ### Scheduling and Validation Contract
@@ -50,8 +50,8 @@ The default delivery contract is 1+1+3:
 
 ### Legacy Skill Preservation
 
-- [ ] **TDPKG-14**: The user-facing package workflow does not regress into asking users to run or mentally stitch together separate `jiaoan-jihua` and `jiaoan-shicao` skills.
-- [ ] **TDPKG-15**: Existing `jiaoan-jihua` and `jiaoan-shicao` standalone skill entries, public commands, accepted inputs, and output contracts remain preserved unless a later explicit requirement changes them.
+- [ ] **TDPKG-14**: The user-facing package workflow does not regress into asking users to run or mentally stitch together old standalone skills.
+- [ ] **TDPKG-15**: Existing legacy standalone skill entries, public commands, accepted inputs, and output contracts remain preserved unless a later explicit requirement changes them.
 
 ## Future Requirements
 
@@ -60,7 +60,7 @@ Deferred to a later milestone unless explicitly requested:
 - **TDPKG-FUTURE-01**: Package and publish `teaching-design-package` to an external skill registry or installer outside this repository.
 - **TDPKG-FUTURE-02**: Add OCR or arbitrary binary document extraction for raw source materials.
 - **TDPKG-FUTURE-03**: Add hosted review, multi-user approval, or cloud synchronization around the teacher Markdown.
-- **TDPKG-FUTURE-04**: Redesign legacy standalone `jiaoan-jihua` or `jiaoan-shicao` public interfaces.
+- **TDPKG-FUTURE-04**: Redesign legacy standalone public interfaces.
 
 ## Out of Scope
 
@@ -68,7 +68,7 @@ Deferred to a later milestone unless explicitly requested:
 |---------|--------|
 | Implementing code during milestone initialization | The user requested only the `gsd-new-milestone` workflow command. |
 | Modifying `skills/teaching-design-package` scripts during initialization | Implementation belongs to later phase plan/execute commands. |
-| Modifying current dirty `skills/jiaoan-shicao` files | The user explicitly asked to avoid staging, committing, or changing those files. |
+| Modifying current dirty legacy standalone skill files | The user explicitly asked to avoid staging, committing, or changing those files. |
 | Requiring sibling skill installation for package use | This is the primary bug this milestone is meant to correct. |
 | Polluting default delivery directories with internal artifacts | The user requires a clean 1+1+3 default output contract. |
 | Deleting or replacing the old standalone jiaoan skills | The unified package is new/current UX, but the legacy skills remain preserved. |

@@ -34,7 +34,7 @@ Acceptance centers on a clean default 1+1+3 delivery contract: one unified Markd
 
 ### Phase 30: Standalone Skill Boundary and Internalized Dependencies
 
-**Goal:** Make `teaching-design-package` installable and understandable as one self-contained skill while preserving legacy standalone jiaoan skills.
+**Goal:** Make `teaching-design-package` installable and understandable as one self-contained, package-owned skill while preserving legacy standalone skills outside the package.
 **Depends on:** Phase 29
 **Plans:** 1/1 plans complete
 **Requirements:** TDPKG-01, TDPKG-02, TDPKG-03, TDPKG-15
@@ -43,9 +43,9 @@ Acceptance centers on a clean default 1+1+3 delivery contract: one unified Markd
 Success criteria:
 
 1. Installation and runtime guidance prove `teaching-design-package` can be used without asking users to install repo sibling skill directories.
-2. Any needed `jiaoan-jihua` or `jiaoan-shicao` behavior is available through vendored/internal/self-contained package resources or explicit self-contained dependency discovery.
+2. Package behavior is implemented through a package-owned data model and package-owned Markdown/Typst/PDF rendering path, not by copying old standalone templates into package internals.
 3. Runtime adapter notes cover Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent under the standalone install/use boundary.
-4. Existing `jiaoan-jihua` and `jiaoan-shicao` standalone entries and public contracts remain preserved.
+4. Existing legacy standalone entries and public contracts remain preserved outside the package.
 
 ### Phase 31: Teacher-Facing Unified Markdown Workflow
 
@@ -60,7 +60,7 @@ Success criteria:
 1. `SKILL.md` presents the primary workflow as ingesting many source materials, asking/clarifying, organizing, and producing one reviewable full-package Markdown.
 2. The output Markdown is described as `teaching-design-package-full.md` or a course-specific `某某某课教学资料.md`, and as the human-editable source of truth before rendering.
 3. Script usage is clearly bounded to finalized Markdown validation and delivery generation, not teacher interaction or content organization.
-4. The user-facing flow no longer asks teachers to mentally run and stitch together separate `jiaoan-jihua` and `jiaoan-shicao` skills.
+4. The user-facing flow no longer asks teachers to mentally run and stitch together separate old standalone skills.
 
 ### Phase 32: Clean 1+1+3 Delivery and Scheduling Regression Gate
 
@@ -73,7 +73,7 @@ Success criteria:
 Success criteria:
 
 1. A default successful render produces only the unified Markdown, unified Typst, full package PDF, teaching-plan PDF, and teaching-design/lesson-plan PDF in the delivery directory.
-2. Internal `jiaoan-jihua-full.md`, `jiaoan-shicao-full.md`, split Typst, manifests, stderr logs, status sidecars, temporary state, and handoff artifacts are absent from the default delivery directory.
+2. Internal legacy handoff Markdown, split Typst, manifests, stderr logs, status sidecars, temporary state, and handoff artifacts are absent from the default delivery directory.
 3. Debug mode, hidden work directories, temporary directories, or failure diagnostics retain enough internal evidence to troubleshoot without polluting the default successful output.
 4. Total hours are computed from plan/activity data, not trusted from YAML as the authoritative source.
 5. Teaching-plan hours and lesson-plan activity hours are cross-checked, and mismatches fail or mark output non-final/review-needed.
