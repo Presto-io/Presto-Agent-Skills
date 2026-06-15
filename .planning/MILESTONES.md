@@ -1,5 +1,26 @@
 # Milestones
 
+## v1.15 teaching-design-package 模块化渲染与旧格式回归 (Shipped: 2026-06-15)
+
+**Phases completed:** 4 phases, 4 plans, 26 tasks
+
+**Key accomplishments:**
+
+- Package-owned module registry with skill-local calendar scheduling and hidden module Markdown/Typst intermediates
+- Package-owned 授课进度计划表 formal renderer with strict row-hour evidence and legacy fixture equivalence
+- Package-owned 教学设计方案 formal renderer with strict task/stage/activity validation against 授课进度计划
+- Course-name-prefixed teaching-design package delivery with registry-order module PDF merge and standalone failure regression
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.15-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.15-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.15-MILESTONE-AUDIT.md`
+
+**Known deferred items at close:** 1 legacy audit-open quick-task compatibility item recorded in `.planning/STATE.md` Deferred Items.
+
+---
+
 ## v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约 (Shipped: 2026-06-15)
 
 **Phases completed:** 3 phases, 3 plans, 16 tasks
