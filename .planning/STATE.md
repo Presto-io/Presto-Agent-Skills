@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.14
 milestone_name: teaching-design-package 单技能独立交付与 1+1+3 输出契约
 current_phase: 32
-status: verifying
+status: completed
 stopped_at: Completed 32-01-PLAN.md
-last_updated: "2026-06-15T02:31:44.643Z"
-last_activity: 2026-06-15
+last_updated: "2026-06-15T02:56:29.040Z"
+last_activity: 2026-06-15 — Milestone v1.14 completed and archived
 progress:
   total_phases: 3
   completed_phases: 3
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 32
-**Status:** Phase 32 execute complete — ready for verification
+**Status:** v1.14 milestone complete
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initialization)
+See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone close)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 32 — clean-1-1-3-delivery-and-scheduling-regression-gate
+**Current focus:** Planning next milestone
 
 ## Workflow Preferences
 
@@ -50,9 +50,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.14 milestone initializa
 
 ## Next Up
 
-Verify the v1.14 Phase 32 execution when ready:
+Start the next milestone when fresh requirements are ready:
 
-- `/gsd:verify-work 32`
+- `/gsd:new-milestone`
 
 ## Accumulated Context
 
@@ -198,17 +198,27 @@ Verify the v1.14 Phase 32 execution when ready:
 - v1.10.1 records the post-close `jiaoan-shicao` black-box layout fix for learning-resource and teaching-activity table wrapping without reopening the v1.10 milestone.
 - v1.11 records local initialization research in `.planning/research/SUMMARY.md` and scopes the milestone to planning/phase execution for a new integrated package skill.
 - v1.11 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
+- v1.14 archived ROADMAP, REQUIREMENTS, and the passed milestone audit under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
+- v1.14 closeout acknowledged one open artifact from `gsd-sdk query audit-open`: quick task `260615-0853-correct-v114-doc-boundary` reported `missing` by the legacy audit query even though its plan, summary, and verification files exist and STATE lists it as Verified.
+
+## Deferred Items
+
+Items acknowledged and deferred at milestone close on 2026-06-15:
+
+| Category | Item | Status |
+|----------|------|--------|
+| quick_task | 260615-0853-correct-v114-doc-boundary | audit-open reported missing; STATE records Verified |
 
 ## Current Position
 
-Phase: 32 (clean-1-1-3-delivery-and-scheduling-regression-gate) — EXECUTE COMPLETE
-Plan: 1 of 1
-Status: Phase 32 execute complete — ready for verification
-Last activity: 2026-06-15
+Phase: Milestone v1.14 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-15 — Milestone v1.14 completed and archived
 
 ## Operator Next Steps
 
-- Run `/gsd:verify-work 32` when ready to independently verify clean delivery and scheduling regression enforcement.
+- Start the next milestone with `/gsd:new-milestone`
 
 ### Quick Tasks Completed
 
