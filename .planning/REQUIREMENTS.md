@@ -48,10 +48,10 @@
 
 ### Legacy Formal Format Migration
 
-- [ ] **TDPKG-LEGACY-01**: `授课进度计划表.pdf` 回归旧 `jiaoan-jihua` 当前可接受产物格式，格式规则迁移到 `teaching-design-package` 内部。
+- [x] **TDPKG-LEGACY-01**: `授课进度计划表.pdf` 回归旧 `jiaoan-jihua` 当前可接受产物格式，格式规则迁移到 `teaching-design-package` 内部。
 - [ ] **TDPKG-LEGACY-02**: `教学设计方案.pdf` 回归旧 `jiaoan-shicao` 当前可接受产物格式，格式规则迁移到 `teaching-design-package` 内部。
-- [ ] **TDPKG-LEGACY-03**: 旧 `jiaoan-jihua` 和 `jiaoan-shicao` 技能保持可用、不被删除，并且不作为 package 运行时依赖。
-- [ ] **TDPKG-LEGACY-04**: 对 fixture 场景，验证迁移后的 package 内部渲染规则与旧技能输出一致或等价；对统一模板场景，验证生成的是旧正式格式 PDF，而不是平铺文档。
+- [x] **TDPKG-LEGACY-03**: 旧 `jiaoan-jihua` 和 `jiaoan-shicao` 技能保持可用、不被删除，并且不作为 package 运行时依赖。
+- [x] **TDPKG-LEGACY-04**: 对 fixture 场景，验证迁移后的 package 内部渲染规则与旧技能输出一致或等价；对统一模板场景，验证生成的是旧正式格式 PDF，而不是平铺文档。
 
 ### YAML and Module Conversion
 
@@ -70,7 +70,7 @@
 
 ### Hours and Cross-Module Validation
 
-- [ ] **TDPKG-VAL-01**: 授课进度计划每一行 `内容-N` 是唯一原始课时来源；每个学习任务总课时和课程总课时均严格求和。
+- [x] **TDPKG-VAL-01**: 授课进度计划每一行 `内容-N` 是唯一原始课时来源；每个学习任务总课时和课程总课时均严格求和。
 - [ ] **TDPKG-VAL-02**: 教案中每个 `课时：xH` 必须来自对应学习任务总课时；教案活动中每个 `##### xH` 必须来自对应授课计划活动课时。
 - [ ] **TDPKG-VAL-03**: 活动映射以“学习任务 + 学习环节 + 活动顺序”为主，标题相似度或归一化只作为校验辅助。
 - [ ] **TDPKG-VAL-04**: 授课计划与教案的任务数量、环节数量、活动数量、标题对应、课时合计、起止日期任一不一致时，命令必须失败并写隐藏诊断，不能生成最终成功产物。
@@ -120,10 +120,10 @@
 | TDPKG-SCHED-03 | Phase 33 | Complete |
 | TDPKG-SCHED-04 | Phase 33 | Complete |
 | TDPKG-SCHED-05 | Phase 33 | Complete |
-| TDPKG-LEGACY-01 | Phase 34 | Pending |
-| TDPKG-LEGACY-03 | Phase 34 | Pending |
-| TDPKG-LEGACY-04 | Phase 34 | Pending |
-| TDPKG-VAL-01 | Phase 34 | Pending |
+| TDPKG-LEGACY-01 | Phase 34 | Complete |
+| TDPKG-LEGACY-03 | Phase 34 | Complete |
+| TDPKG-LEGACY-04 | Phase 34 | Complete |
+| TDPKG-VAL-01 | Phase 34 | Complete |
 | TDPKG-LEGACY-02 | Phase 35 | Pending |
 | TDPKG-VAL-02 | Phase 35 | Pending |
 | TDPKG-VAL-03 | Phase 35 | Pending |
