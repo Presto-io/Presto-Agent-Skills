@@ -1,32 +1,19 @@
 # Teaching Design Package Format and Orchestration
 
-This reference owns the detailed package contract for the `teaching-design-package` skill. Keep `SKILL.md` concise and point here for field rules, module handoff, split output status, optional end-of-term integration, review gates, and combined package output semantics.
+This reference defines the standalone package contract for `teaching-design-package`. The normal path is unified Markdown -> package-owned data model -> package-owned Typst/PDF rendering. The skill folder must remain usable when installed by itself.
 
 ## Requirement Traceability
 
-- `TDP-05`: Add a new orchestration skill named `teaching-design-package`.
-- `TDP-06`: Preserve `jiaoan-jihua` and `jiaoan-shicao` as standalone public skills.
-- `TDP-07`: Define a persistent teacher-reviewable Markdown intermediate before Typst/PDF generation.
-- `TDP-08`: Plan split teaching-plan and lesson-plan Typst/PDF output status.
-- `TDP-09`: Keep the canonical skill portable and represent Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent in adapter notes.
-- `TDP-10`: Support the end-of-term materials workflow as an optional module while reusing `end-of-term-teaching-materials` data, scoring evidence, table artifacts, workbook output, manifest rules, and review gates.
-- `TDP-11`: Do not bypass the module-local `end-of-term-full.md` review point or its `## 复核标记` export gate.
-- `TDP-12`: Include `end-of-term-package.pdf` when the optional module is enabled and keep workbook/table artifacts discoverable from the package manifest.
-- `TDP-13`: Use `teaching-design-package.pdf` as the default combined final artifact when selected PDFs exist and merge tooling succeeds.
-- `TDP-14`: If split compilation or merged PDF generation is unavailable, fail with explicit manifest/status evidence instead of claiming a complete final package.
+- `TDPKG-01`: The package can be installed and used as one skill folder.
+- `TDPKG-02`: Package capability is implemented through its own Markdown contract, data model, validation, Typst generation, and PDF status path.
+- `TDPKG-03`: Runtime adapter notes cover Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent under the standalone boundary.
+- `TDPKG-15`: Historical standalone entries remain external compatibility surfaces only. They are not package internals, resources, parity baselines, or future implementation direction.
 
-## Package Markdown Intermediate
+## Unified Markdown Contract
 
-The package checkpoint is `teaching-design-package-full.md`. It is the semantic handoff point for teacher review and downstream rendering. A package is not final-ready until this Markdown exists and all unresolved review markers have been addressed.
+The accepted input is a single Markdown document named `teaching-design-package-full.md` or a course-specific teaching-materials Markdown with the same shape.
 
-The maintained v1.13 baseline is the teacher-facing reference document at `templates/teaching-design-package-full.md`. Its teacher-visible format must not be changed to satisfy parser internals. The renderer adapts around the baseline shape and writes machine status, provenance, defaults, and derived evidence to generated handoffs, Typst comments, or manifest fields.
-
-Required v1.13 baseline body anchors:
-
-- `# 授课进度计划`
-- `# 教学设计方案`
-
-Required v1.13 baseline frontmatter fields:
+Required frontmatter fields:
 
 - `course_name`
 - `major_name`
@@ -36,286 +23,115 @@ Required v1.13 baseline frontmatter fields:
 - `teachers`
 - `first_teaching_day`
 
-The package YAML must not contain teacher-maintained derived/default/output/validation fields:
+Required body anchors:
 
-- `total_hours`
-- `school_year`
-- `semester`
-- `daily_hours`
-- `hour_unit`
-- `date_display_format`
-- `date_locale`
-- `calendar_source`
-- `holidays`
-- `makeup_days`
-- `source_of_truth`
-- `outputs`
-- `validation`
+- `# 授课进度计划`
+- `# 教学设计方案`
 
-Legacy package drafts may still contain the old orchestration sections, but the corrected baseline does not require or inject them:
+The package Markdown must not ask teachers to maintain derived fields such as total hours, school year, semester, output configuration, validation configuration, or calendar internals. Those facts are derived by the package model from source rows and first teaching day.
 
-- `## 课程与整包元数据`
-- `## 调度输入`
-- `## 调度证据`
-- `## 授课计划`
-- `## 实操教案`
-- `## 输出清单`
-- `## 复核标记`
+## Package-Owned Data Model
 
-The package-level Markdown is the normalized source of truth. Module-specific overrides are allowed only when the source material explicitly requires them, and the override must be visible in generated handoff/provenance evidence rather than hidden in Typst.
+`scripts/teaching-design-package.sh model` parses the unified Markdown into one JSON model. The model owns:
 
-## Scheduling Evidence
+- `metadata`: course, major, attribute, textbook, class, teachers, teacher display name, first teaching day.
+- `schedule.tasks[]`: learning task title, stages, rows, row hours, row date-consumption evidence, task total hours, task date range.
+- `teaching_design`: original teaching-design Markdown content plus block counts.
+- `resources`: resource snippets extracted from the teaching-design section.
+- `derived`: total hours, daily-hour default, school year, semester, term label, start/end dates, package date range.
+- `review_markers`: unresolved package-level review items.
+- `output_readiness`: Typst/PDF/final status booleans.
 
-Scheduling evidence consumes the shared `references/scheduling-contract.md` model. The package contract uses source-order `items[]` with stable pointers and does not expose the old `jiaoan-jihua.sh` parser as the package API.
+The model is package-owned. It must not encode old split workflow names, old internal directory names, or external skill paths as its normal execution contract.
 
-Teacher-facing evidence should show:
+## Scheduling Rules
 
-- source pointer such as `task:1/stage:1/row:1` or `lesson:1/activity:1`
-- task/activity/lesson title
-- assigned hours
-- start and end date
-- term week and weekday
-- date-level hour-consumption evidence
-- nearby review markers when data is missing, uncertain, conflicting, or exhausted
+Phase 30 uses a deterministic package-local default:
 
-Unresolved review markers block final readiness. Downstream render/export must not silently drop them. The manifest must mirror unresolved markers in `review_markers` and set `final_ready` to `false`.
+- `first_teaching_day` starts the hour-consumption sequence.
+- `DEFAULT_DAILY_HOURS=8` unless a later phase exposes a package-owned configuration surface.
+- Each `授课进度计划` row ending in `-N` contributes `N` hours.
+- Rows consume hours in source order.
+- Dates advance by one calendar day whenever the day budget is exhausted.
+- Spring dates infer previous-year/current-year second semester; autumn dates infer current-year/next-year first semester.
 
-## Optional End-of-Term Module Behavior
+This is sufficient for the standalone model/render path. Later scheduling work can refine holidays and makeup days without depending on external sibling folders.
 
-The end-of-term module is optional package behavior. The frontmatter field `modules.end_of_term.enabled` decides whether package readiness depends on module artifacts.
+## Rendering Rules
 
-When disabled:
+`render-package` performs these steps:
 
-- manifest `end_of_term.status` is `disabled`
-- missing `end-of-term-full.md`, module manifest, tables, workbooks, `end-of-term-package.typ`, or `end-of-term-package.pdf` is not a package failure
-- `final_ready` is derived from selected non-end-of-term outputs and package-level review markers
+1. Copy the unified Markdown into the output directory as the human-readable source artifact.
+2. Write hidden diagnostics under `.teaching-design-package/`.
+3. Generate `teaching-design-package.typ` from the package model.
+4. Write `teaching-design-package-status.json`.
+5. If `--pdf` is present, attempt package-owned PDF generation and record actual status.
 
-When enabled:
+Typst-only rendering is the default. PDF status values are honest:
 
-- `end-of-term-full.md` is the module handoff and persistent review checkpoint
-- `end-of-term-source.json` is the explicit source-data path expected by the package helper unless the user supplies another path
-- `end-of-term-output/manifest.json` is the module manifest path expected by package-level discovery
-- the package helper may call or reference `skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh validate`, `markdown`, `render`, `verify`, and `manifest`
-- score calculation, deterministic tables, workbook generation, and review-marker resolution remain owned by `skills/end-of-term-teaching-materials`
-- final package readiness is blocked when module-local `## 复核标记` is not exactly `无` or the module manifest has `review_cleared: false`
-- `render --abnormal-review` remains non-final inspection behavior; its `artifact_kind: abnormal_review`, `final_ready: false`, and `review_cleared: false` values must be preserved in package status
+- `not_run`: PDF was not requested.
+- `missing_compiler_or_failed`: local compiler is missing or failed.
+- `passed`: an explicit compile ran and the expected file exists.
 
-The package skill must not silently correct uncertain scores such as `87?`, missing fields, or AI-drafted analysis text. Those items continue through the end-of-term module's one-item-at-a-time teacher review pattern.
+Phase 30 may generate provisional PDF surfaces to prove the package-owned path. Full official layout, exact successful 1+1+3 delivery cleaning, and final delivery directory enforcement remain Phase 32 work.
 
-## End-of-Term Artifact Pointers
+## Public Output Direction
 
-Package manifests should expose pointers, not flatten module evidence. The `end_of_term` object should make these paths/statuses discoverable when the module is enabled:
+The target delivery direction remains 1+1+3:
 
-- `end-of-term-full.md`
-- `end-of-term-output/end-of-term-package.typ`
-- `end-of-term-output/end-of-term-package.pdf`
-- `end-of-term-output/manifest.json`
-- `end-of-term-output/tables/score-data.json`
-- `end-of-term-output/tables/calculated-score-data.json`
-- `end-of-term-output/tables/score-summary.json`
-- `end-of-term-output/tables/highlight-evidence.json`
-- `end-of-term-output/tables/score-list.md`
-- `end-of-term-output/tables/score-list.xlsx`
-- `end-of-term-output/tables/scorebook.xlsx`
+- one unified Markdown
+- one unified Typst
+- three PDFs: full package, teaching-plan, teaching-design/lesson-plan
 
-The package manifest may summarize module booleans such as `review_cleared`, `calculated_scores_verified`, `table_artifacts_verified`, and `workbook_verified`, but detailed score rows, formulas, highlight evidence, and workbook content stay in the end-of-term module artifacts.
+During Phase 30, `render-package` must at least create the unified Markdown copy, unified Typst, hidden model, and status JSON. If PDF compilation is unavailable, the status JSON must say so without falling back to external compatibility entries.
 
-## Jiaoan Module Handoff
+## Standalone Boundary
 
-The package skill composes existing skills through module-local Markdown intermediates.
+A valid standalone verification copies only the `teaching-design-package` skill folder into a fresh skill root. From inside that copied folder, run:
 
-For v1.13 baseline mode, the package helper maps the YAML `teachers` list into legacy scalar handoff metadata:
-
-- one teacher becomes that exact `teacher_name`
-- multiple teachers join with `、`
-- an empty or missing list leaves `teacher_name` blank and records a provenance warning
-
-The helper derives scheduling fields from `# 授课进度计划`, not from package YAML defaults. The current baseline must derive:
-
-- package total: `160H`
-- task totals: `CA6140=40H`, `X62W=60H`, `Z3040=60H`
-- task ranges: `5月11日——5月15日`, `5月18日——5月27日`, `5月27日——6月5日`
-- academic term: `2025-2026学年第二学期`
-
-The term is inferred from `first_teaching_day`; first-half dates infer previous-year/current-year second semester, and autumn dates infer current-year/next-year first semester.
-
-### Teaching Plan Module
-
-The teaching-plan handoff file is `jiaoan-jihua-full.md`. It preserves the `jiaoan-jihua` contract:
-
-- frontmatter: `major_name`, `course_name`, `teacher_name`, `class_name`, `first_teaching_day`, optional `daily_hours`, `template: "jiaoan-jihua"`
-- body: ordered `##` learning tasks, `###` stages, and content lines ending with integer hour markers such as `-2`
-- source order is stable and compatible with the Phase 22 scheduling contract
-
-The package helper may scaffold this file from package sections, but it must not change `skills/jiaoan-jihua/scripts/jiaoan-jihua.sh` public behavior.
-
-### Lesson Plan Module
-
-The lesson-plan handoff file is `jiaoan-shicao-full.md`. It preserves the `jiaoan-shicao` three-part structure:
-
-- `## 学习任务分析`
-- `## 教学活动设计`
-- `## 学业评价`
-
-Unknown or incomplete lesson-plan fields should remain blank or be marked for review. The package helper may scaffold this file from package sections, but it must not invent school, class, teacher, textbook, date, or evaluation facts.
-
-For v1.13 baseline mode, lesson-plan activity `##### xH` rows are render handoff data only. They are mapped from same-name teaching-plan rows when possible, otherwise from same-order rows inside the same learning task. If an activity cannot be mapped, the package command must fail or record explicit non-final/review-needed status; it must not guess a duration.
-
-## Split Output Status
-
-The package plans split outputs first:
-
-- `teaching-design-package.typ`: package Typst generated from the single baseline Markdown source
-- `teaching-plan.typ`: Typst generated from `jiaoan-jihua-full.md`
-- `lesson-plans.typ`: Typst generated from `jiaoan-shicao-full.md`
-- `end-of-term-package.typ`: Typst generated by the optional end-of-term module when enabled
-- `teaching-plan.pdf`: PDF status for the teaching-plan Typst file
-- `lesson-plans.pdf`: PDF status for the lesson-plan Typst file
-- `end-of-term-package.pdf`: PDF status for the optional end-of-term module when enabled
-
-The manifest must preserve these split-output keys or equivalent entries under `split_outputs`:
-
-- `teaching_plan_typ`
-- `lesson_plans_typ`
-- `end_of_term_typ`
-- `teaching_plan_pdf`
-- `lesson_plans_pdf`
-- `end_of_term_pdf`
-- `review_markers`
-- `final_ready`
-
-For v1.13 baseline mode, the manifest also records provenance:
-
-- `generated_from_markdown: true`
-- `source_markdown`
-- `generated_package_markdown`
-- `package_typ`
-- `teaching_plan_handoff`
-- `lesson_plan_handoff`
-- `section_anchors`
-- `derived_hours`
-- `derived_dates`
-- `inferred_term`
-- `activity_hour_mapping`
-- `phase29_pdf_slots`
-
-Status semantics:
-
-- Typst status may be `planned`, `passed`, or `failed`.
-- PDF status may be `not_run`, `missing_compiler`, `passed`, `merge_unavailable`, or `failed`.
-- PDF status must not be `passed` unless an explicit PDF command ran and the expected PDF file exists.
-- If a renderer or compiler is unavailable, record partial Typst/status evidence instead of claiming completion.
-
-## PDF-Producing Package Workflow
-
-Typst-only rendering remains the default:
-
-```bash
-skills/teaching-design-package/scripts/teaching-design-package.sh render-package \
-  --input teaching-design-package-full.md \
-  --out-dir build/teaching-design-package
+```text
+scripts/teaching-design-package.sh example --output <tmp>/teaching-design-package-full.md
+scripts/teaching-design-package.sh render-package --input <tmp>/teaching-design-package-full.md --out-dir <tmp>/out
 ```
 
-Final PDF generation is explicit:
+This verification must succeed without repo sibling paths and without hidden external skill installation. Generated stdout, stderr, and output files must not leak the original repository path.
 
-```bash
-skills/teaching-design-package/scripts/teaching-design-package.sh render-package \
-  --pdf \
-  --input teaching-design-package-full.md \
-  --out-dir build/teaching-design-package
-```
+## External Compatibility Boundary
 
-`render-package --pdf` must:
+Historical standalone entries in the repository are allowed to remain available outside this package. Package documentation may mention them only generically as external compatibility surfaces. They are not:
 
-- generate `jiaoan-jihua-full.md` and `jiaoan-shicao-full.md` from the package Markdown;
-- render `teaching-plan.typ`, `lesson-plans.typ`, and `teaching-design-package.typ`;
-- compile `teaching-plan.typ` to `teaching-plan.pdf` with `typst compile`;
-- compile `lesson-plans.typ` to `lesson-plans.pdf` with `typst compile`;
-- merge the accepted split PDFs in order into `teaching-design-package.pdf`.
+- package internals
+- package resources
+- normal-path dependencies
+- parity baselines
+- future implementation direction
 
-Local tool behavior:
-
-- `typst` is required for split PDF compilation. If it is missing, split PDF statuses are `missing_compiler`.
-- A Typst command that runs but fails records `failed` and leaves stderr evidence in the output directory.
-- Merge preference is `pdfunite`, then `qpdf`, then the local Python/PyMuPDF (`fitz`) fallback when available. The Python fallback is still a real PDF merge: it inserts pages from `teaching-plan.pdf` followed by `lesson-plans.pdf`.
-- If no merge path is available, `combined_output.status` is `merge_unavailable` with reason `no_pdf_merge_tool`.
-- `pdftotext` and `pdfinfo` are verification helpers only. If they are missing, use another explicit local PDF inspection path or record the unavailable checks without claiming those tool-specific results.
-
-The command removes same-directory stale PDF outputs and PDF status sidecars before compiling. Manifest `passed` status is therefore tied to the current run, not to old files.
-
-## Standalone Parity Verification
-
-Split PDF parity is checked against standalone renders from the same generated handoffs:
-
-- package `teaching-plan.typ` vs `jiaoan-jihua.sh render --input <package-out>/jiaoan-jihua-full.md`;
-- package `lesson-plans.typ` vs `jiaoan-shicao.sh render --input <package-out>/jiaoan-shicao-full.md`.
-
-Use `--expected-typ` for strict comparison when possible. If a renderer emits volatile timestamp/generated-at lines, normalize only those documented lines before `diff -u`. Do not normalize headings, table widths, derived hours, date ranges, content, or layout-affecting Typst.
-
-PDF-level parity should compile the standalone Typst outputs too. Matching page counts and extracted text hashes are acceptable local evidence when available. Missing PDF inspection tools must be recorded explicitly.
-
-## Combined Package Output Behavior
-
-The default final artifact is `teaching-design-package.pdf`. It is package-level output, separate from module-local PDFs.
-
-Combined status is `passed` only when all selected split PDFs exist and an explicit merge step leaves an actual `teaching-design-package.pdf` file on disk. Typst generation, module manifests, or planned split outputs are not sufficient evidence.
-
-If only split artifacts are available, preserve successful split-output evidence and set `combined_output.status` to `merge_unavailable`, `missing_compiler`, or `failed` with a clear reason. Do not set package `final_ready` to `true` for selected combined delivery unless the combined PDF exists or a later approved workflow explicitly accepts split-only delivery.
-
-Phase 29 owns the final PDF parity gates for:
-
-- `teaching-plan.pdf`
-- `lesson-plans.pdf`
-- `teaching-design-package.pdf`
-
-Phase 28 may create Typst and planned PDF slots, but those PDF slots stay non-passed unless an explicit PDF command creates real files.
-
-## Failure and Status Semantics
-
-Use explicit status values:
-
-- `disabled`: optional module is intentionally off and missing module artifacts are not failures
-- `planned`: an artifact or module step is expected but not executed yet
-- `not_run`: a compile, render, verify, or merge step was not executed
-- `passed`: an explicit command ran and required output/evidence exists
-- `failed`: an explicit command ran and failed or expected output is absent
-- `missing_compiler`: Typst or another required compiler is unavailable
-- `merge_unavailable`: split PDFs may exist but no local PDF merge/compile path was available
-- `blocked_review`: package-level or enabled module-level review markers are unresolved
-
-`final_ready` is derived from package review markers, selected split outputs, enabled module statuses, module `review_cleared`, `calculated_scores_verified`, `table_artifacts_verified`, `workbook_verified`, selected PDF status, and combined output status. Do not let a clean `jiaoan` split override a blocked enabled end-of-term module.
+Do not add package docs or scripts that instruct users to install, invoke, wrap, 内嵌打包, mirror, or mentally stitch external compatibility entries for normal package use.
 
 ## Runtime Portability
 
-Canonical process text should describe files, contracts, and verification. Runtime-private syntax belongs only in `SKILL.md` adapter notes. OpenClaw and Hermes Agent coverage must mention skill-folder discovery, support-file availability, script execution permissions, and calendar/support resources.
+Canonical instructions describe files, contracts, command behavior, and verification. Runtime-private details belong in `SKILL.md` adapter notes. OpenClaw and Hermes Agent coverage must explicitly mention skill-folder discovery, support-file availability, script execution permissions, sandbox/allowlist checks, and fallback behavior.
 
 ## Verification Detail
 
-Use lightweight checks for this phase:
-
 ```bash
-rg "TDP-05|TDP-06|TDP-07|TDP-08|TDP-09" \
-  skills/teaching-design-package/SKILL.md \
-  skills/teaching-design-package/references/format-and-orchestration.md
+bash -n scripts/teaching-design-package.sh
 
-rg "TDP-10|TDP-11|TDP-12|TDP-13|TDP-14" \
-  skills/teaching-design-package/SKILL.md \
-  skills/teaching-design-package/references/format-and-orchestration.md
+scripts/teaching-design-package.sh example \
+  --output /tmp/teaching-design-package-full.md
 
-rg "Codex|Claude Code|Gemini CLI|OpenCode|OpenClaw|Hermes Agent" \
-  skills/teaching-design-package/SKILL.md
+scripts/teaching-design-package.sh model \
+  --input /tmp/teaching-design-package-full.md
 
-bash -n skills/teaching-design-package/scripts/teaching-design-package.sh
-
-skills/teaching-design-package/scripts/teaching-design-package.sh example --output /tmp/tdp-example.md
-
-skills/teaching-design-package/scripts/teaching-design-package.sh plan-split \
-  --input /tmp/tdp-example.md \
-  --out-dir /tmp/tdp-split
-
-skills/teaching-design-package/scripts/teaching-design-package.sh manifest \
-  --input /tmp/tdp-example.md \
-  --out-dir /tmp/tdp-split
+scripts/teaching-design-package.sh render-package \
+  --input /tmp/teaching-design-package-full.md \
+  --out-dir /tmp/teaching-design-package-out
 ```
 
-The existing `jiaoan-jihua` and `jiaoan-shicao` public command surfaces should remain unchanged.
+Expected results:
+
+- the example command writes unified Markdown
+- the model command emits JSON with `model_version: phase30.package-owned.v1`
+- the render command writes `teaching-design-package.typ`
+- diagnostics stay under `.teaching-design-package/`
+- no normal-path output contains repo sibling paths

@@ -1,9 +1,9 @@
 ---
 name: "teaching-design-package"
-description: "Use when creating an integrated teaching-design package that composes teaching-plan, practical lesson-plan, and optional end-of-term materials before Typst/PDF output."
+description: "Use when creating one standalone teaching-design package from finalized unified Markdown into package-owned Typst/PDF outputs."
 metadata:
-  short-description: "教学设计整包 Markdown 编排工作流"
-  version: "0.1.0"
+  short-description: "教学设计整包统一 Markdown 渲染工作流"
+  version: "0.2.0"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -18,117 +18,95 @@ metadata:
 
 ## Objective
 
-把课程教学设计材料归一化为持久、可复核的 `teaching-design-package-full.md` Markdown intermediate。当前维护基线使用 frontmatter、`# 授课进度计划` 和 `# 教学设计方案`，脚本从该 Markdown 派生授课计划 handoff、实操教案 handoff、整包 Typst、三份 PDF 和 manifest provenance，并记录拆分/合并输出的诚实状态。
+把已经审定的教学设计整包 Markdown 解析为 package-owned data model，并由本技能自己的渲染规则生成 unified Typst 与 PDF 状态。正常使用路径只需要安装 `teaching-design-package` 这一整个 skill folder，不要求额外安装同仓库的其他技能目录。
+
+Phase 30 的边界是先建立独立包内路径：unified Markdown -> package-owned data model -> package-owned Typst/PDF rendering。完整教师交互文案与最终清洁 1+1+3 交付目录会在后续阶段继续收束。
 
 ## Use When
 
-- 用户需要一个整包教学设计，而不是单独的授课进度计划或单独的实操教案。
-- 用户要求同时整理授课计划、实操教案、派生课时、日期、学期或输出状态。
-- 用户给出的源材料需要先形成可审阅 Markdown，再生成 `teaching-plan.typ`、`lesson-plans.typ`、`teaching-plan.pdf`、`lesson-plans.pdf`、可选 `end-of-term-package.pdf` 或默认合并 `teaching-design-package.pdf` 状态。
+- 用户已经有 `teaching-design-package-full.md`，或有同一合同形状的课程教学资料 Markdown。
+- 用户需要从一份统一 Markdown 派生课程元数据、授课进度、教学活动、资源、课时、日期、学期和输出状态。
+- 用户需要验证 standalone 安装边界：只复制本 skill folder 后，仍能运行 example、model、render-package。
+- 用户要生成整包 Typst，或在本地工具可用时尝试 PDF，并要求缺失工具时诚实记录非最终状态。
 
 ## Inputs
 
-- `source_material`: 课程元数据、教学任务、实操教案片段、排课依据、已有 Markdown 或教师补充说明。
-- `templates/teaching-design-package-full.md`: 整包级 Markdown checkpoint。当前基线保持 teacher-facing reference shape，不为 parser 增加机器专用章节。
-- `references/format-and-orchestration.md`: TDP-05 到 TDP-14 以及 v1.13 baseline ingestion 的长规则、字段、模块交接、输出状态和可选期末材料边界。
-- `references/scheduling-contract.md`: 共享排课合同；整包技能消费此合同，不把 `jiaoan-jihua.sh` 的旧解析器暴露为整包 API。
-- `skills/jiaoan-jihua/`: 授课计划模块，继续保持 standalone skill。
-- `skills/jiaoan-shicao/`: 实操教案模块，继续保持 standalone skill。
-- `skills/end-of-term-teaching-materials/`: 可选期末材料模块，继续保持 standalone skill；整包只调用或引用其公开 `validate`、`markdown`、`render`、`verify`、`manifest` 命令。
+- `source_material`: 教师提供的课程说明、授课进度、教学活动、资源、评价要求和补充事实。
+- `templates/teaching-design-package-full.md`: 统一 Markdown 示例，也是包内 parser 的基线合同。
+- `references/format-and-orchestration.md`: 统一 Markdown、data model、渲染状态、standalone 边界与安全规则。
+- `scripts/teaching-design-package.sh`: 包内脚本，只读取本 skill folder 与调用方传入的 Markdown/output path。
 
 ## Process
 
-1. 按 `docs/markdown-normalization-contract.md` 把源材料整理为 `templates/teaching-design-package-full.md` 形状，保留 frontmatter、`# 授课进度计划` 和 `# 教学设计方案`。
-2. 不把 `total_hours`、`school_year`、`semester`、`daily_hours`、输出清单或校验配置写回 package YAML；这些事实由脚本默认值、计划行和 manifest/provenance 派生。
-3. 从 `# 授课进度计划` 所有 `活动名称-课时` 行派生总课时、任务课时、活动课时、日期范围和学期。
-4. 为 `jiaoan-jihua` 生成或抽取 `jiaoan-jihua-full.md` 模块 intermediate，为 `jiaoan-shicao` 生成或抽取 `jiaoan-shicao-full.md` 模块 intermediate；`teachers` 列表映射为 legacy `teacher_name` 标量。
-5. 若 `modules.end_of_term.enabled: true`，先生成或指向 `end-of-term-full.md`，再通过 `end-of-term-teaching-materials` 的公开命令处理期末模块；不得复制分数计算、表格、workbook 或复核逻辑。
-6. 使用 `scripts/teaching-design-package.sh plan-split`、`render-split`、`plan-end-of-term`、`render-end-of-term` 或 `render-package` 规划/生成拆分输出；需要最终 PDF 时显式运行 `render-package --pdf`，并在 manifest 中诚实记录 Typst、PDF、合并工具和失败原因。
-7. 若活动课时无法从同名或同序计划行映射，或启用模块的复核状态未清除，不得把最终整包标记为 ready；缺失、冲突或不确定内容必须留在 Markdown 与 manifest 中。
+1. 先把源材料整理为一份可审阅 unified Markdown。Phase 30 脚本只消费 finalized Markdown，不负责代替教师互动整理材料。
+2. 运行 `example` 生成包内示例，或使用课程自己的整包 Markdown。
+3. 运行 `model` 检查 package-owned data model。模型会派生课程元数据、授课进度行、教学活动块、资源片段、总课时、日期范围、学年学期、复核标记和输出 readiness。
+4. 运行 `render-package` 从同一个模型生成 `teaching-design-package.typ`，并把内部模型写到隐藏诊断目录。
+5. 需要 PDF 时显式加 `--pdf`。如果本地缺少 Typst 或编译失败，脚本写入诚实状态，不回退到外部技能或旧渲染路径。
+6. 旧的独立技能只作为仓库外部兼容入口继续存在；它们不是本技能正常路径、内部资源、验收基准或后续实现方向。
 
 ## Script Usage
 
 ```bash
-skills/teaching-design-package/scripts/teaching-design-package.sh example \
+scripts/teaching-design-package.sh example \
   --output teaching-design-package-full.md
 
-skills/teaching-design-package/scripts/teaching-design-package.sh plan-split \
+scripts/teaching-design-package.sh model \
+  --input teaching-design-package-full.md
+
+scripts/teaching-design-package.sh render-package \
   --input teaching-design-package-full.md \
   --out-dir build/teaching-design-package
 
-skills/teaching-design-package/scripts/teaching-design-package.sh render-split \
-  --input teaching-design-package-full.md \
-  --out-dir build/teaching-design-package
-
-skills/teaching-design-package/scripts/teaching-design-package.sh manifest \
-  --input teaching-design-package-full.md \
-  --out-dir build/teaching-design-package
-
-skills/teaching-design-package/scripts/teaching-design-package.sh plan-end-of-term \
-  --input teaching-design-package-full.md \
-  --out-dir build/teaching-design-package
-
-skills/teaching-design-package/scripts/teaching-design-package.sh render-end-of-term \
-  --input teaching-design-package-full.md \
-  --out-dir build/teaching-design-package
-
-skills/teaching-design-package/scripts/teaching-design-package.sh render-package \
-  --input teaching-design-package-full.md \
-  --out-dir build/teaching-design-package
-
-skills/teaching-design-package/scripts/teaching-design-package.sh render-package \
+scripts/teaching-design-package.sh render-package \
   --pdf \
   --input teaching-design-package-full.md \
   --out-dir build/teaching-design-package
 
-skills/teaching-design-package/scripts/teaching-design-package.sh info
-
-skills/teaching-design-package/scripts/teaching-design-package.sh version
+scripts/teaching-design-package.sh manifest \
+  --input teaching-design-package-full.md \
+  --out-dir build/teaching-design-package
 ```
 
 ## Runtime Adapter Notes
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | 读取本入口、`references/format-and-orchestration.md`、模板和共享 `references/scheduling-contract.md`；用 shell 显式调用脚本；写文件前确认目标目录；PDF 编译/合并必须单独验证，不能把 Typst 生成当成 PDF 成功。 |
-| Claude Code | 可把同一 skill folder 安装到 `.claude/skills/teaching-design-package/`；frontmatter 的 `description` 是触发入口；按渐进披露读取 reference/template/script，脚本执行需检查 allowlist 和路径。 |
-| Gemini CLI | 通过 `GEMINI.md` 或项目上下文指向本 `SKILL.md`；若技能不能自动加载，按 `Script Usage` 手动执行；用户问询和子代理能力缺失时使用普通文本确认。 |
-| OpenCode | 使用可加载 `SKILL.md` 的 OpenCode skill 路径；若走 Claude-compatible fallback，保持 `references/`、`templates/`、`scripts/` 同步，并验证运行时实际选中本技能。 |
-| OpenClaw | 作为 AgentSkills-compatible skill folder 使用；安装时验证 conservative frontmatter、skill root、sandbox/allowlist、`references/`、`templates/`、`scripts/`、校历/排课支持资源和 shell 脚本执行权限。 |
-| Hermes Agent | 使用 Hermes Agent 可发现的 `SKILL.md` skill folder；安装时验证项目级/全局路径、reference/template/script 发现、shell 脚本执行权限、calendar/support resources 可读性和未验证行为的人工 fallback。 |
+| Codex | 读取本入口、reference、template 和 script；在 shell 中显式运行包内脚本；只把用户指定 Markdown 和输出目录传给脚本；PDF 成功必须由实际文件和状态 JSON 证明。 |
+| Claude Code | 可把本 skill folder 安装到 `.claude/skills/teaching-design-package/`；frontmatter `description` 触发后按渐进披露读取 reference/template/script；不要补读仓库外部技能作为正常执行条件。 |
+| Gemini CLI | 在 `GEMINI.md` 或项目上下文中指向本 `SKILL.md`；自动技能加载不可用时按 `Script Usage` 手动执行；交互确认用普通文本完成。 |
+| OpenCode | 使用 OpenCode 可发现的 skill path；如果走 Claude-compatible fallback，保持 `references/`、`templates/`、`scripts/` 同步复制并验证当前选中的是本技能。 |
+| OpenClaw | 作为 AgentSkills-compatible skill folder 使用；安装时验证 skill root、frontmatter、sandbox/allowlist、support files 和 shell 脚本权限；正常路径不要求同仓库其他技能目录存在。 |
+| Hermes Agent | 使用 Hermes Agent 可发现的 `SKILL.md` skill folder；安装时验证 project/global 路径、reference/template/script 可读性、脚本执行权限和失败时人工 fallback；不要把外部兼容入口当包内依赖。 |
 
 ## Outputs
 
-- `teaching-design-package-full.md` 结构的整包 Markdown intermediate。
-- 模块交接文件：`jiaoan-jihua-full.md`、`jiaoan-shicao-full.md` 和可选 `end-of-term-full.md`。
-- Typst 输出：`teaching-design-package.typ`、`teaching-plan.typ`、`lesson-plans.typ`、可选 `end-of-term-package.typ`。
-- PDF 输出：`teaching-plan.pdf`、`lesson-plans.pdf`、默认合并 `teaching-design-package.pdf`，只有实际文件存在且显式编译/合并成功时才可标记 `passed`。
-- Manifest/status 字段：`generated_from_markdown`、`source_markdown`、`provenance`、`split_outputs`、`phase29_pdf_slots`、`end_of_term`、`combined_output`、`review_markers`、`final_ready`。
+默认 Typst-only 成功路径会写出：
+
+- `teaching-design-package-full.md`：复制到输出目录的 unified Markdown。
+- `teaching-design-package.typ`：由 package-owned data model 生成的 unified Typst。
+- `.teaching-design-package/model.json`：隐藏诊断模型。
+- `teaching-design-package-status.json`：输出状态与 readiness。
+
+显式 `--pdf` 时还会尝试：
+
+- `teaching-design-package.pdf`
+- `teaching-plan.pdf`
+- `teaching-design.pdf`
+
+Phase 30 可以诚实记录 PDF `not_run`、`missing_compiler_or_failed` 或 `passed`。完整 1+1+3 最终交付清洁化由后续阶段完成。
 
 ## Verification
 
-- [ ] `SKILL.md` 保持 portable canonical body，runtime-specific 行为只在 adapter notes 中。
 - [ ] `Codex`、`Claude Code`、`Gemini CLI`、`OpenCode`、`OpenClaw`、`Hermes Agent` 均出现在 Runtime Adapter Notes。
-- [ ] `references/format-and-orchestration.md` 覆盖 TDP-05 到 TDP-14。
-- [ ] `scripts/teaching-design-package.sh example --output <file>` 输出与 `templates/teaching-design-package-full.md` byte-identical 的整包 Markdown。
-- [ ] `scripts/teaching-design-package.sh plan-split --input <file> --out-dir <dir>` 输出两个模块 intermediate。
-- [ ] `scripts/teaching-design-package.sh render-package --input <file> --out-dir <dir>` 输出 `teaching-design-package.typ`，并在 manifest 中记录 `generated_from_markdown: true`。
-- [ ] `scripts/teaching-design-package.sh render-package --pdf --input <file> --out-dir <dir>` 输出真实 `teaching-plan.pdf`、`lesson-plans.pdf`、`teaching-design-package.pdf`，并在 manifest 中记录编译/合并工具或明确失败状态。
-- [ ] 用同一轮生成的 `jiaoan-jihua-full.md` 和 `jiaoan-shicao-full.md` 重新调用 standalone `jiaoan-jihua`、`jiaoan-shicao`，确认拆分 Typst/PDF 与 standalone 输出一致；唯一允许差异是明确记录的 timestamp/generated-at 行。
-
-## Success Criteria
-
-- TDP-05 到 TDP-14 的整包编排入口可被 agent 读取、执行和验证。
-- `jiaoan-jihua`、`jiaoan-shicao` 与 `end-of-term-teaching-materials` 仍是 standalone skills；本技能只组合、引用或调用它们。
-- 所有最终输出声明都经过 Markdown checkpoint、derived evidence 和 manifest/status 证据。
-- 默认合并 `teaching-design-package.pdf`、`end-of-term-package.pdf` 和可选期末材料模块使用显式状态和证据，不用占位符声称完成。
+- [ ] `scripts/teaching-design-package.sh example --output <file>` 生成 unified Markdown。
+- [ ] `scripts/teaching-design-package.sh model --input <file>` 输出 package-owned data model。
+- [ ] `scripts/teaching-design-package.sh render-package --input <file> --out-dir <dir>` 输出 unified Typst 与状态 JSON。
+- [ ] standalone 验证只复制本 skill folder，并能运行 example 与 render-package。
 
 ## Safety
 
-- 不要删除、重命名、替换或改变 `skills/jiaoan-jihua` 与 `skills/jiaoan-shicao` 的公开命令。
-- 不要一跳从源材料生成 PDF；必须先落地可审阅 Markdown intermediate。
-- 不要静默丢弃缺失、冲突、耗尽或不确定的排课/内容输入；必须就近标记并汇总到 `## 复核标记`。
-- 不要把整包 baseline 缺失的派生/default/output/validation 字段补回 package YAML。
-- 不要把 PDF 状态标记为 `passed`，除非显式 PDF 编译命令已运行且输出文件存在。
-- 不要用无关 fixture 代替同一 generated handoff 的 standalone parity；整包输出必须和同源 standalone 渲染对比。
-- 不要把 `end-of-term-full.md` 的模块级 `## 复核标记` 或 manifest `review_cleared: false` 交给整包级状态静默覆盖。
+- 不要把外部兼容入口改造成本包内部依赖。
+- 不要新增旧式内部目录或旧式拆分交接结构。
+- 不要从 unified Markdown 一跳声称 PDF 最终通过；只有显式 `--pdf` 且实际文件存在时才记录 `passed`。
+- 不要把脚本诊断文件混入教师默认交付说明；Phase 32 会继续收束清洁输出目录。
