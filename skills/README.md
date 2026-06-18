@@ -6,10 +6,8 @@ Current skills:
 
 - `end-of-term-teaching-materials`: 期末教学提交材料和表格的 Markdown intermediate 到固定模板 Typst/PDF、deterministic table artifacts、calculated score evidence 和 workbook 的工作流。
 - `gongwen`: 类公文 Markdown intermediate 到 Presto gongwen Typst/PDF 的工作流。
-- `jiaoan-jihua`: 授课进度计划 Markdown intermediate 到 Presto jiaoan-jihua Typst/PDF 的工作流。
-- `jiaoan-shicao`: 实操教案 Markdown intermediate 到 Presto jiaoan-shicao Typst/PDF 的工作流。
 - `school-presentation`: 学校正式汇报、课程展示、培训课件、招生宣讲或项目答辩材料的 Markdown logical-slide intermediate 到离线 HTML 演示文稿的工作流；生成物内置 preview、overview、playback、presenter markup、课堂交互/结构化版式和一键最终 PDF 导出。
-- `teaching-design-package`: 教学设计整包 Markdown intermediate 到授课计划/实操教案/可选期末材料拆分 Typst/PDF status 的编排工作流；组合 `jiaoan-jihua`、`jiaoan-shicao` 与可选 `end-of-term-teaching-materials`，不替换原技能。
+- `teaching-design-package`: 教学设计整包 Markdown intermediate 到授课进度计划表/教学设计方案/可选期末材料拆分 Typst/PDF status 的编排工作流；旧授课计划和实操教案版式已迁入 package-owned renderer，正常运行不依赖 sibling skill folders。
 
 Expected layout:
 
@@ -37,8 +35,6 @@ Artifact contract discovery:
 |-------|-----------------------|-------------------|
 | `end-of-term-teaching-materials` | `templates/end-of-term-full.md` | `references/data-contract.md`, `references/workflow-and-artifacts.md` |
 | `gongwen` | `templates/gongwen-full.md` | `references/format-and-rendering.md` |
-| `jiaoan-jihua` | `templates/jiaoan-jihua-full.md` | `references/format-and-rendering.md`, `references/calendar.json` |
-| `jiaoan-shicao` | `templates/jiaoan-shicao-full.md` | `references/format-and-rendering.md` |
 | `school-presentation` | `templates/school-presentation-full.md` | `references/authoring-and-layout.md`, `references/playback-and-export.md`, `references/verification-contract.md` |
 | `teaching-design-package` | `templates/teaching-design-package-full.md` | `SKILL.md`, `references/format-and-orchestration.md`, `scripts/teaching-design-package.sh` |
 
