@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
 current_phase: 39
-status: ready-for-next-phase
-stopped_at: Phase 39 completed
-last_updated: "2026-06-21T16:52:38.774Z"
+status: Phase 40 context gathered
+stopped_at: Phase 40 context gathered
+last_updated: "2026-06-21T17:07:31.742Z"
 last_activity: 2026-06-21 -- Phase 39 execution complete
 progress:
   total_phases: 4
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 39
-**Status:** Phase 39 complete
+**Status:** Phase 40 context gathered
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 39 — markdown-to-typst-renderer complete; Phase 40 not started
+**Current focus:** Phase 40 context gathered; Phase 40 planning and implementation not started
 
 ## Workflow Preferences
 
@@ -200,8 +200,8 @@ Phase 39 is complete. Phase 40 remains unstarted and should only begin when expl
 ## Last Session
 
 - **Completed:** Phase 39 execution
-- **Stopped At:** Phase 39 completed
-- **Resume File:** None
+- **Stopped At:** Phase 40 context gathered
+- **Resume File:** .planning/phases/40-skill-workflow-and-pdf-gate/40-CONTEXT.md
 
 ## Close Notes
 
