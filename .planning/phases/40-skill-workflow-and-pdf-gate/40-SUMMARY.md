@@ -81,7 +81,7 @@ completed: 2026-06-22
 1. **Task 2: Extend render command with PDF gate** - `43eacf9` (feat)
 2. **Task 1: Add canonical skill entry and PDF workflow reference** - `6b327e0` (docs)
 3. **Task 3: Update repository discoverability and requirement traceability** - `25ef4cb` (docs)
-4. **Task 4: Record Phase 40 verification evidence** - pending metadata commit
+4. **Task 4: Record Phase 40 verification evidence** - `eb0f7c9` (docs)
 
 ## Files Created/Modified
 
