@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
 current_phase: 38
-status: Phase 37 completed
-stopped_at: Phase 37 completed; ready for Phase 38
-last_updated: "2026-06-21T08:35:54Z"
-last_activity: 2026-06-21 — Phase 37 created hand-authored 调课单 Typst baseline and non-empty PDF evidence
+status: Phase 38 context gathered
+stopped_at: Phase 38 context gathered
+last_updated: "2026-06-21T15:07:14.502Z"
+last_activity: 2026-06-21 — Phase 38 discussion context captured for 调课单 Markdown Contract
 progress:
   total_phases: 4
   completed_phases: 1
@@ -19,7 +19,7 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 38
-**Status:** Phase 37 completed
+**Status:** Phase 38 context gathered
 
 ## Project Reference
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Start Phase 38 with `/gsd:discuss-phase 38` or `/gsd:plan-phase 38`.
+Phase 38 discussion context is captured. Next step: start planning with `/gsd:plan-phase 38`.
 
 ## Accumulated Context
 
@@ -194,9 +194,9 @@ Start Phase 38 with `/gsd:discuss-phase 38` or `/gsd:plan-phase 38`.
 
 ## Last Session
 
-- **Completed:** Phase 37 Typst baseline execution
-- **Stopped At:** Phase 37 completed; ready for Phase 38
-- **Resume File:** .planning/phases/37-typst-baseline/37-01-SUMMARY.md
+- **Completed:** Phase 38 context gathering
+- **Stopped At:** Phase 38 context gathered
+- **Resume File:** .planning/phases/38-markdown-contract/38-CONTEXT.md
 
 ## Close Notes
 
