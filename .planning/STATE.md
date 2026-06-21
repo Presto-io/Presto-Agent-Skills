@@ -3,9 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
 current_phase: 37
-status: ready
-last_updated: "2026-06-21T07:24:06.000Z"
-last_activity: 2026-06-21
+status: v1.16 milestone initialized
+stopped_at: Phase 37 context gathered
+last_updated: "2026-06-21T07:42:16.640Z"
+last_activity: 2026-06-21 — Milestone v1.16 requirements and roadmap created
 progress:
   total_phases: 4
   completed_phases: 0
@@ -192,8 +193,8 @@ Start Phase 37 with `/gsd:discuss-phase 37` or `/gsd:plan-phase 37`.
 ## Last Session
 
 - **Completed:** v1.15 milestone completion and archive
-- **Stopped At:** Ready for next milestone definition
-- **Resume File:** None
+- **Stopped At:** Phase 37 context gathered
+- **Resume File:** .planning/phases/37-typst-baseline/37-CONTEXT.md
 
 ## Close Notes
 
