@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
-current_phase: 40
+current_phase: null
 status: completed
-stopped_at: Phase 40 complete
-last_updated: "2026-06-22T01:54:04+08:00"
-last_activity: 2026-06-22 -- Phase 40 executed and verified
+stopped_at: Milestone v1.16 archived
+last_updated: "2026-06-21T18:14:52Z"
+last_activity: 2026-06-21 — Milestone v1.16 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -18,15 +18,15 @@ progress:
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 40
-**Status:** Phase 40 complete
+**Current Phase:** None
+**Status:** v1.16 milestone archived
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
+See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone archive)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 40 executed and verified; v1.16 is ready for milestone verification or closeout
+**Current focus:** v1.16 is shipped and archived; the repository is ready for the next milestone definition.
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Phase 40 is complete. Next command should be milestone verification/audit or closeout, not another execute-phase run.
+No active phase. Next command should be `/gsd:new-milestone` when the next scope is ready.
 
 ## Accumulated Context
 
@@ -85,6 +85,7 @@ Phase 40 is complete. Next command should be milestone verification/audit or clo
 - Phase 38 completed: `skills/tiaokedan/templates/tiaokedan.md` and `skills/tiaokedan/references/markdown-contract.md` now define the teacher-readable 调课单 Markdown contract, missing-value markers, renderer-owned defaults, and Phase 39/40 boundaries with verification evidence in `.planning/phases/38-markdown-contract/38-VERIFICATION.md`.
 - Phase 39 completed: `skills/tiaokedan/scripts/tiaokedan.sh` and `tiaokedan_renderer.py` now convert finalized `tiaokedan.md` into generated Typst, compare byte-for-byte against `tiaokedan-reference.typ`, reject missing/malformed/unsupported Markdown fixtures, and record independence evidence in `.planning/phases/39-markdown-to-typst-renderer/39-VERIFICATION.md`.
 - Phase 40 completed: `skills/tiaokedan/SKILL.md` now packages the teacher-facing workflow, missing-information questions, runtime adapters, PDF gate, clean output boundary, README/index discoverability, requirement traceability, and real PDF verification evidence in `.planning/phases/40-skill-workflow-and-pdf-gate/40-VERIFICATION.md`.
+- Milestone v1.16 archived: ROADMAP, REQUIREMENTS, and the passed-with-tech-debt milestone audit are preserved under `.planning/milestones/`; closeout corrected the stale Phase 37 and Phase 40 summary commit labels before committing the archive.
 
 ## Decisions
 
@@ -236,15 +237,14 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: 40 — COMPLETE
-Phase 40 completed the `tiaokedan` skill workflow and PDF gate. The skill now has a canonical entry, PDF workflow, clean output/diagnostics boundary, missing-information questions, runtime adapters, README/index/discoverability, and requirement traceability.
-Plan: `.planning/phases/40-skill-workflow-and-pdf-gate/40-PLAN.md`
-Status: Phase 40 complete
-Last activity: 2026-06-22 -- Phase 40 executed and verified
+Phase: Milestone v1.16 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-06-21 — Milestone v1.16 completed and archived
 
 ## Operator Next Steps
 
-- Run milestone verification/audit or closeout for v1.16 when ready.
+- Start the next milestone with `/gsd:new-milestone`
 
 ### Quick Tasks Completed
 

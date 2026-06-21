@@ -96,7 +96,7 @@ completed: 2026-06-21
 - **Fix:** Added explicit `#h(2em)` before the reason paragraph and strengthened the title with `#strong[调课说明]` plus `Songti SC`-first font fallback.
 - **Files modified:** `skills/tiaokedan/templates/tiaokedan-reference.typ`, `skills/tiaokedan/templates/tiaokedan-reference.pdf`, `.planning/phases/37-typst-baseline/37-VERIFICATION.md`
 - **Verification:** Recompiled with Typst 0.15.0, confirmed the PDF is 27288 bytes, and visually inspected `/private/tmp/tiaokedan-reference.pdf.png`.
-- **Committed in:** pending follow-up commit
+- **Committed in:** `2ca76cc`
 
 ---
 
