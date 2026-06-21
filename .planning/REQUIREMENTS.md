@@ -19,10 +19,10 @@
 
 ### Renderer Script
 
-- [ ] **TKD-RENDER-01**: The `调课单` skill includes a skill-local command surface that converts finalized Markdown into Typst.
-- [ ] **TKD-RENDER-02**: The renderer is independent at runtime: it may borrow patterns from existing skills, but it does not call sibling skill scripts or depend on sibling skill directories.
-- [ ] **TKD-RENDER-03**: The renderer verifies generated Typst against the hand-authored reference through deterministic checks suitable for phase evidence.
-- [ ] **TKD-RENDER-04**: The renderer reports clear non-zero failures for missing required fields, malformed Markdown sections, or unsupported values.
+- [x] **TKD-RENDER-01**: The `调课单` skill includes a skill-local command surface that converts finalized Markdown into Typst.
+- [x] **TKD-RENDER-02**: The renderer is independent at runtime: it may borrow patterns from existing skills, but it does not call sibling skill scripts or depend on sibling skill directories.
+- [x] **TKD-RENDER-03**: The renderer verifies generated Typst against the hand-authored reference through deterministic checks suitable for phase evidence.
+- [x] **TKD-RENDER-04**: The renderer reports clear non-zero failures for missing required fields, malformed Markdown sections, or unsupported values.
 
 ### PDF Workflow and Skill Entry
 
@@ -57,10 +57,10 @@
 | TKD-MD-01 | Phase 38 | Complete |
 | TKD-MD-02 | Phase 38 | Complete |
 | TKD-MD-03 | Phase 38 | Complete |
-| TKD-RENDER-01 | Phase 39 | Pending |
-| TKD-RENDER-02 | Phase 39 | Pending |
-| TKD-RENDER-03 | Phase 39 | Pending |
-| TKD-RENDER-04 | Phase 39 | Pending |
+| TKD-RENDER-01 | Phase 39 | Complete |
+| TKD-RENDER-02 | Phase 39 | Complete |
+| TKD-RENDER-03 | Phase 39 | Complete |
+| TKD-RENDER-04 | Phase 39 | Complete |
 | TKD-PDF-01 | Phase 40 | Pending |
 | TKD-PDF-02 | Phase 40 | Pending |
 | TKD-PDF-03 | Phase 40 | Pending |
