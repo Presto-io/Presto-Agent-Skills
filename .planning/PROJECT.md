@@ -34,7 +34,17 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-No active milestone. The next slice should be defined with `/gsd:new-milestone` after choosing the next product direction.
+Milestone v1.16 is active: create a new `调课单` document workflow skill. The milestone starts from a hand-authored Typst target and a hand-authored Markdown source, then builds an independent Markdown-to-Typst renderer, PDF workflow, and missing-information question guide around that contract.
+
+## Current Milestone: v1.16 调课单 Skill
+
+**Goal:** Build a `调课单` skill that turns teacher-reviewed Markdown into a stable Typst/PDF adjustment form through skill-local scripts and clear clarification questions.
+
+**Target features:**
+- Hand-authored `调课单` Typst reference that captures the expected form layout before script automation.
+- Teacher-readable Markdown contract and fixture that can express all required adjustment-form facts without raw Typst.
+- Skill-local conversion script that may learn from existing implementations but does not depend on sibling skill scripts at runtime.
+- PDF generation workflow, verification artifacts, runtime adapter notes, and a clear question list for missing source information.
 
 ## Latest Milestone: v1.15 teaching-design-package 模块化渲染与旧格式回归
 
@@ -128,7 +138,11 @@ No active milestone. The next slice should be defined with `/gsd:new-milestone` 
 
 <!-- Current scope. Building toward these. -->
 
-None. Define the next milestone before adding active requirements.
+- [ ] Create the `调课单` skill as a Markdown-first document workflow with a canonical `SKILL.md`, support references, templates, scripts, and fixtures.
+- [ ] Establish the final form appearance by hand-authoring a Typst reference before automating conversion.
+- [ ] Establish a teacher-reviewable Markdown source that can be converted into the Typst reference without requiring users to edit Typst directly.
+- [ ] Implement skill-local Markdown-to-Typst and PDF generation without runtime dependency on other skill scripts.
+- [ ] Document the skill's missing-information questions so agents ask for required adjustment-form facts before rendering.
 
 ### Out of Scope
 
@@ -178,7 +192,12 @@ v1.15 tightened that package-owned output model. The unified Markdown remains te
 
 ## Next Milestone Goals
 
-No next milestone has been defined yet. Candidate directions should be captured through `/gsd:new-milestone`.
+Milestone v1.16 adds a new `调课单` skill to the document workflow family. The intended development order is:
+
+1. Hand-author the target Typst form after the user describes the required layout and fields.
+2. Hand-author the matching Markdown fixture as the teacher-editable source of truth.
+3. Build an independent skill-local script that converts the Markdown into Typst, borrowing patterns from existing skills only as implementation inspiration.
+4. Add PDF generation, verification, runtime adapter notes, and the clarification questions needed when source information is incomplete.
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -212,6 +231,9 @@ No next milestone has been defined yet. Candidate directions should be captured 
 - **v1.15 legacy-format discipline**: Legacy `jiaoan-jihua` and `jiaoan-shicao` skills may be used as format baselines and test oracles, but the package must not depend on them at runtime.
 - **v1.15 scheduling discipline**: Calendar, academic year/semester, course/task date ranges, week/day labels, daily hour consumption, total hours, and activity hours must come from one package-owned scheduling model using `calendar.json`, `first_teaching_day`, and teaching-plan rows.
 - **v1.15 failure discipline**: Missing calendar dates, range gaps, hour mismatches, task/activity mapping mismatches, failed module renders, or failed PDF merges must produce non-zero failure and hidden diagnostics rather than partial success output.
+- **v1.16 hand-authored baseline discipline**: The `调课单` milestone must establish the accepted Typst and Markdown fixtures before treating script output as final.
+- **v1.16 independence discipline**: The `调课单` renderer may reuse implementation ideas from existing document skills, but runtime execution must remain inside `skills/tiaokedan/` and must not call sibling skill scripts.
+- **v1.16 clarification discipline**: When required adjustment-form fields are missing, the skill must ask concise teacher-facing questions before generating final artifacts.
 
 ## Key Decisions
 
@@ -258,6 +280,7 @@ No next milestone has been defined yet. Candidate directions should be captured 
 | Keep successful package delivery roots clean | Default output should contain only one Markdown, one Typst, and three PDFs, with diagnostics hidden for audit/debug/failure use | Good - shipped in v1.14 |
 | Start v1.15 as modular package rendering with legacy formal-format regression | User confirmed the package must derive hidden module Markdown/Typst and formal module PDFs from one unified Markdown source | Good - shipped in v1.15 |
 | Treat old jiaoan skills as format baselines, not runtime dependencies | Package rendering must be standalone while proving migrated rules match or are equivalent to accepted old outputs | Good - shipped in v1.15 |
+| Start v1.16 as a new `调课单` skill milestone | User requested a new skill whose build order is hand-authored Typst, hand-authored Markdown, independent conversion script, then PDF workflow and clarification questions | Pending |
 | Use one scheduling model for both modules | Calendar and hour facts must not be calculated independently by the two modules | Good - shipped in v1.15 |
 
 ## Evolution
