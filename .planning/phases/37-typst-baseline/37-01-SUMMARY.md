@@ -58,7 +58,7 @@ completed: 2026-06-21
 
 - Created `skills/tiaokedan/templates/tiaokedan-reference.typ` as the accepted hand-authored target surface before Markdown or renderer automation.
 - Captured the locked title, recipient line, explanatory paragraph, 8-column adjustment table, two example rows, row-1 time-cell line breaks, and right-side closing signature.
-- Compiled `skills/tiaokedan/templates/tiaokedan-reference.pdf` successfully with Typst 0.15.0; the PDF is 29548 bytes.
+- Compiled `skills/tiaokedan/templates/tiaokedan-reference.pdf` successfully with Typst 0.15.0; the PDF is 27288 bytes after the accepted visual corrections.
 - Recorded requirement, decision, command, compile, visual-preview, and negative scope evidence in `37-VERIFICATION.md`.
 
 ## Task Commits
@@ -75,7 +75,7 @@ completed: 2026-06-21
 
 - Used A4 landscape via `#set page(paper: "a4", flipped: true)` and kept default Typst page margins as planned.
 - Used same-family Chinese font fallback declarations for Songti-style title and FangSong-style body/table/signature text.
-- Accepted a successful compile with empty captured stderr; a direct earlier compile printed unavailable fallback-font warnings but still produced a valid PDF.
+- Accepted a successful compile with fallback-font warnings only; the PDF is non-empty and visually checked after the accepted indentation/bold-title corrections.
 - Kept Phase 38-40 artifacts absent: no Markdown fixture, parser, renderer, scripts, canonical skill entry, runtime adapter notes, or README/index updates.
 
 ## Deviations from Plan
@@ -87,13 +87,21 @@ completed: 2026-06-21
 - **Issue:** Typst 0.15.0 rejected `table(width: 100%)` with `unexpected argument: width`.
 - **Fix:** Wrapped the table in `#block(width: 100%)[#table(...)]`, preserving the full-width table intent.
 - **Files modified:** `skills/tiaokedan/templates/tiaokedan-reference.typ`
-- **Verification:** Re-ran source assertions and `typst compile`; compile exited 0 and produced a 29548-byte PDF.
+- **Verification:** Re-ran source assertions and `typst compile`; compile exited 0 and produced a non-empty PDF.
 - **Committed in:** `ae67e62`
+
+**2. [Rule 2 - Visual Correctness] Corrected explanatory paragraph indentation and title weight**
+- **Found during:** User acceptance feedback after Phase 37 close-out
+- **Issue:** `教务处：` correctly had no first-line indent, but the following reason paragraph did not visually indent two Chinese characters; the title source requested bold, but the generated PDF title looked too light with the active font fallback.
+- **Fix:** Added explicit `#h(2em)` before the reason paragraph and strengthened the title with `#strong[调课说明]` plus `Songti SC`-first font fallback.
+- **Files modified:** `skills/tiaokedan/templates/tiaokedan-reference.typ`, `skills/tiaokedan/templates/tiaokedan-reference.pdf`, `.planning/phases/37-typst-baseline/37-VERIFICATION.md`
+- **Verification:** Recompiled with Typst 0.15.0, confirmed the PDF is 27288 bytes, and visually inspected `/private/tmp/tiaokedan-reference.pdf.png`.
+- **Committed in:** pending follow-up commit
 
 ---
 
-**Total deviations:** 1 auto-fixed (Rule 2 correctness).  
-**Impact on plan:** No scope expansion; the fix was required for the planned PDF compile evidence.
+**Total deviations:** 2 auto-fixed (Rule 2 correctness / visual correctness).  
+**Impact on plan:** No scope expansion; both fixes keep Phase 37 within the accepted Typst/PDF baseline scope.
 
 ## Issues Encountered
 
