@@ -386,6 +386,49 @@
 
 ---
 
+## Milestone: v1.16 - 调课单 Skill
+
+**Shipped:** 2026-06-21
+**Phases:** 4 | **Plans:** 4 | **Sessions:** 4+
+
+### What Was Built
+
+- A standalone `tiaokedan` skill for teacher-reviewed `调课单` Markdown to Typst/PDF output.
+- A hand-authored A4 landscape Typst baseline and non-empty PDF reference before renderer automation.
+- A teacher-readable Markdown fixture and field contract for all accepted form facts.
+- A skill-local renderer and PDF gate with byte-for-byte Typst comparison, clean public output, hidden diagnostics, failure checks, and six-runtime adapter notes.
+
+### What Worked
+
+- Building the accepted Typst surface before the Markdown contract kept the renderer target concrete.
+- Byte-for-byte comparison against the reference gave a simple, durable correctness gate.
+- Copied-only `skills/tiaokedan/` verification kept the standalone runtime boundary honest.
+
+### What Was Inefficient
+
+- Phase summaries carried stale pending-commit labels after follow-up metadata commits, so closeout needed a small summary cleanup before archive.
+- `milestone.complete` created the archive files, but ROADMAP, PROJECT, MILESTONES, STATE, and retrospective still required manual closeout review.
+- Duplicate one-liners from phase and plan summaries made the generated MILESTONES entry noisy until manually deduplicated.
+
+### Patterns Established
+
+- For form-style document skills, author the accepted Typst reference first, then the teacher Markdown contract, then renderer automation.
+- Clean public output should be checked alongside hidden diagnostic retention and invalid-input failure behavior.
+- Runtime independence claims should include a copied-only folder run, not only source inspection.
+
+### Key Lessons
+
+1. Use exact reference comparison when a form milestone has one accepted layout and no normalization rule.
+2. Treat summary commit labels as archive metadata; stale labels are non-blocking but worth fixing during closeout.
+3. Keep clarification questions in the skill entry and contract reference so agents ask before final rendering instead of guessing missing form facts.
+
+### Cost Observations
+
+- Model mix: balanced profile.
+- Notable: The highest-value checks were Typst/PDF compilation, byte-for-byte comparison, invalid-marker failure, clean output scan, and standalone-copy verification.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -401,6 +444,7 @@
 | v1.12 | 2+ | 2 | Repaired post-close teaching-design regressions for package date backfill and official activity-table width alignment. |
 | v1.14 | 3+ | 3 | Corrected `teaching-design-package` into a standalone teacher-first package with clean 1+1+3 delivery and hidden diagnostics. |
 | v1.15 | 4+ | 4 | Converted `teaching-design-package` into a modular all-in-one renderer with migrated formal outputs and strict PDF merge semantics. |
+| v1.16 | 4+ | 4 | Added a standalone `tiaokedan` document workflow from hand-authored baselines through skill-local Typst/PDF rendering and clarification guidance. |
 
 ### Cumulative Quality
 
@@ -415,6 +459,7 @@
 | v1.12 | Markdown handoff assertions, Typst width parsing, direct/package PDF compilation, public command smoke checks, milestone audit | 7/7 TDPR requirements shipped | No new runtime dependencies added |
 | v1.14 | Standalone-copy execution, exact public root assertions, hidden diagnostics checks, derived scheduling/failure gates, milestone audit | 15/15 TDPKG requirements shipped | No new runtime dependencies added |
 | v1.15 | Fresh package render, module PDF/status checks, forced failure semantics, public leakage scan, standalone-copy regression, milestone audit | 31/31 TDPKG requirements shipped | No new runtime dependencies added |
+| v1.16 | Typst/PDF compile, byte-for-byte reference comparison, invalid input failure, clean output scan, standalone-copy regression, milestone audit | 15/15 TKD requirements shipped | No new runtime dependencies added |
 
 ### Top Lessons (Verified Across Milestones)
 
