@@ -3,30 +3,30 @@ gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
 current_phase: 38
-status: Ready to execute
-stopped_at: Phase 38 planned
-last_updated: "2026-06-21T15:25:13.981Z"
-last_activity: 2026-06-21 -- Phase 38 planning complete
+status: Ready for verification
+stopped_at: Phase 38 executed
+last_updated: "2026-06-21T15:43:43.129Z"
+last_activity: 2026-06-21
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 2
-  percent: 50
+  completed_plans: 3
+  percent: 75
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 38
-**Status:** Ready to execute
+**Status:** Ready for verification
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 38 — 调课单 Markdown Contract
+**Current focus:** Phase 38 — markdown-contract
 
 ## Workflow Preferences
 
@@ -230,10 +230,10 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: 38 — 调课单 Markdown Contract
-Plan: Complete
-Status: Ready to execute
-Last activity: 2026-06-21 -- Phase 38 planning complete
+Phase 38 executed the Markdown contract plan and produced the teacher-readable fixture, skill-local contract reference, and verification evidence. Status is ready for verification; Phase 39/40 work has not been started.
+Plan: 1 of 1 complete
+Status: Ready for verification
+Last activity: 2026-06-21
 
 ## Operator Next Steps
 
