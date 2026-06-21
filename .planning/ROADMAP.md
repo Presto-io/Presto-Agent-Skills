@@ -121,14 +121,15 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 34. Teaching Plan Formal Renderer Migration | v1.15 | Complete | 2026-06-15 |
 | 35. Teaching Design Formal Renderer and Cross-Module Validation | v1.15 | Complete | 2026-06-15 |
 | 36. Public Delivery, PDF Merge, and Standalone Regression | v1.15 | Complete | 2026-06-15 |
+| 37. 调课单 Typst Baseline | v1.16 | Complete | 2026-06-21 |
 
 ## Current Position
 
-Milestone v1.16 is initialized. The next implementation step is Phase 37: collect the user's layout/field description and hand-author the accepted `调课单` Typst baseline before script automation.
+Phase 37 completed the hand-authored `调课单` Typst baseline and non-empty PDF evidence. The next implementation step is Phase 38: create the teacher-reviewable Markdown fixture and contract that express the same form facts without raw Typst.
 
 ## Next Step
 
-Start Phase 37 with `/gsd:discuss-phase 37` or `/gsd:plan-phase 37`.
+Start Phase 38 with `/gsd:discuss-phase 38` or `/gsd:plan-phase 38`.
 
 ---
-*Roadmap updated: 2026-06-21 after v1.16 milestone definition*
+*Roadmap updated: 2026-06-21 after Phase 37 completion*
