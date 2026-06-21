@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
-current_phase: 39
+current_phase: 40
 status: Phase 40 context gathered
 stopped_at: Phase 40 context gathered
-last_updated: "2026-06-21T17:07:31.742Z"
-last_activity: 2026-06-21 -- Phase 39 execution complete
+last_updated: "2026-06-21T17:14:07.009Z"
+last_activity: 2026-06-22 -- Phase 40 context gathered
 progress:
   total_phases: 4
   completed_phases: 3
@@ -18,7 +18,7 @@ progress:
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 39
+**Current Phase:** 40
 **Status:** Phase 40 context gathered
 
 ## Project Reference
@@ -26,7 +26,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 40 context gathered; Phase 40 planning and implementation not started
+**Current focus:** Phase 40 context gathered; ready for Phase 40 planning
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Phase 39 is complete. Phase 40 remains unstarted and should only begin when explicitly requested.
+Phase 39 is complete. Phase 40 context has been gathered and the user has explicitly authorized continuing the current milestone. Next command: `/gsd:plan-phase 40`.
 
 ## Accumulated Context
 
@@ -235,14 +235,15 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase 39 completed the independent `tiaokedan` Markdown-to-Typst renderer. Phase 40 remains untouched and unstarted.
-Plan: 1 plan complete
-Status: Ready for explicit Phase 40 start
-Last activity: 2026-06-21 -- Phase 39 execution complete
+Phase: 40 (调课单 Skill Workflow and PDF Gate) — CONTEXT GATHERED
+Phase 39 completed the independent `tiaokedan` Markdown-to-Typst renderer. Phase 40 context is ready for planning; implementation has not started.
+Plan: Not created
+Status: Ready for Phase 40 planning
+Last activity: 2026-06-22 -- Phase 40 context gathered
 
 ## Operator Next Steps
 
-- Wait for an explicit commander instruction before starting Phase 40.
+- Run `/gsd:plan-phase 40` when ready to create the Phase 40 implementation plan.
 
 ### Quick Tasks Completed
 
