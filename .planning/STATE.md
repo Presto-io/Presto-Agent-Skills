@@ -3,23 +3,23 @@ gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
 current_phase: 38
-status: Phase 38 context gathered
-stopped_at: Phase 38 context gathered
-last_updated: "2026-06-21T15:07:14.502Z"
-last_activity: 2026-06-21 — Phase 38 discussion context captured for 调课单 Markdown Contract
+status: Ready to execute
+stopped_at: Phase 38 planned
+last_updated: "2026-06-21T15:25:13.981Z"
+last_activity: 2026-06-21 -- Phase 38 planning complete
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 2
+  percent: 50
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 38
-**Status:** Phase 38 context gathered
+**Status:** Ready to execute
 
 ## Project Reference
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Phase 38 discussion context is captured. Next step: start planning with `/gsd:plan-phase 38`.
+Phase 38 planning is complete. Next step: execute Phase 38 with `/gsd:execute-phase 38`.
 
 ## Accumulated Context
 
@@ -231,14 +231,13 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 ## Current Position
 
 Phase: 38 — 调课单 Markdown Contract
-Plan: Not started
-Status: Ready to discuss or plan Phase 38
-Last activity: 2026-06-21 — Phase 37 Typst baseline and PDF evidence completed
+Plan: Complete
+Status: Ready to execute
+Last activity: 2026-06-21 -- Phase 38 planning complete
 
 ## Operator Next Steps
 
-- `/gsd:discuss-phase 38` — define the teacher-readable Markdown facts that should reproduce the accepted Phase 37 Typst form.
-- `/gsd:plan-phase 38` — create the executable plan for the hand-authored Markdown fixture and contract.
+- `/gsd:execute-phase 38` — create the hand-authored Markdown fixture, contract reference, and Phase 38 verification evidence.
 
 ### Quick Tasks Completed
 
