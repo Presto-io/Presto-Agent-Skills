@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-21 after v1.16 milestone definition
+**Last updated:** 2026-06-21 after Phase 39 execution
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -122,14 +122,16 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 35. Teaching Design Formal Renderer and Cross-Module Validation | v1.15 | Complete | 2026-06-15 |
 | 36. Public Delivery, PDF Merge, and Standalone Regression | v1.15 | Complete | 2026-06-15 |
 | 37. 调课单 Typst Baseline | v1.16 | Complete | 2026-06-21 |
+| 38. 调课单 Markdown Contract | v1.16 | Complete | 2026-06-21 |
+| 39. 调课单 Markdown-to-Typst Renderer | v1.16 | Complete | 2026-06-21 |
 
 ## Current Position
 
-Phase 37 completed the hand-authored `调课单` Typst baseline and non-empty PDF evidence. The next implementation step is Phase 38: create the teacher-reviewable Markdown fixture and contract that express the same form facts without raw Typst.
+Phase 39 completed the independent `调课单` skill-local Markdown-to-Typst renderer. The accepted Markdown fixture now renders to generated Typst that matches the Phase 37 reference byte-for-byte, with phase-local negative fixtures proving non-zero failures for unresolved required markers, malformed table columns, and unsupported raw Typst. Phase 40 remains untouched.
 
 ## Next Step
 
-Start Phase 38 with `/gsd:discuss-phase 38` or `/gsd:plan-phase 38`.
+Wait for an explicit instruction before starting Phase 40. Do not run Phase 40 as part of Phase 39 closeout.
 
 ---
-*Roadmap updated: 2026-06-21 after Phase 37 completion*
+*Roadmap updated: 2026-06-21 after Phase 39 execution*

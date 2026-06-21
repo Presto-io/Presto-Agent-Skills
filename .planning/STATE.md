@@ -3,30 +3,30 @@ gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
 current_phase: 39
-status: executing
-stopped_at: Phase 39 planned
-last_updated: "2026-06-21T16:31:56.965Z"
-last_activity: 2026-06-21 -- Phase 39 planning complete
+status: ready-for-next-phase
+stopped_at: Phase 39 completed
+last_updated: "2026-06-21T16:52:38.774Z"
+last_activity: 2026-06-21 -- Phase 39 execution complete
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 4
-  completed_plans: 4
-  percent: 100
+  completed_plans: 3
+  percent: 75
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 39
-**Status:** Ready to execute
+**Status:** Phase 39 complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 39 — markdown-to-typst-renderer
+**Current focus:** Phase 39 — markdown-to-typst-renderer complete; Phase 40 not started
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Phase 39 is planned. Next step: execute Phase 39 with `/gsd:execute-phase 39`.
+Phase 39 is complete. Phase 40 remains unstarted and should only begin when explicitly requested.
 
 ## Accumulated Context
 
@@ -83,6 +83,7 @@ Phase 39 is planned. Next step: execute Phase 39 with `/gsd:execute-phase 39`.
 - Milestone v1.16 started: create a new `调课单` skill through a hand-authored Typst baseline, hand-authored Markdown contract, independent Markdown-to-Typst renderer, and complete PDF/clarification workflow.
 - Phase 37 completed: `skills/tiaokedan/templates/tiaokedan-reference.typ` now captures the accepted A4 landscape 调课单 surface, and `tiaokedan-reference.pdf` compiles successfully as a 29548-byte baseline with verification evidence in `.planning/phases/37-typst-baseline/37-VERIFICATION.md`.
 - Phase 38 completed: `skills/tiaokedan/templates/tiaokedan.md` and `skills/tiaokedan/references/markdown-contract.md` now define the teacher-readable 调课单 Markdown contract, missing-value markers, renderer-owned defaults, and Phase 39/40 boundaries with verification evidence in `.planning/phases/38-markdown-contract/38-VERIFICATION.md`.
+- Phase 39 completed: `skills/tiaokedan/scripts/tiaokedan.sh` and `tiaokedan_renderer.py` now convert finalized `tiaokedan.md` into generated Typst, compare byte-for-byte against `tiaokedan-reference.typ`, reject missing/malformed/unsupported Markdown fixtures, and record independence evidence in `.planning/phases/39-markdown-to-typst-renderer/39-VERIFICATION.md`.
 
 ## Decisions
 
@@ -157,6 +158,8 @@ Phase 39 is planned. Next step: execute Phase 39 with `/gsd:execute-phase 39`.
 - [Phase 36]: Public delivery uses course-name-prefixed 1 + 1 + N files. — Current N=2 produces `课程名教学资料.md`, `课程名教学资料.pdf`, `课程名授课进度计划表.pdf`, and `课程名教学设计方案.pdf`.
 - [Phase 36]: The full package PDF is created only by merging registered module PDFs in module registry order. — Successful status records `merge_tool: "python_fitz"` in the local verification run, ordered inputs, byte sizes, output path, exit code, and non-empty result.
 - [Phase 36]: Hidden staging and cleanup prevent failed runs from leaving a complete-looking public root. — Invalid course name, missing/empty module PDF, merge failure, empty merge output, public leakage, and standalone negative checks all exit non-zero with hidden diagnostics.
+- [Phase 39]: tiaokedan Markdown-to-Typst comparison is byte-for-byte. — No normalized-equivalent rule is used; generated evidence hash matches `tiaokedan-reference.typ`.
+- [Phase 39]: tiaokedan renderer runtime stays skill-local. — Verification scanned for sibling skill paths and passed a copied `skills/tiaokedan/`-only render check.
 
 ## Performance Metrics
 
@@ -192,12 +195,13 @@ Phase 39 is planned. Next step: execute Phase 39 with `/gsd:execute-phase 39`.
 | Phase 35 P01 | 42min | 7 tasks | 7 files |
 | Phase 36 P01 | 18min | 7 tasks | 6 files |
 | Phase 37 P01 | 49min | 3 tasks | 3 files |
+| Phase 39 P01 | 20min | 3 tasks | 11 files |
 
 ## Last Session
 
-- **Completed:** Phase 39 context gathering
-- **Stopped At:** Phase 39 context gathered
-- **Resume File:** .planning/phases/39-markdown-to-typst-renderer/39-CONTEXT.md
+- **Completed:** Phase 39 execution
+- **Stopped At:** Phase 39 completed
+- **Resume File:** None
 
 ## Close Notes
 
@@ -231,14 +235,14 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase 39 has been planned for the independent `tiaokedan` Markdown-to-Typst renderer. The next step is execution; Phase 39 implementation has not started, and Phase 40 remains untouched.
-Plan: 1 plan ready
-Status: Ready to execute
-Last activity: 2026-06-21 -- Phase 39 planning complete
+Phase 39 completed the independent `tiaokedan` Markdown-to-Typst renderer. Phase 40 remains untouched and unstarted.
+Plan: 1 plan complete
+Status: Ready for explicit Phase 40 start
+Last activity: 2026-06-21 -- Phase 39 execution complete
 
 ## Operator Next Steps
 
-- `/gsd:execute-phase 39` — implement the skill-local Markdown-to-Typst renderer from the Phase 39 plan.
+- Wait for an explicit commander instruction before starting Phase 40.
 
 ### Quick Tasks Completed
 
