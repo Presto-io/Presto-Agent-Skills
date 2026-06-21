@@ -10,7 +10,7 @@
 |----------|------|--------|
 | Hand-authored Typst reference | `skills/tiaokedan/templates/tiaokedan-reference.typ` | present, non-empty |
 | Optional compiled PDF evidence | `skills/tiaokedan/templates/tiaokedan-reference.pdf` | present, non-empty |
-| Compile stderr capture | `/tmp/tiaokedan-reference.typst.stderr` | present, empty after successful captured compile |
+| Compile stderr capture | `/tmp/tiaokedan-reference.typst.stderr` | present, contains fallback-font warnings only |
 
 ## Requirement Coverage
 
@@ -18,17 +18,17 @@
 |-------------|----------|--------|
 | TKD-TYP-01 | `skills/tiaokedan/templates/tiaokedan-reference.typ` exists under the new `skills/tiaokedan/templates/` ownership boundary and is hand-authored, not generated. | passed |
 | TKD-TYP-02 | The Typst source records the required visible fields, labels, 8-column table structure, two example rows, right-side signature area, and typography/layout declarations. | passed |
-| TKD-TYP-03 | `typst compile skills/tiaokedan/templates/tiaokedan-reference.typ skills/tiaokedan/templates/tiaokedan-reference.pdf` exited 0 and produced a 29548-byte PDF. | passed |
+| TKD-TYP-03 | `typst compile skills/tiaokedan/templates/tiaokedan-reference.typ skills/tiaokedan/templates/tiaokedan-reference.pdf` exited 0 and produced a 27288-byte PDF. | passed |
 
 ## Locked Decision Coverage
 
 | Decision | Evidence | Status |
 |----------|----------|--------|
 | D-01 | `#set page(paper: "a4", flipped: true)` declares A4 landscape with default page margins. | passed |
-| D-02 | Title source is exactly `调课说明`, centered, `FONT_SONG`, `22pt`, bold. | passed |
+| D-02 | Title source is exactly `调课说明`, centered, `FONT_SONG`, `22pt`, `weight: "bold"`, and `#strong[...]`. | passed |
 | D-03 | Body/table/signature text use `FONT_FS`, `14pt`, and paragraph justification via `justify: true`. | passed |
 | D-04 | Recipient line source is exactly `教务处：` with `indent: 0pt`. | passed |
-| D-05 | Explanatory paragraph uses the `para` helper default first-line indent. | passed |
+| D-05 | Explanatory paragraph starts with explicit `#h(2em)` before the locked reason text, producing the accepted two-character first-line visual indent. | passed |
 | D-06 | Locked paragraph text appears exactly in the Typst source. | passed |
 | D-07 | The table is wrapped in `#block(width: 100%)` to span the text block. | passed |
 | D-08 | Table cells use `align: center + horizon`, visible stroke, `FONT_FS`, and `14pt`. | passed |
@@ -51,10 +51,10 @@ typst compile skills/tiaokedan/templates/tiaokedan-reference.typ skills/tiaokeda
 exit code: 0
 
 stat -f%z skills/tiaokedan/templates/tiaokedan-reference.pdf
-29548
+27288
 
 sed -n '1,220p' /tmp/tiaokedan-reference.typst.stderr
-<empty>
+fallback-font warnings only; compile exit code remained 0
 ```
 
 ## Automated Source Assertions
@@ -92,6 +92,12 @@ PASS
 
 rg 'justify|first-line-indent|center \+ horizon' skills/tiaokedan/templates/tiaokedan-reference.typ
 PASS
+
+rg -F '#h(2em)因我系专职教师周老师' skills/tiaokedan/templates/tiaokedan-reference.typ
+PASS
+
+rg -F '#strong[调课说明]' skills/tiaokedan/templates/tiaokedan-reference.typ
+PASS
 ```
 
 ## Scope Boundary Checks
@@ -116,4 +122,6 @@ PASS
 ## Notes
 
 - The first compile attempt exposed a Typst syntax issue: `table(width:)` is not valid in Typst 0.15.0. The baseline source was corrected to wrap the table in `#block(width: 100%)[#table(...)]`, preserving the full-width intent.
-- A direct compile without stderr redirection printed warnings for unavailable fallback font family names, but the captured final compile exited 0 and produced a non-empty PDF. The source still records same-family fallback intent for downstream portability.
+- After visual review, the explanatory paragraph was corrected from Typst paragraph-indent intent to an explicit `#h(2em)` first-line indent, because the previous source did not produce the required two-character visual indent.
+- After visual review, the title was strengthened with `#strong[调课说明]` in addition to `weight: "bold"` and a `Songti SC`-first fallback order, because the previous fallback looked too light in the generated PDF.
+- The captured final compile exited 0 and produced a non-empty PDF. Stderr contains only unavailable fallback-font warnings; the source still records same-family fallback intent for downstream portability.
