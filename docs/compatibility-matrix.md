@@ -10,7 +10,7 @@
 2. 把长格式规则、examples、renderer notes、artifact contract、UAT 和 troubleshooting 放进 skill-local `references/`，把 helper commands 和 internal modules 放进 `scripts/`，把 Markdown intermediate 或输出 scaffolds 放进 `templates/`。
 3. 在同一个 `SKILL.md` 的 adapter notes 中记录各 runtime 的加载路径、frontmatter 限制、工具调用、用户问询、任务/子代理和权限差异。
 4. v1 不维护独立 adapter 文件；如果 notes 变长，先压缩成必要检查点并保留在 canonical 文件里。
-5. 只有当 runtime 确实无法直接使用 canonical 文件时，才重新打开范围讨论 generated wrappers；v1 不实现 wrapper generation，也不维护多份技能逻辑。
+5. 只有当 runtime 确实无法直接使用 canonical 文件时，才重新打开范围讨论生成式运行时 shim；v1 不实现 shim generation，也不维护多份技能逻辑。
 
 ## Installation Checks
 
@@ -26,7 +26,7 @@
 
 | Runtime | v1 Status | Same-File Strategy | Adapter Notes Must Cover |
 |---------|-----------|--------------------|--------------------------|
-| Codex | Required | Keep canonical workflow in `SKILL.md`; expose persistent project guidance through `AGENTS.md` or the local skill mechanism available in the installed Codex environment. | Tool equivalents, unavailable Claude-only syntax, file-write safety, support-file discovery, and how Codex is told to read the skill. |
+| Codex | Required | Keep canonical workflow in `SKILL.md`; expose persistent project guidance through `AGENTS.md` or the local skill mechanism available in the installed Codex environment. | Tool equivalents, non-Codex runtime syntax, file-write safety, support-file discovery, and how Codex is told to read the skill. |
 | Claude Code | Required | Install the same skill folder in a Claude skill path such as `.claude/skills/<name>/`, preserving `SKILL.md`, `references/`, `scripts/`, and `templates/`. | Trigger-focused `description`, frontmatter/tool allowlist, progressive disclosure, and supporting file paths. |
 | Gemini CLI | Required | Use `GEMINI.md` or project context to point Gemini at the canonical `SKILL.md`. | Discovery bridge, invocation wording, unavailable tool mappings, support-file paths, and user-question fallback. |
 | OpenCode | Required | Prefer an OpenCode skill path that can load the same `SKILL.md`; record any Claude-compatible fallback path as an install note. | Native path, fallback path, tool permission differences, support-folder preservation, and verification that the runtime selected the skill. |
@@ -39,6 +39,12 @@
 
 - `teaching-design-package` 是整包编排 skill：运行时必须能保留 `references/format-and-orchestration.md`、`references/calendar.json`、`templates/teaching-design-package-full.md`、`scripts/teaching-design-package.sh` 以及 package-owned renderer scripts；旧授课计划和实操教案版式规则已迁入本 skill folder，正常运行不得要求读取 sibling skill 支持文件。
 - PDF status 只有在显式 PDF 编译命令成功且输出文件存在时才能标记为 passed；只生成 Typst 不能声称最终 PDF 完成。
+
+### Tiaokedan
+
+- `tiaokedan` 是单张 `调课单` Markdown-first 文档 skill：运行时必须 whole-folder installation，保留 `SKILL.md`、`references/markdown-contract.md`、`references/pdf-workflow.md`、`templates/tiaokedan.md`、`templates/tiaokedan-reference.typ` 和 `scripts/tiaokedan.sh`。
+- 渲染依赖 `python3` 和 skill-local renderer；PDF gate 额外依赖 `typst` CLI，只有 `typst compile` 成功且 PDF 非空才能声称 final PDF passed。
+- 成功路径只发布显式请求的 `.typ`/`.pdf`；logs、diffs、status、debug JSON 和 failure diagnostics 必须留在隐藏 `.tiaokedan/` 或 phase evidence 目录，不得混入教师公开输出根目录。
 
 ### Codex
 
@@ -78,7 +84,7 @@ Reference: [OpenCode skills docs](https://opencode.ubitools.com/skills/)
 - Use AgentSkills-compatible folders with `SKILL.md`.
 - Keep frontmatter conservative; OpenClaw documentation notes parser constraints for frontmatter keys.
 - Treat third-party skills as untrusted code and review before enabling.
-- Verify allowlist, skill root, and sandbox behavior during installation. Do not move OpenClaw to optional/future status in v1 docs.
+- Verify allowlist, skill root, and sandbox behavior during installation. Keep OpenClaw as a required v1 runtime.
 
 References:
 
