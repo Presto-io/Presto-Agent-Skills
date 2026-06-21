@@ -26,11 +26,11 @@
 
 ### PDF Workflow and Skill Entry
 
-- [ ] **TKD-PDF-01**: The `调课单` skill provides a documented PDF generation workflow from finalized Markdown through generated Typst to final PDF.
-- [ ] **TKD-PDF-02**: Successful default output is clean and teacher-facing, while diagnostics, comparison evidence, logs, and temporary files remain hidden or explicitly debug-only.
-- [ ] **TKD-PDF-03**: The canonical `SKILL.md` describes when to use the skill, the Markdown-first workflow, safety boundaries, verification steps, and runtime adapter notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
-- [ ] **TKD-PDF-04**: The skill documentation includes concise questions to ask when source information is insufficient before generating final Typst/PDF artifacts.
-- [ ] **TKD-PDF-05**: Repository indexes and directory guidance make the new `调课单` skill discoverable without introducing agent-private syntax into the canonical skill body.
+- [x] **TKD-PDF-01**: The `调课单` skill provides a documented PDF generation workflow from finalized Markdown through generated Typst to final PDF. - v1.16 Phase 40
+- [x] **TKD-PDF-02**: Successful default output is clean and teacher-facing, while diagnostics, comparison evidence, logs, and temporary files remain hidden or explicitly debug-only. - v1.16 Phase 40
+- [x] **TKD-PDF-03**: The canonical `SKILL.md` describes when to use the skill, the Markdown-first workflow, safety boundaries, verification steps, and runtime adapter notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent. - v1.16 Phase 40
+- [x] **TKD-PDF-04**: The skill documentation includes concise questions to ask when source information is insufficient before generating final Typst/PDF artifacts. - v1.16 Phase 40
+- [x] **TKD-PDF-05**: Repository indexes and directory guidance make the new `调课单` skill discoverable without introducing agent-private syntax into the canonical skill body. - v1.16 Phase 40
 
 ## Future Requirements
 
@@ -61,11 +61,11 @@
 | TKD-RENDER-02 | Phase 39 | Complete |
 | TKD-RENDER-03 | Phase 39 | Complete |
 | TKD-RENDER-04 | Phase 39 | Complete |
-| TKD-PDF-01 | Phase 40 | Pending |
-| TKD-PDF-02 | Phase 40 | Pending |
-| TKD-PDF-03 | Phase 40 | Pending |
-| TKD-PDF-04 | Phase 40 | Pending |
-| TKD-PDF-05 | Phase 40 | Pending |
+| TKD-PDF-01 | Phase 40 | Complete — `.planning/phases/40-skill-workflow-and-pdf-gate/40-VERIFICATION.md`; `skills/tiaokedan/references/pdf-workflow.md`; `scripts/tiaokedan.sh render --pdf` |
+| TKD-PDF-02 | Phase 40 | Complete — `.planning/phases/40-skill-workflow-and-pdf-gate/40-VERIFICATION.md`; clean output leakage checks |
+| TKD-PDF-03 | Phase 40 | Complete — `skills/tiaokedan/SKILL.md` |
+| TKD-PDF-04 | Phase 40 | Complete — `skills/tiaokedan/SKILL.md`; `references/markdown-contract.md` |
+| TKD-PDF-05 | Phase 40 | Complete — `README.md`; `skills/README.md`; `docs/directory-spec.md`; `docs/compatibility-matrix.md`; `.planning/phases/40-skill-workflow-and-pdf-gate/40-VERIFICATION.md` |
 
 **Coverage:**
 - v1.16 requirements: 15 total
