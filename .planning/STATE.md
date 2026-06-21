@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
-current_phase: 38
-status: Ready for verification
-stopped_at: Phase 38 executed
-last_updated: "2026-06-21T15:43:43.129Z"
+current_phase: 39
+status: planning
+stopped_at: Phase 39 context gathered
+last_updated: "2026-06-21T16:17:08.967Z"
 last_activity: 2026-06-21
 progress:
   total_phases: 4
@@ -18,15 +18,15 @@ progress:
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 38
-**Status:** Ready for verification
+**Current Phase:** 39
+**Status:** Ready for planning
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 38 — markdown-contract
+**Current focus:** Phase 39 — markdown-to-typst-renderer
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Phase 38 planning is complete. Next step: execute Phase 38 with `/gsd:execute-phase 38`.
+Phase 39 context is gathered. Next step: plan Phase 39 with `/gsd:plan-phase 39`.
 
 ## Accumulated Context
 
@@ -82,6 +82,7 @@ Phase 38 planning is complete. Next step: execute Phase 38 with `/gsd:execute-ph
 - Milestone v1.15 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
 - Milestone v1.16 started: create a new `调课单` skill through a hand-authored Typst baseline, hand-authored Markdown contract, independent Markdown-to-Typst renderer, and complete PDF/clarification workflow.
 - Phase 37 completed: `skills/tiaokedan/templates/tiaokedan-reference.typ` now captures the accepted A4 landscape 调课单 surface, and `tiaokedan-reference.pdf` compiles successfully as a 29548-byte baseline with verification evidence in `.planning/phases/37-typst-baseline/37-VERIFICATION.md`.
+- Phase 38 completed: `skills/tiaokedan/templates/tiaokedan.md` and `skills/tiaokedan/references/markdown-contract.md` now define the teacher-readable 调课单 Markdown contract, missing-value markers, renderer-owned defaults, and Phase 39/40 boundaries with verification evidence in `.planning/phases/38-markdown-contract/38-VERIFICATION.md`.
 
 ## Decisions
 
@@ -194,9 +195,9 @@ Phase 38 planning is complete. Next step: execute Phase 38 with `/gsd:execute-ph
 
 ## Last Session
 
-- **Completed:** Phase 38 context gathering
-- **Stopped At:** Phase 38 context gathered
-- **Resume File:** .planning/phases/38-markdown-contract/38-CONTEXT.md
+- **Completed:** Phase 39 context gathering
+- **Stopped At:** Phase 39 context gathered
+- **Resume File:** .planning/phases/39-markdown-to-typst-renderer/39-CONTEXT.md
 
 ## Close Notes
 
@@ -230,14 +231,14 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase 38 executed the Markdown contract plan and produced the teacher-readable fixture, skill-local contract reference, and verification evidence. Status is ready for verification; Phase 39/40 work has not been started.
-Plan: 1 of 1 complete
-Status: Ready for verification
-Last activity: 2026-06-21
+Phase 39 context has been gathered for the independent `tiaokedan` Markdown-to-Typst renderer. The next step is planning; Phase 39 implementation has not started, and Phase 40 remains untouched.
+Plan: Not started
+Status: Ready for planning
+Last activity: 2026-06-21 -- Phase 39 context gathered
 
 ## Operator Next Steps
 
-- `/gsd:execute-phase 38` — create the hand-authored Markdown fixture, contract reference, and Phase 38 verification evidence.
+- `/gsd:plan-phase 39` — plan the skill-local Markdown-to-Typst renderer from the captured Phase 39 context.
 
 ### Quick Tasks Completed
 
