@@ -124,14 +124,15 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 | 37. 调课单 Typst Baseline | v1.16 | Complete | 2026-06-21 |
 | 38. 调课单 Markdown Contract | v1.16 | Complete | 2026-06-21 |
 | 39. 调课单 Markdown-to-Typst Renderer | v1.16 | Complete | 2026-06-21 |
+| 40. 调课单 Skill Workflow and PDF Gate | v1.16 | Complete | 2026-06-22 |
 
 ## Current Position
 
-Phase 39 completed the independent `调课单` skill-local Markdown-to-Typst renderer. The accepted Markdown fixture now renders to generated Typst that matches the Phase 37 reference byte-for-byte, with phase-local negative fixtures proving non-zero failures for unresolved required markers, malformed table columns, and unsupported raw Typst. Phase 40 remains untouched.
+Phase 40 completed the `调课单` canonical skill workflow and PDF gate. The accepted Markdown fixture now renders to deterministic Typst, compiles through the skill-local `--pdf` gate into a non-empty PDF, keeps successful public output clean, records missing-information questions, covers all six runtime adapter notes, and updates README/index/discoverability plus requirement traceability.
 
 ## Next Step
 
-Wait for an explicit instruction before starting Phase 40. Do not run Phase 40 as part of Phase 39 closeout.
+Run milestone verification/audit or closeout for v1.16 when explicitly requested. Do not re-run Phase 40 unless a new gap is opened.
 
 ---
-*Roadmap updated: 2026-06-21 after Phase 39 execution*
+*Roadmap updated: 2026-06-22 after Phase 40 execution*

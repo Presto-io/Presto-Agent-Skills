@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
 current_phase: 40
-status: Ready to execute
-stopped_at: Phase 40 planned
-last_updated: "2026-06-22T01:22:46+08:00"
-last_activity: 2026-06-22 -- Phase 40 planning complete
+status: completed
+stopped_at: Phase 40 complete
+last_updated: "2026-06-22T01:54:04+08:00"
+last_activity: 2026-06-22 -- Phase 40 executed and verified
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 4
   completed_plans: 4
   percent: 100
@@ -19,14 +19,14 @@ progress:
 
 **Initialized:** 2026-05-30
 **Current Phase:** 40
-**Status:** Ready to execute
+**Status:** Phase 40 complete
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 40 planned; ready for Phase 40 execution
+**Current focus:** Phase 40 executed and verified; v1.16 is ready for milestone verification or closeout
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Phase 39 is complete. Phase 40 is planned and ready for execution. Next command: `/gsd:execute-phase 40`.
+Phase 40 is complete. Next command should be milestone verification/audit or closeout, not another execute-phase run.
 
 ## Accumulated Context
 
@@ -84,6 +84,7 @@ Phase 39 is complete. Phase 40 is planned and ready for execution. Next command:
 - Phase 37 completed: `skills/tiaokedan/templates/tiaokedan-reference.typ` now captures the accepted A4 landscape 调课单 surface, and `tiaokedan-reference.pdf` compiles successfully as a 29548-byte baseline with verification evidence in `.planning/phases/37-typst-baseline/37-VERIFICATION.md`.
 - Phase 38 completed: `skills/tiaokedan/templates/tiaokedan.md` and `skills/tiaokedan/references/markdown-contract.md` now define the teacher-readable 调课单 Markdown contract, missing-value markers, renderer-owned defaults, and Phase 39/40 boundaries with verification evidence in `.planning/phases/38-markdown-contract/38-VERIFICATION.md`.
 - Phase 39 completed: `skills/tiaokedan/scripts/tiaokedan.sh` and `tiaokedan_renderer.py` now convert finalized `tiaokedan.md` into generated Typst, compare byte-for-byte against `tiaokedan-reference.typ`, reject missing/malformed/unsupported Markdown fixtures, and record independence evidence in `.planning/phases/39-markdown-to-typst-renderer/39-VERIFICATION.md`.
+- Phase 40 completed: `skills/tiaokedan/SKILL.md` now packages the teacher-facing workflow, missing-information questions, runtime adapters, PDF gate, clean output boundary, README/index discoverability, requirement traceability, and real PDF verification evidence in `.planning/phases/40-skill-workflow-and-pdf-gate/40-VERIFICATION.md`.
 
 ## Decisions
 
@@ -235,15 +236,15 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: 40 (调课单 Skill Workflow and PDF Gate) — PLANNED
-Phase 39 completed the independent `tiaokedan` Markdown-to-Typst renderer. Phase 40 now has an executable plan covering canonical skill entry, PDF gate, clean output/diagnostics, missing-information questions, runtime adapters, README/index/discoverability, and requirement traceability.
+Phase: 40 — COMPLETE
+Phase 40 completed the `tiaokedan` skill workflow and PDF gate. The skill now has a canonical entry, PDF workflow, clean output/diagnostics boundary, missing-information questions, runtime adapters, README/index/discoverability, and requirement traceability.
 Plan: `.planning/phases/40-skill-workflow-and-pdf-gate/40-PLAN.md`
-Status: Ready to execute
-Last activity: 2026-06-22 -- Phase 40 planning complete
+Status: Phase 40 complete
+Last activity: 2026-06-22 -- Phase 40 executed and verified
 
 ## Operator Next Steps
 
-- Run `/gsd:execute-phase 40` when ready to implement the Phase 40 plan.
+- Run milestone verification/audit or closeout for v1.16 when ready.
 
 ### Quick Tasks Completed
 
