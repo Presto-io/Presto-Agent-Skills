@@ -381,17 +381,19 @@ Verified patterns from official/local sources:
 | A2 | `justify: true` is an acceptable Typst approximation for the requested Chinese distributed paragraph alignment. | Typst Implementation Considerations | Visual output may not match a word-processor's distributed alignment; execution may need a fixed-width helper for short lines. |
 | A3 | The suggested 8-column width proportions will fit the accepted A4 landscape page body. | Typst Implementation Considerations | Implementation may need width tuning after first compile/visual review. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should the compiled PDF be committed or recorded only as phase evidence?**
+1. **Should the compiled PDF be committed or recorded only as phase evidence? — RESOLVED**
    - What we know: success criteria require non-empty PDF when dependencies are available.
    - What's unclear: repository policy for committing this specific generated PDF artifact is not explicitly stated.
    - Recommendation: plan PDF generation and byte-size evidence; commit the PDF only if the implementation plan treats it as the reference fixture, otherwise store evidence in phase verification.
+   - Resolution: Phase 37 treats `skills/tiaokedan/templates/tiaokedan-reference.pdf` as optional compile evidence paired with the hand-authored `.typ` reference. If local Typst compilation succeeds and the PDF is non-empty, it may be kept under `skills/tiaokedan/templates/` and recorded with byte size in `37-VERIFICATION.md`; if compilation fails, no PDF success is claimed and the exact blocker is recorded.
 
-2. **How exact must "distributed alignment" be?**
+2. **How exact must "distributed alignment" be? — RESOLVED**
    - What we know: locked decision requires 仿宋四号 distributed alignment for body paragraphs.
    - What's unclear: whether Typst paragraph justification alone is visually accepted.
    - Recommendation: start with `justify: true`; execution verification should include visual inspection and only add spacing helpers if required.
+   - Resolution: Phase 37 baseline uses Typst paragraph justification (`justify: true`) as the accepted implementation of the requested body-paragraph distributed alignment unless the user later rejects the visual output. Short lines such as `教务处：` and the signature must not be stretched.
 
 ## Validation Architecture
 
