@@ -1,32 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.15
-milestone_name: teaching-design-package 模块化渲染与旧格式回归
-current_phase: 36
-status: completed
-stopped_at: "Milestone v1.15 completed and archived"
-last_updated: "2026-06-15T09:57:15.717Z"
-last_activity: 2026-06-15 — Milestone v1.15 completed and archived
+milestone: v1.16
+milestone_name: 调课单 Skill
+current_phase: 37
+status: ready
+last_updated: "2026-06-21T07:24:06.000Z"
+last_activity: 2026-06-21
 progress:
   total_phases: 4
-  completed_phases: 4
+  completed_phases: 0
   total_plans: 4
-  completed_plans: 4
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 36
-**Status:** v1.15 milestone complete
+**Current Phase:** 37
+**Status:** v1.16 milestone initialized
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone archive)
+See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Planning next milestone
+**Current focus:** Phase 37 — 调课单 Typst Baseline
 
 ## Workflow Preferences
 
@@ -50,7 +49,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-15 after v1.15 milestone archive)
 
 ## Next Up
 
-Start the next milestone with `/gsd:new-milestone` when ready.
+Start Phase 37 with `/gsd:discuss-phase 37` or `/gsd:plan-phase 37`.
 
 ## Accumulated Context
 
@@ -80,6 +79,7 @@ Start the next milestone with `/gsd:new-milestone` when ready.
 - Milestone v1.14 started: correct `teaching-design-package` so it is a standalone, teacher-facing unified skill with a final-render script boundary, clean 1+1+3 delivery outputs, hidden diagnostics, and derived scheduling validation.
 - Milestone v1.15 started: convert `teaching-design-package` from unified Markdown flat rendering to package-owned modular all-in-one rendering, with hidden module Markdown/Typst, migrated formal jiaoan rendering rules, one scheduling model, course-name-prefixed public outputs, and strict PDF merge semantics.
 - Milestone v1.15 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
+- Milestone v1.16 started: create a new `调课单` skill through a hand-authored Typst baseline, hand-authored Markdown contract, independent Markdown-to-Typst renderer, and complete PDF/clarification workflow.
 
 ## Decisions
 
@@ -227,14 +227,15 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: Milestone v1.15 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-15 — v1.15.1 post-close patch recorded; milestone remains archived
+Phase: 37 — 调课单 Typst Baseline
+Plan: Not started
+Status: Ready to discuss or plan Phase 37
+Last activity: 2026-06-21 — Milestone v1.16 requirements and roadmap created
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- `/gsd:discuss-phase 37` — gather the user's language description for the form fields, layout, signature/approval areas, and visual expectations before hand-authoring Typst.
+- `/gsd:plan-phase 37` — skip discussion and create the executable plan for the hand-authored Typst baseline if enough layout detail is already available.
 
 ### Quick Tasks Completed
 
