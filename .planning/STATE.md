@@ -3,30 +3,30 @@ gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
 current_phase: 40
-status: Phase 40 context gathered
-stopped_at: Phase 40 context gathered
-last_updated: "2026-06-21T17:14:07.009Z"
-last_activity: 2026-06-22 -- Phase 40 context gathered
+status: Ready to execute
+stopped_at: Phase 40 planned
+last_updated: "2026-06-22T01:22:46+08:00"
+last_activity: 2026-06-22 -- Phase 40 planning complete
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 40
-**Status:** Phase 40 context gathered
+**Status:** Ready to execute
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 40 context gathered; ready for Phase 40 planning
+**Current focus:** Phase 40 planned; ready for Phase 40 execution
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Phase 39 is complete. Phase 40 context has been gathered and the user has explicitly authorized continuing the current milestone. Next command: `/gsd:plan-phase 40`.
+Phase 39 is complete. Phase 40 is planned and ready for execution. Next command: `/gsd:execute-phase 40`.
 
 ## Accumulated Context
 
@@ -235,15 +235,15 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: 40 (调课单 Skill Workflow and PDF Gate) — CONTEXT GATHERED
-Phase 39 completed the independent `tiaokedan` Markdown-to-Typst renderer. Phase 40 context is ready for planning; implementation has not started.
-Plan: Not created
-Status: Ready for Phase 40 planning
-Last activity: 2026-06-22 -- Phase 40 context gathered
+Phase: 40 (调课单 Skill Workflow and PDF Gate) — PLANNED
+Phase 39 completed the independent `tiaokedan` Markdown-to-Typst renderer. Phase 40 now has an executable plan covering canonical skill entry, PDF gate, clean output/diagnostics, missing-information questions, runtime adapters, README/index/discoverability, and requirement traceability.
+Plan: `.planning/phases/40-skill-workflow-and-pdf-gate/40-PLAN.md`
+Status: Ready to execute
+Last activity: 2026-06-22 -- Phase 40 planning complete
 
 ## Operator Next Steps
 
-- Run `/gsd:plan-phase 40` when ready to create the Phase 40 implementation plan.
+- Run `/gsd:execute-phase 40` when ready to implement the Phase 40 plan.
 
 ### Quick Tasks Completed
 
