@@ -13,9 +13,9 @@
 
 ### Markdown Contract
 
-- [ ] **TKD-MD-01**: The `调课单` skill includes a hand-authored Markdown fixture that is teacher-readable and contains all facts required by the Typst form.
-- [ ] **TKD-MD-02**: The Markdown contract separates user-maintained form facts from renderer-only defaults, so teachers do not need to write raw Typst.
-- [ ] **TKD-MD-03**: The Markdown fixture and reference documentation define how missing or unknown adjustment facts should be marked before final rendering.
+- [x] **TKD-MD-01**: The `调课单` skill includes a hand-authored Markdown fixture that is teacher-readable and contains all facts required by the Typst form.
+- [x] **TKD-MD-02**: The Markdown contract separates user-maintained form facts from renderer-only defaults, so teachers do not need to write raw Typst.
+- [x] **TKD-MD-03**: The Markdown fixture and reference documentation define how missing or unknown adjustment facts should be marked before final rendering.
 
 ### Renderer Script
 
@@ -54,9 +54,9 @@
 | TKD-TYP-01 | Phase 37 | Complete — `.planning/phases/37-typst-baseline/37-VERIFICATION.md` |
 | TKD-TYP-02 | Phase 37 | Complete — `.planning/phases/37-typst-baseline/37-VERIFICATION.md` |
 | TKD-TYP-03 | Phase 37 | Complete — non-empty `skills/tiaokedan/templates/tiaokedan-reference.pdf` |
-| TKD-MD-01 | Phase 38 | Pending |
-| TKD-MD-02 | Phase 38 | Pending |
-| TKD-MD-03 | Phase 38 | Pending |
+| TKD-MD-01 | Phase 38 | Complete |
+| TKD-MD-02 | Phase 38 | Complete |
+| TKD-MD-03 | Phase 38 | Complete |
 | TKD-RENDER-01 | Phase 39 | Pending |
 | TKD-RENDER-02 | Phase 39 | Pending |
 | TKD-RENDER-03 | Phase 39 | Pending |
