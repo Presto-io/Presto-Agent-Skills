@@ -3,23 +3,23 @@ gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
 current_phase: 39
-status: planning
-stopped_at: Phase 39 context gathered
-last_updated: "2026-06-21T16:17:08.967Z"
-last_activity: 2026-06-21
+status: executing
+stopped_at: Phase 39 planned
+last_updated: "2026-06-21T16:31:56.965Z"
+last_activity: 2026-06-21 -- Phase 39 planning complete
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
 **Current Phase:** 39
-**Status:** Ready for planning
+**Status:** Ready to execute
 
 ## Project Reference
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Phase 39 context is gathered. Next step: plan Phase 39 with `/gsd:plan-phase 39`.
+Phase 39 is planned. Next step: execute Phase 39 with `/gsd:execute-phase 39`.
 
 ## Accumulated Context
 
@@ -231,14 +231,14 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase 39 context has been gathered for the independent `tiaokedan` Markdown-to-Typst renderer. The next step is planning; Phase 39 implementation has not started, and Phase 40 remains untouched.
-Plan: Not started
-Status: Ready for planning
-Last activity: 2026-06-21 -- Phase 39 context gathered
+Phase 39 has been planned for the independent `tiaokedan` Markdown-to-Typst renderer. The next step is execution; Phase 39 implementation has not started, and Phase 40 remains untouched.
+Plan: 1 plan ready
+Status: Ready to execute
+Last activity: 2026-06-21 -- Phase 39 planning complete
 
 ## Operator Next Steps
 
-- `/gsd:plan-phase 39` — plan the skill-local Markdown-to-Typst renderer from the captured Phase 39 context.
+- `/gsd:execute-phase 39` — implement the skill-local Markdown-to-Typst renderer from the Phase 39 plan.
 
 ### Quick Tasks Completed
 
