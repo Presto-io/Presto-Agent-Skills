@@ -7,9 +7,9 @@
 
 ### Typst Baseline
 
-- [ ] **TKD-TYP-01**: The `调课单` skill includes a hand-authored Typst reference file that captures the accepted adjustment-form layout before automation.
-- [ ] **TKD-TYP-02**: The Typst reference records the required visible fields, labels, table structure, signature/approval areas, and typography decisions needed for PDF output.
-- [ ] **TKD-TYP-03**: The Typst reference can be compiled to a non-empty PDF with the repository's local Typst workflow when required fonts and tools are available.
+- [x] **TKD-TYP-01**: The `调课单` skill includes a hand-authored Typst reference file that captures the accepted adjustment-form layout before automation. - v1.16 Phase 37
+- [x] **TKD-TYP-02**: The Typst reference records the required visible fields, labels, table structure, signature/approval areas, and typography decisions needed for PDF output. - v1.16 Phase 37
+- [x] **TKD-TYP-03**: The Typst reference can be compiled to a non-empty PDF with the repository's local Typst workflow when required fonts and tools are available. - v1.16 Phase 37
 
 ### Markdown Contract
 
@@ -51,9 +51,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TKD-TYP-01 | Phase 37 | Pending |
-| TKD-TYP-02 | Phase 37 | Pending |
-| TKD-TYP-03 | Phase 37 | Pending |
+| TKD-TYP-01 | Phase 37 | Complete — `.planning/phases/37-typst-baseline/37-VERIFICATION.md` |
+| TKD-TYP-02 | Phase 37 | Complete — `.planning/phases/37-typst-baseline/37-VERIFICATION.md` |
+| TKD-TYP-03 | Phase 37 | Complete — non-empty `skills/tiaokedan/templates/tiaokedan-reference.pdf` |
 | TKD-MD-01 | Phase 38 | Pending |
 | TKD-MD-02 | Phase 38 | Pending |
 | TKD-MD-03 | Phase 38 | Pending |

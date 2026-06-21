@@ -2,31 +2,31 @@
 gsd_state_version: 1.0
 milestone: v1.16
 milestone_name: 调课单 Skill
-current_phase: 37
-status: v1.16 milestone initialized
-stopped_at: Phase 37 context gathered
-last_updated: "2026-06-21T07:42:16.640Z"
-last_activity: 2026-06-21 — Milestone v1.16 requirements and roadmap created
+current_phase: 38
+status: Phase 37 completed
+stopped_at: Phase 37 completed; ready for Phase 38
+last_updated: "2026-06-21T08:35:54Z"
+last_activity: 2026-06-21 — Phase 37 created hand-authored 调课单 Typst baseline and non-empty PDF evidence
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 25
 ---
 
 # State: Presto Agent Skills
 
 **Initialized:** 2026-05-30
-**Current Phase:** 37
-**Status:** v1.16 milestone initialized
+**Current Phase:** 38
+**Status:** Phase 37 completed
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 37 — 调课单 Typst Baseline
+**Current focus:** Phase 38 — 调课单 Markdown Contract
 
 ## Workflow Preferences
 
@@ -50,7 +50,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-21 after v1.16 milestone definition
 
 ## Next Up
 
-Start Phase 37 with `/gsd:discuss-phase 37` or `/gsd:plan-phase 37`.
+Start Phase 38 with `/gsd:discuss-phase 38` or `/gsd:plan-phase 38`.
 
 ## Accumulated Context
 
@@ -81,6 +81,7 @@ Start Phase 37 with `/gsd:discuss-phase 37` or `/gsd:plan-phase 37`.
 - Milestone v1.15 started: convert `teaching-design-package` from unified Markdown flat rendering to package-owned modular all-in-one rendering, with hidden module Markdown/Typst, migrated formal jiaoan rendering rules, one scheduling model, course-name-prefixed public outputs, and strict PDF merge semantics.
 - Milestone v1.15 archived: ROADMAP, REQUIREMENTS, and the passed milestone audit are preserved under `.planning/milestones/`; phase evidence remains in `.planning/phases/`.
 - Milestone v1.16 started: create a new `调课单` skill through a hand-authored Typst baseline, hand-authored Markdown contract, independent Markdown-to-Typst renderer, and complete PDF/clarification workflow.
+- Phase 37 completed: `skills/tiaokedan/templates/tiaokedan-reference.typ` now captures the accepted A4 landscape 调课单 surface, and `tiaokedan-reference.pdf` compiles successfully as a 29548-byte baseline with verification evidence in `.planning/phases/37-typst-baseline/37-VERIFICATION.md`.
 
 ## Decisions
 
@@ -189,12 +190,13 @@ Start Phase 37 with `/gsd:discuss-phase 37` or `/gsd:plan-phase 37`.
 | Phase 34 P01 | 16min | 6 tasks | 6 files |
 | Phase 35 P01 | 42min | 7 tasks | 7 files |
 | Phase 36 P01 | 18min | 7 tasks | 6 files |
+| Phase 37 P01 | 49min | 3 tasks | 3 files |
 
 ## Last Session
 
-- **Completed:** v1.15 milestone completion and archive
-- **Stopped At:** Phase 37 context gathered
-- **Resume File:** .planning/phases/37-typst-baseline/37-CONTEXT.md
+- **Completed:** Phase 37 Typst baseline execution
+- **Stopped At:** Phase 37 completed; ready for Phase 38
+- **Resume File:** .planning/phases/37-typst-baseline/37-01-SUMMARY.md
 
 ## Close Notes
 
@@ -228,15 +230,15 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: 37 — 调课单 Typst Baseline
+Phase: 38 — 调课单 Markdown Contract
 Plan: Not started
-Status: Ready to discuss or plan Phase 37
-Last activity: 2026-06-21 — Milestone v1.16 requirements and roadmap created
+Status: Ready to discuss or plan Phase 38
+Last activity: 2026-06-21 — Phase 37 Typst baseline and PDF evidence completed
 
 ## Operator Next Steps
 
-- `/gsd:discuss-phase 37` — gather the user's language description for the form fields, layout, signature/approval areas, and visual expectations before hand-authoring Typst.
-- `/gsd:plan-phase 37` — skip discussion and create the executable plan for the hand-authored Typst baseline if enough layout detail is already available.
+- `/gsd:discuss-phase 38` — define the teacher-readable Markdown facts that should reproduce the accepted Phase 37 Typst form.
+- `/gsd:plan-phase 38` — create the executable plan for the hand-authored Markdown fixture and contract.
 
 ### Quick Tasks Completed
 
