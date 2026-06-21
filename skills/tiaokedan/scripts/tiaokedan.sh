@@ -10,6 +10,7 @@ usage() {
   while IFS= read -r line; do printf '%s\n' "$line"; done <<'USAGE'
 Usage:
   tiaokedan.sh render --input <tiaokedan.md> --typ <output.typ>
+                       [--pdf <output.pdf>]
                        [--expected-typ <reference.typ>]
 USAGE
 }
