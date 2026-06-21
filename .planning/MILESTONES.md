@@ -1,5 +1,26 @@
 # Milestones
 
+## v1.16 调课单 Skill (Shipped: 2026-06-21)
+
+**Phases completed:** 4 phases, 4 plans, 22 tasks
+
+**Key accomplishments:**
+
+- Hand-authored A4 landscape `调课单` Typst reference with non-empty PDF baseline evidence
+- Teacher-readable 调课单 Markdown source and skill-local field contract for the accepted Phase 37 form facts
+- Skill-local 调课单 renderer converts the accepted Markdown fixture into byte-for-byte matching Typst and rejects non-final Markdown failures
+- `tiaokedan` now has a portable Markdown-first skill entry, strict Typst/PDF final gate, clean output contract, missing-information guide, and repository discoverability.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.16-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.16-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.16-MILESTONE-AUDIT.md`
+
+**Closeout notes:** v1.16 audit passed with non-blocking metadata tech debt; closeout corrected the stale Phase 37 and Phase 40 summary commit labels before archive commit.
+
+---
+
 ## v1.15 teaching-design-package 模块化渲染与旧格式回归 (Shipped: 2026-06-15)
 
 **Phases completed:** 4 phases, 4 plans, 26 tasks
