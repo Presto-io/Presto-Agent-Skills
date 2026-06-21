@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import difflib
 import re
+import shutil
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -311,12 +313,18 @@ def render_typst(document: TiaokedanDocument) -> str:
 def render_command(args: argparse.Namespace) -> int:
     input_path = Path(args.input)
     output_path = Path(args.typ)
+    pdf_path = Path(args.pdf) if args.pdf else None
     expected_path = Path(args.expected_typ) if args.expected_typ else None
 
     if not input_path.is_file():
         fail(f"input file not found: {input_path}")
     if output_path.exists() and expected_path and output_path.resolve() == expected_path.resolve():
         fail("refusing to overwrite expected Typst reference")
+    if pdf_path and pdf_path.exists():
+        try:
+            pdf_path.unlink()
+        except OSError as error:
+            fail(f"cannot remove stale PDF output: {pdf_path}: {error}")
 
     try:
         frontmatter, body = parse_frontmatter(input_path.read_text(encoding="utf-8"))
@@ -344,7 +352,43 @@ def render_command(args: argparse.Namespace) -> int:
             print(diff, file=sys.stderr, end="")
             fail(f"generated Typst differs from expected file: {expected_path}")
 
+    if pdf_path:
+        compile_pdf(output_path, pdf_path)
+
     return 0
+
+
+def compile_pdf(typ_path: Path, pdf_path: Path) -> None:
+    typst = shutil.which("typst")
+    if not typst:
+        remove_if_present(pdf_path)
+        fail("typst CLI not found; install typst before requesting --pdf")
+
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    result = subprocess.run(
+        [typst, "compile", str(typ_path), str(pdf_path)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        remove_if_present(pdf_path)
+        stderr = result.stderr.strip().splitlines()
+        detail = f": {stderr[-1]}" if stderr else ""
+        fail(f"typst compile failed with exit code {result.returncode}{detail}")
+
+    if not pdf_path.is_file() or pdf_path.stat().st_size <= 0:
+        remove_if_present(pdf_path)
+        fail(f"typst compile produced empty PDF: {pdf_path}")
+
+
+def remove_if_present(path: Path) -> None:
+    try:
+        if path.exists():
+            path.unlink()
+    except OSError:
+        pass
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -353,6 +397,7 @@ def build_parser() -> argparse.ArgumentParser:
     render = subparsers.add_parser("render")
     render.add_argument("--input", required=True)
     render.add_argument("--typ", required=True)
+    render.add_argument("--pdf")
     render.add_argument("--expected-typ")
     render.set_defaults(func=render_command)
     return parser
