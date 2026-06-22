@@ -13,7 +13,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-FRONTMATTER_FIELDS = ("title", "recipient", "department", "date")
+FRONTMATTER_DEFAULTS = {
+    "title": "调课说明",
+    "recipient": "教务处：",
+}
+REQUIRED_FRONTMATTER_FIELDS = ("department", "date")
 TABLE_HEADERS = [
     "序号",
     "班级",
@@ -28,6 +32,8 @@ REQUIRED_TABLE_HEADERS = TABLE_HEADERS[:-1]
 RAW_TYPST_RE = re.compile(r"#(?:set|let|table|linebreak\s*\(\)|page|align|block|text|h\s*\(|v\s*\()", re.I)
 HTML_TAG_RE = re.compile(r"<\s*/?\s*([A-Za-z][A-Za-z0-9-]*)\b[^>]*>")
 REVIEW_MARKER_RE = re.compile(r"\{\{(待补充|AI草稿)\s*:[^}]*\}\}")
+COMPACT_DATE_RE = re.compile(r"\b(\d{4})(\d{2})(\d{2})\b")
+ISO_DATE_RE = re.compile(r"^['\"]?(\d{4})-(\d{1,2})-(\d{1,2})['\"]?$")
 
 
 class ContractError(Exception):
@@ -70,18 +76,35 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
             raise ContractError(f"malformed YAML frontmatter line {line_number}: expected key: value")
         key, value = line.split(":", 1)
         key = key.strip()
-        value = value.strip()
+        value = unquote_yaml_scalar(value.strip())
         if not key:
             raise ContractError(f"malformed YAML frontmatter line {line_number}: empty key")
         fields[key] = value
 
-    for field in FRONTMATTER_FIELDS:
+    for field, default in FRONTMATTER_DEFAULTS.items():
+        fields.setdefault(field, default)
+
+    for field in REQUIRED_FRONTMATTER_FIELDS:
         if field not in fields:
             raise ContractError(f"missing required frontmatter field: {field}")
+        fields[field] = normalize_scalar(fields[field])
         validate_required_value(fields[field], f"frontmatter field: {field}")
+
+    fields["title"] = normalize_scalar(fields["title"])
+    fields["recipient"] = normalize_scalar(fields["recipient"])
+    fields["date"] = normalize_date(fields["date"])
+    fields["department"] = normalize_scalar(fields["department"])
+    validate_required_value(fields["title"], "frontmatter field: title")
+    validate_required_value(fields["recipient"], "frontmatter field: recipient")
 
     body = "\n".join(lines[closing + 1 :])
     return fields, body
+
+
+def unquote_yaml_scalar(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
 
 
 def strip_blank(lines: list[str]) -> list[str]:
@@ -127,31 +150,35 @@ def validate_supported_syntax(value: str, area: str) -> None:
 
 def parse_body(body: str, frontmatter: dict[str, str]) -> TiaokedanDocument:
     lines = body.splitlines()
-    if "## 调课说明" not in [line.strip() for line in lines]:
-        raise ContractError("missing required section: ## 调课说明")
+    stripped_lines = [line.strip() for line in lines]
+    if "## 调课说明" in stripped_lines:
+        section_start = next(index for index, line in enumerate(lines) if line.strip() == "## 调课说明")
+        section_lines = strip_blank(lines[section_start + 1 :])
+    else:
+        section_lines = strip_blank(lines[:])
 
-    section_start = next(index for index, line in enumerate(lines) if line.strip() == "## 调课说明")
-    section_lines = strip_blank(lines[section_start + 1 :])
-    if len(section_lines) < 5:
-        raise ContractError("malformed 调课说明 section: expected recipient, paragraph, table, and closing")
+    if len(section_lines) < 3:
+        raise ContractError("malformed 调课说明 section: expected paragraph, table, and optional closing")
 
-    recipient_line = section_lines[0].strip()
-    validate_required_value(recipient_line, "recipient line")
-    if recipient_line != frontmatter["recipient"]:
-        raise ContractError("recipient line does not match frontmatter field: recipient")
+    recipient = frontmatter["recipient"]
+    if section_lines and section_lines[0].strip() == recipient:
+        recipient_line = normalize_scalar(section_lines.pop(0).strip())
+        validate_required_value(recipient_line, "recipient line")
+        if recipient_line != recipient:
+            raise ContractError("recipient line does not match frontmatter field: recipient")
 
     table_start = None
-    for index, line in enumerate(section_lines[1:], start=1):
+    for index, line in enumerate(section_lines):
         if line.strip().startswith("|"):
             table_start = index
             break
     if table_start is None:
         raise ContractError("missing adjustment table")
 
-    paragraph_lines = strip_blank(section_lines[1:table_start])
+    paragraph_lines = strip_blank(section_lines[:table_start])
     if len(paragraph_lines) != 1:
         raise ContractError("malformed 调课说明 paragraph: expected one explanatory paragraph")
-    reason = paragraph_lines[0].strip()
+    reason = normalize_scalar(paragraph_lines[0].strip())
     validate_required_value(reason, "说明段落")
 
     table_lines: list[str] = []
@@ -162,10 +189,14 @@ def parse_body(body: str, frontmatter: dict[str, str]) -> TiaokedanDocument:
 
     rows = parse_adjustment_table(table_lines)
     closing_lines = [line.strip() for line in section_lines[after_table_index:] if line.strip()]
-    if len(closing_lines) != 2:
-        raise ContractError("malformed closing: expected department and date lines")
-    department = closing_lines[0].strip()
-    date = closing_lines[1].strip()
+    if closing_lines:
+        if len(closing_lines) != 2:
+            raise ContractError("malformed closing: expected department and date lines")
+        department = normalize_scalar(closing_lines[0].strip())
+        date = normalize_date(normalize_scalar(closing_lines[1].strip()))
+    else:
+        department = frontmatter["department"]
+        date = frontmatter["date"]
     validate_required_value(department, "closing department")
     validate_required_value(date, "closing date")
     if department != frontmatter["department"]:
@@ -188,24 +219,30 @@ def parse_adjustment_table(table_lines: list[str]) -> list[list[str]]:
         raise ContractError("malformed adjustment table: expected header, separator, and at least one row")
 
     headers = parse_table_row(table_lines[0])
-    if len(headers) != len(TABLE_HEADERS):
+    has_sequence_column = headers == TABLE_HEADERS
+    has_implicit_sequence = headers == TABLE_HEADERS[1:]
+    if not has_sequence_column and not has_implicit_sequence and len(headers) != len(TABLE_HEADERS):
         raise ContractError(f"malformed adjustment table: expected 8 columns, found {len(headers)}")
-    if headers != TABLE_HEADERS:
+    if not has_sequence_column and not has_implicit_sequence:
         raise ContractError("malformed adjustment table: unexpected columns")
 
     if not is_separator_row(table_lines[1]):
         raise ContractError("malformed adjustment table: expected separator row")
     separator = parse_table_row(table_lines[1])
-    if len(separator) != len(TABLE_HEADERS):
-        raise ContractError(f"malformed adjustment table: expected 8 columns, found {len(separator)}")
+    expected_columns = len(TABLE_HEADERS) if has_sequence_column else len(TABLE_HEADERS) - 1
+    if len(separator) != expected_columns:
+        raise ContractError(f"malformed adjustment table: expected {expected_columns} columns, found {len(separator)}")
 
     rows: list[list[str]] = []
     for markdown_row_index, line in enumerate(table_lines[2:], start=1):
         cells = parse_table_row(line)
-        if len(cells) != len(TABLE_HEADERS):
+        if len(cells) != expected_columns:
             raise ContractError(
-                f"malformed adjustment table: expected 8 columns in row {markdown_row_index}, found {len(cells)}"
+                f"malformed adjustment table: expected {expected_columns} columns in row {markdown_row_index}, found {len(cells)}"
             )
+        if has_implicit_sequence:
+            cells = [str(markdown_row_index), *cells]
+        cells = normalize_table_cells(cells, markdown_row_index)
         for column_index, header in enumerate(REQUIRED_TABLE_HEADERS):
             validate_required_value(cells[column_index], f"row {markdown_row_index} {header}")
         remark = cells[-1].strip()
@@ -219,6 +256,52 @@ def parse_adjustment_table(table_lines: list[str]) -> list[list[str]]:
     return rows
 
 
+def normalize_table_cells(cells: list[str], row_index: int) -> list[str]:
+    normalized = [normalize_scalar(cell) for cell in cells]
+    for column_name in ("原上课时间", "调整后上课时间"):
+        column_index = TABLE_HEADERS.index(column_name)
+        normalized[column_index] = normalize_time_cell(normalized[column_index], row_index)
+    return normalized
+
+
+def normalize_scalar(value: str) -> str:
+    normalized = value.strip()
+    normalized = normalized.replace("孙老师老师", "孙老师")
+    return normalize_inline_dates(normalized)
+
+
+def normalize_inline_dates(value: str) -> str:
+    return COMPACT_DATE_RE.sub(lambda match: format_chinese_date(*match.groups()), value)
+
+
+def normalize_date(value: str) -> str:
+    stripped = value.strip()
+    iso_match = ISO_DATE_RE.fullmatch(stripped)
+    if iso_match:
+        return format_chinese_date(*iso_match.groups())
+    compact_match = COMPACT_DATE_RE.fullmatch(stripped)
+    if compact_match:
+        return format_chinese_date(*compact_match.groups())
+    return normalize_scalar(stripped)
+
+
+def format_chinese_date(year: str, month: str, day: str) -> str:
+    return f"{int(year)}年{int(month)}月{int(day)}日"
+
+
+def normalize_time_cell(value: str, row_index: int) -> str:
+    normalized = value.strip()
+    if re.search(r"<\s*br\s*/?\s*>", normalized, flags=re.I):
+        return normalized
+
+    match = re.match(r"^(?P<date>\d{4}年\d{1,2}月\d{1,2}日)\s+(?P<time>.+)$", normalized)
+    if not match:
+        return normalized
+
+    separator = "<br>" if row_index == 1 else ""
+    return f"{match.group('date')}{separator}{match.group('time')}"
+
+
 def typst_cell(value: str) -> str:
     normalized = re.sub(r"<\s*br\s*/?\s*>", "#linebreak()", value.strip(), flags=re.I)
     return f"  tc[{normalized}],"
@@ -230,6 +313,14 @@ def render_typst(document: TiaokedanDocument) -> str:
         "// This is the accepted surface before Markdown contracts or renderers exist.",
         "",
         "#let FONT_SONG = (",
+        '  "Songti SC",',
+        '  "STSong",',
+        '  "SimSun",',
+        '  "NSimSun",',
+        '  "Noto Serif CJK SC",',
+        '  "Source Han Serif SC",',
+        ")",
+        "#let FONT_TITLE_SONG = (",
         '  "Songti SC",',
         '  "STSong",',
         '  "SimSun",',
@@ -263,7 +354,7 @@ def render_typst(document: TiaokedanDocument) -> str:
         "]",
         "",
         "#align(center)[",
-        f'  #text(font: FONT_SONG, size: 22pt, weight: "bold")[#strong[{document.title}]]',
+        f'  #text(font: FONT_TITLE_SONG, size: 22pt, weight: 700)[{document.title}]',
         "]",
         "",
         "#v(1.2em)",
