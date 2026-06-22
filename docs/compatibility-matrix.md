@@ -42,7 +42,8 @@
 
 ### Tiaokedan
 
-- `tiaokedan` 是单张 `调课单` Markdown-first 文档 skill：运行时必须 whole-folder installation，保留 `SKILL.md`、`references/markdown-contract.md`、`references/pdf-workflow.md`、`templates/tiaokedan.md`、`templates/tiaokedan-reference.typ` 和 `scripts/tiaokedan.sh`。
+- `tiaokedan` 是单张 `调课单` Markdown-first 文档 skill：运行时必须 whole-folder installation，保留 `SKILL.md`、`references/markdown-contract.md`、`references/pdf-workflow.md`、`templates/tiaokedan.md` 和 `scripts/tiaokedan.sh`。
+- renderer 兼容省略 `title`、`recipient`、表格 `序号` 列和表格后的落款行；生成 Typst 时使用默认标题/收文对象、自动序号、frontmatter 落款，以及 `Songti SC` 优先的标题 `weight: 700`。
 - 渲染依赖 `python3` 和 skill-local renderer；PDF gate 额外依赖 `typst` CLI，只有 `typst compile` 成功且 PDF 非空才能声称 final PDF passed。
 - 成功路径只发布显式请求的 `.typ`/`.pdf`；logs、diffs、status、debug JSON 和 failure diagnostics 必须留在隐藏 `.tiaokedan/` 或 phase evidence 目录，不得混入教师公开输出根目录。
 

@@ -32,7 +32,6 @@ metadata:
 - `templates/tiaokedan.md`: 教师可读 Markdown 样板，也是默认 fixture。
 - `references/markdown-contract.md`: 必填字段、可选 `备注`、复核标记和 renderer-owned defaults。
 - `references/pdf-workflow.md`: PDF gate、干净输出、隐藏 `.tiaokedan/` 诊断和验证命令。
-- `templates/tiaokedan-reference.typ`: Phase 37 接受的手写 Typst 表面，用于 fixture/证据比对。
 - `scripts/tiaokedan.sh`: finalized Markdown 的 Typst/PDF 渲染命令。
 
 ## Teacher Workflow
@@ -43,6 +42,8 @@ metadata:
 4. 暂停让教师审阅、改写、补充或确认；`tiaokedan.md` 是 source of truth。
 5. 定稿前允许在 Markdown 中保留 `{{待补充: ...}}` 或 `{{AI草稿: ...}}` 标记。
 6. 只有必填事实完整且教师确认后，才运行脚本生成 Typst/PDF。
+
+`title`、`recipient`、表格 `序号` 列和表格后的落款行都可以省略；renderer 会使用默认标题 `调课说明`、默认收文对象 `教务处：`、自动序号，以及 frontmatter 中的 `department`/`date`。标题样式由 renderer 控制，当前生成 Typst 使用 `Songti SC` 优先的宋体族和 `weight: 700`，不要求教师在 Markdown 中维护字体。
 
 ## Missing Information Questions
 
@@ -58,7 +59,7 @@ metadata:
 
 必填事实未知时，在草稿 Markdown 对应位置写 `{{待补充: 说明}}`。AI 起草但需要教师确认的正文可以写 `{{AI草稿: 说明}}`。最终 Typst/PDF 渲染会阻塞未解决的 `{{待补充: ...}}` 或 `{{AI草稿: ...}}` 标记。
 
-不要向教师询问 A4 横向、字体 fallback、字号、表格宽度、Typst helper、诊断目录、比较命令等 renderer-owned defaults。
+不要向教师询问 A4 横向、标题宋体加粗、字体 fallback、字号、表格宽度、Typst helper、诊断目录、比较命令等 renderer-owned defaults。
 
 ## Finalized Markdown Render/PDF Commands
 
@@ -73,7 +74,7 @@ skills/tiaokedan/scripts/tiaokedan.sh render \
   --pdf build/tiaokedan/tiaokedan.pdf
 ```
 
-Fixture 或阶段证据可加 `--expected-typ skills/tiaokedan/templates/tiaokedan-reference.typ`。普通教师表单不需要和示例 reference 逐字节一致。
+`--expected-typ` 仅用于临时回归或阶段证据；普通教师表单不需要和示例 Typst 逐字节一致，仓库也不要求保留 `.typ` fixture。
 
 ## Runtime Adapter Notes
 
@@ -99,7 +100,6 @@ Fixture 或阶段证据可加 `--expected-typ skills/tiaokedan/templates/tiaoked
 - [ ] `python3 -m py_compile skills/tiaokedan/scripts/tiaokedan_renderer.py`
 - [ ] `skills/tiaokedan/scripts/tiaokedan.sh --help` 显示 `--pdf`。
 - [ ] `scripts/tiaokedan.sh render --input <md> --typ <typ>` 生成 Typst。
-- [ ] fixture 证据可用 `--expected-typ templates/tiaokedan-reference.typ` 做 byte-for-byte 比对。
 - [ ] `scripts/tiaokedan.sh render --input <md> --typ <typ> --pdf <pdf>` 在安装 `typst` 时生成非空 PDF。
 - [ ] 成功公开目录不包含 status、manifest、log、diff、debug、json、tmp 或 diagnostic 文件。
 - [ ] OpenClaw 与 Hermes Agent 的差异只在 adapter notes 中，没有进入 canonical 主流程。

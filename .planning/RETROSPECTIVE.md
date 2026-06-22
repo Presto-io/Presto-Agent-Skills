@@ -394,14 +394,14 @@
 ### What Was Built
 
 - A standalone `tiaokedan` skill for teacher-reviewed `调课单` Markdown to Typst/PDF output.
-- A hand-authored A4 landscape Typst baseline and non-empty PDF reference before renderer automation.
+- An accepted A4 landscape Typst surface before renderer automation; committed history later removed `.typ`/`.pdf` fixture files during privacy cleanup.
 - A teacher-readable Markdown fixture and field contract for all accepted form facts.
-- A skill-local renderer and PDF gate with byte-for-byte Typst comparison, clean public output, hidden diagnostics, failure checks, and six-runtime adapter notes.
+- A skill-local renderer and PDF gate with clean public output, hidden diagnostics, failure checks, and six-runtime adapter notes.
 
 ### What Worked
 
 - Building the accepted Typst surface before the Markdown contract kept the renderer target concrete.
-- Byte-for-byte comparison against the reference gave a simple, durable correctness gate.
+- Temporary reference comparison helped early renderer validation, while the shipped repository now keeps the Markdown contract and renderer as the durable public surface.
 - Copied-only `skills/tiaokedan/` verification kept the standalone runtime boundary honest.
 
 ### What Was Inefficient
@@ -459,7 +459,7 @@
 | v1.12 | Markdown handoff assertions, Typst width parsing, direct/package PDF compilation, public command smoke checks, milestone audit | 7/7 TDPR requirements shipped | No new runtime dependencies added |
 | v1.14 | Standalone-copy execution, exact public root assertions, hidden diagnostics checks, derived scheduling/failure gates, milestone audit | 15/15 TDPKG requirements shipped | No new runtime dependencies added |
 | v1.15 | Fresh package render, module PDF/status checks, forced failure semantics, public leakage scan, standalone-copy regression, milestone audit | 31/31 TDPKG requirements shipped | No new runtime dependencies added |
-| v1.16 | Typst/PDF compile, byte-for-byte reference comparison, invalid input failure, clean output scan, standalone-copy regression, milestone audit | 15/15 TKD requirements shipped | No new runtime dependencies added |
+| v1.16 | Typst/PDF compile, invalid input failure, clean output scan, standalone-copy regression, milestone audit | 15/15 TKD requirements shipped | No new runtime dependencies added |
 
 ### Top Lessons (Verified Across Milestones)
 
