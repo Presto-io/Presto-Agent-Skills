@@ -1,6 +1,6 @@
 # 调课单 Markdown Contract
 
-本文件定义 `tiaokedan` 技能本地的 Markdown 契约，供后续 renderer 读取实现；Phase 38 只定义教师可审阅字段，不实现解析、渲染或验证代码。
+本文件定义 `tiaokedan` 技能本地的 Markdown 契约，供 renderer 读取并生成 Typst/PDF。
 
 ## Fixture Path
 
@@ -10,7 +10,7 @@
 
 ## Contract Shape
 
-`调课单` Markdown 使用 `YAML frontmatter + body`。frontmatter 保存教师可直接复核的文档级事实，body 保存可见说明文字、调课明细表和落款。
+`调课单` Markdown 使用 `YAML frontmatter + body`。frontmatter 保存教师可直接复核的必要文档事实，body 保存可见说明文字和调课明细表。
 
 这份 Markdown 必须能直接被教师打开、复制、审阅和修改；不能依赖生成 JSON、隐藏脚本、兄弟技能目录或 Typst 源文件才能理解。
 
@@ -18,43 +18,47 @@
 
 | Field | Required | Owner | Meaning |
 |-------|----------|-------|---------|
-| `title` | yes | teacher | 文档标题，当前接受值为 `调课说明`。 |
-| `recipient` | yes | teacher | 收文对象行，当前接受值为 `教务处：`。 |
+| `title` | no | renderer default | 文档标题。省略时 renderer 使用 `调课说明`。 |
+| `recipient` | no | renderer default | 收文对象行。省略时 renderer 使用 `教务处：`。 |
 | `department` | yes | teacher | 落款部门，当前接受值为 `电气工程系`。 |
-| `date` | yes | teacher | 落款日期，当前接受值为 `2026年6月21日`。 |
+| `date` | yes | teacher | 落款日期，可写 `2026年6月21日`、`2026-06-21` 或 `20260621`。 |
 
-Phase 38 接受 fixture 不使用 `status` 或 `review_notes`。后续如需草稿状态，应保持为教师可读事实，而不是 renderer 配置。
+当前契约不使用 `status` 或 `review_notes`。如需草稿状态，应保持为教师可读事实，而不是 renderer 配置。
 
 ## Body Sections
 
-body 必须包含 `## 调课说明`，并把说明段落作为可见 Markdown 文本保存。说明段落是教师维护的表单事实，不是 renderer-owned defaults。
+body 可以包含 `## 调课说明` 标题，也可以直接从说明段落开始。说明段落是教师维护的表单事实，不是 renderer-owned defaults。
+
+如果正文第一行是 `recipient`，renderer 会校验它与 frontmatter/default recipient 一致；如果省略，renderer 使用默认收文对象。
 
 说明段落当前接受文本为：
 
 `因我系专职教师周老师需要去企业调研，故需将其3月11日所承担实习课程调整为早班，同时涉及到孙老师老师，具体调整如下：`
 
-落款事实以可见 Markdown 文本保存：
+落款事实可以以可见 Markdown 文本保存在表格后，也可以只保存在 frontmatter 中。两处都出现时必须一致：
 
 - `电气工程系`
 - `2026年6月21日`
 
 ## Adjustment Table Columns
 
-调课明细使用普通 Markdown table，列名必须按以下顺序出现：
+调课明细使用普通 Markdown table。推荐教师维护 7 列表格，由 renderer 自动生成 `序号`：
+
+| 班级 | 课程 | 原上课时间 | 原授课教师 | 调整后上课时间 | 调整后上课教师 | 备注 |
+|------|------|------------|------------|----------------|----------------|------|
+
+renderer 也兼容含 `序号` 的 8 列表格：
 
 | 序号 | 班级 | 课程 | 原上课时间 | 原授课教师 | 调整后上课时间 | 调整后上课教师 | 备注 |
 |------|------|------|------------|------------|----------------|----------------|------|
 
-时间单元格需要保留教师可见换行时，使用 `<br>`。例如第一行的原上课时间为 `2026年3月11日<br>14:00-19:00（D104）`。
+时间单元格可以写中文日期、紧凑日期或 ISO 日期。renderer 会把 `20260311 14:00-19:00（D104）` 规范为 `2026年3月11日 14:00-19:00（D104）`。需要保留教师可见换行时，可以使用 `<br>`。
 
 ## Required And Optional Facts
 
 Required teacher-maintained facts:
 
-- `title`
-- `recipient`
 - 说明段落文本
-- 表格中每一行的 `序号`
 - 表格中每一行的 `班级`
 - 表格中每一行的 `课程`
 - 表格中每一行的 `原上课时间`
@@ -66,6 +70,10 @@ Required teacher-maintained facts:
 
 Optional teacher-maintained facts:
 
+- `title` 可省略，renderer 默认 `调课说明`。
+- `recipient` 可省略，renderer 默认 `教务处：`。
+- `序号` 列可省略，renderer 按表格行序自动生成。
+- 表格后的落款部门和日期可省略，renderer 使用 frontmatter 中的 `department` 和 `date`。
 - `备注` 可按行留空，前提是接受表单事实本身确实为空。空备注不是缺失必填项。
 
 ## Unknown-Value Markers
@@ -91,6 +99,7 @@ AI 起草但需要教师确认的可编辑文字可以使用：
 - A4 landscape page setup
 - default page margins
 - font fallback lists
+- title font family and weight
 - point sizes
 - table column width ratios
 - cell padding
