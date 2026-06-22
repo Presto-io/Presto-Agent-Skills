@@ -21,16 +21,16 @@ skills/tiaokedan/scripts/tiaokedan.sh render \
   --pdf build/tiaokedan/tiaokedan.pdf
 ```
 
-用于 fixture 或阶段证据的参考 Typst 比对：
+用于临时回归或阶段证据的参考 Typst 比对：
 
 ```bash
 skills/tiaokedan/scripts/tiaokedan.sh render \
   --input skills/tiaokedan/templates/tiaokedan.md \
   --typ build/tiaokedan/tiaokedan.typ \
-  --expected-typ skills/tiaokedan/templates/tiaokedan-reference.typ
+  --expected-typ /tmp/tiaokedan-expected.typ
 ```
 
-`--expected-typ` 是证据/回归 gate；普通教师表单不需要和 Phase 37 示例逐字节一致。
+`--expected-typ` 是证据/回归 gate；普通教师表单不需要和示例 Typst 逐字节一致，仓库也不要求保留 `.typ` fixture。
 
 ## PDF Success Criteria
 
@@ -81,17 +81,12 @@ skills/tiaokedan/scripts/tiaokedan.sh --help | rg -F -- '--pdf'
 
 skills/tiaokedan/scripts/tiaokedan.sh render \
   --input skills/tiaokedan/templates/tiaokedan.md \
-  --typ .planning/phases/40-skill-workflow-and-pdf-gate/generated/tiaokedan.typ \
-  --expected-typ skills/tiaokedan/templates/tiaokedan-reference.typ
-
-cmp -s \
-  .planning/phases/40-skill-workflow-and-pdf-gate/generated/tiaokedan.typ \
-  skills/tiaokedan/templates/tiaokedan-reference.typ
+  --typ /tmp/tiaokedan-doc-check.typ
 
 skills/tiaokedan/scripts/tiaokedan.sh render \
   --input skills/tiaokedan/templates/tiaokedan.md \
-  --typ .planning/phases/40-skill-workflow-and-pdf-gate/generated/tiaokedan.pdf.typ \
-  --pdf .planning/phases/40-skill-workflow-and-pdf-gate/generated/tiaokedan.pdf
+  --typ /tmp/tiaokedan-doc-check.pdf.typ \
+  --pdf /tmp/tiaokedan-doc-check.pdf
 
-test -s .planning/phases/40-skill-workflow-and-pdf-gate/generated/tiaokedan.pdf
+test -s /tmp/tiaokedan-doc-check.pdf
 ```
