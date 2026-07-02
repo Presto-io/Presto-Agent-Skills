@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from ._engine import (
     MarkdownPackage,
-    yaml_lines,
-    generate_markdown,
     split_frontmatter,
     parse_simple_yaml,
     section_map,
@@ -17,8 +15,6 @@ from ._engine import (
 
 __all__ = [
     "MarkdownPackage",
-    "yaml_lines",
-    "generate_markdown",
     "split_frontmatter",
     "parse_simple_yaml",
     "section_map",
