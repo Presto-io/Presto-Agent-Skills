@@ -1,15 +1,15 @@
 # End-of-Term Rendering Style Notes
 
-本说明记录 `end-of-term-teaching-materials` 固定模板渲染规则。它是可复用、已脱敏的技能本地资源；用户桌面、历史课程文件和真实学生原始材料只能作为外部人工对照，不能进入 reusable fixture。
+本说明记录 `end-of-term-teaching-materials` 固定模板渲染规则。它是可复用、已脱敏的技能本地资源；用户桌面、历史课程文件和真实学生原始材料只能作为外部人工对照，不能进入可复用模板或说明。
 
 ## Package Artifacts
 
 - `成绩记分册` 是一个 bundle，覆盖重新设计的成绩记分册封面和成绩记分册正文，不拆成两个 package 开关。
-- `成绩汇总表` 输出成绩汇总与任务映射，作为 PDF 页面和 deterministic table artifacts 的共同依据。
+- `成绩汇总表` 输出成绩汇总与任务映射，作为 PDF 页面内容。
 - `成绩分析表` 输出试卷分析、存在问题、今后改进措施和异常情况分析正文表，不额外生成封面。
 - `教学日志封面` 使用参考封面的标题、留白和三行下划线信息栏，只展示科目、班级和教师。
 - `过程考核评价表封面` 使用参考封面的标题、留白和三行下划线信息栏，只展示科目、班级和教师。
-- `交接班记录封面` 只展示当前班级/教师和交接班级/教师两行；只有在 `handover_class_name` 和 `handover_teachers` 同时存在时输出，缺失时 renderer 必须跳过并在 manifest 中写出 warning。
+- `交接班记录封面` 只展示当前班级/教师和交接班级/教师两行；只有在 `handover_class_name` 和 `handover_teachers` 同时存在时输出，缺失时最终交付必须失败并回到 Markdown 修正。
 
 ## Page And Typography
 
@@ -17,7 +17,7 @@
 - 中文字体优先使用 `Noto Serif CJK SC`、`Songti SC`、`STSong`，无可用字体时由 Typst 环境继续 fallback。
 - 封面页参考学校样张：大号居中标题、充分上部留白、底部下划线式信息栏；正文表格使用紧凑字号，优先保证内容完整可审阅。
 - 所有封面信息栏下划线与文字的垂直距离统一按 `成绩记分册` 封面执行；交接班封面的虚线放在上下两行信息的中间位置。
-- 自动化输出只是格式验证和提交前检查依据，不能替代教师对 PDF 和 workbook 的最终格式确认。
+- 自动化输出不能替代教师对 PDF 和 workbook 的最终格式确认。
 
 ## Score Table Behavior
 
@@ -29,15 +29,13 @@
 - `成绩汇总表` 的任务名称必须在各自任务名单元格内水平、垂直居中；0 课时或 `预留任务*` 不显示任务名称。
 - 声明过的任务列必须保留，即使整列为空。
 - 空成绩单元格保持空白；不能写成 `0`、`-1`、`—` 或自动复核项。
-- 带 `?` 的不确定成绩会阻断最终 export readiness，除非 `## 复核标记` 正文已经准确清除为 `无` 且表格值也已修正。
-- 如果用户明确要求检查未清除复核项，可使用 abnormal review preview 路径生成非最终件。manifest 必须写出 `artifact_kind: abnormal_review`、`final_ready: false`、`review_cleared: false` 和 warnings，普通 `render` 仍必须阻断。
-- Abnormal review 中的 `87?` 这类值必须在原始成绩单元格继续显示问号，但派生成绩计算临时使用数值部分 `87`，以便教师同时看到疑点和受影响的计算结果。
-- Abnormal review 输出中，未解决的不确定成绩单元格使用 red warning fill。`成绩记分册` 和 `成绩汇总表` 中显示的衍生 `学期成绩` 如果低于 60，也使用 red warning fill，便于教师检查。
+- 带 `?` 的不确定成绩会阻断最终交付，除非 `## 复核标记` 正文已经准确清除为 `无` 且表格值也已修正。
+- 未解决复核项必须回到 Markdown 继续沟通修正，不生成非最终公开产物。
+- `成绩记分册` 和 `成绩汇总表` 中显示的衍生 `学期成绩` 如果低于 60，PDF 中使用 red warning fill，便于教师检查。
 - Red warning fill 必须先于表格框线绘制，让框线覆盖在淡红色填充之上，避免高亮压住边框、横向溢出或在上下边缘露出白缝。
 
-## Deterministic Artifacts
+## Workbook Output
 
-Renderer 必须在 `tables/` 下输出稳定的 `score-data.json`、`calculated-score-data.json`、`score-data.csv`、`task-map.json`、`score-summary.json`、`score-list.md`、`score-list.xlsx` 和 `scorebook.xlsx`。JSON 使用固定缩进、稳定 key 顺序和 UTF-8；CSV 使用固定列顺序；workbook 保留同样的表头和派生成绩列。
-`calculated-score-data.json` 是成绩显示值的审计证据；PDF、workbook 和该 JSON 必须使用同一套 renderer-calculated `平时分`、`期末分` 与 `学期成绩`。`平时分` 来自 `考勤`、`作业` 和 Markdown `期末` 测试列；`期末分` 来自 `任务1..任务N` 按课时加权平均。`score-summary.json` 只统计 `## 我带的学生` 的任务成绩。
-`score-list.md` 和 `score-list.xlsx` 是从成绩记分册派生的 4 列清单，列为 `姓名`、`学号`、`平时成绩`、`期末成绩`，并按学号递增排序。
-红色高亮不能只依赖人工看 PDF/workbook；renderer 还必须输出 `tables/highlight-evidence.json`，并在 manifest 中嵌入同一份 highlight evidence，用于验证 unresolved uncertain cells 和 below-60 `学期成绩`。
+公开 Excel 只输出 `score-list.xlsx`。它是从定稿 Markdown 派生的 4 列清单，列为 `学号`、`姓名`、`平时成绩`、`期末成绩`，并按学号递增排序。
+PDF 和 workbook 必须使用同一套 renderer-calculated `平时分` 与 `期末分` 显示值。`平时分` 来自 `考勤`、`作业` 和 Markdown `期末` 测试列；`期末分` 来自 `任务1..任务N` 按课时加权平均。
+成功交付不输出 JSON、CSV、manifest、`tables/`、`score-list.md` 或多 sheet scorebook workbook。
