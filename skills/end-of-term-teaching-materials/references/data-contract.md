@@ -1,85 +1,86 @@
-# End-of-Term Teaching Materials Data Contract
+# End-of-Term Teaching Materials Markdown Contract
 
-本契约定义 `end-of-term-teaching-materials` 技能在 Phase 11 接受和生成 Markdown intermediate 时使用的结构化数据。它只约束数据和复核语义，不实现 OCR、Excel、Typst、PDF 或表格导出。
+本契约定义 `end-of-term-teaching-materials` 的唯一事实源 Markdown。用户可以上传 Excel、照片、截图、文字说明或历史文件，但这些都只是整理材料；最终维护、诊断、复核和渲染都围绕一份 `end-of-term-full.md` 进行。
 
 ## Top-Level Metadata
 
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| `template` | yes | string | 固定为 `end-of-term-teaching-materials`。 |
-| `date` | yes | string | 材料日期，建议使用 `YYYY-MM-DD`。 |
-| `school_year` | yes | string | 学年，例如 `2025-2026`。 |
-| `semester` | yes | string | 学期，例如 `第二学期`。 |
-| `major_name` | yes | string | 专业名称。 |
-| `course_name` | yes | string | 课程名称。 |
-| `course_type_label` | no | string | 课程类型枚举，支持 `一体化`、`基本技能`、`单技能`；renderer 会据此在成绩汇总表中勾选 `一体化课` 或 `基本技能实训课`。已带 `√/□` 的完整显示文本会原样输出。缺失时默认 `基本技能`。 |
-| `class_name` | yes | string array | 当前教师所带班级短名称数组，例如 `示例电气2`；renderers 在目标模板需要时自行追加 `班`。 |
-| `teachers` | yes | string array | 任课教师有序数组；输出顺序跟随数组顺序，不添加 `primary_teacher`。 |
-| `handover_class_name` | no | string array | 交接班短名称数组；可表示一个或多个交接班级。 |
-| `handover_teachers` | no | string array | 交接班教师有序数组。 |
+| Field | Required | Notes |
+|-------|----------|-------|
+| `template` | yes | 固定为 `end-of-term-teaching-materials`。 |
+| `date` | yes | 材料日期，建议使用 `YYYY-MM-DD`。 |
+| `school_year` | yes | 学年，例如 `2025-2026`。 |
+| `semester` | yes | 学期，例如 `第二学期`。 |
+| `major_name` | yes | 专业名称。 |
+| `course_name` | yes | 课程名称。 |
+| `course_type_label` | no | 支持 `一体化`、`基本技能`、`单技能`；缺失时默认 `基本技能`。 |
+| `class_name` | yes | 当前教师所带班级短名称数组。 |
+| `teachers` | yes | 任课教师有序数组。 |
+| `handover_class_name` | no | 交接班短名称数组。 |
+| `handover_teachers` | no | 交接班教师有序数组。 |
 
-`handover_class_name` 和 `handover_teachers` 缺失时，表示没有交接班记录；即使 `package` 请求 `交接班记录封面`，后续 renderer 也应跳过该输出或提示缺少交接元数据。
+如果 `package` 请求 `交接班记录封面`，`handover_class_name` 和 `handover_teachers` 必须同时存在；缺失时回到 Markdown 复核修正，不生成最终交付。
 
 ## Package Flags
 
-`package` 使用中文 artifact 名称作为 key。缺失的 `package` key 默认视为 `true`，但交接班输出仍然要求存在交接班元数据。
+`package` 使用中文 artifact 名称作为 key。缺失的 key 默认视为 `true`。
 
-| Key | Type | Default | Notes |
-|-----|------|---------|-------|
-| `成绩记分册` | boolean | `true` | 一个 bundle：同时表示重新设计的成绩记分册封面和记分册正文，不拆成 cover/body 两个开关。 |
-| `成绩汇总表` | boolean | `true` | 后续 Phase 12 输出。 |
-| `成绩分析表` | boolean | `true` | 后续 Phase 12 输出。 |
-| `教学日志封面` | boolean | `true` | 后续 Phase 12 输出。 |
-| `过程考核评价表封面` | boolean | `true` | 后续 Phase 12 输出。 |
-| `交接班记录封面` | boolean | `true` | 仅在 `handover_class_name` 和 `handover_teachers` 存在时输出。 |
+| Key | Notes |
+|-----|-------|
+| `成绩记分册` | PDF 中的成绩记分册封面和正文。 |
+| `成绩汇总表` | PDF 中的过程任务汇总页。 |
+| `成绩分析表` | PDF 中的分析页。 |
+| `教学日志封面` | PDF 中的教学日志封面。 |
+| `过程考核评价表封面` | PDF 中的过程考核评价表封面。 |
+| `交接班记录封面` | 仅在交接班级和交接教师均存在时允许输出。 |
 
-`false` 表示不导出该 artifact。Phase 11 只记录这些开关，不生成最终文件。
+## Required Sections
 
-## Student Roster Entries
+Markdown 正文必须包含：
 
-学生名单可在结构化数据中以数组表示，也可在 Markdown 的 `## 我带的学生` 中保留为教师可编辑列表。
+- `## 我带的学生`
+- `## 过程考核任务`
+- `## 成绩数据`
+- `## 分析`
+- `## 复核标记`
 
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| `student_id` | recommended | string | 学号。重复姓名或需要稳定匹配时必须提供。 |
-| `name` | yes | string | 学生姓名。 |
-| `class_name` | no | string | 学生所属短班级名；跨班合并材料时建议提供。 |
+## Student Roster
 
-`## 我带的学生` 默认可只列姓名；存在重名时使用 `学号 姓名`。
+`## 我带的学生` 是教师可编辑名单。推荐每行使用：
 
-## Task And Teaching-Hour Records
+```text
+学号 姓名
+```
 
-过程考核任务在 Markdown 的 `## 过程考核任务` 中按顺序列出。每一项使用 `任务名称-课时`，最后一个连字符后的数字是课时。
+存在重名、跨班或后续需要稳定排序时，必须保留学号。
 
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| `task_name` | yes | string | 过程考核任务名称。 |
-| `hours` | yes | number | 任务课时。 |
-| `order` | recommended | number | 任务顺序；Markdown 中的顺序决定 `任务1..任务N` 列。 |
+## Task Records
 
-声明过的任务列必须在 `## 成绩数据` 中保留，即使整列为空。
+`## 过程考核任务` 按顺序列出过程考核任务。每一项使用：
 
-## Assessment And Score Data
+```text
+1. 任务名称-课时
+```
 
-`## 成绩数据` 是主成绩表。列为 `学号`、`姓名`、`任务1..任务N`、`考勤`、`作业`、`期末`。任务列按 `## 过程考核任务` 的顺序映射。
+最后一个连字符后的数字是课时。任务顺序决定 `## 成绩数据` 中 `任务1..任务N` 的映射。声明过的任务列必须保留，即使整列为空。
 
-| Field Category | Markdown Column | Notes |
-|----------------|-----------------|-------|
-| roster identity | `学号`, `姓名` | 用于匹配学生和复核问题。 |
-| task scores | `任务1..任务N` | 对应有序任务列表，不在列名中重复长任务名。 |
-| attendance | `考勤` | 平时记录输入，不计算衍生成绩。 |
-| homework | `作业` | 平时记录输入，不计算衍生成绩。 |
-| final exam | `期末` | 期末原始成绩输入，不写衍生字段。 |
+## Score Table
 
-空成绩单元格保持空白。空白不是 `0`，不是 `-1`，也不是自动复核项。
+`## 成绩数据` 是主成绩表。列为：
 
-不要在 Markdown 中写课程总评、折算分、汇总分等衍生计算字段。这些是后续 Excel 或模板公式职责。
+```text
+学号 | 姓名 | 任务1..任务N | 考勤 | 作业 | 期末
+```
 
-## Uncertain Values
+规则：
+
+- `任务1..任务N` 对应 `## 过程考核任务` 的顺序。
+- `考勤`、`作业`、`期末` 是平时成绩计算来源，其中 `期末` 表示期末测试原始成绩。
+- 空成绩单元格保持空白。空白不是 `0`、`-1` 或自动复核项。
+- 不在 Markdown 中写课程总评、折算分、汇总分、平时分、期末分等衍生字段；这些由 renderer 从 Markdown 计算。
+
+## Review Markers
 
 形如 `87?` 的值表示 agent 识别出一个可能成绩，但需要教师确认。每个这类值必须同时出现在 `## 复核标记` 中。
-
-结构化 JSON 到 Markdown 的复核生成阶段可以保留 `87?`。如果源 JSON 里存在这类不确定成绩但没有提供对应 `review_markers`，脚本必须自动生成复核行，而不是在 Markdown 复核前失败。最终导出阶段仍然严格：只要 `?` 或非空复核标记存在，`validate`、普通 `render` 和 final export readiness 都必须失败。
 
 复核项必须包含：
 
@@ -90,9 +91,7 @@
 | `当前值` | 当前 Markdown 中的值，例如 `87?`。 |
 | `说明` | 为什么需要复核。 |
 
-复核问题必须说清学生、任务或字段、当前值。用户确认或修正后，agent 立即编辑 Markdown 值，并删除对应复核项。全部复核清除后，`## 复核标记` 的正文必须正好是 `无`。
-
-复核必须逐项处理：agent 先说明一个学生、一个任务或字段、当前值和疑点，等待教师确认或修正，再编辑 Markdown。不能批量假定 `87?` 已正确，也不能把空白成绩单元格转成自动复核项。
+复核必须逐项处理：agent 先说明一个学生、一个任务或字段、当前值和疑点，等待教师确认或修正，再编辑 Markdown。全部复核清除后，`## 复核标记` 的正文必须正好是 `无`。只要仍有 `?` 或非空复核标记，`validate` 和 `deliver` 必须失败。
 
 ## Analysis Sections
 
@@ -103,12 +102,17 @@
 - `### 今后改进措施`
 - `### 异常情况分析`
 
-生成或更新这些子节时，agent 应先向教师追问必要背景，再结合成绩数据撰写。可追问的信息包括：本轮教学重点和难点、学生整体学习状态、低分或缺考原因、任务完成中的共性问题、异常成绩说明、后续教学改进措施。分析正文应同时参考 renderer 可计算的成绩分布、及格率、低于 60 分学生、空白成绩单元格、任务成绩强弱项等证据；不要只写脱离成绩的通用总结。
+生成或更新这些子节时，agent 应先向教师追问必要背景，再结合 Markdown 中的成绩数据撰写。可追问的信息包括：本轮教学重点和难点、学生整体学习状态、低分或缺考原因、任务完成中的共性问题、异常成绩说明、后续教学改进措施。
 
 如果没有源文本，agent 可以写 `{{AI草稿: ...}}` 提醒教师复核。AI 草稿是可编辑正文，不是隐藏 source。
 
-## Submission Metadata
+## Delivery
 
-提交元数据由 top-level metadata 和 `package` 共同表达：日期、学年、学期、专业、课程、班级、任课教师、可选交接班级、可选交接教师，以及需要导出的 artifact 开关。
+定稿后运行 `deliver`。公开目录只包含：
 
-Phase 12 可以在这个契约之上补充固定模板所需的 renderer metadata，但不得反向要求 Phase 11 Markdown 保留隐藏来源或衍生成绩字段。
+- `end-of-term-full.md`
+- `end-of-term-package.typ`
+- `end-of-term-package.pdf`
+- `score-list.xlsx`
+
+`score-list.xlsx` 只有 `学号`、`姓名`、`平时成绩`、`期末成绩` 四列，并按学号递增排序。

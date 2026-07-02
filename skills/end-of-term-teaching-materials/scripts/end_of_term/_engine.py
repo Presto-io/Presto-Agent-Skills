@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Render end-of-term teaching-materials fixtures without external packages."""
+"""Render finalized end-of-term teaching-materials Markdown without external packages."""
 
 from __future__ import annotations
 
 import argparse
-import csv
-import hashlib
 import json
 import re
 import shutil
@@ -29,7 +27,7 @@ PACKAGE_ARTIFACTS = [
 BASE_SCORE_COLUMNS = ["学号", "姓名"]
 TRAILING_SCORE_COLUMNS = ["考勤", "作业", "期末"]
 DERIVED_SCORE_COLUMNS = ["平时分", "期末分", "学期成绩"]
-SCORE_LIST_COLUMNS = ["姓名", "学号", "平时成绩", "期末成绩"]
+SCORE_LIST_COLUMNS = ["学号", "姓名", "平时成绩", "期末成绩"]
 MAX_TASKS = 8
 WARNING_FILL = "rgb(\"#ffe0e0\")"
 
@@ -59,18 +57,6 @@ def write_text(path: Path, value: str) -> None:
 
 def stable_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    try:
-        return json.loads(read_text(path))
-    except json.JSONDecodeError as exc:
-        raise RenderError(f"invalid JSON: {path}: {exc}") from exc
-
-
-def json_default(data: dict[str, Any], key: str, default: Any) -> Any:
-    value = data.get(key, default)
-    return default if value is None else value
 
 
 def scalar(value: Any) -> str:
@@ -131,190 +117,6 @@ def list_value(value: Any) -> list[str]:
 def package_flags(meta: dict[str, Any]) -> dict[str, bool]:
     raw = meta.get("package") or {}
     return {name: bool(raw.get(name, True)) for name in PACKAGE_ARTIFACTS}
-
-
-def source_score_cells(data: dict[str, Any]) -> list[tuple[dict[str, Any], str, Any, str]]:
-    tasks = data.get("tasks") or []
-    task_names = [task.get("task_name") for task in tasks]
-    cells: list[tuple[dict[str, Any], str, Any, str]] = []
-    for row in data.get("scores") or []:
-        row_tasks = row.get("tasks") or {}
-        for index, task_name in enumerate(task_names, start=1):
-            cells.append((row, f"任务{index}（{task_name}）", row_tasks.get(task_name, ""), f"task {index}"))
-        for key, label in [("attendance", "考勤"), ("homework", "作业"), ("final", "期末")]:
-            cells.append((row, label, row.get(key), key))
-    return cells
-
-
-def uncertain_source_markers(data: dict[str, Any]) -> list[dict[str, str]]:
-    markers: list[dict[str, str]] = []
-    for row, label, value, _source_key in source_score_cells(data):
-        text = scalar(value).strip()
-        if not text.endswith("?"):
-            continue
-        student = scalar(row.get("name")) or scalar(row.get("student_id")) or "<unknown>"
-        markers.append(
-            {
-                "type": "需复核",
-                "location": f"成绩数据 / {student} / {label}",
-                "value": text,
-                "note": f"{student} 的 {label} 当前为 {text}，需教师确认后删除复核标记。",
-            }
-        )
-    return markers
-
-
-def marker_matches(existing: dict[str, Any], generated: dict[str, str]) -> bool:
-    return (
-        scalar(existing.get("location")) == generated["location"]
-        and scalar(existing.get("value")) == generated["value"]
-    )
-
-
-def merged_review_markers(data: dict[str, Any]) -> list[dict[str, Any]]:
-    markers = list(data.get("review_markers") or [])
-    for generated in uncertain_source_markers(data):
-        if not any(marker_matches(existing, generated) for existing in markers):
-            markers.append(generated)
-    return markers
-
-
-def validate_source_data(data: dict[str, Any], export_ready: bool = True) -> list[str]:
-    errors: list[str] = []
-    for key in [
-        "template",
-        "date",
-        "school_year",
-        "semester",
-        "major_name",
-        "course_name",
-        "class_name",
-        "teachers",
-        "students",
-        "tasks",
-        "scores",
-    ]:
-        if key not in data or data[key] in ("", [], None):
-            errors.append(f"missing required field: {key}")
-    if data.get("template") != "end-of-term-teaching-materials":
-        errors.append("template must be end-of-term-teaching-materials")
-    tasks = data.get("tasks") or []
-    if not isinstance(tasks, list) or not tasks:
-        errors.append("tasks must be a non-empty array")
-    if len(tasks) > MAX_TASKS:
-        errors.append(f"tasks must not exceed {MAX_TASKS}; fixed score-summary template only renders 任务1..任务{MAX_TASKS}")
-    for index, task in enumerate(tasks, start=1):
-        if not task.get("task_name"):
-            errors.append(f"task {index} missing task_name")
-        if task.get("hours") in ("", None):
-            errors.append(f"task {index} missing hours")
-    students = data.get("students") or []
-    scores = data.get("scores") or []
-    if len(scores) != len(students):
-        errors.append("scores length must match students length")
-    task_names = [task.get("task_name") for task in tasks]
-    for row in scores:
-        row_tasks = row.get("tasks") or {}
-        for task_name in task_names:
-            if task_name not in row_tasks:
-                errors.append(f"score row for {row.get('name', '<unknown>')} missing task: {task_name}")
-    allow_uncertain = not export_ready
-    for row, label, value, _source_key in source_score_cells(data):
-        student = scalar(row.get("name")) or scalar(row.get("student_id")) or "<unknown>"
-        error = validate_score_value(value, allow_uncertain=allow_uncertain, location=f"{student} {label}")
-        if error:
-            errors.append(error)
-    if export_ready and data.get("review_markers"):
-        errors.append("review_markers must be empty before export")
-    return errors
-
-
-def yaml_lines(meta: dict[str, Any]) -> list[str]:
-    lines = ["---"]
-    simple_keys = [
-        "template",
-        "date",
-        "school_year",
-        "semester",
-        "major_name",
-        "course_name",
-        "course_type_label",
-    ]
-    for key in simple_keys:
-        lines.append(f"{key}: {meta.get(key, '')}")
-    for key in ["class_name", "teachers", "handover_class_name", "handover_teachers"]:
-        values = list_value(meta.get(key))
-        if values:
-            lines.append(f"{key}:")
-            for value in values:
-                lines.append(f"  - {value}")
-    flags = package_flags(meta)
-    lines.append("package:")
-    for name in PACKAGE_ARTIFACTS:
-        lines.append(f"  {name}: {str(flags[name]).lower()}")
-    lines.append("---")
-    return lines
-
-
-def generate_markdown(data: dict[str, Any]) -> str:
-    errors = validate_source_data(data, export_ready=False)
-    if errors:
-        raise RenderError("; ".join(errors))
-    lines = yaml_lines(data)
-    lines.extend(["", "## 我带的学生", ""])
-    for student in data["students"]:
-        student_id = scalar(student.get("student_id"))
-        name = scalar(student.get("name"))
-        lines.append(f"{student_id} {name}".strip())
-
-    lines.extend(["", "## 过程考核任务", ""])
-    for index, task in enumerate(data["tasks"], start=1):
-        lines.append(f"{index}. {task['task_name']}-{task['hours']}")
-
-    task_count = len(data["tasks"])
-    headers = BASE_SCORE_COLUMNS + [f"任务{i}" for i in range(1, task_count + 1)] + TRAILING_SCORE_COLUMNS
-    aligns = ["---", "---"] + ["---:"] * (task_count + len(TRAILING_SCORE_COLUMNS))
-    lines.extend(["", "## 成绩数据", "", "| " + " | ".join(headers) + " |", "| " + " | ".join(aligns) + " |"])
-    task_names = [task["task_name"] for task in data["tasks"]]
-    by_student = {scalar(row.get("student_id")) or scalar(row.get("name")): row for row in data["scores"]}
-    for student in data["students"]:
-        key = scalar(student.get("student_id")) or scalar(student.get("name"))
-        row = by_student.get(key, {})
-        row_tasks = row.get("tasks") or {}
-        values = [scalar(student.get("student_id")), scalar(student.get("name"))]
-        values.extend(scalar(row_tasks.get(task_name, "")) for task_name in task_names)
-        values.extend([scalar(row.get("attendance")), scalar(row.get("homework")), scalar(row.get("final"))])
-        lines.append("| " + " | ".join(values) + " |")
-
-    analysis = data.get("analysis") or {}
-    lines.extend(["", "## 分析", "", "### 试卷分析", "", scalar(analysis.get("exam", "无")) or "无"])
-    lines.extend(["", "### 存在问题", "", scalar(analysis.get("issues", "无")) or "无"])
-    lines.extend(["", "### 今后改进措施", "", scalar(analysis.get("improvements", "无")) or "无"])
-    lines.extend(["", "### 异常情况分析", "", scalar(analysis.get("exceptions", "无")) or "无"])
-
-    review_markers = merged_review_markers(data)
-    lines.extend(["", "## 复核标记", ""])
-    if review_markers:
-        lines.extend([
-            "| 类型 | 位置 | 当前值 | 说明 |",
-            "|------|------|--------|------|",
-        ])
-        for marker in review_markers:
-            lines.append(
-                "| "
-                + " | ".join(
-                    [
-                        scalar(marker.get("type", "需复核")),
-                        scalar(marker.get("location")),
-                        scalar(marker.get("value")),
-                        scalar(marker.get("note")),
-                    ]
-                )
-                + " |"
-            )
-    else:
-        lines.append("无")
-    return "\n".join(lines).rstrip() + "\n"
 
 
 def split_frontmatter(markdown: str) -> tuple[dict[str, Any], str]:
@@ -460,7 +262,7 @@ def validate_markdown(package: MarkdownPackage, export_ready: bool = True) -> li
             if error:
                 errors.append(error)
     if export_ready and package.review_text != "无":
-        errors.append("## 复核标记 must be exactly 无 before final export readiness")
+        errors.append("## 复核标记 must be exactly 无 before delivery")
     return errors
 
 
@@ -955,8 +757,8 @@ def score_list_rows(package: MarkdownPackage, calculated_rows: list[dict[str, st
     for row in calculated_rows or calculated_score_rows(package):
         rows.append(
             {
-                "姓名": row.get("姓名", ""),
                 "学号": row.get("学号", ""),
+                "姓名": row.get("姓名", ""),
                 "平时成绩": row.get("平时分", ""),
                 "期末成绩": row.get("期末分", ""),
             }
@@ -1485,25 +1287,6 @@ def build_table_artifacts(package: MarkdownPackage) -> dict[str, Any]:
     }
 
 
-def write_csv(path: Path, headers: list[str], rows: list[dict[str, str]]) -> None:
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=headers, lineterminator="\n")
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({header: row.get(header, "") for header in headers})
-
-
-def markdown_cell(value: Any) -> str:
-    return scalar(value).replace("|", "\\|").replace("\n", "<br>")
-
-
-def write_markdown_table(path: Path, headers: list[str], rows: list[dict[str, str]]) -> None:
-    lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * len(headers)) + " |"]
-    for row in rows:
-        lines.append("| " + " | ".join(markdown_cell(row.get(header, "")) for header in headers) + " |")
-    write_text(path, "\n".join(lines) + "\n")
-
-
 def column_name(index: int) -> str:
     name = ""
     while index:
@@ -1571,86 +1354,6 @@ def write_single_sheet_xlsx(path: Path, sheet_name: str, headers: list[str], row
             archive.writestr(info, files[name])
 
 
-def write_xlsx(path: Path, package: MarkdownPackage, artifacts: dict[str, Any]) -> None:
-    score_headers = BASE_SCORE_COLUMNS + TRAILING_SCORE_COLUMNS + DERIVED_SCORE_COLUMNS + ["备注"]
-    score_rows = [score_headers]
-    highlighted_cells: set[tuple[int, int]] = set()
-    for row_index, row in enumerate(package.score_rows, start=2):
-        calculated = artifacts["calculated_score_data"][row_index - 2]
-        values = [calculated.get(header, "") for header in BASE_SCORE_COLUMNS + TRAILING_SCORE_COLUMNS + DERIVED_SCORE_COLUMNS]
-        values.append("")
-        score_rows.append(values)
-        for col_index, header in enumerate(BASE_SCORE_COLUMNS + TRAILING_SCORE_COLUMNS, start=1):
-            if "?" in row.get(header, ""):
-                highlighted_cells.add((row_index, col_index))
-        semester_score_col = score_headers.index("学期成绩") + 1
-        if is_below_60(calculated.get("学期成绩", "")):
-            highlighted_cells.add((row_index, semester_score_col))
-    task_rows = [["任务列", "任务名称", "课时"]]
-    task_rows.extend([[item["column"], item["task_name"], item["hours"]] for item in artifacts["task_map"]])
-    summary_rows = [["项目", "值"]]
-    summary_rows.extend(artifacts["score_summary"]["summary_rows"])
-
-    files = {
-        "[Content_Types].xml": (
-            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-            '<Default Extension="xml" ContentType="application/xml"/>'
-            '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
-            '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
-            '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-            '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-            '<Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-            "</Types>"
-        ),
-        "_rels/.rels": (
-            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
-            "</Relationships>"
-        ),
-        "xl/_rels/workbook.xml.rels": (
-            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
-            '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>'
-            '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/>'
-            '<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
-            "</Relationships>"
-        ),
-        "xl/styles.xml": (
-            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'
-            '<fill><patternFill patternType="solid"><fgColor rgb="FFFFE0E0"/><bgColor indexed="64"/></patternFill></fill></fills>'
-            '<fonts count="1"><font><sz val="11"/><name val="SimSun"/></font></fonts>'
-            '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
-            '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
-            '<xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFill="1"/></cellXfs>'
-            '</styleSheet>'
-        ),
-        "xl/workbook.xml": (
-            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
-            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-            '<sheets><sheet name="成绩数据" sheetId="1" r:id="rId1"/>'
-            '<sheet name="任务映射" sheetId="2" r:id="rId2"/>'
-            '<sheet name="成绩汇总" sheetId="3" r:id="rId3"/></sheets></workbook>'
-        ),
-        "xl/worksheets/sheet1.xml": worksheet_xml(score_rows, highlighted_cells),
-        "xl/worksheets/sheet2.xml": worksheet_xml(task_rows),
-        "xl/worksheets/sheet3.xml": worksheet_xml(summary_rows),
-    }
-    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for name in sorted(files):
-            info = zipfile.ZipInfo(name)
-            info.date_time = (1980, 1, 1, 0, 0, 0)
-            info.compress_type = zipfile.ZIP_DEFLATED
-            archive.writestr(info, files[name])
-
-
 def compile_pdf(typ_path: Path, pdf_path: Path) -> tuple[str, str]:
     typst = shutil.which("typst")
     if not typst:
@@ -1661,85 +1364,53 @@ def compile_pdf(typ_path: Path, pdf_path: Path) -> tuple[str, str]:
     return "compiled", str(pdf_path)
 
 
-def render(markdown_path: Path, workdir: Path, skill_dir: Path, pdf: bool, abnormal_review: bool = False) -> dict[str, Any]:
+def deliver(markdown_path: Path, out_dir: Path, skill_dir: Path) -> dict[str, Any]:
     package = parse_markdown(markdown_path)
-    errors = validate_markdown(package, export_ready=not abnormal_review)
+    errors = validate_markdown(package, export_ready=True)
     if errors:
         raise RenderError("; ".join(errors))
-    unresolved_review = has_unresolved_review(package)
-    if abnormal_review and not unresolved_review:
-        raise RenderError("abnormal review rendering requires unresolved ? values or non-empty ## 复核标记")
+    if has_unresolved_review(package):
+        raise RenderError("## 复核标记 must be exactly 无 before delivery")
 
-    tables_dir = workdir / "tables"
-    tables_dir.mkdir(exist_ok=True)
-    md_out = workdir / "end-of-term-full.md"
-    typ_out = workdir / "end-of-term-package.typ"
-    pdf_out = workdir / "end-of-term-package.pdf"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    md_out = out_dir / "end-of-term-full.md"
+    typ_out = out_dir / "end-of-term-package.typ"
+    pdf_out = out_dir / "end-of-term-package.pdf"
+    xlsx_out = out_dir / "score-list.xlsx"
+
+    expected_public = {md_out, typ_out, pdf_out, xlsx_out}
+    for path in expected_public:
+        if path.exists() and path.resolve() != markdown_path.resolve():
+            path.unlink()
+
     if markdown_path.resolve() != md_out.resolve():
         write_text(md_out, read_text(markdown_path))
-    typst_text, warnings, flags = generate_typst(package, skill_dir / "templates/typst/end-of-term-package.typ")
-    write_text(typ_out, typst_text)
 
+    typst_text, warnings, _flags = generate_typst(package, skill_dir / "templates/typst/end-of-term-package.typ")
+    if warnings:
+        raise RenderError("; ".join(warnings))
     artifacts = build_table_artifacts(package)
-    calculated_scores_verified = verify_calculated_scores(package, artifacts, typst_text)
-    if not calculated_scores_verified:
+    if not verify_calculated_scores(package, artifacts, typst_text):
         raise RenderError("calculated score verification failed")
-    write_text(tables_dir / "score-data.json", stable_json(artifacts["score_data"]))
-    write_text(tables_dir / "calculated-score-data.json", stable_json(artifacts["calculated_score_data"]))
-    write_text(tables_dir / "task-map.json", stable_json(artifacts["task_map"]))
-    write_text(tables_dir / "score-summary.json", stable_json(artifacts["score_summary"]))
-    write_text(tables_dir / "highlight-evidence.json", stable_json(artifacts["highlight_evidence"]))
-    write_csv(tables_dir / "score-data.csv", package.score_headers, artifacts["score_data"])
-    write_markdown_table(tables_dir / "score-list.md", SCORE_LIST_COLUMNS, artifacts["score_list"])
-    write_single_sheet_xlsx(tables_dir / "score-list.xlsx", "成绩清单", SCORE_LIST_COLUMNS, artifacts["score_list"])
-    write_xlsx(tables_dir / "scorebook.xlsx", package, artifacts)
+    if not verify_score_list_artifacts(artifacts):
+        raise RenderError("score list verification failed")
 
-    pdf_status = "not_requested"
-    pdf_message = ""
-    if pdf:
-        pdf_status, pdf_message = compile_pdf(typ_out, pdf_out)
-    manifest = {
-        "skill": "end-of-term-teaching-materials",
-        "version": VERSION,
-        "artifact_kind": "abnormal_review" if abnormal_review else "final_package",
-        "final_ready": not abnormal_review and not unresolved_review,
-        "review_cleared": not unresolved_review,
-        "enabled_packages": flags,
-        "warnings": warnings
-        + (
-            ["abnormal review artifact: unresolved review items remain; do not submit as final package"]
-            if abnormal_review
-            else []
-        ),
-        "markdown": str(md_out.name),
-        "typst": str(typ_out.name),
-        "pdf": {"status": pdf_status, "path": pdf_out.name if pdf_out.exists() else "", "message": pdf_message},
-        "highlight_evidence": artifacts["highlight_evidence"],
-        "score_list": {"markdown": "tables/score-list.md", "xlsx": "tables/score-list.xlsx"},
-        "calculated_scores_verified": calculated_scores_verified,
-        "table_artifacts_verified": verify_table_artifacts(package, artifacts),
-        "score_list_verified": verify_score_list_artifacts(artifacts),
-        "workbook_verified": (tables_dir / "scorebook.xlsx").exists(),
-        "repeatable": "not_checked",
+    write_text(typ_out, typst_text)
+    write_single_sheet_xlsx(xlsx_out, "成绩清单", SCORE_LIST_COLUMNS, artifacts["score_list"])
+
+    pdf_status, pdf_message = compile_pdf(typ_out, pdf_out)
+    if pdf_status != "compiled":
+        if pdf_out.exists():
+            pdf_out.unlink()
+        raise RenderError(f"PDF did not compile: {pdf_message}")
+
+    return {
+        "markdown": str(md_out),
+        "typst": str(typ_out),
+        "pdf": str(pdf_out) if pdf_out.exists() else "",
+        "xlsx": str(xlsx_out),
+        "pdf_status": pdf_status,
     }
-    write_text(workdir / "manifest.json", stable_json(manifest))
-    return manifest
-
-
-def verify_table_artifacts(package: MarkdownPackage, artifacts: dict[str, Any]) -> bool:
-    task_columns = [item["column"] for item in artifacts["task_map"]]
-    expected_task_columns = [f"任务{i}" for i in range(1, len(package.tasks) + 1)]
-    if task_columns != expected_task_columns:
-        return False
-    for source, emitted in zip(package.score_rows, artifacts["score_data"]):
-        for header in package.score_headers:
-            if source.get(header, "") != emitted.get(header, ""):
-                return False
-    for source, emitted in zip(calculated_score_rows(package), artifacts["calculated_score_data"]):
-        for header in package.score_headers + DERIVED_SCORE_COLUMNS:
-            if source.get(header, "") != emitted.get(header, ""):
-                return False
-    return True
 
 
 def verify_score_list_artifacts(artifacts: dict[str, Any]) -> bool:
@@ -1765,164 +1436,23 @@ def verify_calculated_scores(package: MarkdownPackage, artifacts: dict[str, Any]
     return True
 
 
-def hash_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def repeatability_hashes(workdir: Path) -> dict[str, str]:
-    paths = [
-        workdir / "end-of-term-full.md",
-        workdir / "end-of-term-package.typ",
-        workdir / "tables/score-data.json",
-        workdir / "tables/calculated-score-data.json",
-        workdir / "tables/score-data.csv",
-        workdir / "tables/task-map.json",
-        workdir / "tables/score-summary.json",
-        workdir / "tables/highlight-evidence.json",
-        workdir / "tables/score-list.md",
-        workdir / "tables/score-list.xlsx",
-        workdir / "tables/scorebook.xlsx",
-    ]
-    return {str(path.relative_to(workdir)): hash_file(path) for path in paths}
-
-
-def verify(skill_dir: Path, workdir: Path) -> dict[str, Any]:
-    fixture = skill_dir / "references/fixtures/end-of-term-source.json"
-    uncertain_fixture = skill_dir / "references/fixtures/end-of-term-source-uncertain.json"
-    source_out = workdir / "end-of-term-source.json"
-    uncertain_source_out = workdir / "end-of-term-source-uncertain.json"
-    markdown_out = workdir / "end-of-term-full.md"
-    shutil.copyfile(fixture, source_out)
-    data = load_json(source_out)
-    source_errors = validate_source_data(data)
-    if source_errors:
-        raise RenderError("; ".join(source_errors))
-    write_text(markdown_out, generate_markdown(data))
-    markdown_package = parse_markdown(markdown_out)
-    markdown_errors = validate_markdown(markdown_package)
-    if markdown_errors:
-        raise RenderError("; ".join(markdown_errors))
-
-    shutil.copyfile(uncertain_fixture, uncertain_source_out)
-    uncertain_data = load_json(uncertain_source_out)
-    review_mode_errors = validate_source_data(uncertain_data, export_ready=False)
-    if review_mode_errors:
-        raise RenderError("; ".join(review_mode_errors))
-    export_mode_errors = validate_source_data(uncertain_data, export_ready=True)
-    if not export_mode_errors:
-        raise RenderError("uncertain source fixture did not fail final export validation")
-    uncertain_markdown = workdir / "end-of-term-full-uncertain.md"
-    write_text(uncertain_markdown, generate_markdown(uncertain_data))
-    uncertain_text = read_text(uncertain_markdown)
-    if "87?" not in uncertain_text or "## 复核标记" not in uncertain_text or "需复核" not in uncertain_text:
-        raise RenderError("uncertain source fixture did not generate reviewable Markdown markers")
-
-    unresolved = workdir / "unresolved-review.md"
-    write_text(unresolved, uncertain_text)
-    try:
-        render(unresolved, workdir / "_blocked", skill_dir, pdf=False)
-        raise RenderError("unresolved review fixture did not block rendering")
-    except FileNotFoundError:
-        (workdir / "_blocked").mkdir(exist_ok=True)
-        try:
-            render(unresolved, workdir / "_blocked", skill_dir, pdf=False)
-            raise RenderError("unresolved review fixture did not block rendering")
-        except RenderError:
-            pass
-    except RenderError:
-        pass
-
-    abnormal_dir = workdir / "_abnormal-review"
-    abnormal_dir.mkdir(exist_ok=True)
-    abnormal_manifest = render(unresolved, abnormal_dir, skill_dir, pdf=True, abnormal_review=True)
-    if abnormal_manifest.get("final_ready") is not False or abnormal_manifest.get("artifact_kind") != "abnormal_review":
-        raise RenderError("abnormal review manifest did not record non-final status")
-    highlights = abnormal_manifest.get("highlight_evidence") or []
-    if not any(item.get("kind") == "unresolved_uncertain_score" for item in highlights):
-        raise RenderError("abnormal review manifest missing unresolved-cell highlight evidence")
-    if not any(item.get("kind") == "below_60_semester_score" for item in highlights):
-        raise RenderError("abnormal review manifest missing below-60 highlight evidence")
-
-    manifest = render(markdown_out, workdir, skill_dir, pdf=True)
-    first_hashes = repeatability_hashes(workdir)
-    repeat_dir = workdir / "_repeat"
-    repeat_dir.mkdir(exist_ok=True)
-    render(markdown_out, repeat_dir, skill_dir, pdf=False)
-    second_hashes = repeatability_hashes(repeat_dir)
-    repeatable = first_hashes == second_hashes
-    if not repeatable:
-        raise RenderError("deterministic artifact repeatability check failed")
-    manifest["repeatable"] = True
-    manifest["repeatability_hashes"] = first_hashes
-    manifest["verification_cases"] = {
-        "uncertain_markdown_generated": True,
-        "normal_render_blocked_unresolved_review": True,
-        "abnormal_review": abnormal_manifest,
-        "final_export_validation_errors": export_mode_errors,
-    }
-    write_text(workdir / "manifest.json", stable_json(manifest))
-    return manifest
-
-
-def cmd_example(args: argparse.Namespace) -> None:
-    shutil.copyfile(Path(args.skill_dir) / "references/fixtures/end-of-term-source.json", Path(args.output))
-
-
 def cmd_validate(args: argparse.Namespace) -> None:
     path = Path(args.input)
-    if path.suffix.lower() == ".json":
-        errors = validate_source_data(load_json(path))
-    else:
-        errors = validate_markdown(parse_markdown(path))
+    if path.suffix.lower() != ".md":
+        raise RenderError("validate only accepts finalized Markdown input")
+    errors = validate_markdown(parse_markdown(path))
     if errors:
         raise RenderError("; ".join(errors))
     print("validation: ok")
 
 
-def cmd_markdown(args: argparse.Namespace) -> None:
-    write_text(Path(args.output), generate_markdown(load_json(Path(args.input))))
-
-
-def cmd_render(args: argparse.Namespace) -> None:
-    manifest = render(Path(args.input), Path(args.workdir), Path(args.skill_dir), bool(args.pdf), bool(args.abnormal_review))
-    print(stable_json(manifest), end="")
-
-
-def cmd_verify(args: argparse.Namespace) -> None:
-    manifest = verify(Path(args.skill_dir), Path(args.workdir))
-    print(stable_json(manifest), end="")
-
-
-def cmd_manifest(args: argparse.Namespace) -> None:
-    print(
-        stable_json(
-            {
-                "skill": "end-of-term-teaching-materials",
-                "version": VERSION,
-                "commands": ["example", "validate", "markdown", "render --abnormal-review", "verify", "manifest", "info", "version"],
-                "outputs": [
-                    "end-of-term-full.md",
-                    "end-of-term-package.typ",
-                    "end-of-term-package.pdf",
-                    "manifest.json",
-                    "tables/score-data.json",
-                    "tables/calculated-score-data.json",
-                    "tables/score-data.csv",
-                    "tables/task-map.json",
-                    "tables/score-summary.json",
-                    "tables/highlight-evidence.json",
-                    "tables/score-list.md",
-                    "tables/score-list.xlsx",
-                    "tables/scorebook.xlsx",
-                ],
-            }
-        ),
-        end="",
-    )
+def cmd_deliver(args: argparse.Namespace) -> None:
+    result = deliver(Path(args.input), Path(args.out_dir), Path(args.skill_dir))
+    print(stable_json(result), end="")
 
 
 def cmd_info(args: argparse.Namespace) -> None:
-    print("end-of-term-teaching-materials: structured data -> Markdown -> Typst/PDF + deterministic table artifacts")
+    print("end-of-term-teaching-materials: reviewed Markdown -> Typst/PDF + 4-column score-list workbook")
 
 
 def cmd_version(args: argparse.Namespace) -> None:
@@ -1932,18 +1462,12 @@ def cmd_version(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
-    for command in ["example", "validate", "markdown", "render", "verify", "manifest", "info", "version"]:
+    for command in ["validate", "deliver", "info", "version"]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--skill-dir", required=True)
-    sub.choices["example"].add_argument("--output", required=True)
     sub.choices["validate"].add_argument("--input", required=True)
-    sub.choices["markdown"].add_argument("--input", required=True)
-    sub.choices["markdown"].add_argument("--output", required=True)
-    sub.choices["render"].add_argument("--input", required=True)
-    sub.choices["render"].add_argument("--workdir", required=True)
-    sub.choices["render"].add_argument("--pdf", action="store_true")
-    sub.choices["render"].add_argument("--abnormal-review", action="store_true")
-    sub.choices["verify"].add_argument("--workdir", required=True)
+    sub.choices["deliver"].add_argument("--input", required=True)
+    sub.choices["deliver"].add_argument("--out-dir", required=True)
     return parser
 
 
@@ -1952,12 +1476,8 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     try:
         {
-            "example": cmd_example,
             "validate": cmd_validate,
-            "markdown": cmd_markdown,
-            "render": cmd_render,
-            "verify": cmd_verify,
-            "manifest": cmd_manifest,
+            "deliver": cmd_deliver,
             "info": cmd_info,
             "version": cmd_version,
         }[args.command](args)

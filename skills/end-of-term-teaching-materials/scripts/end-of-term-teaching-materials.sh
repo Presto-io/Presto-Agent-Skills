@@ -11,17 +11,14 @@ PY_HELPER="${SCRIPT_DIR}/render_package.py"
 usage() {
   while IFS= read -r line; do printf '%s\n' "$line"; done <<'USAGE'
 Usage:
-  end-of-term-teaching-materials.sh example --output <source.json>
-  end-of-term-teaching-materials.sh validate --input <source.json|markdown.md>
-  end-of-term-teaching-materials.sh markdown --input <source.json> --output <end-of-term-full.md>
-  end-of-term-teaching-materials.sh render --input <end-of-term-full.md> --workdir <dir> [--pdf] [--abnormal-review]
-  end-of-term-teaching-materials.sh verify --workdir <dir>
-  end-of-term-teaching-materials.sh manifest
+  end-of-term-teaching-materials.sh validate --input <end-of-term-full.md>
+  end-of-term-teaching-materials.sh deliver --input <end-of-term-full.md> --out-dir <dir>
   end-of-term-teaching-materials.sh info
   end-of-term-teaching-materials.sh version
 
-The pipeline is structured data -> Markdown -> Typst/PDF + deterministic table
-artifacts. Parent output directories and --workdir must already exist.
+The delivery path is reviewed Markdown -> Typst/PDF + one 4-column score-list
+workbook. JSON/CSV/manifest/verification artifacts are not part of this skill
+command surface.
 USAGE
 }
 
@@ -30,20 +27,8 @@ die() {
   exit 1
 }
 
-ensure_parent_dir() {
-  local path="$1" parent
-  parent="${path%/*}"
-  if [[ "$parent" != "$path" && -n "$parent" && ! -d "$parent" ]]; then
-    die "parent directory does not exist: $parent"
-  fi
-}
-
 need_file() {
   [[ -f "$1" ]] || die "file not found: $1"
-}
-
-need_workdir() {
-  [[ -d "$1" ]] || die "workdir does not exist: $1"
 }
 
 cmd="${1:-}"
@@ -54,18 +39,6 @@ fi
 shift || true
 
 case "$cmd" in
-  example)
-    output=""
-    while [[ $# -gt 0 ]]; do
-      case "$1" in
-        --output) output="${2:-}"; shift 2 ;;
-        *) die "unknown argument for example: $1" ;;
-      esac
-    done
-    [[ -n "$output" ]] || die "example requires --output"
-    ensure_parent_dir "$output"
-    python3 "$PY_HELPER" example --skill-dir "$SKILL_DIR" --output "$output"
-    ;;
   validate)
     input=""
     while [[ $# -gt 0 ]]; do
@@ -78,58 +51,24 @@ case "$cmd" in
     need_file "$input"
     python3 "$PY_HELPER" validate --skill-dir "$SKILL_DIR" --input "$input"
     ;;
-  markdown)
+  deliver)
     input=""
-    output=""
+    out_dir=""
     while [[ $# -gt 0 ]]; do
       case "$1" in
         --input) input="${2:-}"; shift 2 ;;
-        --output) output="${2:-}"; shift 2 ;;
-        *) die "unknown argument for markdown: $1" ;;
+        --out-dir) out_dir="${2:-}"; shift 2 ;;
+        *) die "unknown argument for deliver: $1" ;;
       esac
     done
-    [[ -n "$input" ]] || die "markdown requires --input"
-    [[ -n "$output" ]] || die "markdown requires --output"
+    [[ -n "$input" ]] || die "deliver requires --input"
+    [[ -n "$out_dir" ]] || die "deliver requires --out-dir"
     need_file "$input"
-    ensure_parent_dir "$output"
-    python3 "$PY_HELPER" markdown --skill-dir "$SKILL_DIR" --input "$input" --output "$output"
-    ;;
-  render)
-    input=""
-    workdir=""
-    pdf=false
-    abnormal_review=false
-    while [[ $# -gt 0 ]]; do
-      case "$1" in
-        --input) input="${2:-}"; shift 2 ;;
-        --workdir) workdir="${2:-}"; shift 2 ;;
-        --pdf) pdf=true; shift ;;
-        --abnormal-review) abnormal_review=true; shift ;;
-        *) die "unknown argument for render: $1" ;;
-      esac
-    done
-    [[ -n "$input" ]] || die "render requires --input"
-    [[ -n "$workdir" ]] || die "render requires --workdir"
-    need_file "$input"
-    need_workdir "$workdir"
-    args=(render --skill-dir "$SKILL_DIR" --input "$input" --workdir "$workdir")
-    [[ "$pdf" == true ]] && args+=(--pdf)
-    [[ "$abnormal_review" == true ]] && args+=(--abnormal-review)
+    mkdir -p "$out_dir"
+    args=(deliver --skill-dir "$SKILL_DIR" --input "$input" --out-dir "$out_dir")
     python3 "$PY_HELPER" "${args[@]}"
     ;;
-  verify)
-    workdir=""
-    while [[ $# -gt 0 ]]; do
-      case "$1" in
-        --workdir) workdir="${2:-}"; shift 2 ;;
-        *) die "unknown argument for verify: $1" ;;
-      esac
-    done
-    [[ -n "$workdir" ]] || die "verify requires --workdir"
-    need_workdir "$workdir"
-    python3 "$PY_HELPER" verify --skill-dir "$SKILL_DIR" --workdir "$workdir"
-    ;;
-  manifest|info|version)
+  info|version)
     python3 "$PY_HELPER" "$cmd" --skill-dir "$SKILL_DIR"
     ;;
   *)
