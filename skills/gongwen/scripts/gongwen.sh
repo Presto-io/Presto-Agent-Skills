@@ -6,7 +6,7 @@ if [[ "$SCRIPT_DIR" == "${BASH_SOURCE[0]}" ]]; then
   SCRIPT_DIR="."
 fi
 SKILL_DIR="${SCRIPT_DIR}/.."
-TEMPLATE_MD="${SKILL_DIR}/templates/gongwen-full.md"
+TEMPLATE_MD="${SKILL_DIR}/templates/gongwen.md"
 
 source "$SCRIPT_DIR/gongwen_lib/common.sh"
 source "$SCRIPT_DIR/gongwen_lib/inline.sh"
@@ -23,7 +23,6 @@ main() {
   case "$command" in
     example) cmd_example "$@" ;;
     render) cmd_render "$@" ;;
-    manifest) cmd_manifest "$@" ;;
     info) cmd_info "$@" ;;
     version) cmd_version "$@" ;;
     -h|--help|"") usage ;;
