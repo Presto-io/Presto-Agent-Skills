@@ -135,10 +135,6 @@ render_body() {
   TABLE_COUNTER=0
   FIGURE_COUNTER=0
   while (( i < total )); do
-    if [[ "${SKIP_SIGNATURE_INDEX:-}" == "$i" ]]; then
-      ((i++))
-      continue
-    fi
     line="${BODY_LINES[$i]}"
     if [[ "$in_comment" == true ]]; then
       [[ "$line" == *"-->"* ]] && in_comment=false
@@ -276,38 +272,66 @@ render_signature() {
 TYP
 }
 
-signature_stick_candidate() {
-  local line
-  line="$(trim "$1")"
-  [[ -n "$line" ]] || return 1
-  case "$line" in
-    "#"*|"|"*|">"*|"- "*|"!"*|"\`\`\`"*|"{pagebreak}"|"{.pagebreak}"|"{pagebreak:weak}"|"{.pagebreak:weak}") return 1 ;;
-  esac
-  [[ "$line" =~ ^[0-9]+\. ]] && return 1
-  return 0
+body_line_is_author() {
+  local line="$1" authors rest part
+  authors="$FM_AUTHOR"
+  [[ "$line" == "$authors" ]] && return 0
+  rest="$authors"
+  while [[ "$rest" == *"、"* ]]; do
+    part="${rest%%、*}"
+    [[ "$line" == "$part" ]] && return 0
+    rest="${rest#*、}"
+  done
+  [[ "$line" == "$rest" ]] && return 0
+  return 1
 }
 
-prepare_signature_stick() {
-  local idx
-  SKIP_SIGNATURE_INDEX=""
-  STICK_SIGNATURE_TEXT=""
-  for ((idx = ${#BODY_LINES[@]} - 1; idx >= 0; idx--)); do
-    [[ -z "$(trim "${BODY_LINES[$idx]}")" ]] && continue
-    if signature_stick_candidate "${BODY_LINES[$idx]}"; then
-      SKIP_SIGNATURE_INDEX="$idx"
-      STICK_SIGNATURE_TEXT="${BODY_LINES[$idx]}"
+body_line_is_date() {
+  local line="$1"
+  [[ "$line" =~ ^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]?$ ]] && return 0
+  [[ "$line" =~ ^[0-9][0-9][0-9][0-9]年[0-9]{1,2}月[0-9]{1,2}日$ ]] && return 0
+  return 1
+}
+
+validate_no_manual_signature_block() {
+  local idx line checked=0 in_noindent=false block_has_author=false block_has_date=false
+  for ((idx = 0; idx < ${#BODY_LINES[@]}; idx++)); do
+    line="$(trim "${BODY_LINES[$idx]}")"
+    if [[ "$line" == '::: {.noindent}' ]]; then
+      in_noindent=true
+      block_has_author=false
+      block_has_date=false
+      continue
     fi
-    break
+    if [[ "$line" == ":::" ]]; then
+      if [[ "$in_noindent" == true && "$block_has_author" == true && "$block_has_date" == true ]]; then
+        die "signature:true forbids handwritten author/date/signature lines in body"
+      fi
+      in_noindent=false
+      continue
+    fi
+    if [[ "$in_noindent" == true ]]; then
+      body_line_is_author "$line" && block_has_author=true
+      body_line_is_date "$line" && block_has_date=true
+    fi
+  done
+
+  for ((idx = ${#BODY_LINES[@]} - 1; idx >= 0 && checked < 6; idx--)); do
+    line="$(trim "${BODY_LINES[$idx]}")"
+    [[ -z "$line" || "$line" == ":::" || "$line" == '::: {.noindent}' ]] && continue
+    checked=$((checked + 1))
+    if body_line_is_author "$line" || body_line_is_date "$line"; then
+      die "signature:true forbids handwritten author/date/signature lines in body"
+    fi
   done
 }
 
 render_markdown_to_typst() {
   local input="$1" output="$2" body
   parse_input "$input"
-  SKIP_SIGNATURE_INDEX=""
-  STICK_SIGNATURE_TEXT=""
+  validate_frontmatter
   if [[ "$FM_SIGNATURE" == "true" || "$FM_SIGNATURE" == "yes" ]]; then
-    prepare_signature_stick
+    validate_no_manual_signature_block
   fi
   ensure_parent_dir "$output"
   : > "$output"
@@ -319,10 +343,6 @@ render_markdown_to_typst() {
       [[ -n "$body" ]] && printf '\n\n'
       printf '#place.flush()\n'
       printf '#block(sticky: true, width: 100%%)[\n'
-      if [[ -n "$STICK_SIGNATURE_TEXT" ]]; then
-        render_inline "$STICK_SIGNATURE_TEXT"
-        printf '\n\n'
-      fi
       render_signature
       printf ']\n'
     else

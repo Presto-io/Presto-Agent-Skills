@@ -1,11 +1,10 @@
 usage() {
   while IFS= read -r line; do printf '%s\n' "$line"; done <<'USAGE'
 Usage:
-  gongwen.sh example --output <gongwen-full.md>
+  gongwen.sh example --output <标题.md>
   gongwen.sh render --input <input.md> [--typ <output.typ>]
                     [--pdf <output.pdf>]
                     [--expected-typ <reference.typ>]
-  gongwen.sh manifest
   gongwen.sh info
   gongwen.sh version
 
@@ -59,17 +58,6 @@ cmd_render() {
     typst compile "$typ" "$pdf"
     printf 'wrote %s\n' "$pdf"
   fi
-}
-
-cmd_manifest() {
-  while IFS= read -r line; do printf '%s\n' "$line"; done <<'JSON'
-{
-  "name": "gongwen",
-  "displayName": "类公文模板",
-  "version": "0.2.2-shell-only",
-  "description": "Bash-only Markdown-to-Typst renderer with optional Typst PDF export."
-}
-JSON
 }
 
 cmd_info() {

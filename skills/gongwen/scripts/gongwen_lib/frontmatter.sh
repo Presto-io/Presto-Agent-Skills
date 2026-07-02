@@ -2,15 +2,17 @@ FM_TITLE="请输入文字"
 FM_AUTHOR="请输入文字"
 FM_DATE=""
 FM_SIGNATURE="false"
+FM_TEMPLATE=""
 BODY_LINES=()
 
 parse_input() {
   local input="$1" line first=true in_fm=false in_author=false item
   BODY_LINES=()
   FM_TITLE="请输入文字"
-  FM_AUTHOR="请输入文字"
-  FM_DATE="$(today)"
-  FM_SIGNATURE="false"
+  FM_AUTHOR=""
+  FM_DATE=""
+  FM_SIGNATURE=""
+  FM_TEMPLATE=""
 
   while IFS= read -r line || [[ -n "$line" ]]; do
     line="${line%$'\r'}"
@@ -37,6 +39,9 @@ parse_input() {
       elif [[ "$line" =~ ^signature:[[:space:]]*(.*)$ ]]; then
         FM_SIGNATURE="$(strip_quotes "${BASH_REMATCH[1]}")"
         in_author=false
+      elif [[ "$line" =~ ^template:[[:space:]]*(.*)$ ]]; then
+        FM_TEMPLATE="$(strip_quotes "${BASH_REMATCH[1]}")"
+        in_author=false
       elif [[ "$line" =~ ^author:[[:space:]]*(.*)$ ]]; then
         in_author=true
         item="$(strip_quotes "${BASH_REMATCH[1]}")"
@@ -58,4 +63,16 @@ parse_input() {
       BODY_LINES+=("$line")
     fi
   done < "$input"
+}
+
+validate_frontmatter() {
+  [[ -n "$FM_AUTHOR" ]] || die "frontmatter requires author"
+  [[ -n "$FM_DATE" ]] || die "frontmatter requires date"
+  [[ -n "$FM_SIGNATURE" ]] || die "frontmatter requires signature"
+  [[ "$FM_TEMPLATE" == "gongwen" ]] || die "frontmatter template must be gongwen"
+  [[ "$FM_DATE" =~ ^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]?$ ]] || die "frontmatter date must use YYYY-MM-DD"
+  case "$FM_SIGNATURE" in
+    true|false|yes|no) ;;
+    *) die "frontmatter signature must be true or false" ;;
+  esac
 }
