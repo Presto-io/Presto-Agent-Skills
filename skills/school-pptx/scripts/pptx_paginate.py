@@ -584,6 +584,27 @@ def _contents_fragments(
     return pages or [tuple()], diagnostics
 
 
+def _gallery_fragments(slide: dict[str, Any], logical_index: int) -> list[tuple[BlockFragment, ...]]:
+    blocks = list(slide.get("blocks", ()))
+    pages: list[tuple[BlockFragment, ...]] = []
+    for page_index, start in enumerate(range(0, len(blocks), 4)):
+        chunk = blocks[start:start + 4]
+        preset = len(chunk)
+        fragments = tuple(BlockFragment(
+            kind="image", logical_index=logical_index, block_index=start + item_index,
+            fragment_index=item_index, source_line=int(block.get("source_line", 1)),
+            heading=block.get("heading"), metadata=(
+                ("authored_path", str(block.get("authored_path", ""))),
+                ("caption", str(block.get("caption", ""))),
+                ("caption_placeholder", "true"),
+                ("gallery_preset", str(preset)),
+                ("gallery_item_index", str(item_index)),
+            ),
+        ) for item_index, block in enumerate(chunk))
+        pages.append(fragments)
+    return pages or [tuple()]
+
+
 def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> PhysicalDeckPlan:
     """Convert a canonical Phase 42 document into an immutable physical plan."""
     logical_slides = document.get("logical_slides", ())
@@ -614,7 +635,7 @@ def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> Physi
                 int(logical.get("source_line", 1)),
             )
         elif layout == "gallery":
-            page_fragments, found = [tuple()], []
+            page_fragments, found = _gallery_fragments(logical, logical_index), []
         else:
             page_fragments, found = _simple_slide_fragments(logical, logical_index, layout_manifest, measure)
         diagnostics.extend(found)
@@ -637,6 +658,19 @@ def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> Physi
                 affected_pages=(physical_index,),
             ))
         mapping.append((logical_index, tuple(physical_indices)))
+    closing_specs = [item for item in document.get("implicit_slides", ()) if item.get("layout") == "closing"]
+    if closing_specs:
+        physical_index = len(slides)
+        closing_manifest = manifest["layouts"]["closing"]
+        closing_fragment = BlockFragment(
+            kind="closing", logical_index=len(logical_slides), block_index=0, fragment_index=0,
+            source_line=1, metadata=(("pptx_layout", str(closing_manifest["pptx_layout"])),),
+        )
+        slides.append(PhysicalSlide(
+            logical_index=len(logical_slides), physical_index=physical_index, layout="closing", title="",
+            fragment_index=0, source_line=1, fragments=(closing_fragment,), notes_intent=None,
+            affected_pages=(physical_index,),
+        ))
     return PhysicalDeckPlan(tuple(slides), tuple(diagnostics), tuple(mapping))
 
 
