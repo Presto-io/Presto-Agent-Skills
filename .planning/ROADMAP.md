@@ -68,13 +68,16 @@ Plans:
   3. User sees contents derived from `##` headings in document order while `#` is used only as a title fallback when YAML `title` is absent.
   4. User receives locatable validation errors for unsupported layout names, raw coordinate styling, arbitrary font/color overrides, unsupported raw HTML, and missing media.
   5. User can express speaker notes and normal Markdown images in the source without those notes appearing as visible slide canvas text.
-**Plans**: 2 plans
+**Plans**: 2/3 plans complete
 Plans:
 **Wave 1**
 - [x] 42-01-PLAN.md — Define the Markdown contract, logical model, manifest-driven validation, and `validate` CLI.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [x] 42-02-PLAN.md — Add the full fixture, skill-local media, deterministic `example` command, and coverage verification.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 42-03-PLAN.md — Close the five reproduced contract and secure example-write gaps with task-local and aggregate regression gates.
 **UI hint**: yes
 
 ### Phase 43: Editable PPTX Renderer and Pagination
@@ -164,11 +167,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 41 is complete and independently verified. Phase 42 execution completed both plans, but independent verification found five contract and safety gaps that must be closed before Phase 43.
+Phase 41 is complete and independently verified. Phase 42 completed its first two plans; independent verification found five contract and safety gaps, now covered by the planned Wave 3 gap-closure plan.
 
 ## Next Step
 
-Plan Phase 42 gap closure with `/gsd:plan-phase 42 --gaps`.
+Execute Phase 42 gap closure with `/gsd:execute-phase 42`.
 
 ---
 *Roadmap updated: 2026-07-13 for v1.17 school-pptx roadmap*
