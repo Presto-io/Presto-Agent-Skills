@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: verifying
-stopped_at: Completed 42-02-PLAN.md
-last_updated: "2026-07-13T16:37:40.219Z"
-last_activity: 2026-07-14 -- Phase 42 Plan 02 complete
+stopped_at: Phase 42 verification found 5 gaps
+last_updated: "2026-07-13T17:06:20Z"
+last_activity: 2026-07-13 -- Phase 42 verification found 5 gaps
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 1
   total_plans: 3
   completed_plans: 3
   percent: 100
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-07-13 for v1.17 school-pptx)
 
 ## Current Position
 
-Phase: 42 (markdown-contract-and-full-fixture) — COMPLETE
+Phase: 42 (markdown-contract-and-full-fixture) — VERIFICATION GAPS
 Plan: 2 of 2
-Status: Phase complete — ready for verification
-Last activity: 2026-07-14 -- Phase 42 Plan 02 complete
+Status: Gap closure required before phase completion
+Last activity: 2026-07-13 -- Phase 42 verification found 5 gaps
 
-Progress: [██████████] 100%
+Progress: [██████████] 100% plans complete; phase verification pending
 
 ## Workflow Preferences
 
@@ -72,6 +72,7 @@ None yet.
 
 ### Blockers/Concerns
 
+- Phase 42 verification reproduced five gaps: YAML scalar/JSON safety, fenced-code directive opacity, Markdown table structure, manifest failure handling, and concurrent symlink write boundaries.
 - Phase 43 may need implementation spikes for `python-pptx` notes, table objects, placeholder behavior, text fitting, and image contain placement.
 - Phase 44 requires manual visual UAT evidence in at least one compatible PPTX viewer before milestone acceptance.
 
@@ -92,6 +93,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-13T16:37:40.172Z
-Stopped at: Completed 42-02-PLAN.md
-Resume file: None
+Last session: 2026-07-13T17:06:20Z
+Stopped at: Phase 42 verification found 5 gaps
+Resume file: .planning/phases/42-markdown-contract-and-full-fixture/42-VERIFICATION.md
