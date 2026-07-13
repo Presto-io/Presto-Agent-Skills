@@ -71,7 +71,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 **Wave 1**
-- [ ] 42-01-PLAN.md — Define the Markdown contract, logical model, manifest-driven validation, and `validate` CLI.
+- [x] 42-01-PLAN.md — Define the Markdown contract, logical model, manifest-driven validation, and `validate` CLI.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 42-02-PLAN.md — Add the full fixture, skill-local media, deterministic `example` command, and coverage verification.
@@ -111,7 +111,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
-| 42. Markdown Contract and Full Fixture | v1.17 | 0/TBD | Not started | - |
+| 42. Markdown Contract and Full Fixture | v1.17 | 1/2 | In Progress | - |
 | 43. Editable PPTX Renderer and Pagination | v1.17 | 0/TBD | Not started | - |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 

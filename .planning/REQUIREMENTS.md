@@ -17,14 +17,14 @@
 
 ### Markdown Contract
 
-- [ ] **MD-01**: The skill defines a teacher-reviewable Markdown source contract using YAML formatter fields plus explicit `::: slide {layout="..."}` blocks.
-- [ ] **MD-02**: The YAML formatter supports only these v1.17 fields: `title`, `subtitle`, `school`, `department`, `program`, `course`, `author`, `presenter`, `date`, and `theme`.
-- [ ] **MD-03**: Missing optional cover metadata is omitted without moving or resizing other cover elements; if `title` is missing, the first `#` heading is used as the document title fallback.
-- [ ] **MD-04**: The generated contents slide is derived from every `##` heading in Markdown order; `#` headings do not enter the contents list.
-- [ ] **MD-05**: Every rendered slide block must declare a supported `layout`; unsupported layouts, raw coordinate styling, arbitrary font/color overrides, and unsupported raw HTML fail validation.
+- [x] **MD-01**: The skill defines a teacher-reviewable Markdown source contract using YAML formatter fields plus explicit `::: slide {layout="..."}` blocks.
+- [x] **MD-02**: The YAML formatter supports only these v1.17 fields: `title`, `subtitle`, `school`, `department`, `program`, `course`, `author`, `presenter`, `date`, and `theme`.
+- [x] **MD-03**: Missing optional cover metadata is omitted without moving or resizing other cover elements; if `title` is missing, the first `#` heading is used as the document title fallback.
+- [x] **MD-04**: The generated contents slide is derived from every `##` heading in Markdown order; `#` headings do not enter the contents list.
+- [x] **MD-05**: Every rendered slide block must declare a supported `layout`; unsupported layouts, raw coordinate styling, arbitrary font/color overrides, and unsupported raw HTML fail validation.
 - [ ] **MD-06**: The Markdown fixture covers all 11 supported layouts plus speaker notes, images/icons, tables, timeline, gallery, code, and overflow/pagination cases.
-- [ ] **MD-07**: Speaker notes are expressed in Markdown separately from slide canvas content and must render into PPTX notes rather than visible slide text.
-- [ ] **MD-08**: Image and icon references use normal Markdown image semantics and resolve relative to the Markdown file unless an explicit absolute path is provided.
+- [x] **MD-07**: Speaker notes are expressed in Markdown separately from slide canvas content and must render into PPTX notes rather than visible slide text.
+- [x] **MD-08**: Image and icon references use normal Markdown image semantics and resolve relative to the Markdown file unless an explicit absolute path is provided.
 
 ### PPTX Rendering
 
@@ -105,14 +105,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TPL-05 | Phase 41 | Complete |
 | TPL-06 | Phase 41 | Complete |
 | TPL-07 | Phase 41 | Complete |
-| MD-01 | Phase 42 | Pending |
-| MD-02 | Phase 42 | Pending |
-| MD-03 | Phase 42 | Pending |
-| MD-04 | Phase 42 | Pending |
-| MD-05 | Phase 42 | Pending |
+| MD-01 | Phase 42 | Complete |
+| MD-02 | Phase 42 | Complete |
+| MD-03 | Phase 42 | Complete |
+| MD-04 | Phase 42 | Complete |
+| MD-05 | Phase 42 | Complete |
 | MD-06 | Phase 42 | Pending |
-| MD-07 | Phase 42 | Pending |
-| MD-08 | Phase 42 | Pending |
+| MD-07 | Phase 42 | Complete |
+| MD-08 | Phase 42 | Complete |
 | PPTX-01 | Phase 43 | Pending |
 | PPTX-02 | Phase 43 | Pending |
 | PPTX-03 | Phase 43 | Pending |
