@@ -115,7 +115,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 0/TBD | Not started | - |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 0/4 | Planned    |  |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
@@ -172,6 +172,22 @@ Phases 41-42 are complete and independently verified. The controlled template, M
 ## Next Step
 
 Plan Phase 43: Editable PPTX Renderer and Pagination.
+
+## Backlog
+
+### Phase 999.1: 全技能干净交付目录标准化改造 (BACKLOG)
+
+**Goal:** 在 v1.17 结束后，依据 `docs/clean-delivery-directory-contract.md` 完整改造当前全部技能，统一交付一级目录、支持资料分组、多轮修改成套归档、最小验证和失败清理行为，并为历史 agent 散乱产物整理提供可复用流程。
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] 盘点全部技能的输入、Markdown、最终产物、历史版本、中间文件和失败输出边界
+- [ ] 为每个技能补齐根目录白名单、`sources/`、`assets/`、`history/`、`.work/` 和版本发布规则
+- [ ] 改造公共脚本，使候选版本先进入 `.work/`，成功后成套归档旧版本并原子发布新版本
+- [ ] 删除非必要持久验证产物，并验证失败运行不会污染当前成功交付
+- [ ] 更新 README、目录规范、兼容性矩阵、技能入口和 artifact contract
+- [ ] 使用 `$gsd-review-backlog` 在 v1.17 结束后晋升并正式规划
 
 ---
 *Roadmap updated: 2026-07-14 after Phase 42 verification*

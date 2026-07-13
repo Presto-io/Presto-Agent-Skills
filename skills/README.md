@@ -41,3 +41,5 @@ Artifact contract discovery:
 | `tiaokedan` | `templates/tiaokedan.md` | `SKILL.md`, `references/markdown-contract.md`, `references/pdf-workflow.md`, `scripts/tiaokedan.sh` |
 
 Before adding a new skill, copy `templates/skill/SKILL.md` and fill the runtime adapter table for all required runtimes.
+
+Every skill that writes files must also follow `docs/clean-delivery-directory-contract.md`: keep only the current Markdown and current final deliverables at the delivery root, archive previous successful output sets together under `history/`, and clean temporary verification from `.work/`.
