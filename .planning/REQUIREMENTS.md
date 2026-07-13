@@ -22,7 +22,7 @@
 - [x] **MD-03**: Missing optional cover metadata is omitted without moving or resizing other cover elements; if `title` is missing, the first `#` heading is used as the document title fallback.
 - [x] **MD-04**: The generated contents slide is derived from every `##` heading in Markdown order; `#` headings do not enter the contents list.
 - [x] **MD-05**: Every rendered slide block must declare a supported `layout`; unsupported layouts, raw coordinate styling, arbitrary font/color overrides, and unsupported raw HTML fail validation.
-- [ ] **MD-06**: The Markdown fixture covers all 11 supported layouts plus speaker notes, images/icons, tables, timeline, gallery, code, and overflow/pagination cases.
+- [x] **MD-06**: The Markdown fixture covers all 11 supported layouts plus speaker notes, images/icons, tables, timeline, gallery, code, and overflow/pagination cases.
 - [x] **MD-07**: Speaker notes are expressed in Markdown separately from slide canvas content and must render into PPTX notes rather than visible slide text.
 - [x] **MD-08**: Image and icon references use normal Markdown image semantics and resolve relative to the Markdown file unless an explicit absolute path is provided.
 
@@ -44,7 +44,7 @@
 
 ### Verification
 
-- [ ] **VER-01**: The skill provides a repeatable `example` command that writes the full Markdown fixture.
+- [x] **VER-01**: The skill provides a repeatable `example` command that writes the full Markdown fixture.
 - [x] **VER-02**: The skill provides a repeatable `template-report` or equivalent command that validates template layouts, slots, placeholders, and manifest consistency.
 - [ ] **VER-03**: The skill provides a repeatable `render` command that turns finalized Markdown into PPTX and fails non-zero on invalid input.
 - [ ] **VER-04**: The skill provides a repeatable `verify --workdir <dir>` command that exercises example generation, template validation, rendering, and structural PPTX inspection.
@@ -110,7 +110,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MD-03 | Phase 42 | Complete |
 | MD-04 | Phase 42 | Complete |
 | MD-05 | Phase 42 | Complete |
-| MD-06 | Phase 42 | Pending |
+| MD-06 | Phase 42 | Complete |
 | MD-07 | Phase 42 | Complete |
 | MD-08 | Phase 42 | Complete |
 | PPTX-01 | Phase 43 | Pending |
@@ -126,7 +126,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PPTX-11 | Phase 43 | Pending |
 | PPTX-12 | Phase 43 | Pending |
 | PPTX-13 | Phase 43 | Pending |
-| VER-01 | Phase 42 | Pending |
+| VER-01 | Phase 42 | Complete |
 | VER-02 | Phase 41 | Complete |
 | VER-03 | Phase 43 | Pending |
 | VER-04 | Phase 44 | Pending |
