@@ -7,13 +7,13 @@
 
 ### Template
 
-- [ ] **TPL-01**: The `school-pptx` skill includes a normalized, skill-local `.pptx` template derived from the supplied school visual `.potx` sample.
-- [ ] **TPL-02**: The original `.potx` sample is treated as visual source evidence, not as the renderer's direct runtime template input.
-- [ ] **TPL-03**: The normalized template exposes a committed manifest or slot map that defines supported themes, layouts, slots, placeholder identity, geometry, and text budgets.
-- [ ] **TPL-04**: The first supported `theme` is a controlled identifier for the normalized default school template, and unknown themes fail with a clear available-theme message.
-- [ ] **TPL-05**: The template contract covers exactly these v1.17 layouts: `cover`, `contents`, `section`, `title-content`, `two-column`, `image-text`, `table`, `timeline`, `gallery`, `code`, and `closing`.
-- [ ] **TPL-06**: Template-owned geometry, fonts, colors, decorative assets, and optional footer behavior cannot be overridden from Markdown.
-- [ ] **TPL-07**: Template text slots use fixed frame geometry with bounded elastic text behavior: text may shrink within the slot's allowed font-size range, but must not overflow visible frames.
+- [x] **TPL-01**: The `school-pptx` skill includes a normalized, skill-local `.pptx` template derived from the supplied school visual `.potx` sample.
+- [x] **TPL-02**: The original `.potx` sample is treated as visual source evidence, not as the renderer's direct runtime template input.
+- [x] **TPL-03**: The normalized template exposes a committed manifest or slot map that defines supported themes, layouts, slots, placeholder identity, geometry, and text budgets.
+- [x] **TPL-04**: The first supported `theme` is a controlled identifier for the normalized default school template, and unknown themes fail with a clear available-theme message.
+- [x] **TPL-05**: The template contract covers exactly these v1.17 layouts: `cover`, `contents`, `section`, `title-content`, `two-column`, `image-text`, `table`, `timeline`, `gallery`, `code`, and `closing`.
+- [x] **TPL-06**: Template-owned geometry, fonts, colors, decorative assets, and optional footer behavior cannot be overridden from Markdown.
+- [x] **TPL-07**: Template text slots use fixed frame geometry with bounded elastic text behavior: text may shrink within the slot's allowed font-size range, but must not overflow visible frames.
 
 ### Markdown Contract
 
@@ -45,7 +45,7 @@
 ### Verification
 
 - [ ] **VER-01**: The skill provides a repeatable `example` command that writes the full Markdown fixture.
-- [ ] **VER-02**: The skill provides a repeatable `template-report` or equivalent command that validates template layouts, slots, placeholders, and manifest consistency.
+- [x] **VER-02**: The skill provides a repeatable `template-report` or equivalent command that validates template layouts, slots, placeholders, and manifest consistency.
 - [ ] **VER-03**: The skill provides a repeatable `render` command that turns finalized Markdown into PPTX and fails non-zero on invalid input.
 - [ ] **VER-04**: The skill provides a repeatable `verify --workdir <dir>` command that exercises example generation, template validation, rendering, and structural PPTX inspection.
 - [ ] **VER-05**: Verification checks dependency readiness, including Python, `python-pptx`, and optional Pandoc availability where used.
@@ -98,13 +98,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TPL-01 | Phase 41 | Pending |
-| TPL-02 | Phase 41 | Pending |
-| TPL-03 | Phase 41 | Pending |
-| TPL-04 | Phase 41 | Pending |
-| TPL-05 | Phase 41 | Pending |
-| TPL-06 | Phase 41 | Pending |
-| TPL-07 | Phase 41 | Pending |
+| TPL-01 | Phase 41 | Complete |
+| TPL-02 | Phase 41 | Complete |
+| TPL-03 | Phase 41 | Complete |
+| TPL-04 | Phase 41 | Complete |
+| TPL-05 | Phase 41 | Complete |
+| TPL-06 | Phase 41 | Complete |
+| TPL-07 | Phase 41 | Complete |
 | MD-01 | Phase 42 | Pending |
 | MD-02 | Phase 42 | Pending |
 | MD-03 | Phase 42 | Pending |
@@ -127,7 +127,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PPTX-12 | Phase 43 | Pending |
 | PPTX-13 | Phase 43 | Pending |
 | VER-01 | Phase 42 | Pending |
-| VER-02 | Phase 41 | Pending |
+| VER-02 | Phase 41 | Complete |
 | VER-03 | Phase 43 | Pending |
 | VER-04 | Phase 44 | Pending |
 | VER-05 | Phase 44 | Pending |

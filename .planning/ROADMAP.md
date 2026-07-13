@@ -36,7 +36,7 @@
 
 ## Phases
 
-- [ ] **Phase 41: Standard Template and Manifest** - Normalize the school visual sample into a skill-local PPTX template with a committed slot manifest and template validation command.
+- [x] **Phase 41: Standard Template and Manifest** - Normalize the school visual sample into a skill-local PPTX template with a committed slot manifest and template validation command. (completed 2026-07-13)
 - [ ] **Phase 42: Markdown Contract and Full Fixture** - Define the constrained YAML plus slide-block Markdown contract and produce a full fixture covering all supported layouts and edge cases.
 - [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output.
 - [ ] **Phase 44: Verification Gate, Runtime Notes, and UAT** - Add repeatable structural verification, negative cases, six-runtime guidance, repository discoverability, and manual visual acceptance evidence.
@@ -53,7 +53,7 @@
   3. User receives a clear validation failure when an unknown theme is requested, including the available controlled theme identifier.
   4. User can run a repeatable template validation/report command that checks template layouts, slots, placeholders, and manifest consistency.
   5. User cannot override template-owned geometry, fonts, colors, decorative assets, footer behavior, or bounded text behavior from Markdown.
-**Plans**: 1 plan
+**Plans**: 1/1 plans complete
 Plans:
 - [x] 41-01-PLAN.md — Normalize the controlled school PPTX template, author the full manifest, and add template-report validation.
 **UI hint**: yes
@@ -164,11 +164,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.17 is ready to plan. Phase 41 starts the `school-pptx` build by normalizing the supplied school visual `.potx` sample into a controlled PPTX template contract and manifest.
+Phase 41 is complete and independently verified. Phase 42 has two plans covering the Markdown contract and deterministic full fixture; plan verification passed with all mapped requirements and context decisions covered.
 
 ## Next Step
 
-Start Phase 41 with `/gsd:discuss-phase 41` or `/gsd:plan-phase 41`.
+Execute Phase 42 with `/gsd:execute-phase 42`.
 
 ---
 *Roadmap updated: 2026-07-13 for v1.17 school-pptx roadmap*
