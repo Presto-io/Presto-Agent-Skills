@@ -40,7 +40,7 @@
 - [ ] **PPTX-10**: Code blocks render as editable monospace text with stable background/spacing; syntax highlighting is not required in v1.17.
 - [ ] **PPTX-11**: Slides with Markdown speaker notes contain corresponding PPTX notes, and slides without notes do not gain accidental notes content.
 - [ ] **PPTX-12**: Slide transition behavior is optional: the renderer may preserve or generate a reliable 0.5s smooth transition, but no-transition output remains valid if transition support is unstable.
-- [ ] **PPTX-13**: Successful public output contains only the requested `.pptx` and any explicitly requested Markdown source copy; manifests, logs, debug files, and temporary evidence stay hidden or in verification workdirs.
+- [ ] **PPTX-13**: Standard successful public output always contains exactly two same-stem artifacts, the reviewed Markdown source with its input bytes preserved and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
 
 ### Verification
 
@@ -150,4 +150,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-07-13*
-*Last updated: 2026-07-13 after v1.17 roadmap creation*
+*Last updated: 2026-07-14 after Phase 43 fixed dual-artifact contract clarification*
