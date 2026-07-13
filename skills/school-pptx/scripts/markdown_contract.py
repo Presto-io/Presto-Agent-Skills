@@ -29,6 +29,7 @@ SLIDE_RE = re.compile(r"^\s*:::\s*slide(?:\s*\{(?P<attrs>.*)\})?\s*$")
 ATTR_RE = re.compile(r"([A-Za-z_][\w-]*)\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s]+))")
 FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})(.*)$")
 TABLE_SEPARATOR_RE = re.compile(r"^:?-{3,}:?$")
+YAML_STRING_TAG = "tag:yaml.org,2002:str"
 RAW_HTML_RE = re.compile(r"<!--|</?[A-Za-z][^>]*>")
 GENERIC_ATTR_RE = re.compile(r"\{[^}\n]*(?:#|\.|\b(?:id|style|x|y|width|height|crop|footer|font|color|background|coordinate|dimension)\s*=)[^}]*\}", re.I)
 STYLE_RE = re.compile(r"\b(?:style|coordinates?|dimensions?|crop|footer|font(?:-size)?|colou?r|background|width|height|x|y)\s*=", re.I)
@@ -135,6 +136,23 @@ def parse_table_row(line: str) -> list[str]:
     if stripped.endswith("|"):
         stripped = stripped[:-1]
     return [cell.strip() for cell in stripped.split("|")]
+
+
+def visible_heading_lines(lines: list[str], base_line: int) -> list[tuple[int, str]]:
+    headings: list[tuple[int, str]] = []
+    active_fence: str | None = None
+    for offset, value in enumerate(lines):
+        if active_fence is not None:
+            if re.match(rf"^\s*{re.escape(active_fence[0])}{{{len(active_fence)},}}\s*$", value):
+                active_fence = None
+            continue
+        fence = FENCE_RE.match(value)
+        if fence:
+            active_fence = fence.group(1)
+            continue
+        if value.strip().startswith("## "):
+            headings.append((base_line + offset, value.strip()[3:].strip()))
+    return headings
 
 
 def inline_spans(text: str) -> list[dict[str, Any]]:
@@ -279,7 +297,22 @@ def parse_blocks(lines: list[str], base_line: int, input_path: Path, collector: 
                 i += 1
             rows = [parse_table_row(line) for line in table_lines]
             headers = rows[0] if rows else []
-            data_rows = rows[2:] if len(rows) >= 2 and all(TABLE_SEPARATOR_RE.fullmatch(c) for c in rows[1]) else rows[1:]
+            separator_valid = len(rows) >= 2 and all(TABLE_SEPARATOR_RE.fullmatch(cell) for cell in rows[1])
+            if len(rows) < 2:
+                collector.add("TABLE_SEPARATOR_INVALID", "Markdown 表格缺少合法的第二行分隔行。", start,
+                              slide=slide_title, layout=layout, fix="在表头后增加由至少三个连字符组成的分隔行。")
+            elif not separator_valid:
+                collector.add("TABLE_SEPARATOR_INVALID", "Markdown 表格第二行不是合法分隔行。", start + 1,
+                              slide=slide_title, layout=layout, fix="每个分隔单元格使用 ---、:---、---: 或 :---:。")
+            if len(rows) >= 2 and len(rows[1]) != len(headers):
+                collector.add("TABLE_COLUMN_MISMATCH", "Markdown 表格分隔行列数与表头不一致。", start + 1,
+                              slide=slide_title, layout=layout, fix="让分隔行与表头具有相同列数。")
+            data_start = 2 if separator_valid else 1
+            data_rows = rows[data_start:]
+            for row_offset, row in enumerate(data_rows, data_start):
+                if len(row) != len(headers):
+                    collector.add("TABLE_COLUMN_MISMATCH", "Markdown 表格数据行列数与表头不一致。", start + row_offset,
+                                  slide=slide_title, layout=layout, fix="让每个数据行与表头具有相同列数。")
             append({"kind": "timeline" if layout == "timeline" else "table", "source_line": start, "headers": headers,
                     "rows": data_rows, "raw": "\n".join(table_lines), "table_title": pending_heading})
             continue
@@ -366,16 +399,22 @@ def parse_document(input_path: Path, manifest: dict[str, Any]) -> dict[str, Any]
                 node = yaml.compose(yaml_text)
                 if yaml_node_count(node) > MAX_YAML_NODES:
                     collector.add("YAML_NODE_LIMIT", "YAML composed-node 数量超过 256。", 2, fix="精简 frontmatter 结构。")
-                loaded = yaml.safe_load(yaml_text) if yaml_text.strip() else {}
-                if not isinstance(loaded, dict):
+                if node is not None and not isinstance(node, yaml.MappingNode):
                     collector.add("YAML_MALFORMED", "YAML formatter 必须是键值映射。", 2, fix="使用 key: value 形式。")
-                else:
-                    metadata = {str(k): v for k, v in loaded.items() if str(k) in YAML_KEYS}
-                    for key in loaded:
-                        if str(key) not in YAML_KEYS:
-                            line = next((n + 2 for n, value in enumerate(yaml_lines) if re.match(rf"^\s*{re.escape(str(key))}\s*:", value)), 2)
-                            collector.add("YAML_UNKNOWN_KEY", f'不支持 YAML 字段 "{key}"。允许字段：title, subtitle, school, department, program, course, author, presenter, date, theme。', line,
+                elif isinstance(node, yaml.MappingNode):
+                    for key_node, value_node in node.value:
+                        key = key_node.value if isinstance(key_node, yaml.ScalarNode) else ""
+                        line = key_node.start_mark.line + 2
+                        column = key_node.start_mark.column + 1
+                        if key not in YAML_KEYS:
+                            collector.add("YAML_UNKNOWN_KEY", f'不支持 YAML 字段 "{key}"。允许字段：title, subtitle, school, department, program, course, author, presenter, date, theme。', line, column,
                                           fix="仅使用 title、subtitle、school、department、program、course、author、presenter、date、theme。")
+                            continue
+                        if not isinstance(value_node, yaml.ScalarNode) or value_node.tag != YAML_STRING_TAG:
+                            collector.add("YAML_VALUE_TYPE", f'YAML 字段 "{key}" 的值必须是字符串。', value_node.start_mark.line + 2,
+                                          value_node.start_mark.column + 1, fix="给日期、布尔、数字等值加引号；序列或映射请改写为字符串。")
+                            continue
+                        metadata[key] = value_node.value
             except yaml.YAMLError:
                 collector.add("YAML_MALFORMED", "YAML formatter 无法解析。", 2, fix="修复 YAML 语法；不要使用 alias 或复杂对象。")
     document["metadata"] = metadata
@@ -419,10 +458,23 @@ def parse_document(input_path: Path, manifest: dict[str, Any]) -> dict[str, Any]
                               layout=layout, fix="删除显式 closing slide。")
             content: list[str] = []
             depth = 1
+            active_fence: str | None = None
             i += 1
             while i < len(body_lines):
                 line = body_lines[i]
                 s = line.strip()
+                if active_fence is not None:
+                    content.append(line)
+                    if re.match(rf"^\s*{re.escape(active_fence[0])}{{{len(active_fence)},}}\s*$", line):
+                        active_fence = None
+                    i += 1
+                    continue
+                fence = FENCE_RE.match(line)
+                if fence:
+                    active_fence = fence.group(1)
+                    content.append(line)
+                    i += 1
+                    continue
                 if s.startswith("::: notes"):
                     content.append(line)
                     i += 1
@@ -453,8 +505,7 @@ def parse_document(input_path: Path, manifest: dict[str, Any]) -> dict[str, Any]
                 i += 1
             if depth != 0:
                 collector.add("SLIDE_UNCLOSED", "slide 容器未闭合。", absolute_line, layout=layout, fix="在 slide 末尾增加独立的 :::。")
-            title_lines = [(body_start + (i - len(content) - 1) + offset + 1, value.strip()[3:].strip())
-                           for offset, value in enumerate(content) if value.strip().startswith("## ")]
+            title_lines = visible_heading_lines(content, absolute_line + 1)
             title = title_lines[0][1] if title_lines else None
             if layout in {"cover", "contents"}:
                 if any(value.strip() for value in content):
