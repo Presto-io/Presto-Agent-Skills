@@ -493,6 +493,98 @@ def ooxml_bootstrap_gate(workdir: Path) -> dict[str, object]:
 GATES["ooxml-bootstrap"] = ooxml_bootstrap_gate
 
 
+def editable_objects_gate(workdir: Path) -> dict[str, object]:
+    try:
+        import pptx_emit
+        from pptx_model import BlockFragment, PhysicalDeckPlan, PhysicalSlide
+        from pptx_objects import PptxObjectError, normalize_rich_text
+    except ImportError as exc:
+        raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
+
+    require(normalize_rich_text("甲**粗体**==高亮==乙") == (
+        ("plain", "甲"), ("bold", "粗体"), ("highlight", "高亮"), ("plain", "乙")
+    ), "D-15 adjacent span normalization")
+    try:
+        normalize_rich_text("**重叠 ==样式** 失败==")
+    except PptxObjectError as exc:
+        require(str(exc) == "PPTX_INLINE_SPAN_OVERLAP", "overlap diagnostic changed")
+    else:
+        raise GateFailure("nested inline span did not fail")
+
+    rich = BlockFragment(
+        kind="paragraph", logical_index=0, block_index=0, fragment_index=0, source_line=1,
+        text="甲**粗体**==高亮==乙",
+    )
+    table = BlockFragment(
+        kind="table", logical_index=1, block_index=0, fragment_index=0, source_line=2,
+        rows=(("列一", "列二"), ("数据", "内容")),
+        metadata=(("table_name", ""), ("table_name_placeholder", "true"), ("repeat_header", "true")),
+    )
+    timeline = BlockFragment(
+        kind="timeline", logical_index=2, block_index=0, fragment_index=0, source_line=3,
+        rows=(("2026", "启动", "准备"), ("2027", "交付", "完成")),
+    )
+    gallery = BlockFragment(
+        kind="image", logical_index=3, block_index=0, fragment_index=0, source_line=4,
+        metadata=(("authored_path", "media/plc-line.png"), ("caption", ""),
+                  ("caption_placeholder", "true"), ("gallery_preset", "1"), ("gallery_item_index", "0")),
+    )
+    code = BlockFragment(
+        kind="code", logical_index=4, block_index=0, fragment_index=0, source_line=5,
+        text="print('原始换行')\nreturn True",
+    )
+    slides = (
+        PhysicalSlide(0, 0, "title-content", "富文本", 0, 1, (rich,), "逐字说明", affected_pages=(0,)),
+        PhysicalSlide(1, 1, "table", "原生表格", 0, 2, (table,), None,
+                      selected_font_sizes=(("table", 14.0),), affected_pages=(1,)),
+        PhysicalSlide(2, 2, "timeline", "原生时间线", 0, 3, (timeline,), None, affected_pages=(2,)),
+        PhysicalSlide(3, 3, "gallery", "原生图集", 0, 4, (gallery,), "图集备注", affected_pages=(3,)),
+        PhysicalSlide(4, 4, "code", "代码", 0, 5, (code,), None, affected_pages=(4,)),
+        PhysicalSlide(5, 5, "closing", "", 0, 6, (
+            BlockFragment(kind="closing", logical_index=5, block_index=0, fragment_index=0, source_line=6),
+        ), None, affected_pages=(5,)),
+    )
+    plan = PhysicalDeckPlan(slides)
+    output = workdir / "editable-objects.pptx"
+    manifest = load_manifest(SKILL_DIR)
+    pptx_emit.emit_deck(plan, manifest, TEMPLATE_PATH, output, media_root=SKILL_DIR / "fixtures")
+    reopened = pptx_emit.require_dependencies()["pptx"].Presentation(output)
+    require(len(reopened.slides) == len(slides), "editable deck slide count")
+    require([slide.has_notes_slide for slide in reopened.slides] == [True, False, False, True, False, False],
+            "D-16 notes relationships do not match plan")
+    require(reopened.slides[0].notes_slide.notes_text_frame.text == "逐字说明", "notes text mismatch")
+    require(reopened.slides[3].notes_slide.notes_text_frame.text == "图集备注", "derived notes text mismatch")
+
+    entries = safe_package_entries(output)
+    all_slides = b"\n".join(payload for name, payload in entries.items() if name.startswith("ppt/slides/slide"))
+    require(all_slides.count(b"<a:tbl>") == 1, "D-11 native table count")
+    require(all_slides.count(b"<p:grpSp>") >= 3, "D-12/D-13 editable group count")
+    require(b"<a:highlight>" in all_slides and b"b=\"1\"" in all_slides, "D-15 run OOXML missing")
+    require(b"**" not in all_slides and b"==" not in all_slides, "D-15 delimiters visible")
+    require(b"school-pptx:table-name" in all_slides and b"school-pptx:gallery-caption:0" in all_slides,
+            "D-14 empty editable placeholder missing")
+    require(all_slides.count(b"<a:t></a:t>") >= 1, "D-14 empty placeholder has no empty text node")
+    require(b"school-pptx:timeline-axis" in all_slides, "timeline axis missing")
+    require(b"school-pptx:timeline-axis" not in entries["ppt/slides/slide3.xml"].split(b"<p:grpSp>", 1)[-1],
+            "timeline axis entered node group")
+    require(b"print('original" not in all_slides, "unexpected code rewrite")
+    require("print('原始换行')\nreturn True" in reopened.slides[4].shapes[-1].text, "code text changed")
+
+    pictures = [shape for shape in reopened.slides[3].shapes if getattr(shape, "shape_type", None) == 6]
+    require(pictures and len(pictures[0].shapes) == 2, "gallery card did not reopen as native group")
+    gallery_picture = next(shape for shape in pictures[0].shapes if getattr(shape, "shape_type", None) == 13)
+    require(all(getattr(gallery_picture, crop) == 0 for crop in ("crop_left", "crop_top", "crop_right", "crop_bottom")),
+            "contain picture crop changed")
+    require(output.stat().st_size > 0, "editable deck is empty")
+    return {
+        "slides": len(slides), "native_tables": 1, "groups": all_slides.count(b"<p:grpSp>"),
+        "notes_relationships": 2, "picture_crop": [0, 0, 0, 0],
+    }
+
+
+GATES["editable-objects"] = editable_objects_gate
+
+
 def run_contract_model() -> dict[str, object]:
     names = [name for name in GATES if not name.startswith("pagination-")]
     require(len(names) == len(set(names)) == 3, "gate registry must contain three unique contract gates")
