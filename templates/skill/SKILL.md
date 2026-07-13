@@ -62,6 +62,26 @@ Use this table for concise compatibility notes. Do not duplicate the skill proce
 - <Any files created or modified>
 - <If outputs have many fields or files, link to `references/<artifact-contract>.md` instead of listing every detail here>
 
+## Delivery Directory
+
+Follow `docs/clean-delivery-directory-contract.md` for every workflow that writes files. The delivery root keeps only the current Markdown and current final deliverables; supporting materials belong in named folders, previous successful versions move together into `history/<sequence>/`, and temporary verification stays in `.work/` only until cleanup.
+
+```text
+<delivery-root>/
+├── <project-name>.md
+├── <project-name>.<delivery-format>
+├── sources/
+├── assets/
+├── history/
+│   └── 001/
+└── .work/
+```
+
+- Root allowlist: <List the exact current Markdown and final deliverable filenames.>
+- Revision behavior: <Generate in `.work/`, archive the previous successful set together, then publish with stable filenames.>
+- Failure cleanup: <Keep the current successful root files unchanged and remove incomplete candidates.>
+- Persistent verification artifacts: <Normally none; justify any exception in the skill-local artifact contract.>
+
 ## Verification
 
 - [ ] <Checkable success criterion for the output>
