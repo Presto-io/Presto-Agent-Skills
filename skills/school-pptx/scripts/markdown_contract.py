@@ -147,7 +147,7 @@ def media_block(line: str, line_no: int, input_path: Path, heading: str | None, 
     if not exists:
         collector.add(
             "MEDIA_MISSING",
-            f'媒体文件不存在或不是普通文件："{authored}"。',
+            f'找不到媒体 "{authored}"。路径相对于 Markdown 文件解析；请补充文件或修正引用。',
             line_no,
             slide=slide,
             layout=layout,
@@ -170,10 +170,10 @@ def media_block(line: str, line_no: int, input_path: Path, heading: str | None, 
 
 def scan_forbidden(text: str, line_no: int, collector: DiagnosticCollector, slide: str | None, layout: str | None) -> None:
     if RAW_HTML_RE.search(text):
-        collector.add("RAW_HTML", "不支持 fenced code 外的 raw HTML。", line_no, slide=slide, layout=layout,
+        collector.add("RAW_HTML", "不支持原始 HTML。请改用契约允许的 Markdown 块；fenced code 内的代码文本除外。", line_no, slide=slide, layout=layout,
                       fix="改用契约支持的普通 Markdown；若内容本身是代码，请放入 fenced code。")
     if GENERIC_ATTR_RE.search(text) or STYLE_RE.search(text):
-        collector.add("UNSUPPORTED_STYLE", "不支持通用属性、坐标、尺寸、裁剪、页脚、字体、颜色或 style 控制。", line_no,
+        collector.add("UNSUPPORTED_STYLE", "Markdown 只能表达语义内容，不能设置坐标、尺寸、字体、颜色、裁剪、页脚或任意 style 属性。", line_no,
                       slide=slide, layout=layout, fix="删除样式控制，只保留语义 Markdown；视觉样式由模板拥有。")
 
 
@@ -232,7 +232,7 @@ def parse_blocks(lines: list[str], base_line: int, input_path: Path, collector: 
                               fix="合并 notes 内容并只保留最后一个 notes 容器。")
             notes = {"markdown": "\n".join(payload).strip(), "source_line": start}
             if any(line.strip() for line in lines[i:]):
-                collector.add("NOTES_POSITION", "notes 必须是 owning slide 的最后一个子节点。", start, slide=slide_title, layout=layout,
+                collector.add("NOTES_POSITION", "notes 必须是所属 slide 的最后一个子块，且每个 slide 最多一个。", start, slide=slide_title, layout=layout,
                               fix="把 notes 移到 slide 内全部可见内容之后。")
             continue
         fence = FENCE_RE.match(raw)
@@ -361,7 +361,7 @@ def parse_document(input_path: Path, manifest: dict[str, Any]) -> dict[str, Any]
                     for key in loaded:
                         if str(key) not in YAML_KEYS:
                             line = next((n + 2 for n, value in enumerate(yaml_lines) if re.match(rf"^\s*{re.escape(str(key))}\s*:", value)), 2)
-                            collector.add("YAML_UNKNOWN_KEY", f'未知 YAML 字段 "{key}"。', line,
+                            collector.add("YAML_UNKNOWN_KEY", f'不支持 YAML 字段 "{key}"。允许字段：title, subtitle, school, department, program, course, author, presenter, date, theme。', line,
                                           fix="仅使用 title、subtitle、school、department、program、course、author、presenter、date、theme。")
             except yaml.YAMLError:
                 collector.add("YAML_MALFORMED", "YAML formatter 无法解析。", 2, fix="修复 YAML 语法；不要使用 alias 或复杂对象。")
@@ -389,17 +389,17 @@ def parse_document(input_path: Path, manifest: dict[str, Any]) -> dict[str, Any]
             residue = ATTR_RE.sub("", attrs_text).strip()
             layout = attrs.get("layout")
             if not layout:
-                collector.add("SLIDE_LAYOUT_REQUIRED", "slide 必须声明 layout。", absolute_line,
+                collector.add("SLIDE_LAYOUT_REQUIRED", "slide 块缺少必需的 layout 属性。请选择一个可写布局。", absolute_line,
                               fix='使用 ::: slide {layout="title-content"}。')
             for key in attrs:
                 if key != "layout":
-                    collector.add("SLIDE_ATTRIBUTE_UNKNOWN", f'未知 slide 属性 "{key}"；公开属性只允许 layout。', absolute_line,
+                    collector.add("SLIDE_ATTRIBUTE_UNKNOWN", f'不支持 slide 属性 "{key}"。公开契约只允许 layout。', absolute_line,
                                   layout=layout, fix="删除 id 或其他属性，只保留必填 layout。")
             if residue:
                 collector.add("SLIDE_ATTRIBUTE_UNKNOWN", "slide 属性语法无效或包含未知属性。", absolute_line, layout=layout,
                               fix='只使用 {layout="..."}。')
             if layout not in layouts and layout is not None:
-                collector.add("LAYOUT_UNKNOWN", f'未知布局 "{layout}"。', absolute_line, layout=layout,
+                collector.add("LAYOUT_UNKNOWN", f'不支持布局 "{layout}"。可写布局：cover, contents, section, title-content, two-column, image-text, table, timeline, gallery, code。', absolute_line, layout=layout,
                               fix="改用 manifest 中可创作的受控布局。")
             elif layout and (layouts[layout].get("markdown_controllable") is False or layouts[layout].get("fixed_template_page") is True):
                 collector.add("LAYOUT_CLOSING_EXPLICIT", "closing 由模板在文稿末尾自动追加，不能在 Markdown 中显式创建或修改。", absolute_line,
@@ -448,7 +448,7 @@ def parse_document(input_path: Path, manifest: dict[str, Any]) -> dict[str, Any]
                     collector.add("LAYOUT_SHAPE", f'{layout} 必须是空 authored slide。', absolute_line, layout=layout,
                                   fix="删除该 slide 内的标题与正文。")
             elif len(title_lines) != 1:
-                collector.add("HEADING_INVALID", "普通 slide 必须且只能包含一个 ## 标题。", absolute_line, slide=title, layout=layout,
+                collector.add("HEADING_INVALID", "每个普通内容 slide 必须且只能包含一个 ## 标题；# 仅用于文档标题 fallback。", absolute_line, slide=title, layout=layout,
                               fix="保留一个且仅一个 ## 标题。")
             blocks, notes = parse_blocks(content, absolute_line + 1, input_path, collector, title, layout)
             slide = {"layout": layout, "title": title, "source_line": absolute_line, "blocks": blocks, "notes": notes,
@@ -534,7 +534,7 @@ def validate_document(document: dict[str, Any], manifest: dict[str, Any], collec
                           fix="只保留一个表格；可用紧邻 ### 作为表格标题。")
         elif layout == "timeline":
             if len(blocks) != 1 or kinds != ["timeline"] or blocks[0].get("headers") != ["时间", "标题", "说明"]:
-                collector.add("TIMELINE_INVALID", "timeline 必须使用表头：时间 | 标题 | 说明。", line, slide=title, layout=layout,
+                collector.add("TIMELINE_INVALID", "timeline 必须使用列名“时间 | 标题 | 说明”的 Markdown 表格。", line, slide=title, layout=layout,
                               fix="保留一个 Markdown 表格并把三列表头改为 时间、标题、说明。")
         elif layout == "gallery" and (not blocks or any(kind != "image" for kind in kinds)):
             collector.add("LAYOUT_SHAPE", "gallery 只能包含一张或多张连续 Markdown 图片。", line, slide=title, layout=layout,
@@ -567,7 +567,9 @@ def write_json_safely(document: dict[str, Any], input_path: Path, output_path: P
 
 def print_diagnostic(item: dict[str, Any]) -> None:
     print(f'{item["path"]}:{item["line"]}:{item["column"]} [{item["code"]}] {item["message"]}')
-    print(f'  slide: {item.get("slide") or "-"}; layout: {item.get("layout") or "-"}; fix: {item["fix"]}')
+    print(f'  slide: {item.get("slide") or "unknown"}')
+    print(f'  layout: {item.get("layout") or "unknown"}')
+    print(f'  fix: {item["fix"]}')
 
 
 def validate_command(args: argparse.Namespace) -> int:
@@ -577,7 +579,7 @@ def validate_command(args: argparse.Namespace) -> int:
         document = parse_document(input_path, manifest)
     except Exception:
         document = empty_document(input_path)
-        document["errors"] = [Diagnostic("INTERNAL_ERROR", "校验器遇到内部错误。", SourceLocation(1),
+        document["errors"] = [Diagnostic("INTERNAL_ERROR", "school-pptx: 内部错误：校验器无法完成。", SourceLocation(1),
                                                  fix="检查 manifest 与输入文件后重试。", path=str(input_path)).to_dict()]
     extra = DiagnosticCollector(input_path)
     output_written = False
