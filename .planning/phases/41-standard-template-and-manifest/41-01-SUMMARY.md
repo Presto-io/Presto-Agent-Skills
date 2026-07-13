@@ -61,7 +61,7 @@ completed: 2026-07-13
 ## Accomplishments
 
 - Normalized `test/学院PPT模板.potx` into the skill-local runtime template `skills/school-pptx/templates/standard-school.pptx`.
-- Authored `standard-school.manifest.yaml` with theme, 11 layouts, semantic slots, placeholder anchors, EMU geometry, text budgets, empty-slot rules, continuation rules, and template-owned boundaries.
+- Authored `standard-school.manifest.yaml` with theme, 11 layouts, semantic slots for content-controllable layouts, placeholder anchors, EMU geometry, text budgets, empty-slot rules, continuation rules, and template-owned boundaries.
 - Added `template-report` validation that emits Markdown/JSON evidence and fails non-zero for unknown themes, missing layouts, missing slots, duplicate slots, lost anchors, geometry mismatch, and malformed budgets.
 - Documented template contract and manual editing rules while explicitly fencing out Markdown syntax, rendering, pagination, notes, and final runtime adapter docs.
 
@@ -85,6 +85,7 @@ completed: 2026-07-13
 - Used native slide-layout XML as the Phase 41 inspectable mapping mechanism because the supplied POTX already contains 11 slide layouts.
 - Stored geometry in EMU to compare directly against PPTX XML and avoid lossy unit conversion during validation.
 - Kept copied negative-case manifests in `/tmp` during verification so failure artifacts do not enter public output.
+- Kept `closing` as a fixed template-owned final page with no Markdown-controllable title/subtitle slots.
 
 ## Deviations from Plan
 

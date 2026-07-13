@@ -27,7 +27,7 @@ The manifest covers exactly these 11 layout ids:
 10. `code`
 11. `closing`
 
-Each layout points to an inspectable PPTX slide-layout XML file and defines one or more semantic slots. Slot ids are stable public identifiers such as `title`, `subtitle`, `body`, `media`, `caption`, `left_body`, `right_body`, `table`, `timeline_items`, `gallery_items`, and `code`; raw localized PowerPoint placeholder names stay inside placeholder mapping metadata.
+Each layout points to an inspectable PPTX slide-layout XML file. Content layouts define semantic slots; the `closing` layout is a fixed template-owned page with no Markdown-controllable `title` or `subtitle` slot and is appended automatically at the end of every deck. Slot ids are stable public identifiers such as `title`, `subtitle`, `body`, `media`, `caption`, `left_body`, `right_body`, `table`, `timeline_items`, `gallery_items`, and `code`; raw localized PowerPoint placeholder names stay inside placeholder mapping metadata.
 
 ## Manifest Schema
 
@@ -47,6 +47,8 @@ Each layout includes:
 - `pptx_layout`
 - `required_slots`
 - `slots`
+
+Fixed template-owned layouts may also include `fixed_template_page: true`, `default_insertion: end_of_deck`, and `markdown_controllable: false`. In Phase 41 this applies to `closing`, which is a dead/fixed final page rather than a Markdown-authored slide.
 
 Each slot includes:
 

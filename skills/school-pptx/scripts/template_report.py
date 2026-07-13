@@ -131,7 +131,8 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
         if not isinstance(layout, dict):
             continue
         slot_list = layout.get("slots")
-        if not isinstance(slot_list, list) or not slot_list:
+        fixed_template_page = layout.get("fixed_template_page") is True
+        if not isinstance(slot_list, list) or (not slot_list and not fixed_template_page):
             failures.append(f'模板缺少布局 "{layout_id}"。Phase 41 必须覆盖 11 个受控布局。')
             slot_list = []
         required_slots = layout.get("required_slots") or []
