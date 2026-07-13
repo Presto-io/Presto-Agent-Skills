@@ -114,6 +114,13 @@ This gate passed the Plan 42-01 positive/aggregate-negative/fence/collision/reso
 
 Final independent checks also confirmed `errors == []`, 11 template layouts with no failures, exactly five public example files, no explicit closing, no non-portable fixture path, no recursive/glob deletion in the copier, and a clean scoped diff.
 
+## Self-Check: PASSED
+
+- Confirmed all eight key fixture, media, command, and verification files exist on disk.
+- Confirmed Task 1-3 commits `ce624e0`, `b51b429`, and `b5af077` plus SUMMARY/state commits `88fa9fb` and `a4549bf` exist in Git history.
+- Re-ran `python3 skills/school-pptx/scripts/verify_markdown_contract.py fixture-example`; the contract suite, complete fixture/example suite, collision and escape boundaries, determinism checks, and Phase 41 regressions all passed.
+- Confirmed the only remaining worktree modification is the orchestrator-owned `.planning/config.json`, which is intentionally excluded from plan commits.
+
 ## User Setup Required
 
 None - no external service configuration required.
