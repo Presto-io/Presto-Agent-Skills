@@ -382,6 +382,208 @@ def _image_text_fragments(
     return result or body_pages, diagnostics
 
 
+def ordered_contiguous_partition(
+    weights: Sequence[float], capacity: float, *, minimum_items: int = 1, count_first: bool = False
+) -> tuple[tuple[int, int], ...]:
+    """Return a deterministic globally-balanced contiguous partition."""
+    count = len(weights)
+    if count == 0:
+        return ()
+    if count > 256 or count * count * max(1, count // max(1, minimum_items)) > MAX_PARTITION_STATES:
+        raise ValueError("partition state budget exceeded")
+    prefix = [0.0]
+    for weight in weights:
+        prefix.append(prefix[-1] + weight)
+    best: tuple[tuple[float, ...], tuple[tuple[int, int], ...]] | None = None
+    minimum_pages = max(1, math.ceil(prefix[-1] / capacity))
+    for pages in range(minimum_pages, count + 1):
+        if minimum_items > 1 and count < pages * minimum_items:
+            continue
+        states: dict[tuple[int, int], tuple[tuple[float, ...], tuple[int, ...], tuple[float, ...]]] = {
+            (0, 0): ((0.0,), (), ())
+        }
+        for page in range(pages):
+            for (used_pages, start), (_, splits, loads) in list(states.items()):
+                if used_pages != page:
+                    continue
+                remaining_pages = pages - page - 1
+                lower = start + minimum_items
+                upper = count - remaining_pages * minimum_items
+                for end in range(lower, upper + 1):
+                    load = prefix[end] - prefix[start]
+                    candidate_loads = (*loads, load)
+                    counts = tuple(b - a for a, b in zip((0, *splits), (*splits, end)))
+                    violations = sum(value > capacity for value in candidate_loads)
+                    imbalance = max(counts) - min(counts)
+                    mean = sum(candidate_loads) / len(candidate_loads)
+                    variance = sum((value - mean) ** 2 for value in candidate_loads)
+                    unused = sum(max(0.0, capacity - value) for value in candidate_loads)
+                    objective = (
+                        float(violations),
+                        float(imbalance if count_first else 0),
+                        variance,
+                        unused,
+                        *map(float, (*splits, end)),
+                    )
+                    key = (page + 1, end)
+                    current = states.get(key)
+                    if current is None or objective < current[0]:
+                        states[key] = (objective, (*splits, end), candidate_loads)
+        final = states.get((pages, count))
+        if final is None:
+            continue
+        objective, splits, loads = final
+        counts = tuple(b - a for a, b in zip((0, *splits[:-1]), splits))
+        violations = sum(value > capacity for value in loads)
+        orphans = sum(value < minimum_items for value in counts)
+        imbalance = max(counts) - min(counts)
+        mean = sum(loads) / len(loads)
+        variance = sum((value - mean) ** 2 for value in loads)
+        cost = (float(violations), float(orphans), float(imbalance), variance, float(pages), *map(float, splits))
+        ranges = tuple(zip((0, *splits[:-1]), splits))
+        if best is None or cost < best[0]:
+            best = cost, ranges
+        if violations == 0 and orphans == 0:
+            break
+    if best is None:
+        return ((0, count),)
+    return best[1]
+
+
+def _wrapped_cell(
+    value: str, width: int, font: float, measure: TextMeasure
+) -> tuple[float, bool]:
+    result = measure.measure(
+        value, width_emu=width, font_size=font, font_size_min=font, font_size_max=font,
+        kind="cell", margin_left_points=4, margin_right_points=4, margin_top_points=2, margin_bottom_points=2,
+    )
+    clusters = len(list(grapheme_clusters(value)))
+    approximate_capacity = max(1, int(width / EMU_PER_POINT / font / 0.7))
+    visual_orphan = result.display_lines > 1 and clusters % approximate_capacity in {1, 2}
+    return result.height_points, visual_orphan
+
+
+def _table_fragments(
+    slide: dict[str, Any], logical_index: int, layout_manifest: dict[str, Any], measure: TextMeasure
+) -> tuple[list[tuple[BlockFragment, ...]], list[RenderDiagnostic], float]:
+    block = slide["blocks"][0]
+    table_slot = _slot(layout_manifest, "table")
+    geometry = table_slot["geometry"]
+    budget = table_slot["text_budget"]
+    columns = max(1, len(block.get("headers", ())))
+    cell_width = int(geometry["width"] / columns)
+    table_name_height = table_slot["subregions"]["table_name"]["geometry"]["height"] / EMU_PER_POINT
+    capacity = geometry["height"] / EMU_PER_POINT - table_name_height
+    preferred = float(budget["font_size_max"])
+    candidates: list[tuple[tuple[float, ...], float, list[float], tuple[tuple[int, int], ...]]] = []
+    all_rows = [tuple(map(str, block.get("headers", ()))), *[tuple(map(str, row)) for row in block.get("rows", ())]]
+    for font in range(int(budget["font_size_min"]), int(budget["font_size_max"]) + 1):
+        heights: list[float] = []
+        orphan_count = 0
+        for row in all_rows:
+            measured = [_wrapped_cell(cell, cell_width, float(font), measure) for cell in row]
+            heights.append(max((item[0] for item in measured), default=font * 1.2))
+            orphan_count += sum(item[1] for item in measured)
+        header_height, data_heights = heights[0], heights[1:]
+        data_capacity = max(1.0, capacity - header_height)
+        ranges = ordered_contiguous_partition(data_heights, data_capacity)
+        loads = [header_height + sum(data_heights[start:end]) for start, end in ranges]
+        overflow = sum(load > capacity for load in loads)
+        mean = sum(loads) / len(loads)
+        variance = sum((load - mean) ** 2 for load in loads)
+        cost = (float(overflow), float(orphan_count), float(len(ranges)), abs(font - preferred), variance, -float(font))
+        candidates.append((cost, float(font), data_heights, ranges))
+    cost, selected_font, _, ranges = min(candidates, key=lambda item: item[0])
+    diagnostics: list[RenderDiagnostic] = []
+    if cost[0]:
+        diagnostics.append(RenderDiagnostic(
+            code="TABLE_ROW_OVERFLOW", message="one or more complete table rows exceed page capacity",
+            severity="error", source_line=int(block.get("source_line", 1)), logical_indices=(logical_index,),
+            fix="shorten the affected table cells",
+        ))
+    table_name = str(block.get("table_title") or "")
+    pages: list[tuple[BlockFragment, ...]] = []
+    rows = [tuple(map(str, row)) for row in block.get("rows", ())]
+    headers = tuple(map(str, block.get("headers", ())))
+    for page_index, (start, end) in enumerate(ranges):
+        name = f"{table_name}（续）" if table_name and page_index else table_name
+        fragment = BlockFragment(
+            kind="table", logical_index=logical_index, block_index=0, fragment_index=page_index,
+            source_line=int(block.get("source_line", 1)), heading=block.get("heading"), rows=(headers, *rows[start:end]),
+            metadata=(("table_name", name), ("table_name_placeholder", "true"), ("repeat_header", "true")),
+        )
+        pages.append((fragment,))
+    return pages or [tuple()], diagnostics, selected_font
+
+
+def _timeline_fragments(
+    slide: dict[str, Any], logical_index: int, layout_manifest: dict[str, Any], measure: TextMeasure
+) -> tuple[list[tuple[BlockFragment, ...]], list[RenderDiagnostic]]:
+    block = slide["blocks"][0]
+    slot = _slot(layout_manifest, "timeline_items")
+    budget = slot["text_budget"]
+    rows = [tuple(map(str, row)) for row in block.get("rows", ())]
+    width = max(1, int(slot["subregions"]["node_band"]["geometry"]["width"] / 3))
+    font = float(budget["font_size_min"])
+    weights = [max(_wrapped_cell(cell, width, font, measure)[0] for cell in row) for row in rows]
+    capacity = slot["geometry"]["height"] / EMU_PER_POINT
+    diagnostics: list[RenderDiagnostic] = []
+    try:
+        ranges = ordered_contiguous_partition(weights, capacity, minimum_items=3 if len(rows) >= 3 else 1)
+    except ValueError:
+        ranges = ((0, len(rows)),)
+        diagnostics.append(RenderDiagnostic(
+            code="PAGINATION_RESOURCE_LIMIT", message="timeline partition exceeded bounded state budget",
+            severity="error", source_line=int(block.get("source_line", 1)), logical_indices=(logical_index,),
+            fix="split the timeline",
+        ))
+    if any(sum(weights[start:end]) > capacity or (len(rows) >= 3 and end - start < 3) for start, end in ranges):
+        ranges = ordered_contiguous_partition(weights, capacity, minimum_items=1)
+        diagnostics.append(RenderDiagnostic(
+            code="TIMELINE_BALANCE_INFEASIBLE", message="timeline capacity cannot preserve three nodes per page",
+            severity="error", source_line=int(block.get("source_line", 1)), logical_indices=(logical_index,),
+            fix="shorten timeline descriptions or split the logical timeline",
+        ))
+    pages = [(
+        BlockFragment(
+            kind="timeline", logical_index=logical_index, block_index=0, fragment_index=page_index,
+            source_line=int(block.get("source_line", 1)), heading=block.get("heading"), rows=tuple(rows[start:end]),
+            metadata=(("start_item", str(start)), ("end_item", str(end))),
+        ),
+    ) for page_index, (start, end) in enumerate(ranges)]
+    return pages or [tuple()], diagnostics
+
+
+def _contents_fragments(
+    entries: Sequence[str], logical_index: int, layout_manifest: dict[str, Any], measure: TextMeasure, source_line: int
+) -> tuple[list[tuple[BlockFragment, ...]], list[RenderDiagnostic]]:
+    slot = _slot(layout_manifest, "body")
+    budget = slot["text_budget"]
+    font = float(budget["font_size_min"])
+    weights = [measure.measure(
+        f"{index}. {entry}", width_emu=slot["geometry"]["width"], font_size=font,
+        font_size_min=font, font_size_max=font,
+    ).height_points for index, entry in enumerate(entries, 1)]
+    capacity = slot["geometry"]["height"] / EMU_PER_POINT
+    diagnostics: list[RenderDiagnostic] = []
+    try:
+        ranges = ordered_contiguous_partition(weights, capacity, count_first=True)
+    except ValueError:
+        ranges = ((0, len(entries)),)
+        diagnostics.append(RenderDiagnostic(
+            code="PAGINATION_RESOURCE_LIMIT", message="contents partition exceeded bounded state budget",
+            severity="error", source_line=source_line, logical_indices=(logical_index,), fix="reduce contents entries",
+        ))
+    pages = [(
+        BlockFragment(
+            kind="contents", logical_index=logical_index, block_index=0, fragment_index=page_index,
+            source_line=source_line, items=tuple(entries[start:end]),
+            metadata=(("number_start", str(start + 1)), ("number_end", str(end))),
+        ),
+    ) for page_index, (start, end) in enumerate(ranges)]
+    return pages or [tuple()], diagnostics
+
+
 def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> PhysicalDeckPlan:
     """Convert a canonical Phase 42 document into an immutable physical plan."""
     logical_slides = document.get("logical_slides", ())
@@ -398,10 +600,20 @@ def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> Physi
     for logical_index, logical in enumerate(logical_slides):
         layout = str(logical.get("layout", "title-content"))
         layout_manifest = manifest["layouts"][layout]
+        selected_font_sizes: tuple[tuple[str, float], ...] = ()
         if layout == "image-text":
             page_fragments, found = _image_text_fragments(logical, logical_index, layout_manifest, measure)
-        elif layout in {"table", "timeline", "gallery", "contents"}:
-            # Structured planners replace this conservative one-page representation below.
+        elif layout == "table":
+            page_fragments, found, selected_font = _table_fragments(logical, logical_index, layout_manifest, measure)
+            selected_font_sizes = (("table", selected_font),)
+        elif layout == "timeline":
+            page_fragments, found = _timeline_fragments(logical, logical_index, layout_manifest, measure)
+        elif layout == "contents":
+            page_fragments, found = _contents_fragments(
+                tuple(map(str, document.get("contents_entries", ()))), logical_index, layout_manifest, measure,
+                int(logical.get("source_line", 1)),
+            )
+        elif layout == "gallery":
             page_fragments, found = [tuple()], []
         else:
             page_fragments, found = _simple_slide_fragments(logical, logical_index, layout_manifest, measure)
@@ -421,6 +633,7 @@ def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> Physi
                 source_line=int(logical.get("source_line", 1)),
                 fragments=fragments,
                 notes_intent=notes_intent,
+                selected_font_sizes=selected_font_sizes,
                 affected_pages=(physical_index,),
             ))
         mapping.append((logical_index, tuple(physical_indices)))
