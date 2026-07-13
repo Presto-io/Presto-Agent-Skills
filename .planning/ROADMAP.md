@@ -89,7 +89,7 @@ Plans:
   2. User can open the generated deck and edit text, code, table content, timeline labels, gallery captions, images/icons, and speaker notes where PPTX supports those objects.
   3. User sees long text, tables, timelines, and galleries split into additional physical slides according to template budgets instead of overflowing or shrinking into unreadable content.
   4. User sees table continuation slides repeat the header and add a continuation marker to table continuation titles, while other continuation slides avoid visible "续" markers.
-  5. User receives only the requested public `.pptx` and any explicitly requested Markdown copy; manifests, logs, debug files, and temporary evidence stay hidden or in verification workdirs.
+  5. Standard successful delivery always contains exactly two same-stem public artifacts: the reviewed Markdown source and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
 **Plans**: TBD
 **UI hint**: yes
 

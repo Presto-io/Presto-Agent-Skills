@@ -122,6 +122,24 @@ D-15 采用允许列表：fenced code 外拒绝 raw HTML、HTML 注释、通用 
 
 随后必须提供 `slide`、`layout` 和一个具体 `fix`。行列从 1 开始。未知 YAML、未知主题、缺失/未知布局、显式 closing、未知 slide 属性、禁用样式、raw HTML、缺失媒体、notes 位置、非法标题和非法 timeline 都必须给出稳定代码和可执行修复建议。任何 `errors` 都使命令非零退出；即使写出诊断 JSON 也不得删掉错误或宣称通过。
 
+## render 与标准双产物
+
+公开渲染命令为：
+
+```text
+render --input <reviewed.md> --out-dir <delivery-dir> [--stem <name>]
+```
+
+D-20 规定标准成功交付固定包含两个同 stem 文件：`<stem>.md` 和 `<stem>.pptx`。Markdown 始终发布，并逐字节保留输入文件。公开交付目录不得出现 manifest、logical JSON、diagnostics、logs、debug、verification evidence 或临时文件。
+
+D-21 规定两个公开文件分别暂存、验证和替换，发布顺序固定为 Markdown first、PPTX last；PPTX 是 deck-ready 提交点。两个独立文件不构成跨文件原子事务，命令和调用 agent 均不得宣称整对文件可以事务式原子替换。
+
+渲染状态只有以下三种：
+
+1. 成功：发布同名 Markdown 与 PPTX，退出码为 0。
+2. Best-effort：输入无效或媒体缺失，但仍可生成结构有效的同名 Markdown 与 PPTX；命令必须非零退出，明确提示异常、受影响逻辑页和非成功状态。PPTX 本身不得添加警告页、警告横幅或水印。调用 agent 必须向用户明确复述异常，并建议用户修正 Markdown 后覆盖异常 PPTX，或在工作流结束后手动修改。
+3. 不可恢复失败：不得替换已有 PPTX，并以非零状态明确报告失败。
+
 ## 逻辑交接与范围
 
 Phase 43 直接消费 `metadata`、`document_title`、`contents_entries`、`logical_slides`、`implicit_slides`、`coverage`、`errors` 和 `warnings`，以及块、位置、notes、媒体和 overflow evidence；不得重新解释 Markdown。
