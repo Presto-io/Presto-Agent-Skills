@@ -68,7 +68,13 @@ Plans:
   3. User sees contents derived from `##` headings in document order while `#` is used only as a title fallback when YAML `title` is absent.
   4. User receives locatable validation errors for unsupported layout names, raw coordinate styling, arbitrary font/color overrides, unsupported raw HTML, and missing media.
   5. User can express speaker notes and normal Markdown images in the source without those notes appearing as visible slide canvas text.
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+**Wave 1**
+- [ ] 42-01-PLAN.md — Define the Markdown contract, logical model, manifest-driven validation, and `validate` CLI.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 42-02-PLAN.md — Add the full fixture, skill-local media, deterministic `example` command, and coverage verification.
 **UI hint**: yes
 
 ### Phase 43: Editable PPTX Renderer and Pagination
