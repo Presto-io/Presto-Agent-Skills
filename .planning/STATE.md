@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
-status: executing
-stopped_at: Completed 43-03-PLAN.md
-last_updated: "2026-07-13T22:50:51.674Z"
-last_activity: 2026-07-13
+status: verifying
+stopped_at: Completed 43-04-PLAN.md
+last_updated: "2026-07-13T23:19:08.993Z"
+last_activity: 2026-07-14
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
-  percent: 88
+  completed_plans: 8
+  percent: 100
 ---
 
 # State: Presto Agent Skills
@@ -25,12 +25,12 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 ## Current Position
 
-Phase: 43 (editable-pptx-renderer-and-pagination) — EXECUTING
+Phase: 43 (editable-pptx-renderer-and-pagination) — VERIFYING
 Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-07-13
+Status: Phase complete — ready for verification
+Last activity: 2026-07-14
 
-Progress: [█████████░] 88%
+Progress: [██████████] 100%
 
 ## Workflow Preferences
 
@@ -74,6 +74,9 @@ Phase order:
 - [Phase 43]: All semantic splitting and structured balancing complete before PPTX emission and produce immutable physical plans. — This keeps emitter behavior deterministic and prevents PPTX object creation from changing pagination.
 - [Phase 43]: PPTX emission consumes only the frozen PhysicalDeckPlan and never reruns pagination. — This keeps object generation deterministic and preserves the reviewed physical mapping.
 - [Phase 43]: Transition mode is explicitly none for v1.17 emission. — Unstable viewer-specific transitions remain out of scope and absence is a valid PPTX-12 outcome.
+- [Phase 43]: Render imports canonical parse_document in-process and publishes only the reviewed Markdown plus validated PPTX. — Avoids parser drift and public logical-model sidecars.
+- [Phase 43]: Markdown-first and PPTX-last are individually atomic publications; PPTX is the deck-ready commit point. — Two independent files cannot form one cross-file transaction, so the crash window stays explicit and tested.
+- [Phase 43]: Structurally valid best-effort decks remain editable and visually unpolluted while render exits non-zero and names affected logical slides. — Artifact existence must not be confused with successful rendering.
 
 ### Pending Todos
 
@@ -81,7 +84,6 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 43 may need implementation spikes for `python-pptx` notes, table objects, placeholder behavior, text fitting, and image contain placement.
 - Phase 44 requires manual visual UAT evidence in at least one compatible PPTX viewer before milestone acceptance.
 
 ## Performance Metrics
@@ -94,6 +96,7 @@ None yet.
 | Phase 43 P01 | 6 min | 3 tasks | 6 files |
 | Phase 43 P02 | 12 min | 3 tasks | 2 files |
 | Phase 43 P03 | 14 min | 3 tasks | 4 files |
+| Phase 43 P04 | 19 min | 3 tasks | 3 files |
 
 ## Deferred Items
 
@@ -101,6 +104,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-07-13T22:50:51.668Z
-Stopped at: Completed 43-03-PLAN.md
+Last session: 2026-07-13T23:18:35.492Z
+Stopped at: Completed 43-04-PLAN.md
 Resume file: None

@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-07-13 for v1.17 school-pptx roadmap
+**Last updated:** 2026-07-14 after Phase 43 renderer completion
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -38,7 +38,7 @@
 
 - [x] **Phase 41: Standard Template and Manifest** - Normalize the school visual sample into a skill-local PPTX template with a committed slot manifest and template validation command. (completed 2026-07-13)
 - [x] **Phase 42: Markdown Contract and Full Fixture** - Define the constrained YAML plus slide-block Markdown contract and produce a full fixture covering all supported layouts and edge cases. (completed 2026-07-13)
-- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output.
+- [x] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (completed 2026-07-14)
 - [ ] **Phase 44: Verification Gate, Runtime Notes, and UAT** - Add repeatable structural verification, negative cases, six-runtime guidance, repository discoverability, and manual visual acceptance evidence.
 
 ## Phase Details
@@ -90,7 +90,12 @@ Plans:
   3. User sees long text, tables, timelines, and galleries split into additional physical slides according to template budgets instead of overflowing or shrinking into unreadable content.
   4. User sees table continuation slides repeat the header and add a continuation marker to table continuation titles, while other continuation slides avoid visible "续" markers.
   5. Standard successful delivery always contains exactly two same-stem public artifacts: the reviewed Markdown source and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
-**Plans**: TBD
+**Plans**: 4/4 plans complete
+Plans:
+- [x] 43-01-PLAN.md — Establish manifest-owned renderer geometry, frozen physical models, CJK measurement, and contract gates.
+- [x] 43-02-PLAN.md — Implement deterministic semantic pagination, global balancing, notes propagation, and closing mapping.
+- [x] 43-03-PLAN.md — Emit native editable PPTX objects and validate staged package structure.
+- [x] 43-04-PLAN.md — Add the public render state machine, safe dual-artifact publication, and Phase 43 aggregate gate.
 **UI hint**: yes
 
 ### Phase 44: Verification Gate, Runtime Notes, and UAT
@@ -115,7 +120,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 3/4 | In Progress|  |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 4/4 | Complete   | 2026-07-14 |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive

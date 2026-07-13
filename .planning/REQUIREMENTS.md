@@ -46,7 +46,7 @@
 
 - [x] **VER-01**: The skill provides a repeatable `example` command that writes the full Markdown fixture.
 - [x] **VER-02**: The skill provides a repeatable `template-report` or equivalent command that validates template layouts, slots, placeholders, and manifest consistency.
-- [ ] **VER-03**: The skill provides a repeatable `render` command that turns finalized Markdown into PPTX and fails non-zero on invalid input.
+- [x] **VER-03**: The skill provides a repeatable `render` command that turns finalized Markdown into PPTX and fails non-zero on invalid input.
 - [ ] **VER-04**: The skill provides a repeatable `verify --workdir <dir>` command that exercises example generation, template validation, rendering, and structural PPTX inspection.
 - [ ] **VER-05**: Verification checks dependency readiness, including Python, `python-pptx`, and optional Pandoc availability where used.
 - [ ] **VER-06**: Verification checks generated slide count, layout mapping, logical-to-physical pagination mapping, and contents entries.
@@ -128,7 +128,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PPTX-13 | Phase 43 | Complete |
 | VER-01 | Phase 42 | Complete |
 | VER-02 | Phase 41 | Complete |
-| VER-03 | Phase 43 | Pending |
+| VER-03 | Phase 43 | Complete |
 | VER-04 | Phase 44 | Pending |
 | VER-05 | Phase 44 | Pending |
 | VER-06 | Phase 44 | Pending |
@@ -150,4 +150,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-07-13*
-*Last updated: 2026-07-14 after Phase 43 fixed dual-artifact contract clarification*
+*Last updated: 2026-07-14 after completing the Phase 43 render command and publication gate*
