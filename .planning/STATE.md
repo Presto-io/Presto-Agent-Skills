@@ -3,34 +3,34 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: ready_to_plan
-stopped_at: Completed 42-03 gap closure; awaiting Phase 42 verification
-last_updated: "2026-07-13T18:15:55Z"
-last_activity: 2026-07-14 -- Phase 42 gap-closure plan completed
+stopped_at: Phase 42 complete, ready to plan Phase 43
+last_updated: "2026-07-14T03:05:25+08:00"
+last_activity: 2026-07-14 -- Phase 42 UAT passed and transition completed
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 4
   completed_plans: 4
-  percent: 50
+  percent: 75
 ---
 
 # State: Presto Agent Skills
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-07-13 for v1.17 school-pptx)
+See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 42 — Markdown Contract and Full Fixture
+**Current focus:** Phase 43 — Editable PPTX Renderer and Pagination
 
 ## Current Position
 
 Phase: 43
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-07-13
+Last activity: 2026-07-14
 
-Progress: [██████████] 100% plans complete; phase verification pending
+Progress: [████████████████████] 4/4 plans (100%)
 
 ## Workflow Preferences
 
@@ -75,7 +75,6 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 42 gap implementation is complete; independent phase verification remains required before marking the phase complete.
 - Phase 43 may need implementation spikes for `python-pptx` notes, table objects, placeholder behavior, text fitting, and image contain placement.
 - Phase 44 requires manual visual UAT evidence in at least one compatible PPTX viewer before milestone acceptance.
 
@@ -89,14 +88,10 @@ None yet.
 
 ## Deferred Items
 
-Items acknowledged and carried forward from previous milestone close:
-
-| Category | Item | Status | Deferred At |
-|----------|------|--------|-------------|
-| quick_task | 260615-0853-correct-v114-doc-boundary | legacy `audit-open` reported missing; existing plan, summary, and verification files are present | v1.15 |
+None.
 
 ## Session Continuity
 
-Last session: 2026-07-13T18:15:55Z
-Stopped at: Completed 42-03 gap closure; awaiting Phase 42 verification
-Resume file: .planning/phases/42-markdown-contract-and-full-fixture/42-03-SUMMARY.md
+Last session: 2026-07-14T03:05:25+08:00
+Stopped at: Phase 42 complete, ready to plan Phase 43
+Resume file: None
