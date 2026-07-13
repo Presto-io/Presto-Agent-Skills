@@ -7,12 +7,14 @@ SKILL_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 usage() {
   cat <<'USAGE'
 Usage:
+  school-pptx.sh validate --input <deck.md> [--out-json <logical-document.json>]
   school-pptx.sh template-report --theme <theme-id> --out-md <report.md> --out-json <report.json>
                                   [--manifest <manifest.yaml>] [--template <template.pptx>]
                                   [--geometry-tolerance-emu <integer>]
   school-pptx.sh info
 
 Commands:
+  validate         Validate Markdown and optionally write the logical document JSON.
   template-report  Validate the controlled PPTX template and write Markdown/JSON evidence.
   info             Print the skill-local template and manifest paths.
 USAGE
@@ -30,6 +32,9 @@ main() {
   fi
 
   case "$command" in
+    validate)
+      "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/markdown_contract.py" "$SKILL_DIR" validate "$@"
+      ;;
     template-report)
       "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/template_report.py" "$SKILL_DIR" "$@"
       ;;
