@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
-status: executing
+status: ready_to_plan
 stopped_at: Completed 42-03 gap closure; awaiting Phase 42 verification
 last_updated: "2026-07-13T18:15:55Z"
 last_activity: 2026-07-14 -- Phase 42 gap-closure plan completed
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
   completed_plans: 4
-  percent: 100
+  percent: 50
 ---
 
 # State: Presto Agent Skills
@@ -25,10 +25,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-13 for v1.17 school-pptx)
 
 ## Current Position
 
-Phase: 42 (Markdown Contract and Full Fixture) — AWAITING VERIFICATION
-Plan: 3 of 3
-Status: Gap-closure implementation complete; phase verification pending
-Last activity: 2026-07-14 -- Phase 42 gap-closure plan completed
+Phase: 43
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-13
 
 Progress: [██████████] 100% plans complete; phase verification pending
 
