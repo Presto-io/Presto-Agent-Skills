@@ -272,6 +272,114 @@ theme: standard-school
     require(result.returncode != 0 and {"RAW_HTML", "UNSUPPORTED_STYLE"} <= codes(model), "outside fence syntax accepted")
 
 
+def yaml_value_gate(work: Path) -> None:
+    cases = {
+        "date": "date: 2026-07-13",
+        "bool": "subtitle: true",
+        "number": "course: 42",
+        "list": "author: [A, B]",
+        "mapping": "presenter: {name: A}",
+    }
+    quoted = write_case(work, "yaml-quoted.md", '''---
+title: "YAML 字符串"
+date: "2026-07-13"
+theme: "standard-school"
+---
+::: slide {layout="cover"}
+:::
+''')
+    result, model = validate(quoted, work / "yaml-quoted.json")
+    require(result.returncode == 0 and model["metadata"]["date"] == "2026-07-13", "quoted date string rejected")
+
+    for name, field in cases.items():
+        source = write_case(work, f"yaml-{name}.md", f'''---
+title: "YAML 类型"
+{field}
+theme: "standard-school"
+---
+::: slide {{layout="cover"}}
+:::
+''')
+        plain = run("validate", "--input", str(source))
+        result, model = validate(source, work / f"yaml-{name}.json")
+        require(plain.returncode != 0 and result.returncode != 0, f"implicit YAML {name} passed")
+        require("YAML_VALUE_TYPE" in plain.stdout and "YAML_VALUE_TYPE" in codes(model), f"implicit YAML {name} missing diagnostic")
+        require("Traceback" not in plain.stdout + plain.stderr + result.stdout + result.stderr, f"implicit YAML {name} leaked traceback")
+        item = next(item for item in model["errors"] if item["code"] == "YAML_VALUE_TYPE")
+        require(item["line"] >= 1 and item["column"] >= 1, f"implicit YAML {name} location invalid")
+
+
+def fence_opacity_gate(work: Path) -> None:
+    payloads = (
+        ("backtick", "```", ":::\n::: notes\ninside notes text\n:::\n::: slide {layout=\"table\"}"),
+        ("tilde", "~~~~", "::: slide {layout=\"table\"}\n::: notes\n:::\n:::")
+    )
+    for name, marker, payload in payloads:
+        source = write_case(work, f"fence-opacity-{name}.md", f'''---
+title: "Fence opacity"
+theme: "standard-school"
+---
+::: slide {{layout="code"}}
+## Code
+{marker}text
+{payload}
+{marker}
+:::
+''')
+        result, model = validate(source, work / f"fence-opacity-{name}.json")
+        require(result.returncode == 0, f"{name} directive-like code payload rejected: {codes(model)}")
+        code = model["logical_slides"][0]["blocks"][0]
+        require(code["kind"] == "code" and code["text"] == payload, f"{name} code payload changed")
+
+
+def table_structure_gate(work: Path) -> None:
+    valid_cases = {
+        "table": ("table", "| A | B |\n|---|:---:|\n| 1 | 2 |"),
+        "timeline": ("timeline", "| 时间 | 标题 | 说明 |\n|---|---|---|\n| 7月 | 启动 | 完成契约 |"),
+    }
+    for name, (layout, table) in valid_cases.items():
+        source = write_case(work, f"table-valid-{name}.md", f'''---
+title: "Valid table"
+theme: "standard-school"
+---
+::: slide {{layout="{layout}"}}
+## Valid
+{table}
+:::
+''')
+        result, model = validate(source, work / f"table-valid-{name}.json")
+        require(result.returncode == 0 and not codes(model), f"valid {name} rejected")
+
+    invalid_cases = {
+        "missing-separator": ("| A | B |\n| 1 | 2 |", "TABLE_SEPARATOR_INVALID"),
+        "malformed-separator": ("| A | B |\n|---|oops|\n| 1 | 2 |", "TABLE_SEPARATOR_INVALID"),
+        "short-row": ("| A | B |\n|---|---|\n| 1 |", "TABLE_COLUMN_MISMATCH"),
+        "wide-row": ("| A | B |\n|---|---|\n| 1 | 2 | 3 |", "TABLE_COLUMN_MISMATCH"),
+    }
+    for name, (table, expected_code) in invalid_cases.items():
+        source = write_case(work, f"table-invalid-{name}.md", f'''---
+title: "Invalid table"
+theme: "standard-school"
+---
+::: slide {{layout="table"}}
+## Invalid
+{table}
+:::
+''')
+        result, model = validate(source, work / f"table-invalid-{name}.json")
+        require(result.returncode != 0 and expected_code in codes(model), f"{name} missing {expected_code}")
+
+
+def gap_parser_command() -> int:
+    with tempfile.TemporaryDirectory(prefix="school-pptx-gap-parser-") as temporary:
+        work = Path(temporary)
+        yaml_value_gate(work)
+        fence_opacity_gate(work)
+        table_structure_gate(work)
+    print("PASS school-pptx gap-parser: YAML string types, fence opacity, table structure")
+    return 0
+
+
 def collision_gate(work: Path) -> None:
     source = write_case(work, "collision.md", '''---
 title: collision
@@ -533,6 +641,8 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     contract = subparsers.add_parser("contract")
     contract.set_defaults(func=contract_command)
+    gap_parser = subparsers.add_parser("gap-parser")
+    gap_parser.set_defaults(func=gap_parser_command)
     fixture_example = subparsers.add_parser("fixture-example")
     fixture_example.set_defaults(func=fixture_example_command)
     return parser
