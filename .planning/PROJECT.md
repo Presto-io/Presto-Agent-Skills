@@ -8,7 +8,7 @@
 
 **Active milestone:** v1.17 school-pptx
 
-**Status:** Defining requirements and roadmap for a new `school-pptx` skill.
+**Status:** Phase 42 complete — the constrained Markdown contract, canonical full fixture, bounded diagnostics, and secure deterministic example workflow are verified; Phase 43 editable PPTX rendering is next.
 
 **Delivered in v1.16:**
 - Added `tiaokedan`, a Markdown-first `调课单` document workflow skill.
@@ -330,4 +330,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-07-13 after starting v1.17 school-pptx milestone*
+*Last updated: 2026-07-14 after completing Phase 42 Markdown contract and full fixture*
