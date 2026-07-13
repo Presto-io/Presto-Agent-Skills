@@ -358,8 +358,74 @@ def pagination_structured_gate(workdir: Path) -> dict[str, object]:
     }
 
 
+def _image(index: int, caption: str | None = None) -> dict[str, object]:
+    return {
+        "kind": "image", "source_line": index + 2, "heading": None,
+        "authored_path": f"media/{index}.png", "caption": caption if caption is not None else f"图 {index}",
+    }
+
+
+def pagination_full_gate(workdir: Path) -> dict[str, object]:
+    del workdir
+    manifest = load_manifest(SKILL_DIR)
+    gallery_vectors: dict[int, list[int]] = {}
+    for count in (1, 2, 3, 4, 5, 6, 8, 9):
+        images = [_image(index, "" if index == 0 else None) for index in range(count)]
+        document = _minimal_document([{
+            "layout": "gallery", "title": "图集", "source_line": 1, "notes": None, "blocks": images,
+        }])
+        plan = pptx_paginate.build_deck_plan(document, manifest)
+        gallery = [slide for slide in plan.slides if slide.layout == "gallery"]
+        sizes = [len(slide.fragments) for slide in gallery]
+        gallery_vectors[count] = sizes
+        require(all(size <= 4 for size in sizes), "PPTX-06 gallery capacity")
+        require(sum(sizes) == count, "PPTX-06 gallery item loss")
+        for slide in gallery:
+            require(all(int(dict(fragment.metadata)["gallery_preset"]) == len(slide.fragments)
+                        for fragment in slide.fragments), "PPTX-06 gallery preset")
+            require(all(dict(fragment.metadata)["caption_placeholder"] == "true"
+                        for fragment in slide.fragments), "PPTX-06 caption placeholder")
+
+    fixture = SKILL_DIR / "fixtures" / "school-pptx-full.md"
+    document = parse_document(fixture, manifest)
+    require(not document["errors"], "full fixture parser errors")
+    first = pptx_paginate.build_deck_plan(document, manifest)
+    second = pptx_paginate.build_deck_plan(document, manifest)
+    require(first == second, "full fixture plan is not deterministic")
+    require(first.slides[-1].layout == "closing", "closing is not last")
+    require(sum(slide.layout == "closing" for slide in first.slides) == 1, "closing count")
+    require(dict(first.slides[-1].fragments[0].metadata)["pptx_layout"] ==
+            "ppt/slideLayouts/slideLayout7.xml", "closing part path")
+
+    for logical_index, indices in first.logical_to_physical:
+        require(indices == tuple(range(indices[0], indices[-1] + 1)), "logical-to-physical mapping not contiguous")
+        logical = document["logical_slides"][logical_index]
+        expected_notes = logical["notes"]["markdown"] if logical.get("notes") else None
+        derived = [first.slides[index] for index in indices]
+        require(all(slide.notes_intent == expected_notes for slide in derived), "D-16 notes propagation")
+        if expected_notes is None:
+            require(all(slide.to_projection()["notes_intent"] is None for slide in derived), "D-16 false notes intent")
+
+    layouts = {slide.layout for slide in first.slides}
+    require({"title-content", "two-column", "image-text", "table", "timeline", "gallery", "code"} <= layouts,
+            "full fixture overflow layout coverage")
+    image_text = [slide for slide in first.slides if slide.layout == "image-text"]
+    require(len(image_text) >= 3 and all(any(fragment.kind == "image" for fragment in slide.fragments)
+                                         for slide in image_text), "image-text cartesian planning")
+    contents = [slide for slide in first.slides if slide.layout == "contents"]
+    require([item for slide in contents for item in slide.fragments[0].items] == document["contents_entries"],
+            "full fixture contents order")
+    return {
+        "gallery_vectors": gallery_vectors,
+        "logical_slides": len(document["logical_slides"]),
+        "physical_slides": len(first.slides),
+        "diagnostics": [item.code for item in first.diagnostics],
+    }
+
+
 GATES["pagination-text-code"] = pagination_text_code_gate
 GATES["pagination-structured"] = pagination_structured_gate
+GATES["pagination-full"] = pagination_full_gate
 
 
 def run_contract_model() -> dict[str, object]:
