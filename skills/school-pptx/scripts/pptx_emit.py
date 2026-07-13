@@ -8,6 +8,16 @@ from pathlib import Path
 from typing import Any, Callable
 
 from pptx_model import PhysicalDeckPlan
+from pptx_objects import (
+    PptxObjectError,
+    add_contain_picture,
+    add_gallery_card,
+    add_plain_lines,
+    add_rich_text,
+    add_table,
+    add_timeline,
+    set_notes,
+)
 from pptx_ooxml import remove_seed_slides
 
 
@@ -80,14 +90,87 @@ def bootstrap_template(template_path: Path, manifest: dict[str, Any]) -> tuple[A
 
 
 def emit_deck(
-    plan: PhysicalDeckPlan, manifest: dict[str, Any], template_path: Path, output_path: Path
+    plan: PhysicalDeckPlan, manifest: dict[str, Any], template_path: Path, output_path: Path,
+    *, media_root: Path | None = None,
 ) -> dict[str, Any]:
     """Emit only the frozen plan; pagination is intentionally absent from this module."""
     presentation, layouts, evidence = bootstrap_template(template_path, manifest)
+    highlight = manifest["inline_styles"]["highlight"]["scheme_color"]
     for physical in plan.slides:
-        presentation.slides.add_slide(layouts[physical.layout])
+        slide = presentation.slides.add_slide(layouts[physical.layout])
+        layout_manifest = manifest["layouts"][physical.layout]
+        slots = {slot["id"]: slot for slot in layout_manifest.get("slots", ())}
+        if "title" in slots:
+            title_budget = slots["title"]["text_budget"]
+            add_rich_text(
+                slide, slots["title"]["geometry"], physical.title,
+                font_size=title_budget["font_size_max"], highlight_scheme=highlight,
+                name="school-pptx:slide-title",
+            )
+        if physical.layout == "closing":
+            set_notes(slide, physical.notes_intent)
+            continue
+        if physical.layout == "table" and physical.fragments:
+            fragment = physical.fragments[0]
+            add_table(
+                slide, slots["table"], fragment,
+                font_size=dict(physical.selected_font_sizes).get("table", slots["table"]["text_budget"]["font_size_min"]),
+            )
+        elif physical.layout == "timeline" and physical.fragments:
+            add_timeline(slide, slots["timeline_items"], physical.fragments[0].rows, highlight_scheme=highlight)
+        elif physical.layout == "gallery":
+            gallery_slot = slots["gallery_items"]
+            count = len(physical.fragments)
+            presets = gallery_slot["item_presets"][count]
+            for index, (fragment, preset) in enumerate(zip(physical.fragments, presets)):
+                metadata = dict(fragment.metadata)
+                path = _media_path(metadata.get("authored_path", ""), media_root)
+                add_gallery_card(
+                    slide, preset, path, metadata.get("caption", ""), index=index,
+                    highlight_scheme=highlight, font_size=slots["caption"]["text_budget"]["font_size_min"],
+                )
+        else:
+            body_slot_id = "code" if physical.layout == "code" else "body"
+            if physical.layout == "two-column":
+                body_slot_id = "left_body"
+            body_slot = slots.get(body_slot_id)
+            text_fragments = [fragment for fragment in physical.fragments if fragment.kind != "image"]
+            if body_slot is not None:
+                lines: list[str] = []
+                for fragment in text_fragments:
+                    if fragment.heading:
+                        lines.append(fragment.heading)
+                    if fragment.text is not None:
+                        lines.append(fragment.text)
+                    lines.extend(fragment.items)
+                budget = body_slot["text_budget"]
+                add_plain_lines(
+                    slide, body_slot["geometry"], lines,
+                    font_size=budget["font_size_min"] if physical.layout == "code" else budget["font_size_max"],
+                    highlight_scheme=highlight, name=f"school-pptx:{body_slot_id}",
+                    monospace=physical.layout == "code",
+                )
+            image_fragment = next((fragment for fragment in physical.fragments if fragment.kind == "image"), None)
+            if image_fragment is not None and "media" in slots:
+                metadata = dict(image_fragment.metadata)
+                add_contain_picture(
+                    slide, _media_path(metadata.get("authored_path", ""), media_root), slots["media"]["geometry"],
+                    name="school-pptx:image-text-picture",
+                )
+        set_notes(slide, physical.notes_intent)
     try:
         presentation.save(str(output_path))
     except OSError as exc:
         raise PptxEmitError("PPTX_PACKAGE_INVALID", "无法保存 staged PPTX。") from exc
     return {**evidence, "physical_slides": len(plan.slides), "output": str(output_path)}
+
+
+def _media_path(authored: str, media_root: Path | None) -> Path | None:
+    if not authored:
+        return None
+    path = Path(authored)
+    if path.is_absolute():
+        return path
+    if media_root is None:
+        return None
+    return (media_root / path).resolve(strict=False)
