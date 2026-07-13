@@ -98,56 +98,56 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TPL-01 | TBD | Pending |
-| TPL-02 | TBD | Pending |
-| TPL-03 | TBD | Pending |
-| TPL-04 | TBD | Pending |
-| TPL-05 | TBD | Pending |
-| TPL-06 | TBD | Pending |
-| TPL-07 | TBD | Pending |
-| MD-01 | TBD | Pending |
-| MD-02 | TBD | Pending |
-| MD-03 | TBD | Pending |
-| MD-04 | TBD | Pending |
-| MD-05 | TBD | Pending |
-| MD-06 | TBD | Pending |
-| MD-07 | TBD | Pending |
-| MD-08 | TBD | Pending |
-| PPTX-01 | TBD | Pending |
-| PPTX-02 | TBD | Pending |
-| PPTX-03 | TBD | Pending |
-| PPTX-04 | TBD | Pending |
-| PPTX-05 | TBD | Pending |
-| PPTX-06 | TBD | Pending |
-| PPTX-07 | TBD | Pending |
-| PPTX-08 | TBD | Pending |
-| PPTX-09 | TBD | Pending |
-| PPTX-10 | TBD | Pending |
-| PPTX-11 | TBD | Pending |
-| PPTX-12 | TBD | Pending |
-| PPTX-13 | TBD | Pending |
-| VER-01 | TBD | Pending |
-| VER-02 | TBD | Pending |
-| VER-03 | TBD | Pending |
-| VER-04 | TBD | Pending |
-| VER-05 | TBD | Pending |
-| VER-06 | TBD | Pending |
-| VER-07 | TBD | Pending |
-| VER-08 | TBD | Pending |
-| VER-09 | TBD | Pending |
-| VER-10 | TBD | Pending |
-| SKILL-01 | TBD | Pending |
-| SKILL-02 | TBD | Pending |
-| SKILL-03 | TBD | Pending |
-| SKILL-04 | TBD | Pending |
-| SKILL-05 | TBD | Pending |
-| SKILL-06 | TBD | Pending |
+| TPL-01 | Phase 41 | Pending |
+| TPL-02 | Phase 41 | Pending |
+| TPL-03 | Phase 41 | Pending |
+| TPL-04 | Phase 41 | Pending |
+| TPL-05 | Phase 41 | Pending |
+| TPL-06 | Phase 41 | Pending |
+| TPL-07 | Phase 41 | Pending |
+| MD-01 | Phase 42 | Pending |
+| MD-02 | Phase 42 | Pending |
+| MD-03 | Phase 42 | Pending |
+| MD-04 | Phase 42 | Pending |
+| MD-05 | Phase 42 | Pending |
+| MD-06 | Phase 42 | Pending |
+| MD-07 | Phase 42 | Pending |
+| MD-08 | Phase 42 | Pending |
+| PPTX-01 | Phase 43 | Pending |
+| PPTX-02 | Phase 43 | Pending |
+| PPTX-03 | Phase 43 | Pending |
+| PPTX-04 | Phase 43 | Pending |
+| PPTX-05 | Phase 43 | Pending |
+| PPTX-06 | Phase 43 | Pending |
+| PPTX-07 | Phase 43 | Pending |
+| PPTX-08 | Phase 43 | Pending |
+| PPTX-09 | Phase 43 | Pending |
+| PPTX-10 | Phase 43 | Pending |
+| PPTX-11 | Phase 43 | Pending |
+| PPTX-12 | Phase 43 | Pending |
+| PPTX-13 | Phase 43 | Pending |
+| VER-01 | Phase 42 | Pending |
+| VER-02 | Phase 41 | Pending |
+| VER-03 | Phase 43 | Pending |
+| VER-04 | Phase 44 | Pending |
+| VER-05 | Phase 44 | Pending |
+| VER-06 | Phase 44 | Pending |
+| VER-07 | Phase 44 | Pending |
+| VER-08 | Phase 44 | Pending |
+| VER-09 | Phase 44 | Pending |
+| VER-10 | Phase 44 | Pending |
+| SKILL-01 | Phase 44 | Pending |
+| SKILL-02 | Phase 44 | Pending |
+| SKILL-03 | Phase 43 | Pending |
+| SKILL-04 | Phase 44 | Pending |
+| SKILL-05 | Phase 44 | Pending |
+| SKILL-06 | Phase 44 | Pending |
 
 **Coverage:**
 - v1.17 requirements: 44 total
-- Mapped to phases: 0
-- Unmapped: 44
+- Mapped to phases: 44
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-13*
-*Last updated: 2026-07-13 after v1.17 research synthesis*
+*Last updated: 2026-07-13 after v1.17 roadmap creation*
