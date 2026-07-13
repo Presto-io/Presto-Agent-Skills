@@ -1,0 +1,388 @@
+theme_id: standard-school
+available_themes:
+  - standard-school
+template:
+  path: standard-school.pptx
+  format: pptx
+  source_evidence: test/学院PPT模板.potx
+  mapping_strategy: native-slide-layout-xml
+  geometry_units: emu
+  geometry_tolerance_emu: 2000
+ownership:
+  geometry: template-owned
+  fonts: template-owned
+  colors: template-owned
+  decorative_assets: template-owned
+  footer_behavior: template-owned
+  bounded_text_behavior: template-owned
+  markdown_controls:
+    - semantic content only
+  markdown_cannot_override:
+    - geometry
+    - fonts
+    - colors
+    - decorative assets
+    - footer behavior
+    - bounded text behavior
+required_layouts:
+  - cover
+  - contents
+  - section
+  - title-content
+  - two-column
+  - image-text
+  - table
+  - timeline
+  - gallery
+  - code
+  - closing
+layouts:
+  cover:
+    label: 封面
+    purpose: Title slide with subtitle and template-owned footer placeholders.
+    pptx_layout: ppt/slideLayouts/slideLayout1.xml
+    required_slots: [title, subtitle]
+    slots:
+      - id: title
+        purpose: Main presentation title.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout1.xml
+          shape_id: 2
+          name: 标题 1
+          type: ctrTitle
+        geometry: {x: 1524000, y: 1122363, width: 9144000, height: 2387600}
+        text_budget: {max_chars: 24, max_lines: 2, font_size_min: 28, font_size_max: 44, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: subtitle
+        purpose: Optional subtitle or school/course descriptor.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout1.xml
+          shape_id: 3
+          name: 副标题 2
+          type: subTitle
+          idx: 1
+        geometry: {x: 1524000, y: 3602038, width: 9144000, height: 1655762}
+        text_budget: {max_chars: 48, max_lines: 2, font_size_min: 18, font_size_max: 28, overflow: shrink}
+        empty_slot: hide
+        continuation: none
+  contents:
+    label: 目录
+    purpose: Agenda generated from reviewed section headings in a later phase.
+    pptx_layout: ppt/slideLayouts/slideLayout3.xml
+    required_slots: [title, body]
+    slots:
+      - id: title
+        purpose: Contents slide title.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout3.xml
+          shape_id: 2
+          name: 标题 1
+          type: title
+        geometry: {x: 831850, y: 1709738, width: 10515600, height: 2852737}
+        text_budget: {max_chars: 18, max_lines: 1, font_size_min: 24, font_size_max: 36, overflow: shrink}
+        empty_slot: preserve
+        continuation: none
+      - id: body
+        purpose: Ordered contents entries.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout3.xml
+          shape_id: 3
+          name: 文本占位符 2
+          type: body
+          idx: 1
+        geometry: {x: 831850, y: 4589463, width: 10515600, height: 1500187}
+        text_budget: {max_chars: 180, max_lines: 5, font_size_min: 18, font_size_max: 26, overflow: paginate}
+        empty_slot: fail
+        continuation: paginate
+  section:
+    label: 章节页
+    purpose: Visual divider between major sections.
+    pptx_layout: ppt/slideLayouts/slideLayout7.xml
+    required_slots: [title]
+    slots:
+      - id: title
+        purpose: Section title anchored to the template divider band.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout7.xml
+          shape_id: 5
+          name: 矩形 4
+        geometry: {x: 0, y: 5596128, width: 12192000, height: 1261872}
+        text_budget: {max_chars: 24, max_lines: 1, font_size_min: 24, font_size_max: 36, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+  title-content:
+    label: 标题正文
+    purpose: Standard title plus body content slide.
+    pptx_layout: ppt/slideLayouts/slideLayout3.xml
+    required_slots: [title, body]
+    slots:
+      - id: title
+        purpose: Slide title.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout3.xml
+          shape_id: 2
+          name: 标题 1
+          type: title
+        geometry: {x: 831850, y: 1709738, width: 10515600, height: 2852737}
+        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 22, font_size_max: 34, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: body
+        purpose: Main text body.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout3.xml
+          shape_id: 3
+          name: 文本占位符 2
+          type: body
+          idx: 1
+        geometry: {x: 831850, y: 4589463, width: 10515600, height: 1500187}
+        text_budget: {max_chars: 220, max_lines: 6, font_size_min: 16, font_size_max: 24, overflow: paginate}
+        empty_slot: preserve
+        continuation: paginate
+  two-column:
+    label: 双栏
+    purpose: Balanced comparison or two-part explanation.
+    pptx_layout: ppt/slideLayouts/slideLayout4.xml
+    required_slots: [left_body, right_body]
+    slots:
+      - id: left_body
+        purpose: Left column content.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout4.xml
+          shape_id: 3
+          name: 内容占位符 2
+          idx: 1
+        geometry: {x: 838200, y: 1825625, width: 5181600, height: 4351338}
+        text_budget: {max_chars: 180, max_lines: 8, font_size_min: 15, font_size_max: 22, overflow: paginate}
+        empty_slot: preserve
+        continuation: paginate
+      - id: right_body
+        purpose: Right column content.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout4.xml
+          shape_id: 4
+          name: 内容占位符 3
+          idx: 2
+        geometry: {x: 6172200, y: 1825625, width: 5181600, height: 4351338}
+        text_budget: {max_chars: 180, max_lines: 8, font_size_min: 15, font_size_max: 22, overflow: paginate}
+        empty_slot: preserve
+        continuation: paginate
+  image-text:
+    label: 图文
+    purpose: Text narrative paired with a contained image or icon.
+    pptx_layout: ppt/slideLayouts/slideLayout9.xml
+    required_slots: [title, media, body]
+    slots:
+      - id: title
+        purpose: Slide title.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout9.xml
+          shape_id: 2
+          name: 标题 1
+          type: title
+        geometry: {x: 839788, y: 457200, width: 3932237, height: 1600200}
+        text_budget: {max_chars: 22, max_lines: 2, font_size_min: 20, font_size_max: 30, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: media
+        purpose: Contained image area.
+        kind: media
+        placeholder:
+          file: ppt/slideLayouts/slideLayout9.xml
+          shape_id: 3
+          name: 图片占位符 2
+          type: pic
+          idx: 1
+        geometry: {x: 5183188, y: 987425, width: 6172200, height: 4873625}
+        text_budget: {max_chars: 0, max_lines: 0, font_size_min: 0, font_size_max: 0, overflow: fail}
+        empty_slot: hide
+        continuation: none
+      - id: body
+        purpose: Supporting text.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout9.xml
+          shape_id: 4
+          name: 文本占位符 3
+          type: body
+          idx: 2
+        geometry: {x: 839788, y: 2057400, width: 3932237, height: 3811588}
+        text_budget: {max_chars: 180, max_lines: 8, font_size_min: 15, font_size_max: 22, overflow: paginate}
+        empty_slot: preserve
+        continuation: paginate
+  table:
+    label: 表格
+    purpose: Editable table region with a title.
+    pptx_layout: ppt/slideLayouts/slideLayout8.xml
+    required_slots: [title, table]
+    slots:
+      - id: title
+        purpose: Table slide title.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout8.xml
+          shape_id: 2
+          name: 标题 1
+          type: title
+        geometry: {x: 839788, y: 457200, width: 3932237, height: 1600200}
+        text_budget: {max_chars: 22, max_lines: 2, font_size_min: 20, font_size_max: 30, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: table
+        purpose: Editable table area in a later rendering phase.
+        kind: table
+        placeholder:
+          file: ppt/slideLayouts/slideLayout8.xml
+          shape_id: 3
+          name: 内容占位符 2
+          idx: 1
+        geometry: {x: 5183188, y: 987425, width: 6172200, height: 4873625}
+        text_budget: {max_chars: 420, max_lines: 12, font_size_min: 12, font_size_max: 18, overflow: paginate}
+        empty_slot: fail
+        continuation: repeat_header
+  timeline:
+    label: 时间线
+    purpose: Horizontal timeline content with split behavior deferred to rendering.
+    pptx_layout: ppt/slideLayouts/slideLayout4.xml
+    required_slots: [title, timeline_items]
+    slots:
+      - id: title
+        purpose: Timeline title using the left content anchor.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout4.xml
+          shape_id: 3
+          name: 内容占位符 2
+          idx: 1
+        geometry: {x: 838200, y: 1825625, width: 5181600, height: 4351338}
+        text_budget: {max_chars: 24, max_lines: 2, font_size_min: 20, font_size_max: 30, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: timeline_items
+        purpose: Timeline item collection.
+        kind: timeline
+        placeholder:
+          file: ppt/slideLayouts/slideLayout4.xml
+          shape_id: 4
+          name: 内容占位符 3
+          idx: 2
+        geometry: {x: 6172200, y: 1825625, width: 5181600, height: 4351338}
+        text_budget: {max_chars: 240, max_lines: 6, font_size_min: 13, font_size_max: 18, overflow: paginate}
+        empty_slot: preserve
+        continuation: paginate
+  gallery:
+    label: 图集
+    purpose: Up to four media items with captions per physical slide in a later phase.
+    pptx_layout: ppt/slideLayouts/slideLayout5.xml
+    required_slots: [title, gallery_items, caption]
+    slots:
+      - id: title
+        purpose: Gallery title.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout5.xml
+          shape_id: 2
+          name: 标题 1
+          type: title
+        geometry: {x: 839788, y: 365125, width: 10515600, height: 1325563}
+        text_budget: {max_chars: 28, max_lines: 1, font_size_min: 20, font_size_max: 30, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: gallery_items
+        purpose: Primary gallery media area.
+        kind: gallery
+        placeholder:
+          file: ppt/slideLayouts/slideLayout5.xml
+          shape_id: 4
+          name: 内容占位符 3
+          idx: 2
+        geometry: {x: 839788, y: 2505075, width: 5157787, height: 3684588}
+        text_budget: {max_chars: 0, max_lines: 0, font_size_min: 0, font_size_max: 0, overflow: paginate}
+        empty_slot: hide
+        continuation: paginate
+      - id: caption
+        purpose: Gallery caption or short description.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout5.xml
+          shape_id: 3
+          name: 文本占位符 2
+          type: body
+          idx: 1
+        geometry: {x: 839788, y: 1681163, width: 5157787, height: 823912}
+        text_budget: {max_chars: 80, max_lines: 2, font_size_min: 13, font_size_max: 18, overflow: shrink}
+        empty_slot: hide
+        continuation: none
+  code:
+    label: 代码
+    purpose: Editable monospace code text area with title.
+    pptx_layout: ppt/slideLayouts/slideLayout11.xml
+    required_slots: [title, code]
+    slots:
+      - id: title
+        purpose: Code slide title.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout11.xml
+          shape_id: 2
+          name: 竖排标题 1
+          type: title
+        geometry: {x: 8724900, y: 365125, width: 2628900, height: 5811838}
+        text_budget: {max_chars: 18, max_lines: 2, font_size_min: 18, font_size_max: 28, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: code
+        purpose: Plain editable code block.
+        kind: code
+        placeholder:
+          file: ppt/slideLayouts/slideLayout11.xml
+          shape_id: 3
+          name: 竖排文字占位符 2
+          type: body
+          idx: 1
+        geometry: {x: 838200, y: 365125, width: 7734300, height: 5811838}
+        text_budget: {max_chars: 900, max_lines: 22, font_size_min: 10, font_size_max: 14, overflow: paginate}
+        empty_slot: preserve
+        continuation: paginate
+  closing:
+    label: 结束页
+    purpose: Closing or thanks slide.
+    pptx_layout: ppt/slideLayouts/slideLayout1.xml
+    required_slots: [title, subtitle]
+    slots:
+      - id: title
+        purpose: Closing headline.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout1.xml
+          shape_id: 2
+          name: 标题 1
+          type: ctrTitle
+        geometry: {x: 1524000, y: 1122363, width: 9144000, height: 2387600}
+        text_budget: {max_chars: 16, max_lines: 1, font_size_min: 28, font_size_max: 44, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: subtitle
+        purpose: Optional closing subtitle.
+        kind: text
+        placeholder:
+          file: ppt/slideLayouts/slideLayout1.xml
+          shape_id: 3
+          name: 副标题 2
+          type: subTitle
+          idx: 1
+        geometry: {x: 1524000, y: 3602038, width: 9144000, height: 1655762}
+        text_budget: {max_chars: 48, max_lines: 2, font_size_min: 18, font_size_max: 28, overflow: shrink}
+        empty_slot: hide
+        continuation: none
