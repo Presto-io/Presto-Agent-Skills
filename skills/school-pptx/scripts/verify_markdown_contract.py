@@ -7,6 +7,7 @@ import argparse
 import contextlib
 import hashlib
 import importlib.util
+import inspect
 import io
 import json
 import os
@@ -485,6 +486,41 @@ def symlink_exchange_gate(work: Path) -> None:
                 f"{exchange} exchange left temporary files")
 
 
+REQUIRED_GAP_GATE_NAMES = (
+    "yaml_value_gate",
+    "fence_opacity_gate",
+    "table_structure_gate",
+    "manifest_failure_gate",
+    "symlink_exchange_gate",
+)
+GAP_GATE_REGISTRY = (
+    ("yaml_value_gate", yaml_value_gate),
+    ("fence_opacity_gate", fence_opacity_gate),
+    ("table_structure_gate", table_structure_gate),
+    ("manifest_failure_gate", manifest_failure_gate),
+    ("symlink_exchange_gate", symlink_exchange_gate),
+)
+
+
+def assert_gap_gate_completeness() -> None:
+    names = tuple(name for name, _ in GAP_GATE_REGISTRY)
+    require(names == REQUIRED_GAP_GATE_NAMES, f"gap gate registry mismatch: {names}")
+    require(len(names) == len(set(names)), "gap gate registry contains duplicate names")
+    source = Path(__file__).read_text(encoding="utf-8")
+    for name, gate in GAP_GATE_REGISTRY:
+        require(callable(gate) and gate.__name__ == name, f"gap gate is not callable: {name}")
+        require(f"def {name}(" in source, f"gap gate source definition missing: {name}")
+    fixture_source = inspect.getsource(fixture_example_command)
+    require("run_gap_gates(gap_work)" in fixture_source, "fixture-example no longer invokes the gap registry")
+    require("secure_io_capability_gate(gap_work)" in fixture_source,
+            "fixture-example no longer invokes the secure-I/O capability companion")
+
+
+def run_gap_gates(work: Path) -> None:
+    for _, gate in GAP_GATE_REGISTRY:
+        gate(work)
+
+
 def gap_safety_command() -> int:
     with tempfile.TemporaryDirectory(prefix="school-pptx-gap-safety-") as temporary:
         work = Path(temporary)
@@ -742,12 +778,19 @@ def fixture_example_command() -> int:
     contract_command()
     with tempfile.TemporaryDirectory(prefix="school-pptx-fixture-example-") as temporary:
         work = Path(temporary)
+        gap_work = work / "gap-gates"
+        gap_work.mkdir()
+        assert_gap_gate_completeness()
+        run_gap_gates(gap_work)
+        secure_io_capability_gate(gap_work)
         full_fixture_gate(work)
         metadata_and_media_variants_gate(work)
         example_safety_gate(work)
         regression_gate(work)
     require(FIXTURE.is_file(), "canonical fixture missing")
-    print("PASS school-pptx fixture-example: full coverage, determinism, ownership, variants, collisions, escapes, Phase 41 regression")
+    print("PASS school-pptx fixture-example: YAML types, fence opacity, table structure, manifest failures, "
+          "descriptor capability fail-closed, output-root exchange, media-parent exchange, full coverage, "
+          "determinism, ownership, variants, collisions, Phase 41 regression")
     return 0
 
 
