@@ -4,10 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
+import importlib.util
+import io
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -23,6 +27,7 @@ OWNED_PATHS = {
     "media/robot-arm.png",
     "media/curriculum-map.png",
 }
+CORE_PATH = SCRIPT_DIR / "markdown_contract.py"
 
 
 def require(condition: bool, message: str) -> None:
@@ -36,6 +41,28 @@ def run(*args: str, expected: int | None = None) -> subprocess.CompletedProcess[
         require(result.returncode == expected, f"{' '.join(args)}: expected {expected}, got {result.returncode}\n{result.stdout}\n{result.stderr}")
     require("Traceback" not in result.stdout + result.stderr, f"stack trace leaked for {' '.join(args)}")
     return result
+
+
+def run_core(skill_dir: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([sys.executable, str(CORE_PATH), str(skill_dir), *args], text=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+
+
+def load_core():
+    spec = importlib.util.spec_from_file_location("school_pptx_markdown_contract_gate", CORE_PATH)
+    require(spec is not None and spec.loader is not None, "cannot load markdown contract core")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def invoke_example(core, output: Path) -> tuple[int, str, str]:
+    stdout, stderr = io.StringIO(), io.StringIO()
+    args = argparse.Namespace(out_dir=str(output), skill_dir=str(SKILL_DIR))
+    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+        result = core.example_command(args)
+    return result, stdout.getvalue(), stderr.getvalue()
 
 
 def validate(path: Path, out: Path | None = None) -> tuple[subprocess.CompletedProcess[str], dict]:
@@ -380,6 +407,94 @@ def gap_parser_command() -> int:
     return 0
 
 
+def manifest_failure_gate(work: Path) -> None:
+    source = write_case(work, "manifest-input.md", '''---
+title: "Manifest failure"
+theme: "standard-school"
+---
+::: slide {layout="cover"}
+:::
+''')
+    cases = {
+        "missing": (None, "MANIFEST_UNREADABLE"),
+        "malformed": ("layouts: [", "MANIFEST_MALFORMED"),
+        "root-invalid": ("- not\n- a\n- mapping\n", "MANIFEST_ROOT_INVALID"),
+        "layouts-invalid": ("theme_id: standard-school\nlayouts: []\n", "MANIFEST_ROOT_INVALID"),
+    }
+    for name, (manifest_text, expected_code) in cases.items():
+        skill_dir = work / f"manifest-{name}"
+        templates = skill_dir / "templates"
+        templates.mkdir(parents=True)
+        if manifest_text is not None:
+            (templates / "standard-school.manifest.yaml").write_text(manifest_text, encoding="utf-8")
+        output = work / f"manifest-{name}.json"
+        result = run_core(skill_dir, "validate", "--input", str(source), "--out-json", str(output))
+        combined = result.stdout + result.stderr
+        require(result.returncode != 0 and expected_code in combined, f"manifest {name} missing {expected_code}")
+        require(len(combined) < 4000 and "Traceback" not in combined and "Error:" not in combined,
+                f"manifest {name} failure is unbounded")
+        require("主题：-" in result.stdout and "校验通过" not in result.stdout and "Phase 43" not in result.stdout,
+                f"manifest {name} printed false state")
+        model = json.loads(output.read_text(encoding="utf-8"))
+        require(expected_code in codes(model), f"manifest {name} JSON missing diagnostic")
+
+
+def secure_io_capability_gate(work: Path) -> None:
+    core = load_core()
+    output = work / "capability-output"
+    core.secure_io_capabilities = lambda: ("os.O_NOFOLLOW",)
+    result, stdout, stderr = invoke_example(core, output)
+    require(result != 0 and "EXAMPLE_SECURE_IO_UNAVAILABLE" in stderr, "missing secure-I/O capability did not fail closed")
+    require(not output.exists() and "校验结果：PASS" not in stdout and len(stdout + stderr) < 4000,
+            "capability failure mutated output or was unbounded")
+
+
+def symlink_exchange_gate(work: Path) -> None:
+    for exchange in ("root", "media"):
+        core = load_core()
+        output = work / f"exchange-{exchange}"
+        outside = work / f"outside-{exchange}"
+        outside.mkdir()
+        (outside / "sentinel.txt").write_bytes(f"outside-{exchange}".encode())
+        before = tree_snapshot(outside)
+        held = work / f"held-{exchange}"
+
+        def hook(root: Path, *, exchange: str = exchange) -> None:
+            if exchange == "root":
+                root.rename(held)
+                root.symlink_to(outside, target_is_directory=True)
+            else:
+                media = root / "media"
+                media.rename(held)
+                media.symlink_to(outside, target_is_directory=True)
+
+        core.EXAMPLE_PRE_PUBLISH_HOOK = hook
+        result, stdout, stderr = invoke_example(core, output)
+        require(result != 0 and "EXAMPLE_DESTINATION_CHANGED" in stderr, f"{exchange} exchange was not detected")
+        require("校验结果：PASS" not in stdout and len(stdout + stderr) < 4000, f"{exchange} exchange failure was unbounded")
+        require(tree_snapshot(outside) == before, f"{exchange} exchange modified outside target")
+        if exchange == "root":
+            output.unlink()
+            held.rename(output)
+            held_parent = output
+        else:
+            (output / "media").unlink()
+            held.rename(output / "media")
+            held_parent = output
+        require(not any(path.name.startswith(".") and ".tmp-" in path.name for path in held_parent.rglob("*")),
+                f"{exchange} exchange left temporary files")
+
+
+def gap_safety_command() -> int:
+    with tempfile.TemporaryDirectory(prefix="school-pptx-gap-safety-") as temporary:
+        work = Path(temporary)
+        manifest_failure_gate(work)
+        secure_io_capability_gate(work)
+        symlink_exchange_gate(work)
+    print("PASS school-pptx gap-safety: manifest failures, descriptor capabilities, root/media exchange")
+    return 0
+
+
 def collision_gate(work: Path) -> None:
     source = write_case(work, "collision.md", '''---
 title: collision
@@ -643,6 +758,8 @@ def build_parser() -> argparse.ArgumentParser:
     contract.set_defaults(func=contract_command)
     gap_parser = subparsers.add_parser("gap-parser")
     gap_parser.set_defaults(func=gap_parser_command)
+    gap_safety = subparsers.add_parser("gap-safety")
+    gap_safety.set_defaults(func=gap_safety_command)
     fixture_example = subparsers.add_parser("fixture-example")
     fixture_example.set_defaults(func=fixture_example_command)
     return parser
