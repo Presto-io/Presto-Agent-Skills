@@ -30,17 +30,17 @@
 
 - [ ] **PPTX-01**: The renderer generates a non-empty `.pptx` from the accepted Markdown fixture using the normalized template and controlled theme.
 - [ ] **PPTX-02**: Generated slide content is editable PowerPoint content where applicable; whole-slide screenshot rendering is forbidden.
-- [ ] **PPTX-03**: Text, code, timeline labels, gallery captions, and ordinary body content are emitted as editable text shapes.
-- [ ] **PPTX-04**: Tables are emitted as editable PPTX table objects or documented editable table primitives, with predictable column and row behavior.
-- [ ] **PPTX-05**: Images and icons are emitted as picture objects with contain-style placement that preserves aspect ratio and avoids default cropping.
+- [x] **PPTX-03**: Text, code, timeline labels, gallery captions, and ordinary body content are emitted as editable text shapes.
+- [x] **PPTX-04**: Tables are emitted as editable PPTX table objects or documented editable table primitives, with predictable column and row behavior.
+- [x] **PPTX-05**: Images and icons are emitted as picture objects with contain-style placement that preserves aspect ratio and avoids default cropping.
 - [ ] **PPTX-06**: Gallery layout places up to four images per physical slide and automatically creates additional physical slides when a logical gallery contains more than four images.
-- [ ] **PPTX-07**: Timeline layout is horizontal and automatically splits long timelines into additional physical slides instead of compressing items into unreadable slots.
+- [x] **PPTX-07**: Timeline layout is horizontal and automatically splits long timelines into additional physical slides instead of compressing items into unreadable slots.
 - [ ] **PPTX-08**: Long text, long tables, long timelines, and long galleries expand one Markdown logical slide into multiple PPTX physical slides according to template budgets.
-- [ ] **PPTX-09**: Table pagination repeats the table header and automatically adds a continuation marker to table continuation titles; other continuation slides do not add a visible "续" marker.
+- [x] **PPTX-09**: Table pagination repeats the table header and automatically adds a continuation marker to table continuation titles; other continuation slides do not add a visible "续" marker.
 - [ ] **PPTX-10**: Code blocks render as editable monospace text with stable background/spacing; syntax highlighting is not required in v1.17.
 - [ ] **PPTX-11**: Slides with Markdown speaker notes contain corresponding PPTX notes, and slides without notes do not gain accidental notes content.
 - [ ] **PPTX-12**: Slide transition behavior is optional: the renderer may preserve or generate a reliable 0.5s smooth transition, but no-transition output remains valid if transition support is unstable.
-- [ ] **PPTX-13**: Standard successful public output always contains exactly two same-stem artifacts, the reviewed Markdown source with its input bytes preserved and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
+- [x] **PPTX-13**: Standard successful public output always contains exactly two same-stem artifacts, the reviewed Markdown source with its input bytes preserved and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
 
 ### Verification
 
@@ -59,7 +59,7 @@
 
 - [ ] **SKILL-01**: The repository adds `skills/school-pptx/SKILL.md` with a concise canonical workflow, trigger wording, inputs, outputs, safety boundaries, and verification instructions.
 - [ ] **SKILL-02**: Long authoring rules, template normalization rules, renderer behavior, and verification details live in `skills/school-pptx/references/` rather than bloating the canonical entry.
-- [ ] **SKILL-03**: Script implementation is skill-local under `skills/school-pptx/scripts/` and does not call sibling skill scripts at runtime.
+- [x] **SKILL-03**: Script implementation is skill-local under `skills/school-pptx/scripts/` and does not call sibling skill scripts at runtime.
 - [ ] **SKILL-04**: Runtime adapter notes explicitly cover Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent, including support-file discovery, external command use, dependencies, and write boundaries.
 - [ ] **SKILL-05**: Repository discoverability is updated for `README.md`, `skills/README.md`, `docs/directory-spec.md` if needed, and `docs/compatibility-matrix.md`.
 - [ ] **SKILL-06**: The skill documents concise clarification questions for missing school/PPT metadata and missing media before final rendering.
@@ -115,17 +115,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MD-08 | Phase 42 | Complete |
 | PPTX-01 | Phase 43 | Pending |
 | PPTX-02 | Phase 43 | Pending |
-| PPTX-03 | Phase 43 | Pending |
-| PPTX-04 | Phase 43 | Pending |
-| PPTX-05 | Phase 43 | Pending |
+| PPTX-03 | Phase 43 | Complete |
+| PPTX-04 | Phase 43 | Complete |
+| PPTX-05 | Phase 43 | Complete |
 | PPTX-06 | Phase 43 | Pending |
-| PPTX-07 | Phase 43 | Pending |
+| PPTX-07 | Phase 43 | Complete |
 | PPTX-08 | Phase 43 | Pending |
-| PPTX-09 | Phase 43 | Pending |
+| PPTX-09 | Phase 43 | Complete |
 | PPTX-10 | Phase 43 | Pending |
 | PPTX-11 | Phase 43 | Pending |
 | PPTX-12 | Phase 43 | Pending |
-| PPTX-13 | Phase 43 | Pending |
+| PPTX-13 | Phase 43 | Complete |
 | VER-01 | Phase 42 | Complete |
 | VER-02 | Phase 41 | Complete |
 | VER-03 | Phase 43 | Pending |
@@ -138,7 +138,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VER-10 | Phase 44 | Pending |
 | SKILL-01 | Phase 44 | Pending |
 | SKILL-02 | Phase 44 | Pending |
-| SKILL-03 | Phase 43 | Pending |
+| SKILL-03 | Phase 43 | Complete |
 | SKILL-04 | Phase 44 | Pending |
 | SKILL-05 | Phase 44 | Pending |
 | SKILL-06 | Phase 44 | Pending |
