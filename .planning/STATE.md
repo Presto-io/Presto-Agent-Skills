@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: executing
-stopped_at: Phase 43 UI-SPEC approved
-last_updated: "2026-07-13T21:39:41.572Z"
-last_activity: 2026-07-13 -- Phase 43 planning complete
+stopped_at: Completed 43-01-PLAN.md
+last_updated: "2026-07-13T22:12:34.588Z"
+last_activity: 2026-07-13
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 8
-  completed_plans: 4
-  percent: 50
+  completed_plans: 5
+  percent: 63
 ---
 
 # State: Presto Agent Skills
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 43 — Editable PPTX Renderer and Pagination
+**Current focus:** Phase 43 — editable-pptx-renderer-and-pagination
 
 ## Current Position
 
-Phase: 43
-Plan: Not started
+Phase: 43 (editable-pptx-renderer-and-pagination) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-07-13 -- Phase 43 planning complete
+Last activity: 2026-07-13
 
-Progress: [████████████████████] 4/4 plans (100%)
+Progress: [██████░░░░] 63%
 
 ## Workflow Preferences
 
@@ -68,6 +68,9 @@ Phase order:
 - [Phase 42]: All ten YAML formatter values must resolve to string scalars before entering the logical model.
 - [Phase 42]: Fixed example output is published only through held no-follow directory descriptors; missing capabilities fail closed.
 - [Phase 42]: `fixture-example` owns an explicit five-gap registry plus the secure-I/O capability companion.
+- [Phase 43]: Dynamic table, gallery, and timeline objects derive every geometry and text budget from manifest subregions and presets.
+- [Phase 43]: Physical pagination decisions are frozen, JSON-projectable values that the later PPTX emitter cannot mutate.
+- [Phase 43]: CJK measurement uses deterministic grapheme-aware East Asian width fallback without CWD font discovery or PowerPoint autofit.
 
 ### Pending Todos
 
@@ -85,6 +88,7 @@ None yet.
 | 42-01 | 47 min | 3 | 4 |
 | Phase 42 P02 | 11min | 3 tasks | 8 files |
 | 42-03 | 22 min | 3 | 3 |
+| Phase 43 P01 | 6 min | 3 tasks | 6 files |
 
 ## Deferred Items
 
@@ -92,6 +96,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-07-13T20:51:22.746Z
-Stopped at: Phase 43 UI-SPEC approved
-Resume file: .planning/phases/43-editable-pptx-renderer-and-pagination/43-UI-SPEC.md
+Last session: 2026-07-13T22:12:34.583Z
+Stopped at: Completed 43-01-PLAN.md
+Resume file: None
