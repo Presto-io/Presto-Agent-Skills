@@ -61,6 +61,15 @@ Each slot includes:
 - `empty_slot`
 - `continuation`
 
+Phase 43 的动态可编辑对象仍由 manifest 拥有视觉事实：
+
+- `table.table.subregions.table_name` 定义表名文本框的 geometry、text budget 和 `empty_slot: preserve`；即使没有表名，也创建无提示文字的空编辑槽。
+- `gallery.gallery_items.item_presets` 分别定义 1、2、3、4 项时每张 card、picture 和 caption 的 geometry；每张图片和图注形成一个原生可编辑组。
+- `timeline.timeline_items.subregions` 定义 axis 与 node band，`node_template` 定义 marker、time、title 和 description 的节点本地子区域与文字预算。
+- `inline_styles.highlight.scheme_color` 只允许引用 PowerPoint theme scheme token；渲染器不得复制 RGB 值。
+
+这些动态文本框和组合对象不要求修改二进制模板中的占位符。它们必须从 manifest 子区域创建，不能在发射器中复制坐标、字号范围或颜色。空 caption 和空 table name 在放映时不显示提示文字，但仍保留为可选择、可编辑的对象。
+
 Geometry is stored in EMU units. `template-report` compares manifest geometry against PPTX XML with the manifest tolerance, currently `2000` EMU, so normal Office serialization noise does not fail validation.
 
 ## Template-Owned Guardrails
@@ -68,6 +77,8 @@ Geometry is stored in EMU units. `template-report` compares manifest geometry ag
 Markdown cannot override geometry, fonts, colors, decorative assets, footer behavior, or bounded text behavior. Markdown in later phases may provide semantic slide content only; it must not expose coordinates, font families, theme colors, decorative assets, footer placement, crop behavior, or arbitrary frame sizing.
 
 Text slots use fixed frame geometry with bounded elastic text behavior. A renderer may shrink text only within the slot's `font_size_min` and `font_size_max` range and must obey the slot's `overflow` policy.
+
+`closing` 必须通过 OOXML part path `ppt/slideLayouts/slideLayout7.xml` 解析实际结束页布局，不能使用 cover layout、布局显示名或数字索引猜测。
 
 ## Phase 41 Scope Fence
 
