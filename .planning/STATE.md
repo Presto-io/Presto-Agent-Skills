@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: executing
-stopped_at: Completed 43-02-PLAN.md
-last_updated: "2026-07-13T22:32:13.773Z"
+stopped_at: Completed 43-03-PLAN.md
+last_updated: "2026-07-13T22:50:51.674Z"
 last_activity: 2026-07-13
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
-  percent: 75
+  completed_plans: 7
+  percent: 88
 ---
 
 # State: Presto Agent Skills
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 Phase: 43 (editable-pptx-renderer-and-pagination) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-07-13
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 88%
 
 ## Workflow Preferences
 
@@ -72,6 +72,8 @@ Phase order:
 - [Phase 43]: Physical pagination decisions are frozen, JSON-projectable values that the later PPTX emitter cannot mutate.
 - [Phase 43]: CJK measurement uses deterministic grapheme-aware East Asian width fallback without CWD font discovery or PowerPoint autofit.
 - [Phase 43]: All semantic splitting and structured balancing complete before PPTX emission and produce immutable physical plans. — This keeps emitter behavior deterministic and prevents PPTX object creation from changing pagination.
+- [Phase 43]: PPTX emission consumes only the frozen PhysicalDeckPlan and never reruns pagination. — This keeps object generation deterministic and preserves the reviewed physical mapping.
+- [Phase 43]: Transition mode is explicitly none for v1.17 emission. — Unstable viewer-specific transitions remain out of scope and absence is a valid PPTX-12 outcome.
 
 ### Pending Todos
 
@@ -91,6 +93,7 @@ None yet.
 | 42-03 | 22 min | 3 | 3 |
 | Phase 43 P01 | 6 min | 3 tasks | 6 files |
 | Phase 43 P02 | 12 min | 3 tasks | 2 files |
+| Phase 43 P03 | 14 min | 3 tasks | 4 files |
 
 ## Deferred Items
 
@@ -98,6 +101,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-07-13T22:31:12.429Z
-Stopped at: Completed 43-02-PLAN.md
+Last session: 2026-07-13T22:50:51.668Z
+Stopped at: Completed 43-03-PLAN.md
 Resume file: None
