@@ -4,18 +4,25 @@
 from __future__ import annotations
 
 import json
+import math
+import re
 import unicodedata
-from dataclasses import FrozenInstanceError, dataclass
-from typing import Iterator
+from dataclasses import FrozenInstanceError, dataclass, replace
+from typing import Any, Iterator, Sequence
 
 from pptx_model import BlockFragment, PhysicalDeckPlan, PhysicalSlide, RenderDiagnostic
 
 
 MAX_TEXT_BYTES = 2 * 1024 * 1024
 MAX_LOGICAL_LINES = 2048
+MAX_BLOCKS = 2048
+MAX_PARTITION_STATES = 200_000
 EMU_PER_POINT = 12700
 NO_LINE_START = frozenset("，。！？；：、）》】」』〉…,.!?;:%)]}")
 NO_LINE_END = frozenset("《（【「『〈([{“‘")
+STRONG_BREAK = frozenset("。！？!?；;")
+WEAK_BREAK = frozenset("，、：:,")
+TRAILING_CLOSERS = frozenset('"\'”’）》】」』〉)]}')
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,6 +159,272 @@ class TextMeasure:
             font_size=selected_size,
             fallback_used=True,
         )
+
+
+def _slot(layout: dict[str, Any], slot_id: str) -> dict[str, Any]:
+    return next(slot for slot in layout.get("slots", ()) if slot.get("id") == slot_id)
+
+
+def _budget_capacity(slot: dict[str, Any], *, role: str | None = None) -> tuple[int, float, float, float]:
+    target = slot
+    if role:
+        target = slot.get("subregions", {}).get(role, slot)
+    budget = target.get("text_budget", slot.get("text_budget", {}))
+    height = target.get("geometry", slot["geometry"])["height"] / EMU_PER_POINT
+    return (
+        int(budget.get("max_lines", 1)),
+        float(height),
+        float(budget.get("font_size_min", 12)),
+        float(budget.get("font_size_max", 18)),
+    )
+
+
+def split_semantic_text(text: str, max_clusters: int) -> tuple[str, ...]:
+    """Split at sentence, weak punctuation, then grapheme boundaries."""
+    if max_clusters < 1:
+        raise ValueError("max_clusters must be positive")
+    clusters = [cluster for cluster, _ in grapheme_clusters(text)]
+    if len(clusters) <= max_clusters:
+        return (text,)
+    result: list[str] = []
+    start = 0
+    while start < len(clusters):
+        limit = min(len(clusters), start + max_clusters)
+        if limit == len(clusters):
+            end = limit
+        else:
+            strong = [i + 1 for i in range(start, limit) if clusters[i][-1] in STRONG_BREAK]
+            weak = [i + 1 for i in range(start, limit) if clusters[i][-1] in WEAK_BREAK]
+            end = (strong or weak or [limit])[-1]
+            while end < len(clusters) and clusters[end][0] in TRAILING_CLOSERS:
+                end += 1
+        result.append("".join(clusters[start:end]))
+        start = end
+    return tuple(result)
+
+
+def _fragment_height(fragment: BlockFragment, measure: TextMeasure, slot: dict[str, Any]) -> float:
+    budget = slot["text_budget"]
+    width = slot["geometry"]["width"]
+    font = float(budget["font_size_min"])
+    if fragment.kind == "list":
+        text = "\n".join(fragment.items)
+        kind = "list"
+    else:
+        text = fragment.text or ""
+        kind = "code" if fragment.kind == "code" else "paragraph"
+    return measure.measure(
+        text,
+        width_emu=width,
+        font_size=font,
+        font_size_min=font,
+        font_size_max=float(budget["font_size_max"]),
+        kind=kind,
+    ).height_points
+
+
+def _text_fragments(
+    block: dict[str, Any], logical_index: int, block_index: int, slot: dict[str, Any], measure: TextMeasure
+) -> tuple[BlockFragment, ...]:
+    kind = block["kind"]
+    heading = block.get("heading")
+    budget = slot["text_budget"]
+    max_lines = max(1, int(budget["max_lines"]))
+    max_chars = max(1, int(budget["max_chars"]))
+    # Character cap is only a deterministic splitter bound; height is the final fit oracle.
+    cluster_cap = max(1, max_chars // max(1, max_lines) * max_lines)
+    base = dict(
+        logical_index=logical_index,
+        block_index=block_index,
+        source_line=int(block.get("source_line", 1)),
+        heading=heading,
+    )
+    if kind == "paragraph":
+        parts = split_semantic_text(str(block.get("text", "")), cluster_cap)
+        return tuple(BlockFragment(kind=kind, fragment_index=i, text=part, **base) for i, part in enumerate(parts))
+    if kind == "list":
+        groups: list[tuple[str, ...]] = []
+        current: list[str] = []
+        used = 0
+        for item in block.get("items", ()):
+            item_clusters = len(list(grapheme_clusters(item)))
+            if item_clusters > cluster_cap:
+                if current:
+                    groups.append(tuple(current)); current, used = [], 0
+                groups.extend((part,) for part in split_semantic_text(item, cluster_cap))
+            elif current and used + item_clusters > cluster_cap:
+                groups.append(tuple(current)); current, used = [item], item_clusters
+            else:
+                current.append(item); used += item_clusters
+        if current or not groups:
+            groups.append(tuple(current))
+        return tuple(
+            BlockFragment(
+                kind=kind,
+                fragment_index=i,
+                items=items,
+                metadata=(("bullet_continuation", "true" if i and len(items) == 1 else "false"),),
+                **base,
+            )
+            for i, items in enumerate(groups)
+        )
+    raise ValueError(f"unsupported text block: {kind}")
+
+
+def _code_fragments(
+    block: dict[str, Any], logical_index: int, block_index: int, slot: dict[str, Any], measure: TextMeasure
+) -> tuple[tuple[BlockFragment, ...], tuple[RenderDiagnostic, ...]]:
+    budget = slot["text_budget"]
+    minimum = float(budget["font_size_min"])
+    maximum = float(budget["font_size_max"])
+    max_display = max(1, int(budget["max_lines"]))
+    lines = str(block.get("text", "")).split("\n")
+    groups: list[list[str]] = []
+    current: list[str] = []
+    used = 0
+    diagnostics: list[RenderDiagnostic] = []
+    for offset, line in enumerate(lines):
+        display = measure.measure(
+            line, width_emu=slot["geometry"]["width"], font_size=minimum,
+            font_size_min=minimum, font_size_max=maximum, kind="code"
+        ).display_lines
+        if display > max_display:
+            diagnostics.append(RenderDiagnostic(
+                code="CODE_LINE_OVERFLOW", message="code source line exceeds one physical page", severity="error",
+                source_line=int(block.get("source_line", 1)) + offset, logical_indices=(logical_index,),
+                fix="shorten the source line without changing paginator wrapping",
+            ))
+        if current and used + display > max_display:
+            groups.append(current); current, used = [], 0
+        current.append(line); used += display
+    if current:
+        groups.append(current)
+    fragments = tuple(BlockFragment(
+        kind="code", logical_index=logical_index, block_index=block_index, fragment_index=i,
+        source_line=int(block.get("source_line", 1)), heading=block.get("heading"), text="\n".join(group),
+        metadata=(("display_lines", str(sum(measure.measure(
+            line, width_emu=slot["geometry"]["width"], font_size=minimum,
+            font_size_min=minimum, font_size_max=maximum, kind="code"
+        ).display_lines for line in group))), ("language", str(block.get("language", "")))),
+    ) for i, group in enumerate(groups))
+    return fragments, tuple(diagnostics)
+
+
+def _simple_slide_fragments(
+    slide: dict[str, Any], logical_index: int, layout_manifest: dict[str, Any], measure: TextMeasure
+) -> tuple[list[tuple[BlockFragment, ...]], list[RenderDiagnostic]]:
+    layout = slide["layout"]
+    blocks = slide.get("blocks", ())
+    diagnostics: list[RenderDiagnostic] = []
+    if not blocks:
+        return [tuple()], diagnostics
+    slot_id = "code" if layout == "code" else "body"
+    if layout == "two-column":
+        slot_id = "left_body"
+    slot = _slot(layout_manifest, slot_id)
+    capacity = slot["geometry"]["height"] / EMU_PER_POINT
+    pages: list[list[BlockFragment]] = [[]]
+    used = 0.0
+    for block_index, block in enumerate(blocks):
+        if block["kind"] == "image":
+            fragment = BlockFragment(
+                kind="image", logical_index=logical_index, block_index=block_index, fragment_index=0,
+                source_line=int(block.get("source_line", 1)), heading=block.get("heading"),
+                metadata=(("authored_path", str(block.get("authored_path", ""))),
+                          ("caption", str(block.get("caption", ""))),
+                          ("caption_placeholder", "true")),
+            )
+            height = 0.0
+            fragments = (fragment,)
+        elif block["kind"] == "code":
+            fragments, found = _code_fragments(block, logical_index, block_index, slot, measure)
+            diagnostics.extend(found)
+            height = capacity + 1 if len(fragments) > 1 else _fragment_height(fragments[0], measure, slot)
+        else:
+            fragments = _text_fragments(block, logical_index, block_index, slot, measure)
+            unsplit = fragments[0]
+            unsplit_height = _fragment_height(unsplit, measure, slot)
+            # A complete block that fits an empty page is never split.
+            if len(fragments) > 1 and unsplit_height <= capacity:
+                fragments = (replace(unsplit, text=block.get("text"), items=tuple(block.get("items", ()))),)
+            height = unsplit_height
+        for fragment in fragments:
+            fragment_height = min(capacity, _fragment_height(fragment, measure, slot)) if fragment.kind != "image" else height
+            if pages[-1] and used + fragment_height > capacity:
+                pages.append([]); used = 0.0
+            pages[-1].append(fragment); used += fragment_height
+            if fragment_height >= capacity and fragment is not fragments[-1]:
+                pages.append([]); used = 0.0
+    return [tuple(page) for page in pages if page or not pages[0]], diagnostics
+
+
+def _image_text_fragments(
+    slide: dict[str, Any], logical_index: int, layout_manifest: dict[str, Any], measure: TextMeasure
+) -> tuple[list[tuple[BlockFragment, ...]], list[RenderDiagnostic]]:
+    body_blocks = [block for block in slide.get("blocks", ()) if block.get("kind") != "image"]
+    images = [block for block in slide.get("blocks", ()) if block.get("kind") == "image"]
+    body_slide = {**slide, "blocks": body_blocks, "layout": "image-text"}
+    body_pages, diagnostics = _simple_slide_fragments(body_slide, logical_index, layout_manifest, measure)
+    result: list[tuple[BlockFragment, ...]] = []
+    for body_page in body_pages:
+        for image_index, image in enumerate(images):
+            image_fragment = BlockFragment(
+                kind="image", logical_index=logical_index, block_index=len(body_blocks) + image_index,
+                fragment_index=image_index, source_line=int(image.get("source_line", 1)),
+                heading=image.get("heading"), metadata=(
+                    ("authored_path", str(image.get("authored_path", ""))),
+                    ("caption", str(image.get("caption", ""))),
+                    ("caption_placeholder", "true"),
+                    ("cartesian_image_index", str(image_index)),
+                ),
+            )
+            result.append((*body_page, image_fragment))
+    return result or body_pages, diagnostics
+
+
+def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> PhysicalDeckPlan:
+    """Convert a canonical Phase 42 document into an immutable physical plan."""
+    logical_slides = document.get("logical_slides", ())
+    if sum(len(slide.get("blocks", ())) for slide in logical_slides) > MAX_BLOCKS:
+        diagnostic = RenderDiagnostic(
+            code="PAGINATION_RESOURCE_LIMIT", message="logical block count exceeds bounded pagination input",
+            severity="error", source_line=1, fix="split the Markdown document",
+        )
+        return PhysicalDeckPlan((), (diagnostic,), ())
+    measure = TextMeasure()
+    slides: list[PhysicalSlide] = []
+    diagnostics: list[RenderDiagnostic] = []
+    mapping: list[tuple[int, tuple[int, ...]]] = []
+    for logical_index, logical in enumerate(logical_slides):
+        layout = str(logical.get("layout", "title-content"))
+        layout_manifest = manifest["layouts"][layout]
+        if layout == "image-text":
+            page_fragments, found = _image_text_fragments(logical, logical_index, layout_manifest, measure)
+        elif layout in {"table", "timeline", "gallery", "contents"}:
+            # Structured planners replace this conservative one-page representation below.
+            page_fragments, found = [tuple()], []
+        else:
+            page_fragments, found = _simple_slide_fragments(logical, logical_index, layout_manifest, measure)
+        diagnostics.extend(found)
+        physical_indices: list[int] = []
+        notes = logical.get("notes")
+        notes_intent = notes.get("markdown") if isinstance(notes, dict) else None
+        for fragment_index, fragments in enumerate(page_fragments):
+            physical_index = len(slides)
+            physical_indices.append(physical_index)
+            slides.append(PhysicalSlide(
+                logical_index=logical_index,
+                physical_index=physical_index,
+                layout=layout,
+                title="目录" if layout == "contents" else str(logical.get("title") or document.get("document_title") or ""),
+                fragment_index=fragment_index,
+                source_line=int(logical.get("source_line", 1)),
+                fragments=fragments,
+                notes_intent=notes_intent,
+                affected_pages=(physical_index,),
+            ))
+        mapping.append((logical_index, tuple(physical_indices)))
+    return PhysicalDeckPlan(tuple(slides), tuple(diagnostics), tuple(mapping))
 
 
 def run_contract_model_self_check() -> dict[str, object]:

@@ -16,6 +16,7 @@ from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile
 
 import pptx_paginate
 import template_report
+from markdown_contract import load_manifest, parse_document
 
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -227,25 +228,83 @@ GATES = {
 }
 
 
+def _minimal_document(slides: list[dict[str, object]]) -> dict[str, object]:
+    return {
+        "document_title": "测试文稿",
+        "logical_slides": slides,
+        "implicit_slides": [{"layout": "closing", "position": "end_of_deck", "fixed_template_page": True}],
+        "contents_entries": [],
+    }
+
+
+def pagination_text_code_gate(workdir: Path) -> dict[str, object]:
+    del workdir
+    manifest = load_manifest(SKILL_DIR)
+    sentence = "第一句完整结束。第二句仍然很长！第三句结束？"
+    sentence_parts = pptx_paginate.split_semantic_text(sentence, 12)
+    require("".join(sentence_parts) == sentence and sentence_parts[0].endswith("。"), "D-02 sentence split")
+    weak = "前半部分，后半部分仍然很长"
+    weak_parts = pptx_paginate.split_semantic_text(weak, 6)
+    require("".join(weak_parts) == weak and weak_parts[0].endswith("，"), "D-02 weak punctuation split")
+    unicode_text = "A\u0301👩\u200d🏭️B"
+    unicode_parts = pptx_paginate.split_semantic_text(unicode_text, 1)
+    require("".join(unicode_parts) == unicode_text and unicode_parts[0] == "A\u0301", "D-02 grapheme split")
+
+    long_code_line = "x = '" + "中" * 2000 + "'"
+    code_text = "line_1\n" + "\n".join(f"line_{index}" for index in range(2, 28)) + "\n" + long_code_line
+    document = _minimal_document([
+        {"layout": "title-content", "title": "正文", "source_line": 1, "notes": None, "blocks": [
+            {"kind": "paragraph", "source_line": 2, "heading": "同一标题", "text": "短块完整保留。"},
+            {"kind": "paragraph", "source_line": 3, "heading": "同一标题", "text": "这是一个很长的句子。" * 80},
+        ]},
+        {"layout": "code", "title": "代码", "source_line": 10, "notes": None, "blocks": [
+            {"kind": "code", "source_line": 11, "heading": "源码", "language": "python", "text": code_text},
+        ]},
+    ])
+    first = pptx_paginate.build_deck_plan(document, manifest)
+    second = pptx_paginate.build_deck_plan(document, manifest)
+    require(first == second, "pagination determinism")
+    text_slides = [slide for slide in first.slides if slide.layout == "title-content"]
+    require(text_slides[0].fragments[0].text == "短块完整保留。", "D-01 complete block split")
+    require(all(slide.title == "正文" for slide in text_slides), "D-04 repeated title")
+    require(all("续" not in slide.title for slide in first.slides), "D-05 visible continuation marker")
+    headings = [fragment.heading for slide in text_slides for fragment in slide.fragments]
+    require(all(heading == "同一标题" for heading in headings), "D-04 block heading changed")
+    code_fragments = [fragment for slide in first.slides for fragment in slide.fragments if fragment.kind == "code"]
+    require("\n".join(fragment.text or "" for fragment in code_fragments) == code_text, "D-03 code round trip")
+    require(all(fragment.text is not None for fragment in code_fragments), "D-03 code fragment")
+    require(any(d.code == "CODE_LINE_OVERFLOW" for d in first.diagnostics), "CODE_LINE_OVERFLOW missing")
+    return {
+        "sentence_parts": len(sentence_parts), "weak_parts": len(weak_parts),
+        "unicode_parts": len(unicode_parts), "physical_slides": len(first.slides),
+        "code_fragments": len(code_fragments),
+    }
+
+
+GATES["pagination-text-code"] = pagination_text_code_gate
+
+
 def run_contract_model() -> dict[str, object]:
-    require(len(GATES) == len(set(GATES)) == 3, "gate registry must contain three unique gates")
+    names = [name for name in GATES if not name.startswith("pagination-")]
+    require(len(names) == len(set(names)) == 3, "gate registry must contain three unique contract gates")
     called: list[str] = []
     evidence: dict[str, object] = {}
     with tempfile.TemporaryDirectory(prefix="school-pptx-contract-model-") as temporary:
         root = Path(temporary)
-        for name, gate in GATES.items():
+        for name in names:
+            gate = GATES[name]
             gate_dir = root / name
             gate_dir.mkdir()
             evidence[name] = gate(gate_dir)
             called.append(name)
             print(f"PASS {name}")
-    require(called == list(GATES), "gate registry execution was skipped or reordered")
+    require(called == names, "gate registry execution was skipped or reordered")
     return evidence
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="verify_pptx_renderer.py")
-    parser.add_argument("gate", choices=["contract-model", *GATES])
+    parser.add_argument("gate", choices=["contract-model", "pagination", *GATES])
     return parser.parse_args(argv)
 
 
@@ -254,6 +313,14 @@ def main(argv: list[str]) -> int:
     try:
         if args.gate == "contract-model":
             evidence = run_contract_model()
+        elif args.gate == "pagination":
+            names = [name for name in GATES if name.startswith("pagination-")]
+            evidence = {}
+            with tempfile.TemporaryDirectory(prefix="school-pptx-pagination-") as temporary:
+                root = Path(temporary)
+                for name in names:
+                    evidence[name] = GATES[name](root)
+                    print(f"PASS {name}")
         else:
             with tempfile.TemporaryDirectory(prefix=f"school-pptx-{args.gate}-") as temporary:
                 evidence = {args.gate: GATES[args.gate](Path(temporary))}
