@@ -585,8 +585,137 @@ def editable_objects_gate(workdir: Path) -> dict[str, object]:
 GATES["editable-objects"] = editable_objects_gate
 
 
+def emit_structure_gate(workdir: Path) -> dict[str, object]:
+    try:
+        import pptx_emit
+    except ImportError as exc:
+        raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
+
+    fixture = SKILL_DIR / "fixtures" / "school-pptx-full.md"
+    manifest = load_manifest(SKILL_DIR)
+    document = parse_document(fixture, manifest)
+    require(not document["errors"], "canonical fixture parser errors")
+    plan = pptx_paginate.build_deck_plan(document, manifest)
+    require(plan.slides and plan.slides[-1].layout == "closing", "physical plan closing invalid")
+    output = workdir / "full-fixture.pptx"
+    evidence = pptx_emit.emit_deck(plan, manifest, TEMPLATE_PATH, output, media_root=fixture.parent)
+    emitter_source = (SCRIPTS_DIR / "pptx_emit.py").read_text(encoding="utf-8")
+    require("build_deck_plan" not in emitter_source and "pptx_paginate" not in emitter_source,
+            "emitter attempted to repaginate frozen plan")
+    require(evidence["physical_slides"] == len(plan.slides), "PPTX-01 emitted slide count evidence")
+    require(evidence["transition_mode"] == "none", "PPTX-12 transition mode")
+    validated = pptx_emit.validate_staged_package(output, expected_slides=len(plan.slides))
+    require(validated["slides"] == len(plan.slides), "staged validator slide count")
+
+    package_entries = safe_package_entries(output)
+    slide_xml = {
+        index: package_entries[f"ppt/slides/slide{index + 1}.xml"] for index in range(len(plan.slides))
+    }
+    all_slide_xml = b"\n".join(slide_xml.values())
+    require(b"\xe5\x88\x9d\xe8\xaf\x86\xe9\x9a\x94\xe7\xa6\xbb\xe5\xbc\x80\xe5\x85\xb3" not in all_slide_xml,
+            "template seed text leaked")
+    require(b"<p:transition" not in all_slide_xml, "PPTX-12 unexpected transition XML")
+
+    rel_namespace = {"r": "http://schemas.openxmlformats.org/package/2006/relationships"}
+    layout_relationship = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
+    notes_relationship = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide"
+    image_relationship = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+    notes_indices: list[int] = []
+    image_relationships = 0
+    for index, physical in enumerate(plan.slides, start=1):
+        rel_name = f"ppt/slides/_rels/slide{index}.xml.rels"
+        relationships = ET.fromstring(package_entries[rel_name]).findall("r:Relationship", rel_namespace)
+        layout_targets = [item.get("Target", "") for item in relationships if item.get("Type") == layout_relationship]
+        require(len(layout_targets) == 1, f"slide {index} layout relationship count")
+        expected_layout = manifest["layouts"][physical.layout]["pptx_layout"].split("/")[-1]
+        require(layout_targets[0].endswith(expected_layout), f"slide {index} layout part mismatch")
+        if any(item.get("Type") == notes_relationship for item in relationships):
+            notes_indices.append(index - 1)
+        image_relationships += sum(item.get("Type") == image_relationship for item in relationships)
+    expected_notes = [slide.physical_index for slide in plan.slides if slide.notes_intent is not None]
+    require(notes_indices == expected_notes, "PPTX-04 notes relationship mismatch")
+
+    table_slides = [slide for slide in plan.slides if slide.layout == "table"]
+    for physical in table_slides:
+        xml = slide_xml[physical.physical_index]
+        require(xml.count(b"<a:tbl>") == 1, "PPTX-04 native table per page")
+        require(b"school-pptx:table-name" in xml, "empty/non-empty table-name shape missing")
+        require(all(cell.encode("utf-8") in xml for cell in physical.fragments[0].rows[0]),
+                "table repeated header missing")
+    timeline_slides = [slide for slide in plan.slides if slide.layout == "timeline"]
+    for physical in timeline_slides:
+        xml = slide_xml[physical.physical_index]
+        require(xml.count(b"<p:grpSp>") == len(physical.fragments[0].rows), "timeline group count")
+        require(b"school-pptx:timeline-axis" in xml, "timeline axis missing")
+    gallery_slides = [slide for slide in plan.slides if slide.layout == "gallery"]
+    for physical in gallery_slides:
+        require(len(physical.fragments) <= 4, "gallery capacity")
+        xml = slide_xml[physical.physical_index]
+        require(xml.count(b"<p:grpSp>") == len(physical.fragments), "gallery group count")
+        require(xml.count(b"gallery-caption") == len(physical.fragments), "gallery caption count")
+    code_slides = [slide for slide in plan.slides if slide.layout == "code"]
+    for physical in code_slides:
+        expected = "\n".join(fragment.text or "" for fragment in physical.fragments)
+        reopened_text = "\n".join(
+            shape.text for shape in pptx_emit.require_dependencies()["pptx"].Presentation(output)
+            .slides[physical.physical_index].shapes if getattr(shape, "has_text_frame", False)
+        )
+        require(expected in reopened_text, "editable code round trip")
+
+    reopened = pptx_emit.require_dependencies()["pptx"].Presentation(output)
+    require(len(reopened.slides) == len(plan.slides), "PPTX-01 reopen slide count")
+    require(sum(slide.layout == "closing" for slide in plan.slides) == 1, "closing plan count")
+    last_relationships = ET.fromstring(
+        package_entries[f"ppt/slides/_rels/slide{len(plan.slides)}.xml.rels"]
+    ).findall("r:Relationship", rel_namespace)
+    require(any(item.get("Target", "").endswith("slideLayout7.xml") for item in last_relationships),
+            "closing did not use manifest part")
+    for slide in reopened.slides:
+        for shape in slide.shapes:
+            if getattr(shape, "shape_type", None) == 13:
+                require(not (shape.width == reopened.slide_width and shape.height == reopened.slide_height),
+                        "whole-slide screenshot shortcut detected")
+    require(image_relationships > 0, "native picture relationships missing")
+    require(all(b"<a:srcRect" not in xml or b"<a:srcRect/>" in xml or b'l="0"' in xml
+                for xml in slide_xml.values()),
+            "picture crop is not zero")
+
+    external = workdir / "external-relationship.pptx"
+    with ZipFile(output) as source, ZipFile(external, "w", ZIP_DEFLATED) as target:
+        for info in source.infolist():
+            payload = source.read(info)
+            if info.filename == "ppt/_rels/presentation.xml.rels":
+                root = ET.fromstring(payload)
+                relationship = root.findall("r:Relationship", rel_namespace)[0]
+                relationship.set("Target", "https://invalid.example/template")
+                relationship.set("TargetMode", "External")
+                payload = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+            target.writestr(info.filename, payload)
+    try:
+        pptx_emit.validate_staged_package(external)
+    except pptx_emit.PptxEmitError as exc:
+        require(exc.code == "PPTX_PACKAGE_INVALID" and "Traceback" not in str(exc),
+                "external relationship failure is not bounded")
+    else:
+        raise GateFailure("external relationship did not fail staged validation")
+    return {
+        "logical_slides": len(document["logical_slides"]),
+        "physical_slides": len(plan.slides),
+        "native_table_slides": len(table_slides),
+        "timeline_slides": len(timeline_slides),
+        "gallery_slides": len(gallery_slides),
+        "notes_slides": len(notes_indices),
+        "image_relationships": image_relationships,
+        "transition_mode": "none",
+        "package": validated,
+    }
+
+
+GATES["emit-structure"] = emit_structure_gate
+
+
 def run_contract_model() -> dict[str, object]:
-    names = [name for name in GATES if not name.startswith("pagination-")]
+    names = ["manifest_renderer_contract_gate", "model_determinism_gate", "measurement_gate"]
     require(len(names) == len(set(names)) == 3, "gate registry must contain three unique contract gates")
     called: list[str] = []
     evidence: dict[str, object] = {}

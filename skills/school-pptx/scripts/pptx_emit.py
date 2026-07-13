@@ -4,8 +4,11 @@
 from __future__ import annotations
 
 from importlib import import_module
-from pathlib import Path
+import posixpath
+from pathlib import Path, PurePosixPath
 from typing import Any, Callable
+from xml.etree import ElementTree as ET
+from zipfile import BadZipFile, ZipFile
 
 from pptx_model import PhysicalDeckPlan
 from pptx_objects import (
@@ -28,6 +31,14 @@ class PptxEmitError(RuntimeError):
         super().__init__(f"{code}: {message}")
         self.code = code
         self.message = message
+
+
+MAX_PACKAGE_ENTRIES = 512
+MAX_PACKAGE_ENTRY_BYTES = 16 * 1024 * 1024
+MAX_PACKAGE_TOTAL_BYTES = 96 * 1024 * 1024
+MAX_PACKAGE_RELATIONSHIPS = 4096
+FORBIDDEN_XML_MARKERS = (b"<!DOCTYPE", b"<!ENTITY")
+REL_NS = {"r": "http://schemas.openxmlformats.org/package/2006/relationships"}
 
 
 def require_dependencies(importer: Callable[[str], Any] = import_module) -> dict[str, Any]:
@@ -151,10 +162,11 @@ def emit_deck(
                     monospace=physical.layout == "code",
                 )
             image_fragment = next((fragment for fragment in physical.fragments if fragment.kind == "image"), None)
-            if image_fragment is not None and "media" in slots:
+            if image_fragment is not None and ("media" in slots or body_slot is not None):
                 metadata = dict(image_fragment.metadata)
+                media_geometry = slots["media"]["geometry"] if "media" in slots else body_slot["geometry"]
                 add_contain_picture(
-                    slide, _media_path(metadata.get("authored_path", ""), media_root), slots["media"]["geometry"],
+                    slide, _media_path(metadata.get("authored_path", ""), media_root), media_geometry,
                     name="school-pptx:image-text-picture",
                 )
         set_notes(slide, physical.notes_intent)
@@ -162,7 +174,18 @@ def emit_deck(
         presentation.save(str(output_path))
     except OSError as exc:
         raise PptxEmitError("PPTX_PACKAGE_INVALID", "无法保存 staged PPTX。") from exc
-    return {**evidence, "physical_slides": len(plan.slides), "output": str(output_path)}
+    try:
+        package = validate_staged_package(output_path, expected_slides=len(plan.slides))
+    except PptxEmitError:
+        output_path.unlink(missing_ok=True)
+        raise
+    return {
+        **evidence,
+        "physical_slides": len(plan.slides),
+        "output": str(output_path),
+        "transition_mode": "none",
+        "package": package,
+    }
 
 
 def _media_path(authored: str, media_root: Path | None) -> Path | None:
@@ -174,3 +197,83 @@ def _media_path(authored: str, media_root: Path | None) -> Path | None:
     if media_root is None:
         return None
     return (media_root / path).resolve(strict=False)
+
+
+def _relationship_source(name: str) -> str:
+    pure = PurePosixPath(name)
+    if pure.name == ".rels":
+        return ""
+    source_name = pure.name.removesuffix(".rels")
+    parent = pure.parent.parent
+    return str(parent / source_name)
+
+
+def validate_staged_package(path: Path, *, expected_slides: int | None = None) -> dict[str, int]:
+    """Apply bounded ZIP/XML/relationship checks before a staged file may be published."""
+    dependencies = require_dependencies()
+    try:
+        with ZipFile(path) as package:
+            infos = package.infolist()
+            if len(infos) > MAX_PACKAGE_ENTRIES:
+                raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX ZIP entry 数量超限。")
+            names = {info.filename for info in infos}
+            if len(names) != len(infos):
+                raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX ZIP 包含重复 entry。")
+            required = {"[Content_Types].xml", "ppt/presentation.xml", "ppt/_rels/presentation.xml.rels"}
+            if not required <= names:
+                raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX 缺少核心 content type 或 presentation part。")
+            total = 0
+            relationship_count = 0
+            slide_count = sum(
+                name.startswith("ppt/slides/slide") and name.endswith(".xml") and "/_rels/" not in name
+                for name in names
+            )
+            for info in infos:
+                pure = PurePosixPath(info.filename)
+                if pure.is_absolute() or ".." in pure.parts or info.file_size > MAX_PACKAGE_ENTRY_BYTES:
+                    raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX ZIP 路径或 entry 大小无效。")
+                total += info.file_size
+                if total > MAX_PACKAGE_TOTAL_BYTES:
+                    raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX 解压总大小超限。")
+                if not (info.filename.endswith(".xml") or info.filename.endswith(".rels")):
+                    continue
+                payload = package.read(info)
+                upper = payload.upper()
+                if any(marker in upper for marker in FORBIDDEN_XML_MARKERS):
+                    raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX XML 包含外部实体声明。")
+                try:
+                    root = ET.fromstring(payload)
+                except ET.ParseError as exc:
+                    raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX XML 无法安全解析。") from exc
+                if info.filename.endswith(".rels"):
+                    relationships = root.findall("r:Relationship", REL_NS)
+                    relationship_count += len(relationships)
+                    if relationship_count > MAX_PACKAGE_RELATIONSHIPS:
+                        raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX relationship 数量超限。")
+                    source = _relationship_source(info.filename)
+                    source_dir = posixpath.dirname(source)
+                    for relationship in relationships:
+                        if relationship.get("TargetMode") == "External":
+                            raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX 禁止 external relationship。")
+                        target = relationship.get("Target", "")
+                        if not target or target.startswith("/"):
+                            raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX relationship target 无效。")
+                        resolved = posixpath.normpath(posixpath.join(source_dir, target))
+                        if resolved == ".." or resolved.startswith("../") or resolved not in names:
+                            raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX relationship target 越界或缺失。")
+            if expected_slides is not None and slide_count != expected_slides:
+                raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX slide count 与冻结计划不一致。")
+    except (BadZipFile, OSError) as exc:
+        raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX ZIP 无法读取。") from exc
+    try:
+        reopened = dependencies["pptx"].Presentation(str(path))
+    except (OSError, ValueError, KeyError) as exc:
+        raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX 无法由 python-pptx 重开。") from exc
+    if expected_slides is not None and len(reopened.slides) != expected_slides:
+        raise PptxEmitError("PPTX_PACKAGE_INVALID", "重开后的 slide count 与冻结计划不一致。")
+    return {
+        "zip_entries": len(infos),
+        "uncompressed_bytes": total,
+        "relationships": relationship_count,
+        "slides": slide_count,
+    }
