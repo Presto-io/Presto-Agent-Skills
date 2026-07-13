@@ -77,7 +77,7 @@ Plans:
 - [x] 42-02-PLAN.md — Add the full fixture, skill-local media, deterministic `example` command, and coverage verification.
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 42-03-PLAN.md — Close the five reproduced contract and secure example-write gaps with task-local and aggregate regression gates.
+- [x] 42-03-PLAN.md — Close the five reproduced contract and secure example-write gaps with task-local and aggregate regression gates.
 **UI hint**: yes
 
 ### Phase 43: Editable PPTX Renderer and Pagination
@@ -167,11 +167,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 41 is complete and independently verified. Phase 42 completed its first two plans; independent verification found five contract and safety gaps, now covered by the planned Wave 3 gap-closure plan.
+Phase 41 is complete and independently verified. All three Phase 42 plans are implemented; the five reproduced contract and safety gaps are closed by task-local and aggregate gates, pending independent phase verification.
 
 ## Next Step
 
-Execute Phase 42 gap closure with `/gsd:execute-phase 42`.
+Verify Phase 42 gap closure before marking the phase complete.
 
 ---
 *Roadmap updated: 2026-07-13 for v1.17 school-pptx roadmap*
