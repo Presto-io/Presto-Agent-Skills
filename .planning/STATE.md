@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
-status: planning
-stopped_at: Phase 41 context gathered
-last_updated: "2026-07-13T04:08:00.717Z"
-last_activity: 2026-07-13 - Created v1.17 school-pptx roadmap and requirement traceability.
+status: executing
+stopped_at: Phase 41 complete
+last_updated: "2026-07-13T09:11:33Z"
+last_activity: 2026-07-13 - Completed Phase 41 controlled school-pptx template contract and template-report validation.
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 25
 ---
 
 # State: Presto Agent Skills
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-13 for v1.17 school-pptx)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 41 - Standard Template and Manifest
+**Current focus:** Phase 42 - Markdown Contract and Full Fixture
 
 ## Current Position
 
-Phase: 41 of 44 (Standard Template and Manifest)
+Phase: 42 of 44 (Markdown Contract and Full Fixture)
 Plan: TBD
 Status: Ready to plan
-Last activity: 2026-07-13 - Created v1.17 school-pptx roadmap and requirement traceability.
+Last activity: 2026-07-13 - Completed Phase 41 controlled school-pptx template contract and template-report validation.
 
-Progress: [----------] 0%
+Progress: [###-------] 25%
 
 ## Workflow Preferences
 
@@ -61,6 +61,7 @@ Phase order:
 - [v1.17]: Requirements coverage is limited to current v1.17 requirements only.
 - [v1.17]: Build order follows research: hand-normalized standard template, hand-authored Markdown fixture/contract, renderer, then verification/runtime/UAT gate.
 - [v1.17]: `school-pptx` is a new PPTX skill line, not a reopening of `school-presentation` HTML output.
+- [Phase 41]: `standard-school` is the first controlled PPTX theme and is backed by a skill-local `.pptx`, YAML manifest, and `template-report` evidence command.
 
 ### Pending Todos
 
@@ -68,7 +69,6 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 41 needs the real supplied `.potx` visual sample or accepted local evidence before template normalization can be completed.
 - Phase 43 may need implementation spikes for `python-pptx` notes, table objects, placeholder behavior, text fitting, and image contain placement.
 - Phase 44 requires manual visual UAT evidence in at least one compatible PPTX viewer before milestone acceptance.
 
@@ -82,6 +82,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-13T04:08:00.706Z
-Stopped at: Phase 41 context gathered
-Resume file: .planning/phases/41-standard-template-and-manifest/41-CONTEXT.md
+Last session: 2026-07-13T09:11:33Z
+Stopped at: Phase 41 complete
+Resume file: .planning/phases/41-standard-template-and-manifest/41-01-SUMMARY.md

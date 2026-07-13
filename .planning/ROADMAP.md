@@ -55,7 +55,7 @@
   5. User cannot override template-owned geometry, fonts, colors, decorative assets, footer behavior, or bounded text behavior from Markdown.
 **Plans**: 1 plan
 Plans:
-- [ ] 41-01-PLAN.md — Normalize the controlled school PPTX template, author the full manifest, and add template-report validation.
+- [x] 41-01-PLAN.md — Normalize the controlled school PPTX template, author the full manifest, and add template-report validation.
 **UI hint**: yes
 
 ### Phase 42: Markdown Contract and Full Fixture
@@ -104,7 +104,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 41. Standard Template and Manifest | v1.17 | 0/TBD | Not started | - |
+| 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 0/TBD | Not started | - |
 | 43. Editable PPTX Renderer and Pagination | v1.17 | 0/TBD | Not started | - |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
