@@ -281,7 +281,85 @@ def pagination_text_code_gate(workdir: Path) -> dict[str, object]:
     }
 
 
+def pagination_structured_gate(workdir: Path) -> dict[str, object]:
+    del workdir
+    manifest = load_manifest(SKILL_DIR)
+    rows = [[f"模块{index}", "说明" * (index % 4 + 3), "成果完整"] for index in range(1, 24)]
+    timeline_rows = [[f"第{index}月", f"节点{index}", "阶段说明" * 14] for index in range(1, 16)]
+    entries = [f"目录项目 {index} " + ("长标题" * (index % 3)) for index in range(1, 15)]
+    document = _minimal_document([
+        {"layout": "table", "title": "表格页", "source_line": 1, "notes": None, "blocks": [{
+            "kind": "table", "source_line": 2, "heading": "原表名", "table_title": "原表名",
+            "headers": ["模块", "说明", "成果"], "rows": rows,
+        }]},
+        {"layout": "table", "title": "无名表", "source_line": 30, "notes": None, "blocks": [{
+            "kind": "table", "source_line": 31, "heading": None, "table_title": None,
+            "headers": ["模块", "说明", "成果"], "rows": rows,
+        }]},
+        {"layout": "timeline", "title": "时间线", "source_line": 60, "notes": None, "blocks": [{
+            "kind": "timeline", "source_line": 61, "heading": None,
+            "headers": ["时间", "标题", "说明"], "rows": timeline_rows,
+        }]},
+        {"layout": "contents", "title": None, "source_line": 90, "notes": None, "blocks": []},
+    ])
+    document["contents_entries"] = entries
+    plan = pptx_paginate.build_deck_plan(document, manifest)
+    table_slides = [slide for slide in plan.slides if slide.logical_index == 0]
+    require(len(table_slides) > 1, "D-07 table did not paginate")
+    require(all(slide.fragments[0].rows[0] == ("模块", "说明", "成果") for slide in table_slides), "D-07 header")
+    require(sum(len(slide.fragments[0].rows) - 1 for slide in table_slides) == len(rows), "D-08 row loss")
+    names = [dict(slide.fragments[0].metadata)["table_name"] for slide in table_slides]
+    require(names[0] == "原表名" and all(name == "原表名（续）" for name in names[1:]), "D-06 table name")
+    unnamed = [slide for slide in plan.slides if slide.logical_index == 1]
+    require(all(dict(slide.fragments[0].metadata)["table_name"] == "" for slide in unnamed), "D-06 empty table name")
+
+    # Demonstrate that a larger size can remove a visible wrapped orphan.
+    measure = pptx_paginate.TextMeasure()
+    orphan_vector = None
+    for length in range(8, 160):
+        value = "测" * length
+        small = pptx_paginate._wrapped_cell(value, 900_000, 12.0, measure)[1]
+        large = pptx_paginate._wrapped_cell(value, 900_000, 18.0, measure)[1]
+        if small and not large:
+            orphan_vector = length
+            break
+    require(orphan_vector is not None, "D-08 larger-font orphan vector missing")
+
+    timeline = [slide for slide in plan.slides if slide.logical_index == 2]
+    counts = [len(slide.fragments[0].rows) for slide in timeline]
+    require(len(timeline) >= 3 and min(counts) >= 3 and max(counts) - min(counts) <= 1, "D-09 global timeline balance")
+    flattened = [row[1] for slide in timeline for row in slide.fragments[0].rows]
+    require(flattened == [row[1] for row in timeline_rows], "D-09 timeline order")
+    infeasible_document = _minimal_document([{
+        "layout": "timeline", "title": "不可行", "source_line": 1, "notes": None, "blocks": [{
+            "kind": "timeline", "source_line": 2, "heading": None,
+            "headers": ["时间", "标题", "说明"],
+            "rows": [[str(index), f"节点{index}", "极高说明" * 400] for index in range(5)],
+        }],
+    }])
+    infeasible = pptx_paginate.build_deck_plan(infeasible_document, manifest)
+    require(any(item.code == "TIMELINE_BALANCE_INFEASIBLE" for item in infeasible.diagnostics),
+            "D-09 infeasible diagnostic")
+
+    contents = [slide for slide in plan.slides if slide.logical_index == 3]
+    content_counts = [len(slide.fragments[0].items) for slide in contents]
+    require(all(slide.title == "目录" for slide in contents), "D-10 contents title")
+    require(max(content_counts) - min(content_counts) <= 1, "D-10 contents count balance")
+    require([item for slide in contents for item in slide.fragments[0].items] == entries, "D-10 contents order")
+    try:
+        pptx_paginate.ordered_contiguous_partition([1.0] * 300, 10.0)
+    except ValueError as exc:
+        require(str(exc) == "partition state budget exceeded", "bounded partition diagnostic")
+    else:
+        raise GateFailure("partition resource limit missing")
+    return {
+        "table_pages": len(table_slides), "table_font": dict(table_slides[0].selected_font_sizes)["table"],
+        "orphan_vector": orphan_vector, "timeline_counts": counts, "contents_counts": content_counts,
+    }
+
+
 GATES["pagination-text-code"] = pagination_text_code_gate
+GATES["pagination-structured"] = pagination_structured_gate
 
 
 def run_contract_model() -> dict[str, object]:
