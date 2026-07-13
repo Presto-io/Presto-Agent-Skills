@@ -24,6 +24,9 @@ ownership:
     - decorative assets
     - footer behavior
     - bounded text behavior
+inline_styles:
+  highlight:
+    scheme_color: accent6
 required_layouts:
   - cover
   - contents
@@ -263,6 +266,12 @@ layouts:
         text_budget: {max_chars: 420, max_lines: 12, font_size_min: 12, font_size_max: 18, overflow: paginate}
         empty_slot: fail
         continuation: repeat_header
+        subregions:
+          table_name:
+            purpose: Optional editable table name retained even when empty.
+            geometry: {x: 5183188, y: 987425, width: 6172200, height: 548000}
+            text_budget: {max_chars: 48, max_lines: 1, font_size_min: 13, font_size_max: 18, overflow: shrink}
+            empty_slot: preserve
   timeline:
     label: 时间线
     purpose: Horizontal timeline content with split behavior deferred to rendering.
@@ -293,6 +302,28 @@ layouts:
         text_budget: {max_chars: 240, max_lines: 6, font_size_min: 13, font_size_max: 18, overflow: paginate}
         empty_slot: preserve
         continuation: paginate
+        subregions:
+          axis:
+            purpose: Template-owned horizontal timeline axis.
+            geometry: {x: 6400000, y: 3830000, width: 4720000, height: 50000}
+          node_band:
+            purpose: Bounds used to distribute editable timeline node groups.
+            geometry: {x: 6172200, y: 2050000, width: 5181600, height: 3700000}
+            text_budget: {max_chars: 240, max_lines: 6, font_size_min: 13, font_size_max: 18, overflow: paginate}
+        node_template:
+          geometry: {x: 0, y: 0, width: 1200000, height: 3600000}
+          subregions:
+            marker:
+              geometry: {x: 500000, y: 1700000, width: 200000, height: 200000}
+            time:
+              geometry: {x: 50000, y: 1150000, width: 1100000, height: 450000}
+              text_budget: {max_chars: 18, max_lines: 1, font_size_min: 13, font_size_max: 18, overflow: shrink}
+            title:
+              geometry: {x: 50000, y: 1950000, width: 1100000, height: 550000}
+              text_budget: {max_chars: 28, max_lines: 2, font_size_min: 13, font_size_max: 18, overflow: shrink}
+            description:
+              geometry: {x: 50000, y: 2500000, width: 1100000, height: 1000000}
+              text_budget: {max_chars: 80, max_lines: 3, font_size_min: 11, font_size_max: 16, overflow: shrink}
   gallery:
     label: 图集
     purpose: Up to four media items with captions per physical slide in a later phase.
@@ -323,6 +354,41 @@ layouts:
         text_budget: {max_chars: 0, max_lines: 0, font_size_min: 0, font_size_max: 0, overflow: paginate}
         empty_slot: hide
         continuation: paginate
+        item_presets:
+          1:
+            - card: {x: 839788, y: 2505075, width: 5157787, height: 3684588}
+              picture: {x: 959788, y: 2625075, width: 4917787, height: 2850000}
+              caption: {x: 959788, y: 5575075, width: 4917787, height: 500000}
+          2:
+            - card: {x: 839788, y: 2505075, width: 2498893, height: 3684588}
+              picture: {x: 959788, y: 2625075, width: 2258893, height: 2850000}
+              caption: {x: 959788, y: 5575075, width: 2258893, height: 500000}
+            - card: {x: 3498682, y: 2505075, width: 2498893, height: 3684588}
+              picture: {x: 3618682, y: 2625075, width: 2258893, height: 2850000}
+              caption: {x: 3618682, y: 5575075, width: 2258893, height: 500000}
+          3:
+            - card: {x: 839788, y: 2505075, width: 2498893, height: 1762294}
+              picture: {x: 959788, y: 2625075, width: 2258893, height: 1050000}
+              caption: {x: 959788, y: 3775075, width: 2258893, height: 380000}
+            - card: {x: 3498682, y: 2505075, width: 2498893, height: 1762294}
+              picture: {x: 3618682, y: 2625075, width: 2258893, height: 1050000}
+              caption: {x: 3618682, y: 3775075, width: 2258893, height: 380000}
+            - card: {x: 839788, y: 4427369, width: 5157787, height: 1762294}
+              picture: {x: 959788, y: 4547369, width: 4917787, height: 1050000}
+              caption: {x: 959788, y: 5697369, width: 4917787, height: 380000}
+          4:
+            - card: {x: 839788, y: 2505075, width: 2498893, height: 1762294}
+              picture: {x: 959788, y: 2625075, width: 2258893, height: 1050000}
+              caption: {x: 959788, y: 3775075, width: 2258893, height: 380000}
+            - card: {x: 3498682, y: 2505075, width: 2498893, height: 1762294}
+              picture: {x: 3618682, y: 2625075, width: 2258893, height: 1050000}
+              caption: {x: 3618682, y: 3775075, width: 2258893, height: 380000}
+            - card: {x: 839788, y: 4427369, width: 2498893, height: 1762294}
+              picture: {x: 959788, y: 4547369, width: 2258893, height: 1050000}
+              caption: {x: 959788, y: 5697369, width: 2258893, height: 380000}
+            - card: {x: 3498682, y: 4427369, width: 2498893, height: 1762294}
+              picture: {x: 3618682, y: 4547369, width: 2258893, height: 1050000}
+              caption: {x: 3618682, y: 5697369, width: 2258893, height: 380000}
       - id: caption
         purpose: Gallery caption or short description.
         kind: text
@@ -334,7 +400,7 @@ layouts:
           idx: 1
         geometry: {x: 839788, y: 1681163, width: 5157787, height: 823912}
         text_budget: {max_chars: 80, max_lines: 2, font_size_min: 13, font_size_max: 18, overflow: shrink}
-        empty_slot: hide
+        empty_slot: preserve
         continuation: none
   code:
     label: 代码
@@ -370,7 +436,7 @@ layouts:
   closing:
     label: 结束页
     purpose: Fixed template-owned closing page automatically appended at the end of every deck.
-    pptx_layout: ppt/slideLayouts/slideLayout1.xml
+    pptx_layout: ppt/slideLayouts/slideLayout7.xml
     fixed_template_page: true
     default_insertion: end_of_deck
     markdown_controllable: false

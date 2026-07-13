@@ -27,6 +27,10 @@ TEXT_BUDGET_KEYS = ["max_chars", "max_lines", "font_size_min", "font_size_max", 
 ALLOWED_OVERFLOW = {"shrink", "paginate", "fail"}
 ALLOWED_EMPTY_SLOT = {"hide", "preserve", "fail"}
 ALLOWED_CONTINUATION = {"none", "paginate", "repeat_header"}
+ALLOWED_SCHEME_COLORS = {
+    "dk1", "lt1", "dk2", "lt2", "accent1", "accent2", "accent3",
+    "accent4", "accent5", "accent6", "hlink", "folHlink",
+}
 NS = {
     "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -99,11 +103,79 @@ def slot_error(layout_id: str, slot_id: str, message: str) -> str:
     return message.format(layout=layout_id, slot=slot_id)
 
 
+def valid_geometry(value: object) -> bool:
+    return (
+        isinstance(value, dict)
+        and set(value) == {"x", "y", "width", "height"}
+        and all(isinstance(value[key], int) and value[key] >= 0 for key in value)
+        and value["width"] > 0
+        and value["height"] > 0
+    )
+
+
+def contains(parent: dict, child: dict) -> bool:
+    return (
+        child["x"] >= parent["x"]
+        and child["y"] >= parent["y"]
+        and child["x"] + child["width"] <= parent["x"] + parent["width"]
+        and child["y"] + child["height"] <= parent["y"] + parent["height"]
+    )
+
+
+def overlaps(first: dict, second: dict) -> bool:
+    return not (
+        first["x"] + first["width"] <= second["x"]
+        or second["x"] + second["width"] <= first["x"]
+        or first["y"] + first["height"] <= second["y"]
+        or second["y"] + second["height"] <= first["y"]
+    )
+
+
+def validate_text_budget(value: object) -> bool:
+    return (
+        isinstance(value, dict)
+        and all(key in value for key in TEXT_BUDGET_KEYS)
+        and all(isinstance(value[key], int) and value[key] >= 0 for key in TEXT_BUDGET_KEYS[:-1])
+        and value["font_size_min"] <= value["font_size_max"]
+        and value["overflow"] in ALLOWED_OVERFLOW
+    )
+
+
+def validate_subregions(
+    owner: str,
+    parent: dict,
+    regions: object,
+    failures: list[str],
+    *,
+    local_coordinates: bool = False,
+) -> list[dict[str, object]]:
+    evidence: list[dict[str, object]] = []
+    if not isinstance(regions, dict) or not regions:
+        failures.append(f'区域 "{owner}" 缺少 manifest 所有的子区域。')
+        return evidence
+    for name, region in regions.items():
+        if not isinstance(region, dict) or not valid_geometry(region.get("geometry")):
+            failures.append(f'子区域 "{owner}.{name}" 的 geometry 必须是非负 EMU 矩形。')
+            continue
+        geometry = region["geometry"]
+        container = parent
+        if local_coordinates:
+            container = {"x": 0, "y": 0, "width": parent["width"], "height": parent["height"]}
+        if not contains(container, geometry):
+            failures.append(f'子区域 "{owner}.{name}" 超出父区域。')
+        budget = region.get("text_budget")
+        if budget is not None and not validate_text_budget(budget):
+            failures.append(f'子区域 "{owner}.{name}" 的文本预算无效。')
+        evidence.append({"owner": owner, "name": str(name), "geometry": geometry, "text_budget": budget})
+    return evidence
+
+
 def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tolerance: int) -> dict[str, object]:
     failures: list[str] = []
     warnings: list[str] = []
     slots_evidence: list[dict[str, object]] = []
     layout_evidence: list[dict[str, object]] = []
+    renderer_regions: list[dict[str, object]] = []
 
     available = data.get("available_themes") or []
     theme_id = data.get("theme_id")
@@ -126,11 +198,19 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
 
     shape_index = load_shape_index(template_path)
 
+    highlight = data.get("inline_styles", {}).get("highlight", {}) if isinstance(data.get("inline_styles"), dict) else {}
+    scheme_color = highlight.get("scheme_color") if isinstance(highlight, dict) else None
+    if scheme_color not in ALLOWED_SCHEME_COLORS:
+        failures.append("inline_styles.highlight.scheme_color 必须引用受控 PowerPoint theme scheme token。")
+
     for layout_id in REQUIRED_LAYOUTS:
         layout = manifest_layouts.get(layout_id)
         if not isinstance(layout, dict):
             continue
         slot_list = layout.get("slots")
+        pptx_layout = layout.get("pptx_layout")
+        if not isinstance(pptx_layout, str) or pptx_layout not in shape_index:
+            failures.append(f'布局 "{layout_id}" 的 PPTX part path 不存在。')
         fixed_template_page = layout.get("fixed_template_page") is True
         if not isinstance(slot_list, list) or (not slot_list and not fixed_template_page):
             failures.append(f'模板缺少布局 "{layout_id}"。Phase 41 必须覆盖 11 个受控布局。')
@@ -164,8 +244,8 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
             budget = slot.get("text_budget")
             if not isinstance(budget, dict) or any(key not in budget for key in TEXT_BUDGET_KEYS):
                 failures.append(f'槽位 "{layout_id}.{slot_id}" 的文本预算不完整。必须包含 max_chars、max_lines、font_size_min、font_size_max 和 overflow。')
-            elif budget.get("overflow") not in ALLOWED_OVERFLOW:
-                failures.append(f'槽位 "{layout_id}.{slot_id}" 的 overflow 不受支持。')
+            elif not validate_text_budget(budget):
+                failures.append(f'槽位 "{layout_id}.{slot_id}" 的文本预算类型、范围或 overflow 不受支持。')
             if slot.get("empty_slot") not in ALLOWED_EMPTY_SLOT:
                 failures.append(f'槽位 "{layout_id}.{slot_id}" 的 empty_slot 不受支持。')
             if slot.get("continuation") not in ALLOWED_CONTINUATION:
@@ -183,6 +263,67 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
                     "continuation": slot.get("continuation"),
                 }
             )
+
+            if layout_id == "table" and slot_id == "table":
+                table_regions = validate_subregions(
+                    "table.table", expected_geometry or {}, slot.get("subregions"), failures
+                ) if valid_geometry(expected_geometry) else []
+                renderer_regions.extend(table_regions)
+                table_name = next((item for item in table_regions if item["name"] == "table_name"), None)
+                raw_table_name = slot.get("subregions", {}).get("table_name", {}) if isinstance(slot.get("subregions"), dict) else {}
+                if table_name is None or raw_table_name.get("empty_slot") != "preserve":
+                    failures.append("table.table_name 必须保留空编辑槽。")
+                if table_name is None or not validate_text_budget(raw_table_name.get("text_budget")):
+                    failures.append("table.table_name 必须拥有完整文字预算。")
+
+            if layout_id == "timeline" and slot_id == "timeline_items" and valid_geometry(expected_geometry):
+                timeline_regions = validate_subregions(
+                    "timeline.timeline_items", expected_geometry, slot.get("subregions"), failures
+                )
+                renderer_regions.extend(timeline_regions)
+                if {item["name"] for item in timeline_regions} != {"axis", "node_band"}:
+                    failures.append("timeline 必须完整定义 axis 与 node_band 子区域。")
+                node_template = slot.get("node_template")
+                if not isinstance(node_template, dict) or not valid_geometry(node_template.get("geometry")):
+                    failures.append("timeline.node_template 必须定义非负本地 geometry。")
+                else:
+                    node_regions = validate_subregions(
+                        "timeline.node_template",
+                        node_template["geometry"],
+                        node_template.get("subregions"),
+                        failures,
+                        local_coordinates=True,
+                    )
+                    renderer_regions.extend(node_regions)
+                    if {item["name"] for item in node_regions} != {"marker", "time", "title", "description"}:
+                        failures.append("timeline node 必须完整定义 marker/time/title/description。")
+
+            if layout_id == "gallery" and slot_id == "gallery_items" and valid_geometry(expected_geometry):
+                presets = slot.get("item_presets")
+                if not isinstance(presets, dict) or set(presets) != {1, 2, 3, 4}:
+                    failures.append("gallery.item_presets 必须完整定义 1/2/3/4 项。")
+                else:
+                    for count in range(1, 5):
+                        cards = presets[count]
+                        if not isinstance(cards, list) or len(cards) != count:
+                            failures.append(f"gallery {count} 项 preset 的卡片数量不正确。")
+                            continue
+                        card_geometries: list[dict] = []
+                        for index, card in enumerate(cards, start=1):
+                            if not isinstance(card, dict) or any(not valid_geometry(card.get(key)) for key in ("card", "picture", "caption")):
+                                failures.append(f"gallery {count} 项 preset 第 {index} 张卡片结构无效。")
+                                continue
+                            card_geometry = card["card"]
+                            if not contains(expected_geometry, card_geometry):
+                                failures.append(f"gallery {count} 项 preset 第 {index} 张卡片越界。")
+                            if not contains(card_geometry, card["picture"]) or not contains(card_geometry, card["caption"]):
+                                failures.append(f"gallery {count} 项 preset 第 {index} 张图片或图注越界。")
+                            card_geometries.append(card_geometry)
+                            renderer_regions.append({"owner": f"gallery.preset.{count}", "name": str(index), "geometry": card_geometry})
+                        for first in range(len(card_geometries)):
+                            for second in range(first + 1, len(card_geometries)):
+                                if overlaps(card_geometries[first], card_geometries[second]):
+                                    failures.append(f"gallery {count} 项 preset 卡片发生重叠。")
         layout_evidence.append(
             {
                 "id": layout_id,
@@ -199,6 +340,15 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
         "manifest_path": str(manifest_path),
         "layouts": layout_evidence,
         "slots": slots_evidence,
+        "renderer_contract": {
+            "closing_part_path": manifest_layouts.get("closing", {}).get("pptx_layout"),
+            "highlight_scheme_color": scheme_color,
+            "gallery_caption_empty_slot": next(
+                (item["empty_slot"] for item in slots_evidence if item["layout"] == "gallery" and item["slot"] == "caption"),
+                None,
+            ),
+            "regions": renderer_regions,
+        },
         "failures": failures,
         "warnings": warnings,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -240,6 +390,18 @@ def markdown_report(evidence: dict[str, object], out_json: Path | None) -> str:
         lines.append(
             f"| `{slot['layout']}` | `{slot['slot']}` | {budget.get('max_chars')} | {budget.get('max_lines')} | `{budget.get('overflow')}` |"
         )
+    contract = evidence["renderer_contract"]
+    lines.extend(
+        [
+            "",
+            "## Phase 43 渲染契约",
+            "",
+            f"- closing part path：`{contract['closing_part_path']}`",
+            f"- highlight theme scheme：`{contract['highlight_scheme_color']}`",
+            f"- gallery caption empty slot：`{contract['gallery_caption_empty_slot']}`",
+            f"- 动态子区域证据：{len(contract['regions'])} 项",
+        ]
+    )
     lines.extend(
         [
             "",
