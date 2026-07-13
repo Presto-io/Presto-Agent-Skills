@@ -8,6 +8,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   school-pptx.sh validate --input <deck.md> [--out-json <logical-document.json>]
+  school-pptx.sh example --out-dir <dir>
   school-pptx.sh template-report --theme <theme-id> --out-md <report.md> --out-json <report.json>
                                   [--manifest <manifest.yaml>] [--template <template.pptx>]
                                   [--geometry-tolerance-emu <integer>]
@@ -15,6 +16,7 @@ Usage:
 
 Commands:
   validate         Validate Markdown and optionally write the logical document JSON.
+  example          Generate the deterministic full fixture and four companion media files.
   template-report  Validate the controlled PPTX template and write Markdown/JSON evidence.
   info             Print the skill-local template and manifest paths.
 USAGE
@@ -32,8 +34,8 @@ main() {
   fi
 
   case "$command" in
-    validate)
-      "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/markdown_contract.py" "$SKILL_DIR" validate "$@"
+    validate|example)
+      "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/markdown_contract.py" "$SKILL_DIR" "$command" "$@"
       ;;
     template-report)
       "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/template_report.py" "$SKILL_DIR" "$@"
