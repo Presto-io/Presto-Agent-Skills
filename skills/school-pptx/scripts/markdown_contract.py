@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -30,6 +32,17 @@ TABLE_SEPARATOR_RE = re.compile(r"^:?-{3,}:?$")
 RAW_HTML_RE = re.compile(r"<!--|</?[A-Za-z][^>]*>")
 GENERIC_ATTR_RE = re.compile(r"\{[^}\n]*(?:#|\.|\b(?:id|style|x|y|width|height|crop|footer|font|color|background|coordinate|dimension)\s*=)[^}]*\}", re.I)
 STYLE_RE = re.compile(r"\b(?:style|coordinates?|dimensions?|crop|footer|font(?:-size)?|colou?r|background|width|height|x|y)\s*=", re.I)
+EXAMPLE_OWNED_PATHS = (
+    Path("school-pptx-full.md"),
+    Path("media/equipment-cell.png"),
+    Path("media/plc-line.png"),
+    Path("media/robot-arm.png"),
+    Path("media/curriculum-map.png"),
+)
+
+
+class ExampleError(RuntimeError):
+    pass
 
 
 @dataclass(frozen=True)
@@ -607,6 +620,98 @@ def validate_command(args: argparse.Namespace) -> int:
     return 1 if errors else 0
 
 
+def path_is_within(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def prepare_example_destinations(output_root: Path) -> list[tuple[Path, Path]]:
+    if output_root.is_symlink():
+        raise ExampleError("输出目录不能是符号链接。")
+    if output_root.exists() and not output_root.is_dir():
+        raise ExampleError("--out-dir 必须指向目录。")
+    try:
+        output_root.mkdir(parents=True, exist_ok=True)
+        root_resolved = output_root.resolve(strict=True)
+    except OSError as exc:
+        raise ExampleError("输出目录无法创建或不可写。") from exc
+
+    fixture_root = Path(__file__).resolve().parent.parent / "fixtures"
+    destinations: list[tuple[Path, Path]] = []
+    for relative_path in EXAMPLE_OWNED_PATHS:
+        source = fixture_root / relative_path
+        if not source.is_file():
+            raise ExampleError(f"缺少命令自有源文件 {relative_path.as_posix()}。")
+        destination = output_root / relative_path
+        current = output_root
+        for component in relative_path.parts[:-1]:
+            current = current / component
+            if current.is_symlink():
+                resolved = current.resolve(strict=False)
+                if not path_is_within(resolved, root_resolved):
+                    raise ExampleError(f"固定路径 {relative_path.as_posix()} 经过输出目录外的符号链接。")
+                if not resolved.is_dir():
+                    raise ExampleError(f"固定路径 {relative_path.as_posix()} 的父路径不是目录。")
+            elif current.exists() and not current.is_dir():
+                raise ExampleError(f"固定路径 {relative_path.as_posix()} 的父路径不是目录。")
+        if destination.is_symlink():
+            resolved = destination.resolve(strict=False)
+            if not path_is_within(resolved, root_resolved):
+                raise ExampleError(f"固定路径 {relative_path.as_posix()} 指向输出目录外。")
+            raise ExampleError(f"固定路径 {relative_path.as_posix()} 不能是符号链接。")
+        if destination.exists() and not destination.is_file():
+            raise ExampleError(f"固定文件路径 {relative_path.as_posix()} 已被目录占用。")
+        destinations.append((source, destination))
+    return destinations
+
+
+def replace_file_safely(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(prefix=f".{destination.name}.", dir=destination.parent, delete=False) as temporary:
+            temporary_path = Path(temporary.name)
+            temporary.write(source.read_bytes())
+            temporary.flush()
+            os.fsync(temporary.fileno())
+        os.replace(temporary_path, destination)
+    except OSError as exc:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+        raise ExampleError(f"无法写入固定文件 {destination.name}。") from exc
+
+
+def example_command(args: argparse.Namespace) -> int:
+    output_root = Path(os.path.abspath(args.out_dir))
+    try:
+        destinations = prepare_example_destinations(output_root)
+        for source, destination in destinations:
+            replace_file_safely(source, destination)
+        copied_markdown = output_root / EXAMPLE_OWNED_PATHS[0]
+        manifest = load_manifest(Path(args.skill_dir))
+        document = parse_document(copied_markdown, manifest)
+        if document["errors"]:
+            raise ExampleError("复制后的 Markdown 未通过 canonical validator。")
+    except (ExampleError, OSError) as exc:
+        print(f"示例生成失败：{exc}", file=sys.stderr)
+        print("未删除输出目录中的任何无关文件。", file=sys.stderr)
+        print("修复：检查输出目录权限、固定路径碰撞和符号链接后重试。", file=sys.stderr)
+        return 1
+
+    display_root = Path(args.out_dir)
+    owned = ", ".join(path.as_posix() for path in EXAMPLE_OWNED_PATHS)
+    print(f"示例已生成：{display_root / EXAMPLE_OWNED_PATHS[0]}")
+    print(f"配套媒体：{display_root / 'media'}/（4 个固定文件）")
+    print("覆盖范围：11/11 controlled layout semantics（10 explicit + 1 implicit）")
+    print("校验结果：PASS")
+    print(f"已覆盖命令自有文件：{owned}")
+    print("已保留输出目录中的其他文件。")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="markdown_contract.py", description="school-pptx Markdown contract commands")
     parser.add_argument("skill_dir", nargs="?", default=str(Path(__file__).resolve().parent.parent))
@@ -615,6 +720,9 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--input", required=True)
     validate.add_argument("--out-json")
     validate.set_defaults(func=validate_command)
+    example = subparsers.add_parser("example", help="copy the deterministic full fixture and companion media")
+    example.add_argument("--out-dir", required=True)
+    example.set_defaults(func=example_command)
     return parser
 
 
