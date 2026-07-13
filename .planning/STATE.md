@@ -1,18 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.16
-milestone_name: 调课单 Skill
-current_phase: null
-status: completed
-stopped_at: Milestone v1.16 archived
-last_updated: "2026-06-21T18:14:52Z"
-last_activity: 2026-06-21 — Milestone v1.16 completed and archived
+milestone: v1.17
+milestone_name: school-pptx
+status: planning
+last_updated: "2026-07-13T02:50:22.459Z"
+last_activity: 2026-07-13
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
@@ -237,10 +235,10 @@ Items acknowledged and deferred at milestone close on 2026-06-15:
 
 ## Current Position
 
-Phase: Milestone v1.16 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-06-21 — Milestone v1.16 completed and archived
+Status: Defining requirements
+Last activity: 2026-07-13 — Milestone v1.17 started
 
 ## Operator Next Steps
 
