@@ -156,11 +156,14 @@ Build `school-pptx`, a school-template PPTX generation skill that turns structur
 - [x] Implement skill-local Markdown-to-Typst and PDF generation without runtime dependency on other skill scripts. - v1.16 Phases 39-40
 - [x] Document the skill's missing-information questions so agents ask for required adjustment-form facts before rendering. - v1.16 Phase 40
 
+### Validated in v1.17 (Phases 41-42)
+
+- [x] Establish a standardized, machine-mappable PPTX template from the supplied human-friendly `.potx` visual sample before automating rendering. - v1.17 Phase 41
+- [x] Establish the accepted Markdown formatter and slide-block contract before treating script output as final. - v1.17 Phase 42
+
 ### Active
 
 - [ ] Create the `school-pptx` skill as a Markdown-first school PPTX workflow with a canonical `SKILL.md`, references, templates, scripts, and fixtures.
-- [ ] Establish a standardized, machine-mappable PPTX template from the supplied human-friendly `.potx` visual sample before automating rendering.
-- [ ] Establish the accepted Markdown formatter and slide-block contract before treating script output as final.
 - [ ] Implement Markdown-to-PPTX generation with editable objects, automatic logical-slide pagination, speaker notes, and strict template-slot behavior.
 - [ ] Verify the generated `.pptx` through repeatable artifact checks covering slide count, layout mapping, notes, media, tables, code text, pagination, and non-empty output.
 
@@ -308,8 +311,8 @@ The next milestone has not been defined yet. Start it with `/gsd:new-milestone`.
 | Treat old jiaoan skills as format baselines, not runtime dependencies | Package rendering must be standalone while proving migrated rules match or are equivalent to accepted old outputs | Good - shipped in v1.15 |
 | Start v1.16 as a new `调课单` skill milestone | User requested a new skill whose build order is hand-authored Typst, hand-authored Markdown, independent conversion script, then PDF workflow and clarification questions | Good - shipped in v1.16 |
 | Use one scheduling model for both modules | Calendar and hour facts must not be calculated independently by the two modules | Good - shipped in v1.15 |
-| Start v1.17 as `school-pptx` with template-first build order | User requested a school-template Markdown-to-PPTX skill and explicitly set the build order as standard template, standard Markdown, then script | Pending |
-| Treat `theme` as a controlled standard-template identifier | Future `.potx` templates may exist, but Markdown must not control styling or layout details directly | Pending |
+| Start v1.17 as `school-pptx` with template-first build order | User requested a school-template Markdown-to-PPTX skill and explicitly set the build order as standard template, standard Markdown, then script | Good - Phases 41-42 established the controlled template and accepted Markdown boundary |
+| Treat `theme` as a controlled standard-template identifier | Future `.potx` templates may exist, but Markdown must not control styling or layout details directly | Good - `standard-school` is manifest-controlled and arbitrary styling is rejected |
 | Keep `school-pptx` output editable instead of screenshot-based | The value of the skill is template-consistent PPTX that can still be edited in PowerPoint | Pending |
 
 ## Evolution

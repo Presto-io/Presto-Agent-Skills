@@ -68,7 +68,7 @@ Plans:
   3. User sees contents derived from `##` headings in document order while `#` is used only as a title fallback when YAML `title` is absent.
   4. User receives locatable validation errors for unsupported layout names, raw coordinate styling, arbitrary font/color overrides, unsupported raw HTML, and missing media.
   5. User can express speaker notes and normal Markdown images in the source without those notes appearing as visible slide canvas text.
-**Plans**: 2/3 plans complete
+**Plans**: 3/3 plans complete
 Plans:
 **Wave 1**
 - [x] 42-01-PLAN.md — Define the Markdown contract, logical model, manifest-driven validation, and `validate` CLI.
@@ -167,11 +167,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phase 41 is complete and independently verified. All three Phase 42 plans are implemented; the five reproduced contract and safety gaps are closed by task-local and aggregate gates, pending independent phase verification.
+Phases 41-42 are complete and independently verified. The controlled template, Markdown contract, full fixture, bounded diagnostics, and secure deterministic example workflow are ready for renderer planning.
 
 ## Next Step
 
-Verify Phase 42 gap closure before marking the phase complete.
+Plan Phase 43: Editable PPTX Renderer and Pagination.
 
 ---
-*Roadmap updated: 2026-07-13 for v1.17 school-pptx roadmap*
+*Roadmap updated: 2026-07-14 after Phase 42 verification*
