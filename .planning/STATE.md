@@ -2,9 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
-status: ready_to_plan
-last_updated: "2026-07-13T00:00:00+08:00"
-last_activity: 2026-07-13
+status: planning
+stopped_at: Phase 41 context gathered
+last_updated: "2026-07-13T04:08:00.717Z"
+last_activity: 2026-07-13 - Created v1.17 school-pptx roadmap and requirement traceability.
 progress:
   total_phases: 4
   completed_phases: 0
@@ -46,6 +47,7 @@ Progress: [----------] 0%
 v1.17 builds `school-pptx`, a Markdown-first skill that turns structured logical slides into editable, template-consistent `.pptx` output.
 
 Phase order:
+
 - Phase 41: Standard template and manifest
 - Phase 42: Markdown contract and full fixture
 - Phase 43: Editable PPTX renderer and pagination
@@ -80,6 +82,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-13
-Stopped at: v1.17 roadmap creation
-Resume file: None
+Last session: 2026-07-13T04:08:00.706Z
+Stopped at: Phase 41 context gathered
+Resume file: .planning/phases/41-standard-template-and-manifest/41-CONTEXT.md
