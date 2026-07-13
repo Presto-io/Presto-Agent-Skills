@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: executing
-stopped_at: Phase 42 UI-SPEC approved
-last_updated: "2026-07-13T12:14:00.828Z"
-last_activity: 2026-07-13 -- Phase 42 planning complete
+stopped_at: Completed 42-01-PLAN.md
+last_updated: "2026-07-13T15:50:30.028Z"
+last_activity: 2026-07-13 -- Phase 42 Plan 01 complete
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # State: Presto Agent Skills
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-13 for v1.17 school-pptx)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 42 - Markdown Contract and Full Fixture
+**Current focus:** Phase 42 — markdown-contract-and-full-fixture
 
 ## Current Position
 
-Phase: 42 of 44 (Markdown Contract and Full Fixture)
-Plan: TBD
+Phase: 42 (markdown-contract-and-full-fixture) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
-Last activity: 2026-07-13 -- Phase 42 planning complete
+Last activity: 2026-07-13 -- Phase 42 Plan 01 complete
 
-Progress: [###-------] 25%
+Progress: [███████░░░] 67%
 
 ## Workflow Preferences
 
@@ -62,6 +62,9 @@ Phase order:
 - [v1.17]: Build order follows research: hand-normalized standard template, hand-authored Markdown fixture/contract, renderer, then verification/runtime/UAT gate.
 - [v1.17]: `school-pptx` is a new PPTX skill line, not a reopening of `school-presentation` HTML output.
 - [Phase 41]: `standard-school` is the first controlled PPTX theme and is backed by a skill-local `.pptx`, YAML manifest, and `template-report` evidence command.
+- [Phase 42]: Public Markdown exposes 10 authorable layouts; the manifest-owned `closing` remains exactly one implicit final page.
+- [Phase 42]: Phase 43 consumes the source-located logical document model instead of reparsing Markdown.
+- [Phase 42]: Validation aggregates bounded diagnostics and remains non-zero when safe missing-media fallback metadata is retained.
 
 ### Pending Todos
 
@@ -71,6 +74,12 @@ None yet.
 
 - Phase 43 may need implementation spikes for `python-pptx` notes, table objects, placeholder behavior, text fitting, and image contain placement.
 - Phase 44 requires manual visual UAT evidence in at least one compatible PPTX viewer before milestone acceptance.
+
+## Performance Metrics
+
+| Phase-Plan | Duration | Tasks | Files |
+|------------|----------|-------|-------|
+| 42-01 | 47 min | 3 | 4 |
 
 ## Deferred Items
 
@@ -82,6 +91,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-13T11:26:06.752Z
-Stopped at: Phase 42 UI-SPEC approved
-Resume file: .planning/phases/42-markdown-contract-and-full-fixture/42-UI-SPEC.md
+Last session: 2026-07-13T15:50:30.014Z
+Stopped at: Completed 42-01-PLAN.md
+Resume file: .planning/phases/42-markdown-contract-and-full-fixture/42-02-PLAN.md
