@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-06-21 after v1.16 milestone archive
+**Last updated:** 2026-07-13 for v1.17 school-pptx roadmap
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -24,14 +24,88 @@
 - **Shipped: v1.14 teaching-design-package 单技能独立交付与 1+1+3 输出契约** - Phases 30-32, shipped 2026-06-15. Archives: `.planning/milestones/v1.14-ROADMAP.md`, `.planning/milestones/v1.14-REQUIREMENTS.md`, `.planning/milestones/v1.14-MILESTONE-AUDIT.md`
 - **Shipped: v1.15 teaching-design-package 模块化渲染与旧格式回归** - Phases 33-36, shipped 2026-06-15. Archives: `.planning/milestones/v1.15-ROADMAP.md`, `.planning/milestones/v1.15-REQUIREMENTS.md`, `.planning/milestones/v1.15-MILESTONE-AUDIT.md`
 - **Shipped: v1.16 调课单 Skill** - Phases 37-40, shipped 2026-06-21. Archives: `.planning/milestones/v1.16-ROADMAP.md`, `.planning/milestones/v1.16-REQUIREMENTS.md`, `.planning/milestones/v1.16-MILESTONE-AUDIT.md`
+- **Active: v1.17 school-pptx** - Phases 41-44, planning started 2026-07-13.
 
 ## Active Milestone
 
-None. The repository is ready for `/gsd:new-milestone`.
+### v1.17 school-pptx
+
+**Milestone Goal:** Build a `school-pptx` skill that converts structured Markdown logical slides into editable, layout-stable, template-consistent `.pptx` files.
+
+**Delivery order:** Normalize the standard template and manifest first, lock the Markdown fixture and contract second, implement editable PPTX rendering and pagination third, then close with verification, runtime notes, and manual UAT evidence.
 
 ## Phases
 
-No active phases. Completed phase detail is preserved below and in `.planning/milestones/`.
+- [ ] **Phase 41: Standard Template and Manifest** - Normalize the school visual sample into a skill-local PPTX template with a committed slot manifest and template validation command.
+- [ ] **Phase 42: Markdown Contract and Full Fixture** - Define the constrained YAML plus slide-block Markdown contract and produce a full fixture covering all supported layouts and edge cases.
+- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output.
+- [ ] **Phase 44: Verification Gate, Runtime Notes, and UAT** - Add repeatable structural verification, negative cases, six-runtime guidance, repository discoverability, and manual visual acceptance evidence.
+
+## Phase Details
+
+### Phase 41: Standard Template and Manifest
+**Goal**: The renderer has a controlled, skill-local school PPTX template contract before any Markdown or rendering automation depends on it.
+**Depends on**: Phase 40
+**Requirements**: TPL-01, TPL-02, TPL-03, TPL-04, TPL-05, TPL-06, TPL-07, VER-02
+**Success Criteria** (what must be TRUE):
+  1. User can inspect a normalized `school-pptx` `.pptx` template that is derived from the supplied `.potx` visual sample but used as the runtime template.
+  2. User can inspect a committed manifest or slot map that names the default theme, all 11 supported layouts, each slot identity, geometry, placeholder mapping, and text budget.
+  3. User receives a clear validation failure when an unknown theme is requested, including the available controlled theme identifier.
+  4. User can run a repeatable template validation/report command that checks template layouts, slots, placeholders, and manifest consistency.
+  5. User cannot override template-owned geometry, fonts, colors, decorative assets, footer behavior, or bounded text behavior from Markdown.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 42: Markdown Contract and Full Fixture
+**Goal**: Teachers and agents have one reviewable Markdown contract that expresses a complete logical deck without exposing PPTX coordinates or styling.
+**Depends on**: Phase 41
+**Requirements**: MD-01, MD-02, MD-03, MD-04, MD-05, MD-06, MD-07, MD-08, VER-01
+**Success Criteria** (what must be TRUE):
+  1. User can read the `school-pptx` Markdown contract and see the exact allowed YAML fields and explicit `::: slide {layout="..."}` syntax.
+  2. User can generate or inspect a full Markdown fixture that covers all 11 layouts plus notes, images/icons, tables, timeline, gallery, code, and overflow cases.
+  3. User sees contents derived from `##` headings in document order while `#` is used only as a title fallback when YAML `title` is absent.
+  4. User receives locatable validation errors for unsupported layout names, raw coordinate styling, arbitrary font/color overrides, unsupported raw HTML, and missing media.
+  5. User can express speaker notes and normal Markdown images in the source without those notes appearing as visible slide canvas text.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 43: Editable PPTX Renderer and Pagination
+**Goal**: Finalized Markdown renders to a non-empty editable PPTX whose physical slides follow the normalized template budgets.
+**Depends on**: Phase 42
+**Requirements**: PPTX-01, PPTX-02, PPTX-03, PPTX-04, PPTX-05, PPTX-06, PPTX-07, PPTX-08, PPTX-09, PPTX-10, PPTX-11, PPTX-12, PPTX-13, VER-03, SKILL-03
+**Success Criteria** (what must be TRUE):
+  1. User can run a repeatable render command that turns finalized Markdown into a non-empty `.pptx` and fails non-zero on invalid input.
+  2. User can open the generated deck and edit text, code, table content, timeline labels, gallery captions, images/icons, and speaker notes where PPTX supports those objects.
+  3. User sees long text, tables, timelines, and galleries split into additional physical slides according to template budgets instead of overflowing or shrinking into unreadable content.
+  4. User sees table continuation slides repeat the header and add a continuation marker to table continuation titles, while other continuation slides avoid visible "续" markers.
+  5. User receives only the requested public `.pptx` and any explicitly requested Markdown copy; manifests, logs, debug files, and temporary evidence stay hidden or in verification workdirs.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 44: Verification Gate, Runtime Notes, and UAT
+**Goal**: The `school-pptx` skill is discoverable, portable across required runtimes, and accepted only after repeatable structural verification plus manual visual evidence.
+**Depends on**: Phase 43
+**Requirements**: VER-04, VER-05, VER-06, VER-07, VER-08, VER-09, VER-10, SKILL-01, SKILL-02, SKILL-04, SKILL-05, SKILL-06
+**Success Criteria** (what must be TRUE):
+  1. User can run `verify --workdir <dir>` or an equivalent command that exercises example generation, template validation, rendering, and structural PPTX inspection.
+  2. User can review verification evidence for dependency readiness, slide count, layout mapping, logical-to-physical pagination, contents entries, notes, media relationships, tables, code text editability, and absence of whole-slide screenshots.
+  3. User sees negative cases fail non-zero for unknown theme, unknown layout, missing media, unsupported styling, unresolved review markers, and template/manifest mismatch.
+  4. User can read a concise canonical `SKILL.md` plus deeper `references/` docs that cover workflow, inputs, outputs, safety boundaries, clarification questions, and verification without bloating the entry file.
+  5. User can verify repository discoverability and six-runtime adapter notes for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent, including dependencies, support files, external commands, and write boundaries.
+**Plans**: TBD
+**UI hint**: yes
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 41 -> 42 -> 43 -> 44
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 41. Standard Template and Manifest | v1.17 | 0/TBD | Not started | - |
+| 42. Markdown Contract and Full Fixture | v1.17 | 0/TBD | Not started | - |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 0/TBD | Not started | - |
+| 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
 
@@ -82,11 +156,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Milestone v1.16 is shipped and archived. The accepted `调课单` Markdown fixture renders to deterministic Typst, compiles through the skill-local `--pdf` gate into a non-empty PDF, keeps successful public output clean, records missing-information questions, covers all six runtime adapter notes, and updates README/index/discoverability plus requirement traceability.
+Milestone v1.17 is ready to plan. Phase 41 starts the `school-pptx` build by normalizing the supplied school visual `.potx` sample into a controlled PPTX template contract and manifest.
 
 ## Next Step
 
-Start the next milestone with `/gsd:new-milestone` when ready.
+Start Phase 41 with `/gsd:discuss-phase 41` or `/gsd:plan-phase 41`.
 
 ---
-*Roadmap updated: 2026-06-21 after v1.16 milestone archive*
+*Roadmap updated: 2026-07-13 for v1.17 school-pptx roadmap*
