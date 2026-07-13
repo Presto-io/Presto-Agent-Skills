@@ -4,14 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import os
 import re
+import stat
 import sys
-import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import yaml
 
@@ -44,6 +45,15 @@ EXAMPLE_OWNED_PATHS = (
 
 class ExampleError(RuntimeError):
     pass
+
+
+class ManifestError(RuntimeError):
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
+EXAMPLE_PRE_PUBLISH_HOOK: Callable[[Path], None] | None = None
 
 
 @dataclass(frozen=True)
@@ -99,9 +109,16 @@ class DiagnosticCollector:
 
 def load_manifest(skill_dir: Path) -> dict[str, Any]:
     path = skill_dir / "templates" / "standard-school.manifest.yaml"
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise ManifestError("MANIFEST_UNREADABLE", "standard-school manifest 不存在或不可读取。") from exc
+    try:
+        data = yaml.safe_load(raw.decode("utf-8"))
+    except (UnicodeDecodeError, yaml.YAMLError) as exc:
+        raise ManifestError("MANIFEST_MALFORMED", "standard-school manifest 不是有效 UTF-8 YAML。") from exc
     if not isinstance(data, dict) or not isinstance(data.get("layouts"), dict):
-        raise ValueError("manifest root/layouts must be mappings")
+        raise ManifestError("MANIFEST_ROOT_INVALID", "standard-school manifest 根节点和 layouts 必须是映射。")
     return data
 
 
@@ -664,6 +681,10 @@ def write_json_safely(document: dict[str, Any], input_path: Path, output_path: P
     except OSError:
         collector.add("OUTPUT_UNWRITABLE", "无法写入逻辑 JSON。", fix="选择可写且不与输入冲突的文件路径。")
         return False
+    except (TypeError, ValueError):
+        collector.add("INTERNAL_SERIALIZATION", "school-pptx: 内部错误：逻辑 JSON 无法序列化。",
+                      fix="检查输入值类型并重新运行 validate。")
+        return False
 
 
 def print_diagnostic(item: dict[str, Any]) -> None:
@@ -675,13 +696,14 @@ def print_diagnostic(item: dict[str, Any]) -> None:
 
 def validate_command(args: argparse.Namespace) -> int:
     input_path = Path(args.input)
+    manifest: dict[str, Any] = {}
+    document = empty_document(input_path)
     try:
         manifest = load_manifest(Path(args.skill_dir))
         document = parse_document(input_path, manifest)
-    except Exception:
-        document = empty_document(input_path)
-        document["errors"] = [Diagnostic("INTERNAL_ERROR", "school-pptx: 内部错误：校验器无法完成。", SourceLocation(1),
-                                                 fix="检查 manifest 与输入文件后重试。", path=str(input_path)).to_dict()]
+    except ManifestError as exc:
+        document["errors"] = [Diagnostic(exc.code, str(exc), SourceLocation(1),
+                                                 fix="修复或恢复 canonical manifest 后重试。", path=str(input_path)).to_dict()]
     extra = DiagnosticCollector(input_path)
     output_written = False
     output_path = Path(args.out_json) if args.out_json else None
@@ -695,7 +717,7 @@ def validate_command(args: argparse.Namespace) -> int:
     warnings = sorted(document["warnings"], key=lambda d: (d["line"], d["column"], d["code"]))
     print("校验失败" if errors else "校验通过")
     print(f"输入：{input_path}")
-    print(f"主题：{document.get('metadata', {}).get('theme') or manifest.get('theme_id', '-')}")
+    print(f"主题：{document.get('metadata', {}).get('theme') or manifest.get('theme_id') or '-'}")
     print(f"错误：{len(errors)}；警告：{len(warnings)}")
     for item in errors:
         print_diagnostic(item)
@@ -708,82 +730,168 @@ def validate_command(args: argparse.Namespace) -> int:
     return 1 if errors else 0
 
 
-def path_is_within(path: Path, root: Path) -> bool:
-    try:
-        path.relative_to(root)
-        return True
-    except ValueError:
-        return False
+def secure_io_capabilities() -> tuple[str, ...]:
+    missing: list[str] = []
+    for constant in ("O_DIRECTORY", "O_NOFOLLOW"):
+        if not hasattr(os, constant):
+            missing.append(f"os.{constant}")
+    for function in (os.open, os.stat, os.mkdir, os.unlink):
+        if function not in os.supports_dir_fd:
+            missing.append(f"{function.__name__}(dir_fd)")
+    parameters = inspect.signature(os.replace).parameters
+    for parameter in ("src_dir_fd", "dst_dir_fd"):
+        if parameter not in parameters:
+            missing.append(f"os.replace({parameter})")
+    return tuple(missing)
 
 
-def prepare_example_destinations(output_root: Path) -> list[tuple[Path, Path]]:
-    if output_root.is_symlink():
-        raise ExampleError("输出目录不能是符号链接。")
-    if output_root.exists() and not output_root.is_dir():
-        raise ExampleError("--out-dir 必须指向目录。")
-    try:
-        output_root.mkdir(parents=True, exist_ok=True)
-        root_resolved = output_root.resolve(strict=True)
-    except OSError as exc:
-        raise ExampleError("输出目录无法创建或不可写。") from exc
+class SecureExampleDestination:
+    def __init__(self, output_root: Path) -> None:
+        self.output_root = output_root
+        self.root_fd: int | None = None
+        self.media_fd: int | None = None
+        self.identities: dict[Path, tuple[int, int]] = {}
+        self.temporary_files: list[tuple[int, str]] = []
 
-    fixture_root = Path(__file__).resolve().parent.parent / "fixtures"
-    destinations: list[tuple[Path, Path]] = []
-    for relative_path in EXAMPLE_OWNED_PATHS:
-        source = fixture_root / relative_path
+    def __enter__(self) -> SecureExampleDestination:
+        missing = secure_io_capabilities()
+        if missing:
+            raise ExampleError(f"EXAMPLE_SECURE_IO_UNAVAILABLE：缺少 {', '.join(missing)}。")
+        try:
+            self.output_root.mkdir(parents=True, exist_ok=True)
+            flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+            self.root_fd = os.open(self.output_root, flags)
+            self.identities[self.output_root] = self._identity(self.root_fd)
+            self._check_destinations(path for path in EXAMPLE_OWNED_PATHS if len(path.parts) == 1)
+            try:
+                os.mkdir("media", dir_fd=self.root_fd)
+            except FileExistsError:
+                pass
+            self.media_fd = os.open("media", flags, dir_fd=self.root_fd)
+            self.identities[self.output_root / "media"] = self._identity(self.media_fd)
+            self.assert_public_identities()
+            self._check_destinations(path for path in EXAMPLE_OWNED_PATHS if len(path.parts) > 1)
+            return self
+        except ExampleError:
+            self.close()
+            raise
+        except OSError as exc:
+            self.close()
+            raise ExampleError("输出目录或固定 media 父目录不安全、不可创建或不可写。") from exc
+
+    @staticmethod
+    def _identity(fd: int) -> tuple[int, int]:
+        result = os.fstat(fd)
+        return result.st_dev, result.st_ino
+
+    def _parent(self, relative_path: Path) -> tuple[int, str]:
+        if len(relative_path.parts) == 1:
+            assert self.root_fd is not None
+            return self.root_fd, relative_path.name
+        assert relative_path.parts[0] == "media" and self.media_fd is not None
+        return self.media_fd, relative_path.name
+
+    def _check_destinations(self, paths) -> None:
+        for relative_path in paths:
+            parent_fd, name = self._parent(relative_path)
+            try:
+                result = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                continue
+            if not stat.S_ISREG(result.st_mode):
+                raise ExampleError(f"固定文件路径 {relative_path.as_posix()} 不是普通文件。")
+
+    def assert_public_identities(self) -> None:
+        for path, identity in self.identities.items():
+            try:
+                result = os.stat(path, follow_symlinks=False)
+            except OSError as exc:
+                raise ExampleError("EXAMPLE_DESTINATION_CHANGED：公开输出目录已被替换。") from exc
+            if not stat.S_ISDIR(result.st_mode) or (result.st_dev, result.st_ino) != identity:
+                raise ExampleError("EXAMPLE_DESTINATION_CHANGED：公开输出目录或 media 父目录身份已改变。")
+
+    def prepare(self, source: Path, relative_path: Path) -> tuple[int, str, str]:
         if not source.is_file():
             raise ExampleError(f"缺少命令自有源文件 {relative_path.as_posix()}。")
-        destination = output_root / relative_path
-        current = output_root
-        for component in relative_path.parts[:-1]:
-            current = current / component
-            if current.is_symlink():
-                resolved = current.resolve(strict=False)
-                if not path_is_within(resolved, root_resolved):
-                    raise ExampleError(f"固定路径 {relative_path.as_posix()} 经过输出目录外的符号链接。")
-                if not resolved.is_dir():
-                    raise ExampleError(f"固定路径 {relative_path.as_posix()} 的父路径不是目录。")
-            elif current.exists() and not current.is_dir():
-                raise ExampleError(f"固定路径 {relative_path.as_posix()} 的父路径不是目录。")
-        if destination.is_symlink():
-            resolved = destination.resolve(strict=False)
-            if not path_is_within(resolved, root_resolved):
-                raise ExampleError(f"固定路径 {relative_path.as_posix()} 指向输出目录外。")
-            raise ExampleError(f"固定路径 {relative_path.as_posix()} 不能是符号链接。")
-        if destination.exists() and not destination.is_file():
-            raise ExampleError(f"固定文件路径 {relative_path.as_posix()} 已被目录占用。")
-        destinations.append((source, destination))
-    return destinations
+        parent_fd, destination_name = self._parent(relative_path)
+        temporary_name = ""
+        temporary_fd: int | None = None
+        try:
+            for index in range(100):
+                candidate = f".{destination_name}.tmp-{index}"
+                try:
+                    temporary_fd = os.open(candidate, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                                           0o600, dir_fd=parent_fd)
+                    temporary_name = candidate
+                    break
+                except FileExistsError:
+                    continue
+            if temporary_fd is None:
+                raise ExampleError(f"无法为固定文件 {relative_path.as_posix()} 创建临时文件。")
+            self.temporary_files.append((parent_fd, temporary_name))
+            data = source.read_bytes()
+            view = memoryview(data)
+            while view:
+                written = os.write(temporary_fd, view)
+                view = view[written:]
+            os.fsync(temporary_fd)
+            os.close(temporary_fd)
+            temporary_fd = None
+            return parent_fd, temporary_name, destination_name
+        except OSError as exc:
+            if temporary_fd is not None:
+                os.close(temporary_fd)
+            raise ExampleError(f"无法写入固定文件 {relative_path.as_posix()}。") from exc
 
+    def publish(self, prepared: tuple[int, str, str]) -> None:
+        parent_fd, temporary_name, destination_name = prepared
+        self.assert_public_identities()
+        os.replace(temporary_name, destination_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        self.temporary_files.remove((parent_fd, temporary_name))
 
-def replace_file_safely(source: Path, destination: Path) -> None:
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(prefix=f".{destination.name}.", dir=destination.parent, delete=False) as temporary:
-            temporary_path = Path(temporary.name)
-            temporary.write(source.read_bytes())
-            temporary.flush()
-            os.fsync(temporary.fileno())
-        os.replace(temporary_path, destination)
-    except OSError as exc:
-        if temporary_path is not None:
-            temporary_path.unlink(missing_ok=True)
-        raise ExampleError(f"无法写入固定文件 {destination.name}。") from exc
+    def close(self) -> None:
+        for parent_fd, temporary_name in self.temporary_files:
+            try:
+                os.unlink(temporary_name, dir_fd=parent_fd)
+            except OSError:
+                pass
+        self.temporary_files.clear()
+        for fd_name in ("media_fd", "root_fd"):
+            fd = getattr(self, fd_name)
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                setattr(self, fd_name, None)
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        self.close()
 
 
 def example_command(args: argparse.Namespace) -> int:
     output_root = Path(os.path.abspath(args.out_dir))
     try:
-        destinations = prepare_example_destinations(output_root)
-        for source, destination in destinations:
-            replace_file_safely(source, destination)
-        copied_markdown = output_root / EXAMPLE_OWNED_PATHS[0]
         manifest = load_manifest(Path(args.skill_dir))
-        document = parse_document(copied_markdown, manifest)
-        if document["errors"]:
-            raise ExampleError("复制后的 Markdown 未通过 canonical validator。")
-    except (ExampleError, OSError) as exc:
+        fixture_root = Path(__file__).resolve().parent.parent / "fixtures"
+        sources = [(fixture_root / relative_path, relative_path) for relative_path in EXAMPLE_OWNED_PATHS]
+        for source, relative_path in sources:
+            if not source.is_file():
+                raise ExampleError(f"缺少命令自有源文件 {relative_path.as_posix()}。")
+        with SecureExampleDestination(output_root) as destination:
+            prepared = [destination.prepare(source, relative_path) for source, relative_path in sources]
+            if EXAMPLE_PRE_PUBLISH_HOOK is not None:
+                EXAMPLE_PRE_PUBLISH_HOOK(output_root)
+            destination.assert_public_identities()
+            for item in prepared:
+                destination.publish(item)
+            destination.assert_public_identities()
+            copied_markdown = output_root / EXAMPLE_OWNED_PATHS[0]
+            document = parse_document(copied_markdown, manifest)
+            if document["errors"]:
+                raise ExampleError("复制后的 Markdown 未通过 canonical validator。")
+            destination.assert_public_identities()
+    except (ExampleError, ManifestError, OSError) as exc:
         print(f"示例生成失败：{exc}", file=sys.stderr)
         print("未删除输出目录中的任何无关文件。", file=sys.stderr)
         print("修复：检查输出目录权限、固定路径碰撞和符号链接后重试。", file=sys.stderr)
