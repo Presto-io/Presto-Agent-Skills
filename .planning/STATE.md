@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: executing
-stopped_at: Phase 42 verification found 5 gaps
-last_updated: "2026-07-13T17:50:40.920Z"
-last_activity: 2026-07-13 -- Phase 42 planning complete
+stopped_at: Completed 42-03 gap closure; awaiting Phase 42 verification
+last_updated: "2026-07-13T18:15:55Z"
+last_activity: 2026-07-14 -- Phase 42 gap-closure plan completed
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # State: Presto Agent Skills
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-13 for v1.17 school-pptx)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 42 — markdown-contract-and-full-fixture
+**Current focus:** Phase 42 — Markdown Contract and Full Fixture
 
 ## Current Position
 
-Phase: 42 (markdown-contract-and-full-fixture) — VERIFICATION GAPS
-Plan: 2 of 3
-Status: Ready to execute
-Last activity: 2026-07-13 -- Phase 42 planning complete
+Phase: 42 (Markdown Contract and Full Fixture) — AWAITING VERIFICATION
+Plan: 3 of 3
+Status: Gap-closure implementation complete; phase verification pending
+Last activity: 2026-07-14 -- Phase 42 gap-closure plan completed
 
-Progress: [███████░░░] 67% plans complete; gap-closure execution pending
+Progress: [██████████] 100% plans complete; phase verification pending
 
 ## Workflow Preferences
 
@@ -65,6 +65,9 @@ Phase order:
 - [Phase 42]: Public Markdown exposes 10 authorable layouts; the manifest-owned `closing` remains exactly one implicit final page.
 - [Phase 42]: Phase 43 consumes the source-located logical document model instead of reparsing Markdown.
 - [Phase 42]: Validation aggregates bounded diagnostics and remains non-zero when safe missing-media fallback metadata is retained.
+- [Phase 42]: All ten YAML formatter values must resolve to string scalars before entering the logical model.
+- [Phase 42]: Fixed example output is published only through held no-follow directory descriptors; missing capabilities fail closed.
+- [Phase 42]: `fixture-example` owns an explicit five-gap registry plus the secure-I/O capability companion.
 
 ### Pending Todos
 
@@ -72,7 +75,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 42 verification reproduced five gaps: YAML scalar/JSON safety, fenced-code directive opacity, Markdown table structure, manifest failure handling, and concurrent symlink write boundaries.
+- Phase 42 gap implementation is complete; independent phase verification remains required before marking the phase complete.
 - Phase 43 may need implementation spikes for `python-pptx` notes, table objects, placeholder behavior, text fitting, and image contain placement.
 - Phase 44 requires manual visual UAT evidence in at least one compatible PPTX viewer before milestone acceptance.
 
@@ -82,6 +85,7 @@ None yet.
 |------------|----------|-------|-------|
 | 42-01 | 47 min | 3 | 4 |
 | Phase 42 P02 | 11min | 3 tasks | 8 files |
+| 42-03 | 22 min | 3 | 3 |
 
 ## Deferred Items
 
@@ -93,6 +97,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-13T17:06:20Z
-Stopped at: Phase 42 gap-closure plan ready to execute
-Resume file: .planning/phases/42-markdown-contract-and-full-fixture/42-VERIFICATION.md
+Last session: 2026-07-13T18:15:55Z
+Stopped at: Completed 42-03 gap closure; awaiting Phase 42 verification
+Resume file: .planning/phases/42-markdown-contract-and-full-fixture/42-03-SUMMARY.md
