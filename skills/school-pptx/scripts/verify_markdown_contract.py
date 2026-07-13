@@ -89,11 +89,58 @@ theme: standard-school
 :::
 :::
 
-::: slide {{layout="gallery"}}
+::: slide {{layout="section"}}
 ## 第二章
+:::
+
+::: slide {{layout="two-column"}}
+## 双栏比较
+
+左栏内容。
+
+右栏内容。
+:::
+
+::: slide {{layout="image-text"}}
+## 图文说明
+
+稳定正文。
 
 ![相对图片](relative.png)
 ![绝对图片]({absolute})
+:::
+
+::: slide {{layout="table"}}
+## 数据表
+
+### 指标表
+
+| 指标 | 数值 |
+|---|---|
+| 完成率 | 100% |
+:::
+
+::: slide {{layout="timeline"}}
+## 建设进度
+
+| 时间 | 标题 | 说明 |
+|---|---|---|
+| 7月 | 启动 | 完成契约 |
+:::
+
+::: slide {{layout="gallery"}}
+## 成果图集
+
+![相对图片](relative.png)
+![绝对图片]({absolute})
+:::
+
+::: slide {{layout="code"}}
+## 示例代码
+
+```html
+<div style="color:red">fenced code</div>
+```
 :::
 ''')
     output = work / "positive.json"
@@ -101,8 +148,13 @@ theme: standard-school
     require(result.returncode == 0 and "校验通过" in result.stdout, "positive source did not pass")
     require(model["errors"] == [], "positive JSON contains errors")
     require(model["document_title"] == "文档回退标题", "title fallback failed")
-    require(model["contents_entries"] == ["第一章", "第二章"], "contents order failed")
+    require(model["contents_entries"] == ["第一章", "第二章", "双栏比较", "图文说明", "数据表", "建设进度", "成果图集", "示例代码"],
+            "contents order failed")
     require(len(model["implicit_slides"]) == 1 and model["implicit_slides"][0]["layout"] == "closing", "implicit closing failed")
+    require(set(model["coverage"]["explicit_layouts"]) == {"cover", "contents", "section", "title-content", "two-column",
+                                                               "image-text", "table", "timeline", "gallery", "code"},
+            "ten explicit layouts not covered")
+    require(model["coverage"]["summary"] == "10 个显式布局 + 1 个隐式 closing", "coverage summary failed")
     first = model["logical_slides"][2]
     require(first["notes"]["markdown"] == "独立演讲者备注。", "notes missing")
     require(all(block["kind"] != "notes" for block in first["blocks"]), "notes leaked into visible blocks")
