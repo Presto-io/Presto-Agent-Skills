@@ -53,7 +53,9 @@
   3. User receives a clear validation failure when an unknown theme is requested, including the available controlled theme identifier.
   4. User can run a repeatable template validation/report command that checks template layouts, slots, placeholders, and manifest consistency.
   5. User cannot override template-owned geometry, fonts, colors, decorative assets, footer behavior, or bounded text behavior from Markdown.
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 41-01-PLAN.md — Normalize the controlled school PPTX template, author the full manifest, and add template-report validation.
 **UI hint**: yes
 
 ### Phase 42: Markdown Contract and Full Fixture
