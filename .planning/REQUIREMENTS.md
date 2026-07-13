@@ -28,8 +28,8 @@
 
 ### PPTX Rendering
 
-- [ ] **PPTX-01**: The renderer generates a non-empty `.pptx` from the accepted Markdown fixture using the normalized template and controlled theme.
-- [ ] **PPTX-02**: Generated slide content is editable PowerPoint content where applicable; whole-slide screenshot rendering is forbidden.
+- [x] **PPTX-01**: The renderer generates a non-empty `.pptx` from the accepted Markdown fixture using the normalized template and controlled theme.
+- [x] **PPTX-02**: Generated slide content is editable PowerPoint content where applicable; whole-slide screenshot rendering is forbidden.
 - [x] **PPTX-03**: Text, code, timeline labels, gallery captions, and ordinary body content are emitted as editable text shapes.
 - [x] **PPTX-04**: Tables are emitted as editable PPTX table objects or documented editable table primitives, with predictable column and row behavior.
 - [x] **PPTX-05**: Images and icons are emitted as picture objects with contain-style placement that preserves aspect ratio and avoids default cropping.
@@ -39,7 +39,7 @@
 - [x] **PPTX-09**: Table pagination repeats the table header and automatically adds a continuation marker to table continuation titles; other continuation slides do not add a visible "续" marker.
 - [x] **PPTX-10**: Code blocks render as editable monospace text with stable background/spacing; syntax highlighting is not required in v1.17.
 - [x] **PPTX-11**: Slides with Markdown speaker notes contain corresponding PPTX notes, and slides without notes do not gain accidental notes content.
-- [ ] **PPTX-12**: Slide transition behavior is optional: the renderer may preserve or generate a reliable 0.5s smooth transition, but no-transition output remains valid if transition support is unstable.
+- [x] **PPTX-12**: Slide transition behavior is optional: the renderer may preserve or generate a reliable 0.5s smooth transition, but no-transition output remains valid if transition support is unstable.
 - [x] **PPTX-13**: Standard successful public output always contains exactly two same-stem artifacts, the reviewed Markdown source with its input bytes preserved and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
 
 ### Verification
@@ -113,8 +113,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MD-06 | Phase 42 | Complete |
 | MD-07 | Phase 42 | Complete |
 | MD-08 | Phase 42 | Complete |
-| PPTX-01 | Phase 43 | Pending |
-| PPTX-02 | Phase 43 | Pending |
+| PPTX-01 | Phase 43 | Complete |
+| PPTX-02 | Phase 43 | Complete |
 | PPTX-03 | Phase 43 | Complete |
 | PPTX-04 | Phase 43 | Complete |
 | PPTX-05 | Phase 43 | Complete |
@@ -124,7 +124,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PPTX-09 | Phase 43 | Complete |
 | PPTX-10 | Phase 43 | Complete |
 | PPTX-11 | Phase 43 | Complete |
-| PPTX-12 | Phase 43 | Pending |
+| PPTX-12 | Phase 43 | Complete |
 | PPTX-13 | Phase 43 | Complete |
 | VER-01 | Phase 42 | Complete |
 | VER-02 | Phase 41 | Complete |
