@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -14,6 +15,14 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 PUBLIC_CLI = SCRIPT_DIR / "school-pptx.sh"
+FIXTURE = SKILL_DIR / "fixtures" / "school-pptx-full.md"
+OWNED_PATHS = {
+    "school-pptx-full.md",
+    "media/equipment-cell.png",
+    "media/plc-line.png",
+    "media/robot-arm.png",
+    "media/curriculum-map.png",
+}
 
 
 def require(condition: bool, message: str) -> None:
@@ -56,6 +65,31 @@ def write_case(directory: Path, name: str, text: str) -> Path:
     path = directory / name
     path.write_text(text, encoding="utf-8")
     return path
+
+
+def file_hashes(root: Path) -> dict[str, str]:
+    return {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and not path.is_symlink()
+    }
+
+
+def tree_snapshot(root: Path) -> dict[str, tuple[str, str]]:
+    snapshot: dict[str, tuple[str, str]] = {}
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root).as_posix()
+        if path.is_symlink():
+            snapshot[relative] = ("symlink", os.readlink(path))
+        elif path.is_dir():
+            snapshot[relative] = ("directory", "")
+        elif path.is_file():
+            snapshot[relative] = ("file", hashlib.sha256(path.read_bytes()).hexdigest())
+    return snapshot
+
+
+def overflow_item(slide: dict, kind: str) -> dict:
+    return next(item for item in slide.get("overflow_evidence", []) if item.get("kind") == kind)
 
 
 def positive_gate(work: Path) -> None:
@@ -331,6 +365,143 @@ def regression_gate(work: Path) -> None:
     require("school-pptx.sh validate --input <deck.md> [--out-json <logical-document.json>]" in help_result.stdout, "literal validate usage missing")
 
 
+def full_fixture_gate(work: Path) -> None:
+    output = work / "example"
+    output.mkdir()
+    sentinel = output / "caller-owned.txt"
+    sentinel.write_text("caller-owned\n", encoding="utf-8")
+    sentinel_directory = output / "caller-owned-directory"
+    sentinel_directory.mkdir()
+    (sentinel_directory / "nested.txt").write_text("nested-caller-owned\n", encoding="utf-8")
+    initial_sentinels = tree_snapshot(output)
+
+    first = run("example", "--out-dir", str(output), expected=0)
+    require("11/11 controlled layout semantics（10 explicit + 1 implicit）" in first.stdout, "example coverage copy missing")
+    require("校验结果：PASS" in first.stdout and "已保留输出目录中的其他文件。" in first.stdout, "example success copy incomplete")
+    first_hashes = file_hashes(output)
+    second = run("example", "--out-dir", str(output), expected=0)
+    require(file_hashes(output) == first_hashes, "example output is not byte deterministic")
+    require(second.stdout == first.stdout, "example terminal summary is not deterministic")
+    require(set(first_hashes) == OWNED_PATHS | {"caller-owned.txt", "caller-owned-directory/nested.txt"}, "example output ownership changed")
+    after_sentinels = tree_snapshot(output)
+    for path, value in initial_sentinels.items():
+        require(after_sentinels.get(path) == value, f"caller-owned path changed: {path}")
+
+    logical_json = work / "full-logical-document.json"
+    result, model = validate(output / "school-pptx-full.md", logical_json)
+    require(result.returncode == 0 and model.get("errors") == [], "copied full fixture did not validate")
+    require(model.get("metadata", {}).get("theme") == "standard-school", "fixture theme changed")
+    require(set(model["coverage"]["explicit_layouts"]) == {"cover", "contents", "section", "title-content", "two-column", "image-text", "table", "timeline", "gallery", "code"}, "full fixture explicit coverage incomplete")
+    require(model["coverage"]["implicit_layouts"] == ["closing"], "full fixture implicit closing changed")
+    slides = model["logical_slides"]
+    require(model["contents_entries"] == [slide["title"] for slide in slides if slide["title"]], "full fixture contents order changed")
+    require(any(slide.get("notes") for slide in slides), "full fixture notes missing")
+    require(all(all(block.get("kind") != "notes" for block in slide["blocks"]) for slide in slides), "notes leaked into visible blocks")
+    media = [block for slide in slides for block in slide["blocks"] if block.get("kind") == "image"]
+    require(all(block["exists"] for block in media), "full fixture has missing media")
+    require({Path(block["authored_path"]).name for block in media} == {Path(path).name for path in OWNED_PATHS if path.startswith("media/")}, "full fixture media set changed")
+    require(any(block["caption"] for block in media) and any(block["caption"] == "" for block in media), "caption or empty-caption evidence missing")
+    require(any(overflow_item(slide, "long_text")["exceeds_budget"] for slide in slides if slide["layout"] == "title-content"), "long text evidence missing")
+    require(any(overflow_item(slide, "column_pairs")["pairs"][-1][1] is None for slide in slides if slide["layout"] == "two-column"), "odd two-column evidence missing")
+    require(any(len(overflow_item(slide, "stable_body_images")["image_indexes"]) > 1 for slide in slides if slide["layout"] == "image-text"), "multi-image evidence missing")
+    require(any(overflow_item(slide, "long_table")["exceeds_budget"] for slide in slides if slide["layout"] == "table"), "long table evidence missing")
+    require(any(overflow_item(slide, "long_timeline")["exceeds_budget"] for slide in slides if slide["layout"] == "timeline"), "long timeline evidence missing")
+    require(any(overflow_item(slide, "gallery_capacity")["exceeds_budget"] for slide in slides if slide["layout"] == "gallery"), "gallery overflow evidence missing")
+    require(any(overflow_item(slide, "long_code")["exceeds_budget"] for slide in slides if slide["layout"] == "code"), "long code evidence missing")
+    require(not any(path.name.endswith((".json", ".log")) or "manifest" in path.name or "debug" in path.name for path in output.rglob("*") if path.is_file()), "public example contains evidence artifact")
+
+
+def metadata_and_media_variants_gate(work: Path) -> None:
+    relative = work / "variant-relative.png"
+    absolute = work / "variant-absolute.png"
+    relative.write_bytes(b"relative")
+    absolute.write_bytes(b"absolute")
+    fallback = write_case(work, "fallback.md", f'''---
+theme: standard-school
+---
+# 回退标题
+::: slide {{layout="cover"}}
+:::
+::: slide {{layout="contents"}}
+:::
+::: slide {{layout="image-text"}}
+## 图文条目
+稳定正文。
+![相对]({relative.name})
+![绝对]({absolute})
+:::
+''')
+    result, model = validate(fallback, work / "fallback.json")
+    require(result.returncode == 0, "optional metadata/title fallback variant failed")
+    require(model["metadata"] == {"theme": "standard-school"}, "optional metadata placeholders invented")
+    require(model["document_title"] == "回退标题" and model["contents_entries"] == ["图文条目"], "# fallback or contents isolation failed")
+    media = [block for slide in model["logical_slides"] for block in slide["blocks"] if block["kind"] == "image"]
+    require(any(not block["absolute_authored"] and block["resolved_path"] == str(relative.resolve()) for block in media), "relative media variant failed")
+    require(any(block["absolute_authored"] and block["resolved_path"] == str(absolute.resolve()) for block in media), "absolute media variant failed")
+
+    yaml_title = write_case(work, "yaml-title.md", '''---
+title: YAML 标题
+theme: standard-school
+---
+# 不应覆盖 YAML
+::: slide {layout="cover"}
+:::
+''')
+    result, model = validate(yaml_title, work / "yaml-title.json")
+    require(result.returncode == 0 and model["document_title"] == "YAML 标题" and model["contents_entries"] == [], "YAML title precedence failed")
+
+
+def assert_example_failure(output: Path, *protected_roots: Path) -> None:
+    before = [tree_snapshot(root) for root in protected_roots]
+    result = run("example", "--out-dir", str(output))
+    require(result.returncode != 0, f"unsafe example output passed: {output}")
+    require("未删除输出目录中的任何无关文件。" in result.stderr, "bounded preservation failure copy missing")
+    require(len(result.stdout + result.stderr) < 4000, "example failure diagnostic is unbounded")
+    for root, snapshot in zip(protected_roots, before):
+        require(tree_snapshot(root) == snapshot, f"example failure changed protected tree: {root}")
+
+
+def example_safety_gate(work: Path) -> None:
+    for relative in sorted(OWNED_PATHS):
+        output = work / ("collision-" + relative.replace("/", "-"))
+        target = output / relative
+        target.mkdir(parents=True)
+        (target / "collision-sentinel.txt").write_text("keep\n", encoding="utf-8")
+        caller = output / "caller.txt"
+        caller.write_text("keep\n", encoding="utf-8")
+        assert_example_failure(output, output)
+
+    non_directory_parent = work / "non-directory-parent"
+    non_directory_parent.mkdir()
+    (non_directory_parent / "media").write_text("not-a-directory\n", encoding="utf-8")
+    (non_directory_parent / "caller.txt").write_text("keep\n", encoding="utf-8")
+    assert_example_failure(non_directory_parent, non_directory_parent)
+
+    outside_root = work / "outside-root"
+    outside_root.mkdir()
+    (outside_root / "outside.txt").write_text("outside\n", encoding="utf-8")
+    output_link = work / "output-link"
+    output_link.symlink_to(outside_root, target_is_directory=True)
+    assert_example_failure(output_link, outside_root)
+
+    destination_output = work / "destination-link"
+    (destination_output / "media").mkdir(parents=True)
+    outside_file = work / "outside-file.png"
+    outside_file.write_bytes(b"outside-target")
+    (destination_output / "media" / "equipment-cell.png").symlink_to(outside_file)
+    (destination_output / "caller.txt").write_text("keep\n", encoding="utf-8")
+    assert_example_failure(destination_output, destination_output, work)
+
+    parent_output = work / "parent-link"
+    parent_output.mkdir()
+    outside_media = work / "outside-media"
+    outside_media.mkdir()
+    (outside_media / "outside.txt").write_text("outside\n", encoding="utf-8")
+    (parent_output / "media").symlink_to(outside_media, target_is_directory=True)
+    (parent_output / "caller.txt").write_text("keep\n", encoding="utf-8")
+    assert_example_failure(parent_output, parent_output, outside_media)
+
+
 def contract_command() -> int:
     with tempfile.TemporaryDirectory(prefix="school-pptx-contract-") as temporary:
         work = Path(temporary)
@@ -344,11 +515,26 @@ def contract_command() -> int:
     return 0
 
 
+def fixture_example_command() -> int:
+    contract_command()
+    with tempfile.TemporaryDirectory(prefix="school-pptx-fixture-example-") as temporary:
+        work = Path(temporary)
+        full_fixture_gate(work)
+        metadata_and_media_variants_gate(work)
+        example_safety_gate(work)
+        regression_gate(work)
+    require(FIXTURE.is_file(), "canonical fixture missing")
+    print("PASS school-pptx fixture-example: full coverage, determinism, ownership, variants, collisions, escapes, Phase 41 regression")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="verify_markdown_contract.py")
     subparsers = parser.add_subparsers(dest="command", required=True)
     contract = subparsers.add_parser("contract")
     contract.set_defaults(func=contract_command)
+    fixture_example = subparsers.add_parser("fixture-example")
+    fixture_example.set_defaults(func=fixture_example_command)
     return parser
 
 

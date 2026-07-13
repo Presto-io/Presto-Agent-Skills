@@ -509,11 +509,48 @@ def overflow_evidence(layout: str | None, blocks: list[dict[str, Any]], layout_m
     budgets = [{"slot": slot.get("id"), "kind": slot.get("kind"), "text_budget": slot.get("text_budget"),
                 "continuation": slot.get("continuation")} for slot in (slots or []) if isinstance(slot, dict)]
     evidence: list[dict[str, Any]] = [{"kind": "manifest_budgets", "slots": budgets}]
+    text_characters = sum(
+        len(block.get("text", ""))
+        + sum(len(item) for item in block.get("items", []))
+        + len(block.get("raw", ""))
+        for block in blocks
+    )
+    text_lines = sum(
+        max(1, block.get("line_count", 0))
+        if block.get("kind") == "code"
+        else max(1, len(block.get("items", [])), len(block.get("rows", [])))
+        for block in blocks
+        if block.get("kind") != "image"
+    )
+    text_slots = [slot for slot in budgets if slot.get("kind") in {"text", "table", "timeline", "code"}]
+    max_chars = max((slot.get("text_budget", {}).get("max_chars", 0) for slot in text_slots), default=0)
+    max_lines = max((slot.get("text_budget", {}).get("max_lines", 0) for slot in text_slots), default=0)
+    if layout == "title-content":
+        evidence.append({"kind": "long_text", "character_count": text_characters, "line_units": text_lines,
+                         "max_chars": max_chars, "max_lines": max_lines,
+                         "exceeds_budget": text_characters > max_chars or text_lines > max_lines})
     if layout == "two-column":
         evidence.append({"kind": "column_pairs", "pairs": [[i, i + 1 if i + 1 < len(blocks) else None] for i in range(0, len(blocks), 2)]})
     if layout == "image-text":
         evidence.append({"kind": "stable_body_images", "body_indexes": [i for i, b in enumerate(blocks) if b["kind"] != "image"],
                          "image_indexes": [i for i, b in enumerate(blocks) if b["kind"] == "image"]})
+    if layout == "table" and blocks:
+        evidence.append({"kind": "long_table", "row_count": len(blocks[0].get("rows", [])),
+                         "character_count": text_characters, "max_chars": max_chars, "max_lines": max_lines,
+                         "exceeds_budget": text_characters > max_chars or len(blocks[0].get("rows", [])) > max_lines})
+    if layout == "timeline" and blocks:
+        evidence.append({"kind": "long_timeline", "item_count": len(blocks[0].get("rows", [])),
+                         "character_count": text_characters, "max_chars": max_chars, "max_lines": max_lines,
+                         "exceeds_budget": text_characters > max_chars or len(blocks[0].get("rows", [])) > max_lines})
+    if layout == "gallery":
+        image_count = sum(block.get("kind") == "image" for block in blocks)
+        evidence.append({"kind": "gallery_capacity", "image_count": image_count, "per_physical_slide": 4,
+                         "exceeds_budget": image_count > 4})
+    if layout == "code" and blocks:
+        code = blocks[0]
+        evidence.append({"kind": "long_code", "line_count": code.get("line_count", 0),
+                         "character_count": len(code.get("text", "")), "max_chars": max_chars, "max_lines": max_lines,
+                         "exceeds_budget": len(code.get("text", "")) > max_chars or code.get("line_count", 0) > max_lines})
     return evidence
 
 
