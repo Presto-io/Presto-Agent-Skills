@@ -428,6 +428,71 @@ GATES["pagination-structured"] = pagination_structured_gate
 GATES["pagination-full"] = pagination_full_gate
 
 
+def ooxml_bootstrap_gate(workdir: Path) -> dict[str, object]:
+    try:
+        import pptx_emit
+        from pptx_ooxml import set_run_highlight
+        from pptx.util import Inches
+    except ImportError as exc:
+        raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
+
+    manifest = load_manifest(SKILL_DIR)
+    presentation, layouts, evidence = pptx_emit.bootstrap_template(TEMPLATE_PATH, manifest)
+    require(evidence == {
+        "seed_slides": 5,
+        "removed_seed_slides": 5,
+        "removed_seed_notes_relationships": 2,
+    }, "seed removal evidence mismatch")
+    require(len(presentation.slides) == 0, "seed slides remain after bootstrap")
+    require(set(layouts) == set(manifest["layouts"]), "layout part map incomplete")
+    require(str(layouts["closing"].part.partname).lstrip("/") == "ppt/slideLayouts/slideLayout7.xml",
+            "closing layout did not resolve by part path")
+
+    invalid = copy.deepcopy(manifest)
+    invalid["layouts"]["closing"]["pptx_layout"] = "ppt/slideLayouts/missing.xml"
+    try:
+        pptx_emit.bootstrap_template(TEMPLATE_PATH, invalid)
+    except pptx_emit.PptxEmitError as exc:
+        require(exc.code == "PPTX_TEMPLATE_LAYOUT_INVALID", "layout failure code mismatch")
+    else:
+        raise GateFailure("missing layout part did not fail")
+
+    slide = presentation.slides.add_slide(layouts["closing"])
+    text_box = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+    run = text_box.text_frame.paragraphs[0].add_run()
+    run.text = "保留粗体与文本"
+    run.font.bold = True
+    scheme = manifest["inline_styles"]["highlight"]["scheme_color"]
+    set_run_highlight(run, scheme)
+    set_run_highlight(run, scheme)
+    staged = workdir / "bootstrap.pptx"
+    presentation.save(staged)
+    reopened = pptx_emit.require_dependencies()["pptx"].Presentation(staged)
+    require(len(reopened.slides) == 1, "bootstrap package did not reopen")
+    require(reopened.slides[0].shapes[-1].text == "保留粗体与文本", "highlight changed run text")
+    require(reopened.slides[0].shapes[-1].text_frame.paragraphs[0].runs[0].font.bold is True,
+            "highlight changed bold")
+    entries = safe_package_entries(staged)
+    slide_xml = entries["ppt/slides/slide1.xml"]
+    require(slide_xml.count(b"<a:highlight>") == 1 and f'val="{scheme}"'.encode() in slide_xml,
+            "highlight is not idempotent theme OOXML")
+
+    def missing_import(name: str) -> object:
+        raise ModuleNotFoundError(name)
+
+    try:
+        pptx_emit.require_dependencies(missing_import)
+    except pptx_emit.PptxEmitError as exc:
+        require(exc.code == "PPTX_DEPENDENCY_MISSING" and "Traceback" not in str(exc),
+                "dependency failure is not bounded")
+    else:
+        raise GateFailure("missing dependency did not fail")
+    return {**evidence, "layouts": len(layouts), "highlight_scheme": scheme, "reopened_slides": 1}
+
+
+GATES["ooxml-bootstrap"] = ooxml_bootstrap_gate
+
+
 def run_contract_model() -> dict[str, object]:
     names = [name for name in GATES if not name.startswith("pagination-")]
     require(len(names) == len(set(names)) == 3, "gate registry must contain three unique contract gates")
