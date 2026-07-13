@@ -6,9 +6,9 @@
 
 **Shipped:** 2026-06-21
 
-**Active milestone:** None
+**Active milestone:** v1.17 school-pptx
 
-**Status:** v1.16 shipped and archived. The repository is ready for the next milestone definition.
+**Status:** Defining requirements and roadmap for a new `school-pptx` skill.
 
 **Delivered in v1.16:**
 - Added `tiaokedan`, a Markdown-first `调课单` document workflow skill.
@@ -34,7 +34,21 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-No milestone is currently active. The repository is ready for the next milestone definition.
+Build `school-pptx`, a school-template PPTX generation skill that turns structured Markdown logical slides into editable, template-consistent `.pptx` files.
+
+## Current Milestone: v1.17 school-pptx
+
+**Goal:** Build a school-template PPTX skill that converts structured Markdown logical slides into editable, layout-stable, template-consistent `.pptx` files.
+
+**Target features:**
+- Hand-normalize the supplied visual `.potx` sample into a skill-local, machine-mappable standard PPTX template before scripting.
+- Define a YAML formatter plus explicit `::: slide {layout="..."}` Markdown contract, with `theme` as a controlled template identifier.
+- Support fixed layout slots for cover, contents, section, title-content, two-column, image-text, table, timeline, gallery, code, and closing slides.
+- Generate the contents slide automatically from every `##` heading while treating `#` only as a document-title fallback.
+- Expand one Markdown logical slide into multiple editable physical PPTX slides when text, tables, timelines, or galleries exceed a layout budget.
+- Preserve strict template consistency through fixed frame geometry, elastic text boxes with bounded font-size behavior, and no Markdown-level coordinates or styling overrides.
+- Render editable PPTX objects for text, images/icons, tables, speaker notes, horizontal timelines, four-image galleries, and a basic non-highlighted code block.
+- Keep animation scope minimal: no complex object animation; smooth 0.5s slide transition is allowed only if it can be implemented or preserved reliably.
 
 ## Latest Milestone: v1.16 调课单 Skill
 
@@ -144,12 +158,20 @@ No milestone is currently active. The repository is ready for the next milestone
 
 ### Active
 
-None. The next active requirements should be defined by `/gsd:new-milestone`.
+- [ ] Create the `school-pptx` skill as a Markdown-first school PPTX workflow with a canonical `SKILL.md`, references, templates, scripts, and fixtures.
+- [ ] Establish a standardized, machine-mappable PPTX template from the supplied human-friendly `.potx` visual sample before automating rendering.
+- [ ] Establish the accepted Markdown formatter and slide-block contract before treating script output as final.
+- [ ] Implement Markdown-to-PPTX generation with editable objects, automatic logical-slide pagination, speaker notes, and strict template-slot behavior.
+- [ ] Verify the generated `.pptx` through repeatable artifact checks covering slide count, layout mapping, notes, media, tables, code text, pagination, and non-empty output.
 
 ### Out of Scope
 
 - Direct one-step source-to-target rendering without Markdown intermediate - it makes target output harder to reason about and verify.
 - PPTX, Keynote, and fully editable PowerPoint export for the school presentation skill - prior attempts were too unstable, so v1.5 is HTML-first.
+- Arbitrary PPT template marketplace support for `school-pptx` - v1.17 starts from a controlled standard template derived from the supplied school visual sample.
+- Markdown-controlled coordinates, fonts, colors, and freeform styling for `school-pptx` - strict template consistency requires fixed slots and theme-controlled layout behavior.
+- Complex object animation for `school-pptx` - v1.17 only allows no animation or a reliably preserved/generated 0.5s smooth slide transition.
+- Whole-slide screenshot rendering as a PPTX shortcut - `school-pptx` must produce editable PowerPoint objects where supported.
 - Hosted deployment, password-gated sharing, and multi-device synchronization - defer until the offline HTML deck and presenter-local tooling are stable.
 - PPTX, Keynote, and fully editable PowerPoint export for the school presentation skill - prior attempts were too unstable, so the active presentation line remains HTML-first.
 - Cropping user images to fill decorative frames - images should keep their original aspect ratio and use contain-style placement by default.
@@ -187,6 +209,8 @@ Phase 24 completed the optional end-of-term and package-output slice: `teaching-
 v1.12 completed the post-close repair slice for the integrated teaching-design package. Phase 26 backfilled concrete package scheduling evidence into generated practical lesson-plan Markdown while preserving review-marker gates. Phase 27 aligned `jiaoan-shicao` activity-table widths with official-template evidence using chapter/pagebreak-scoped column grouping and verified the direct and package paths with Markdown, Typst, and PDF artifacts.
 
 v1.13 shipped from the committed Markdown baseline `skills/teaching-design-package/templates/teaching-design-package-full.md` rather than a new Markdown schema. The reference Markdown format stays teacher-facing and copyable, while the pre-v1.14 package render path consumes that Markdown and produces split and combined outputs.
+
+v1.17 starts a new PPTX skill line rather than reopening `school-presentation`. The new `school-pptx` milestone targets editable PowerPoint output from a fixed school template: first hand-normalize the supplied `.potx` visual sample into a standard template, then hand-author the Markdown fixture, then implement the renderer and verification gate. The Markdown surface is intentionally constrained to YAML metadata and explicit slide blocks so the template, not the input document, owns coordinates, typography, theme behavior, overflow rules, and layout consistency.
 
 v1.14 shipped the corrected `teaching-design-package` boundary. The package now owns its normal rendering path instead of relying on sibling skills, the skill entry starts with teacher source-material organization before scripts, and the default successful output directory is exactly the public 1+1+3 set. Derived scheduling facts and PDF readiness are validated from evidence, while status/model/logs/split Typst and failure diagnostics stay hidden.
 
@@ -233,6 +257,9 @@ The next milestone has not been defined yet. Start it with `/gsd:new-milestone`.
 - **v1.16 hand-authored baseline discipline**: The `调课单` milestone must establish the accepted Typst and Markdown fixtures before treating script output as final.
 - **v1.16 independence discipline**: The `调课单` renderer may reuse implementation ideas from existing document skills, but runtime execution must remain inside `skills/tiaokedan/` and must not call sibling skill scripts.
 - **v1.16 clarification discipline**: When required adjustment-form fields are missing, the skill must ask concise teacher-facing questions before generating final artifacts.
+- **v1.17 template-first discipline**: The `school-pptx` milestone must establish the standardized PPTX template before treating Markdown parsing or script output as final.
+- **v1.17 Markdown contract discipline**: The accepted Markdown fixture must define YAML metadata, automatic `##`-based contents, explicit slide blocks, and logical-slide pagination behavior before renderer implementation.
+- **v1.17 editability discipline**: Generated PPTX output must favor editable PowerPoint objects and must not use whole-slide images as a shortcut for template fidelity.
 
 ## Key Decisions
 
@@ -281,6 +308,9 @@ The next milestone has not been defined yet. Start it with `/gsd:new-milestone`.
 | Treat old jiaoan skills as format baselines, not runtime dependencies | Package rendering must be standalone while proving migrated rules match or are equivalent to accepted old outputs | Good - shipped in v1.15 |
 | Start v1.16 as a new `调课单` skill milestone | User requested a new skill whose build order is hand-authored Typst, hand-authored Markdown, independent conversion script, then PDF workflow and clarification questions | Good - shipped in v1.16 |
 | Use one scheduling model for both modules | Calendar and hour facts must not be calculated independently by the two modules | Good - shipped in v1.15 |
+| Start v1.17 as `school-pptx` with template-first build order | User requested a school-template Markdown-to-PPTX skill and explicitly set the build order as standard template, standard Markdown, then script | Pending |
+| Treat `theme` as a controlled standard-template identifier | Future `.potx` templates may exist, but Markdown must not control styling or layout details directly | Pending |
+| Keep `school-pptx` output editable instead of screenshot-based | The value of the skill is template-consistent PPTX that can still be edited in PowerPoint | Pending |
 
 ## Evolution
 
@@ -300,4 +330,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-06-21 after v1.16 milestone archive*
+*Last updated: 2026-07-13 after starting v1.17 school-pptx milestone*
