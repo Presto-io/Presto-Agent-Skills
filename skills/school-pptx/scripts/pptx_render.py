@@ -277,11 +277,16 @@ def parser_diagnostic(item: dict[str, Any]) -> dict[str, Any]:
 
 def affected_slides(document: dict[str, Any], errors: list[dict[str, Any]], plan_errors: list[Any]) -> list[str]:
     titles: list[str] = []
+    logical = document.get("logical_slides", ())
     for item in errors:
         value = item.get("slide")
-        if value and value not in titles:
+        if not value or value == "unknown":
+            line = int(item.get("line", 1))
+            candidates = [slide for slide in logical if int(slide.get("source_line", 1)) <= line]
+            if candidates:
+                value = candidates[-1].get("title")
+        if value and value != "unknown" and value not in titles:
             titles.append(str(value))
-    logical = document.get("logical_slides", ())
     for item in plan_errors:
         for index in item.logical_indices:
             if 0 <= index < len(logical):

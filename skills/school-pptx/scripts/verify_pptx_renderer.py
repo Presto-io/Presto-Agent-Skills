@@ -5,8 +5,13 @@ from __future__ import annotations
 
 import argparse
 import ast
+import contextlib
 import copy
+import hashlib
+import io
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -23,6 +28,8 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = SKILL_DIR / "scripts"
 MANIFEST_PATH = SKILL_DIR / "templates" / "standard-school.manifest.yaml"
 TEMPLATE_PATH = SKILL_DIR / "templates" / "standard-school.pptx"
+PUBLIC_CLI = SCRIPTS_DIR / "school-pptx.sh"
+FIXTURE_PATH = SKILL_DIR / "fixtures" / "school-pptx-full.md"
 MAX_ZIP_ENTRIES = 256
 MAX_ZIP_ENTRY_BYTES = 4 * 1024 * 1024
 MAX_ZIP_TOTAL_BYTES = 32 * 1024 * 1024
@@ -714,6 +721,373 @@ def emit_structure_gate(workdir: Path) -> dict[str, object]:
 GATES["emit-structure"] = emit_structure_gate
 
 
+def run_public_render(input_path: Path, output_root: Path, stem: str) -> subprocess.CompletedProcess[str]:
+    environment = os.environ.copy()
+    environment["SCHOOL_PPTX_PYTHON"] = sys.executable
+    completed = subprocess.run(
+        [str(PUBLIC_CLI), "render", "--input", str(input_path), "--out-dir", str(output_root), "--stem", stem],
+        cwd=SKILL_DIR.parent.parent,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=60,
+        check=False,
+        env=environment,
+    )
+    require("Traceback" not in completed.stdout + completed.stderr, "public render leaked traceback")
+    require(len(completed.stdout + completed.stderr) < 200_000, "public render output is unbounded")
+    return completed
+
+
+def command_owned_files(root: Path) -> set[str]:
+    return {
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file() or path.is_symlink()
+    }
+
+
+def semantic_package_inventory(path: Path) -> dict[str, object]:
+    import pptx_emit
+
+    entries = safe_package_entries(path)
+    presentation = pptx_emit.require_dependencies()["pptx"].Presentation(path)
+    slide_payloads = [entries[f"ppt/slides/slide{index}.xml"] for index in range(1, len(presentation.slides) + 1)]
+    relationship_payloads = [
+        entries[f"ppt/slides/_rels/slide{index}.xml.rels"] for index in range(1, len(presentation.slides) + 1)
+    ]
+    relationship_namespace = {"r": "http://schemas.openxmlformats.org/package/2006/relationships"}
+    layouts: list[str] = []
+    notes = 0
+    images = 0
+    for payload in relationship_payloads:
+        relationships = ET.fromstring(payload).findall("r:Relationship", relationship_namespace)
+        layouts.extend(
+            item.get("Target", "").split("/")[-1]
+            for item in relationships
+            if item.get("Type", "").endswith("/slideLayout")
+        )
+        notes += sum(item.get("Type", "").endswith("/notesSlide") for item in relationships)
+        images += sum(item.get("Type", "").endswith("/image") for item in relationships)
+    visible_text = "\n".join(
+        shape.text
+        for slide in presentation.slides
+        for shape in slide.shapes
+        if getattr(shape, "has_text_frame", False)
+    )
+    return {
+        "slides": len(presentation.slides),
+        "layouts": layouts,
+        "native_tables": sum(payload.count(b"<a:tbl>") for payload in slide_payloads),
+        "groups": sum(payload.count(b"<p:grpSp>") for payload in slide_payloads),
+        "pictures": images,
+        "notes": notes,
+        "visible_text_sha256": hashlib.sha256(visible_text.encode("utf-8")).hexdigest(),
+    }
+
+
+def cli_publication_gate(workdir: Path) -> dict[str, object]:
+    output = workdir / "delivery"
+    output.mkdir()
+    sentinel = output / "caller-owned.txt"
+    sentinel.write_bytes(b"caller-owned")
+    before = hashlib.sha256(sentinel.read_bytes()).hexdigest()
+    completed = run_public_render(FIXTURE_PATH, output, "course-deck")
+    require(completed.returncode == 0, f"public render failed: {completed.stdout}{completed.stderr}")
+    lines = completed.stdout.splitlines()
+    require(lines and lines[0] == "渲染成功", "success heading order changed")
+    require("逻辑页：13；物理页：24" in completed.stdout, "success pagination summary missing")
+    require(completed.stdout.rstrip().endswith("校验结果：PASS"), "success validation footer missing")
+    markdown = output / "course-deck.md"
+    pptx = output / "course-deck.pptx"
+    require(markdown.read_bytes() == FIXTURE_PATH.read_bytes(), "published Markdown bytes changed")
+    require(pptx.stat().st_size > 0, "published PPTX is empty")
+    require(hashlib.sha256(sentinel.read_bytes()).hexdigest() == before, "caller sentinel changed")
+    require(command_owned_files(output) == {"caller-owned.txt", "course-deck.md", "course-deck.pptx"},
+            "success public root contains non-pair artifacts")
+    inventory = semantic_package_inventory(pptx)
+    require(inventory["slides"] == 24 and inventory["native_tables"] > 0, "published PPTX did not reopen structurally")
+    help_result = subprocess.run([str(PUBLIC_CLI), "--help"], text=True, capture_output=True, check=False)
+    require(help_result.returncode == 0 and
+            "render --input <reviewed.md> --out-dir <delivery-dir> [--stem <name>]" in help_result.stdout,
+            "literal render usage missing")
+    return {"files": sorted(command_owned_files(output)), "inventory": inventory}
+
+
+def best_effort_gate(workdir: Path) -> dict[str, object]:
+    missing_source = workdir / "missing-media.md"
+    missing_source.write_bytes(FIXTURE_PATH.read_bytes())
+    missing_output = workdir / "missing-output"
+    missing_output.mkdir()
+    completed = run_public_render(missing_source, missing_output, "missing")
+    require(completed.returncode != 0, "missing-media render returned success")
+    require("渲染完成但输入存在异常" in completed.stdout and "本次渲染不成功" in completed.stdout,
+            "best-effort non-success copy missing")
+    require("受影响逻辑页" in completed.stdout and "MEDIA_MISSING" in completed.stdout,
+            "best-effort affected slides missing")
+    require("渲染成功" not in completed.stdout, "best-effort printed success copy")
+    require(command_owned_files(missing_output) == {"missing.md", "missing.pptx"},
+            "best-effort root is not a clean pair")
+    require(missing_source.read_bytes() == (missing_output / "missing.md").read_bytes(),
+            "best-effort Markdown bytes changed")
+    inventory = semantic_package_inventory(missing_output / "missing.pptx")
+    entries = safe_package_entries(missing_output / "missing.pptx")
+    slide_xml = b"\n".join(payload for name, payload in entries.items() if name.startswith("ppt/slides/slide"))
+    for forbidden in ("警告页", "警告横幅", "水印", "渲染失败", "本次渲染不成功"):
+        require(forbidden.encode("utf-8") not in slide_xml, f"best-effort PPTX contains visible warning pollution: {forbidden}")
+
+    invalid_source = workdir / "invalid.md"
+    invalid_source.write_text(
+        '---\ntitle: "异常"\ntheme: "standard-school"\n---\n'
+        '::: slide {layout="unknown-layout"}\n## 受影响页\n可恢复正文。\n:::\n',
+        encoding="utf-8",
+    )
+    invalid_output = workdir / "invalid-output"
+    invalid_output.mkdir()
+    invalid = run_public_render(invalid_source, invalid_output, "invalid")
+    require(invalid.returncode != 0 and "LAYOUT_UNKNOWN" in invalid.stdout and "受影响页" in invalid.stdout,
+            "invalid Markdown did not publish bounded best-effort output")
+    require(command_owned_files(invalid_output) == {"invalid.md", "invalid.pptx"},
+            "invalid Markdown did not publish the fixed pair")
+    semantic_package_inventory(invalid_output / "invalid.pptx")
+    return {"missing_media_inventory": inventory, "invalid_exit": invalid.returncode}
+
+
+def invoke_render_module(input_path: Path, output_root: Path, stem: str) -> tuple[int, str]:
+    import pptx_render
+
+    stdout = io.StringIO()
+    arguments = argparse.Namespace(
+        skill_dir=str(SKILL_DIR), input=str(input_path), out_dir=str(output_root), stem=stem,
+    )
+    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stdout):
+        result = pptx_render.render_command(arguments)
+    output = stdout.getvalue()
+    require("Traceback" not in output and len(output) < 200_000, "in-process render failure is unbounded")
+    return result, output
+
+
+def assert_no_renderer_debris(root: Path) -> None:
+    forbidden = [
+        path for path in root.rglob("*")
+        if path.name.endswith(".bak") or ".tmp-" in path.name or path.suffix in {".json", ".log"}
+        or "manifest" in path.name.lower() or "debug" in path.name.lower() or "evidence" in path.name.lower()
+    ]
+    require(not forbidden, f"renderer debris remains: {[path.name for path in forbidden]}")
+
+
+def publication_safety_gate(workdir: Path) -> dict[str, object]:
+    import pptx_render
+
+    old_pptx = b"old-pptx-sentinel"
+    corruption_root = workdir / "corruption"
+    corruption_root.mkdir()
+    (corruption_root / "deck.pptx").write_bytes(old_pptx)
+    pptx_render.RENDER_PRE_VALIDATE_HOOK = lambda path: path.write_bytes(b"corrupt")
+    try:
+        result, output = invoke_render_module(FIXTURE_PATH, corruption_root, "deck")
+    finally:
+        pptx_render.RENDER_PRE_VALIDATE_HOOK = None
+    require(result != 0 and "PPTX_PACKAGE_INVALID" in output, "staged corruption did not fail bounded")
+    require((corruption_root / "deck.pptx").read_bytes() == old_pptx, "staged corruption replaced old PPTX")
+    require(not (corruption_root / "deck.md").exists(), "staged corruption published Markdown")
+    assert_no_renderer_debris(corruption_root)
+
+    crash_root = workdir / "crash-window"
+    crash_root.mkdir()
+    (crash_root / "deck.md").write_bytes(b"old-markdown")
+    (crash_root / "deck.pptx").write_bytes(old_pptx)
+    pptx_render.RENDER_BETWEEN_REPLACE_HOOK = lambda root: (_ for _ in ()).throw(OSError("injected"))
+    try:
+        result, output = invoke_render_module(FIXTURE_PATH, crash_root, "deck")
+    finally:
+        pptx_render.RENDER_BETWEEN_REPLACE_HOOK = None
+    require(result != 0 and "OUTPUT_PAIR_INTERRUPTED" in output, "between-replace fault did not fail bounded")
+    require((crash_root / "deck.md").read_bytes() == FIXTURE_PATH.read_bytes(), "Markdown-first was not observable")
+    require((crash_root / "deck.pptx").read_bytes() == old_pptx, "PPTX-last crash window replaced old PPTX")
+    assert_no_renderer_debris(crash_root)
+
+    exchange_root = workdir / "exchange"
+    exchange_root.mkdir()
+    attacker = workdir / "attacker"
+    attacker.mkdir()
+    sentinel = attacker / "sentinel"
+    sentinel.write_bytes(b"caller")
+    held = workdir / "held-exchange"
+
+    def exchange(root: Path) -> None:
+        root.rename(held)
+        root.symlink_to(attacker, target_is_directory=True)
+
+    pptx_render.RENDER_PRE_PUBLISH_HOOK = exchange
+    try:
+        result, output = invoke_render_module(FIXTURE_PATH, exchange_root, "deck")
+    finally:
+        pptx_render.RENDER_PRE_PUBLISH_HOOK = None
+    require(result != 0 and "OUTPUT_ROOT_CHANGED" in output, "output-root exchange was not blocked")
+    require(sentinel.read_bytes() == b"caller" and not (attacker / "deck.pptx").exists(),
+            "output-root exchange modified attacker target")
+    assert_no_renderer_debris(held)
+
+    collision_root = workdir / "collisions"
+    collision_root.mkdir()
+    outside = workdir / "outside"
+    outside.write_bytes(b"outside")
+    (collision_root / "link.pptx").symlink_to(outside)
+    result, output = invoke_render_module(FIXTURE_PATH, collision_root, "link")
+    require(result != 0 and "OUTPUT_COLLISION" in output and outside.read_bytes() == b"outside",
+            "final symlink collision was unsafe")
+    (collision_root / "directory.pptx").mkdir()
+    result, output = invoke_render_module(FIXTURE_PATH, collision_root, "directory")
+    require(result != 0 and "OUTPUT_COLLISION" in output, "directory collision was accepted")
+    result, output = invoke_render_module(FIXTURE_PATH, collision_root, "../escape")
+    require(result != 0 and "OUTPUT_STEM_INVALID" in output and outside.read_bytes() == b"outside",
+            "stem traversal was accepted")
+    same = workdir / "same.md"
+    same.write_bytes(FIXTURE_PATH.read_bytes())
+    result, output = invoke_render_module(same, workdir, "same")
+    require(result != 0 and "OUTPUT_INPUT_COLLISION" in output and same.read_bytes() == FIXTURE_PATH.read_bytes(),
+            "input/output identity was accepted")
+    assert_no_renderer_debris(collision_root)
+
+    host_python = shutil.which("python3")
+    require(host_python is not None, "host python missing for dependency gate")
+    dependency_root = workdir / "dependency"
+    dependency_root.mkdir()
+    (dependency_root / "deck.pptx").write_bytes(old_pptx)
+    environment = os.environ.copy()
+    environment["SCHOOL_PPTX_PYTHON"] = host_python
+    dependency = subprocess.run(
+        [str(PUBLIC_CLI), "render", "--input", str(FIXTURE_PATH), "--out-dir", str(dependency_root), "--stem", "deck"],
+        text=True, capture_output=True, check=False, env=environment, timeout=30,
+    )
+    require(dependency.returncode != 0 and "PPTX_DEPENDENCY_MISSING" in dependency.stdout + dependency.stderr,
+            "dependency absence did not fail bounded")
+    require("Traceback" not in dependency.stdout + dependency.stderr and
+            (dependency_root / "deck.pptx").read_bytes() == old_pptx,
+            "dependency failure leaked traceback or replaced old PPTX")
+    assert_no_renderer_debris(dependency_root)
+    return {"staged_corruption": "blocked", "crash_window": "markdown-new-pptx-old", "exchange": "blocked"}
+
+
+def determinism_gate(workdir: Path) -> dict[str, object]:
+    manifest = load_manifest(SKILL_DIR)
+    first_document = parse_document(FIXTURE_PATH, manifest)
+    second_document = parse_document(FIXTURE_PATH, manifest)
+    first_plan = pptx_paginate.build_deck_plan(first_document, manifest)
+    second_plan = pptx_paginate.build_deck_plan(second_document, manifest)
+    first_projection = first_plan.to_projection()
+    second_projection = second_plan.to_projection()
+    require(first_projection == second_projection, "physical-plan projection changed")
+    inventories: list[dict[str, object]] = []
+    for index in range(2):
+        output = workdir / f"run-{index}"
+        output.mkdir()
+        completed = run_public_render(FIXTURE_PATH, output, "deck")
+        require(completed.returncode == 0, f"determinism render {index} failed")
+        inventories.append(semantic_package_inventory(output / "deck.pptx"))
+    require(inventories[0] == inventories[1], "semantic package inventory changed")
+    projection_bytes = json.dumps(first_projection, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    return {
+        "physical_plan_sha256": hashlib.sha256(projection_bytes).hexdigest(),
+        "physical_slides": len(first_plan.slides),
+        "semantic_inventory": inventories[0],
+    }
+
+
+def phase_41_42_regression_gate(workdir: Path) -> dict[str, object]:
+    template = run_template_report(workdir)
+    completed = subprocess.run(
+        [sys.executable, str(SCRIPTS_DIR / "verify_markdown_contract.py"), "fixture-example"],
+        cwd=SKILL_DIR.parent.parent, text=True, capture_output=True, timeout=120, check=False,
+    )
+    require(completed.returncode == 0, f"Phase 42 fixture-example failed: {completed.stdout}{completed.stderr}")
+    require("Traceback" not in completed.stdout + completed.stderr, "Phase 42 regression leaked traceback")
+    runtime_files = sorted(path for path in SCRIPTS_DIR.glob("*.py") if path.name.startswith("pptx_"))
+    require(runtime_files and all(path.parent == SCRIPTS_DIR for path in runtime_files), "runtime file escaped skill scripts")
+    forbidden_calls: list[str] = []
+    for path in runtime_files:
+        source = path.read_text(encoding="utf-8")
+        if "skills/" in source and "school-pptx" not in source:
+            forbidden_calls.append(path.name)
+    require(not forbidden_calls, f"sibling skill runtime calls found: {forbidden_calls}")
+    shell_source = PUBLIC_CLI.read_text(encoding="utf-8")
+    require("pptx_render.py" in shell_source and "verify --workdir" not in shell_source,
+            "Phase 44 public verify leaked into Phase 43")
+    require(not (SKILL_DIR / "SKILL.md").exists(), "Phase 44 canonical skill entry was created early")
+    return {"template_layouts": len(template["layouts"]), "fixture_example": "PASS", "runtime_files": [p.name for p in runtime_files]}
+
+
+GATES["cli-publication"] = cli_publication_gate
+GATES["best-effort"] = best_effort_gate
+GATES["publication-safety"] = publication_safety_gate
+GATES["determinism"] = determinism_gate
+GATES["phase_41_42_regression"] = phase_41_42_regression_gate
+
+
+PHASE_43_GATE_ORDER = (
+    "contract-model",
+    "pagination",
+    "ooxml-bootstrap",
+    "editable-objects",
+    "emit-structure",
+    "cli-publication",
+    "best-effort",
+    "publication-safety",
+    "determinism",
+    "phase_41_42_regression",
+)
+
+
+def run_named_gate(name: str, workdir: Path) -> dict[str, object]:
+    if name == "contract-model":
+        return run_contract_model()
+    if name == "pagination":
+        names = [candidate for candidate in GATES if candidate.startswith("pagination-")]
+        evidence: dict[str, object] = {}
+        for candidate in names:
+            evidence[candidate] = GATES[candidate](workdir)
+            print(f"PASS {candidate}")
+        return evidence
+    evidence = GATES[name](workdir)
+    print(f"PASS {name}")
+    return {name: evidence}
+
+
+def run_phase_43() -> dict[str, object]:
+    require(len(PHASE_43_GATE_ORDER) == len(set(PHASE_43_GATE_ORDER)), "phase-43 registry contains duplicates")
+    required = {
+        "contract-model", "pagination", "ooxml-bootstrap", "editable-objects", "emit-structure",
+        "cli-publication", "best-effort", "publication-safety", "determinism", "phase_41_42_regression",
+    }
+    require(set(PHASE_43_GATE_ORDER) == required, "phase-43 registry coverage changed")
+    evidence: dict[str, object] = {}
+    called: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="school-pptx-phase-43-") as temporary:
+        root = Path(temporary)
+        for name in PHASE_43_GATE_ORDER:
+            gate_dir = root / name
+            gate_dir.mkdir()
+            evidence[name] = run_named_gate(name, gate_dir)
+            called.append(name)
+    require(tuple(called) == PHASE_43_GATE_ORDER, "phase-43 registry skipped or reordered a gate")
+    evidence["decision_coverage"] = {
+        "D-01..D-05": "pagination",
+        "D-06..D-10": "pagination",
+        "D-11..D-16": "editable-objects,emit-structure",
+        "D-17..D-18": "best-effort",
+        "D-19": "publication-safety",
+        "D-20..D-21": "cli-publication,publication-safety",
+    }
+    evidence["requirement_coverage"] = {
+        "PPTX-01..PPTX-12": "contract-model,pagination,ooxml-bootstrap,editable-objects,emit-structure",
+        "PPTX-13": "cli-publication,publication-safety",
+        "VER-03": "cli-publication,best-effort",
+        "SKILL-03": "phase_41_42_regression",
+    }
+    return evidence
+
+
 def run_contract_model() -> dict[str, object]:
     names = ["manifest_renderer_contract_gate", "model_determinism_gate", "measurement_gate"]
     require(len(names) == len(set(names)) == 3, "gate registry must contain three unique contract gates")
@@ -734,27 +1108,18 @@ def run_contract_model() -> dict[str, object]:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="verify_pptx_renderer.py")
-    parser.add_argument("gate", choices=["contract-model", "pagination", *GATES])
+    parser.add_argument("gate", choices=["contract-model", "pagination", "phase-43", *GATES])
     return parser.parse_args(argv)
 
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
     try:
-        if args.gate == "contract-model":
-            evidence = run_contract_model()
-        elif args.gate == "pagination":
-            names = [name for name in GATES if name.startswith("pagination-")]
-            evidence = {}
-            with tempfile.TemporaryDirectory(prefix="school-pptx-pagination-") as temporary:
-                root = Path(temporary)
-                for name in names:
-                    evidence[name] = GATES[name](root)
-                    print(f"PASS {name}")
+        if args.gate == "phase-43":
+            evidence = run_phase_43()
         else:
             with tempfile.TemporaryDirectory(prefix=f"school-pptx-{args.gate}-") as temporary:
-                evidence = {args.gate: GATES[args.gate](Path(temporary))}
-                print(f"PASS {args.gate}")
+                evidence = run_named_gate(args.gate, Path(temporary))
         print(json.dumps(evidence, ensure_ascii=False, sort_keys=True))
         return 0
     except (GateFailure, OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
