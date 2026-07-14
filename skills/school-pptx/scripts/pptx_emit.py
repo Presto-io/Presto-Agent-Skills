@@ -47,6 +47,11 @@ OBJECT_ERROR_MESSAGES = {
 }
 
 
+def map_object_error(error: PptxObjectError) -> PptxEmitError:
+    code = str(error) if str(error) in OBJECT_ERROR_MESSAGES else "PPTX_OBJECT_INVALID"
+    return PptxEmitError(code, OBJECT_ERROR_MESSAGES.get(code, "PPTX 对象内容无效。"))
+
+
 def require_dependencies(importer: Callable[[str], Any] = import_module) -> dict[str, Any]:
     try:
         pptx = importer("pptx")
@@ -178,9 +183,7 @@ def emit_deck(
                     )
             set_notes(slide, physical.notes_intent)
     except PptxObjectError as exc:
-        code = str(exc) if str(exc) in OBJECT_ERROR_MESSAGES else "PPTX_OBJECT_INVALID"
-        message = OBJECT_ERROR_MESSAGES.get(code, "PPTX 对象内容无效。")
-        raise PptxEmitError(code, message) from None
+        raise map_object_error(exc) from None
     try:
         if hasattr(output, "write"):
             output.seek(0)

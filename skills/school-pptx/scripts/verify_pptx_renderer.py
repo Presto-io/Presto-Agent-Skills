@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import base64
 import contextlib
 import copy
 import fcntl
@@ -16,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zlib
 from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree as ET
 from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile
@@ -963,6 +965,8 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
     dependency_root.mkdir()
     (dependency_root / "deck.pptx").write_bytes(old_pptx)
     environment = os.environ.copy()
+    yaml_root = next(path.parent for path in Path.home().glob(".cache/uv/archive-v0/*/yaml/__init__.py"))
+    environment["PYTHONPATH"] = str(yaml_root)
     environment["SCHOOL_PPTX_PYTHON"] = host_python
     dependency = subprocess.run(
         [str(PUBLIC_CLI), "render", "--input", str(FIXTURE_PATH), "--out-dir", str(dependency_root), "--stem", "deck"],
@@ -1068,6 +1072,64 @@ def publication_descriptor_race_gate(workdir: Path) -> dict[str, object]:
     }
 
 
+def _media_markdown(media_name: str) -> str:
+    return (
+        '---\ntitle: "对象错误"\ntheme: "standard-school"\n---\n'
+        '::: slide {layout="image-text"}\n## 媒体页\n对象错误验证正文。\n\n'
+        f'![本地媒体]({media_name})\n:::\n'
+    )
+
+
+def _png_chunk(kind: bytes, payload: bytes) -> bytes:
+    return len(payload).to_bytes(4, "big") + kind + payload + zlib.crc32(kind + payload).to_bytes(4, "big")
+
+
+def object_error_bounded_gate(workdir: Path) -> dict[str, object]:
+    import pptx_emit
+    from pptx_objects import PptxObjectError
+
+    unknown = pptx_emit.map_object_error(PptxObjectError("private path /tmp/secret"))
+    require(unknown.code == "PPTX_OBJECT_INVALID" and "/tmp/secret" not in unknown.message,
+            "unknown object error was not normalized")
+
+    vectors: list[tuple[str, bytes, str]] = []
+    vectors.append((
+        "invalid.gif",
+        base64.b64decode("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="),
+        "PPTX_MEDIA_FORMAT_INVALID",
+    ))
+    ihdr = (10_000).to_bytes(4, "big") + (5_000).to_bytes(4, "big") + bytes((8, 2, 0, 0, 0))
+    oversized_png = b"\x89PNG\r\n\x1a\n" + _png_chunk(b"IHDR", ihdr) + _png_chunk(b"IEND", b"")
+    vectors.append(("oversized.png", oversized_png, "PPTX_MEDIA_PIXEL_LIMIT"))
+
+    evidence: dict[str, object] = {}
+    for media_name, payload, expected_code in vectors:
+        vector_root = workdir / expected_code.lower()
+        vector_root.mkdir()
+        media_path = vector_root / media_name
+        media_path.write_bytes(payload)
+        source = vector_root / "deck.md"
+        source.write_text(_media_markdown(media_name), encoding="utf-8")
+        output_root = vector_root / "delivery"
+        output_root.mkdir()
+        old_pptx = b"old-pptx-object-error-sentinel"
+        (output_root / "deck.pptx").write_bytes(old_pptx)
+        completed = run_public_render(source, output_root, "deck")
+        output = completed.stdout + completed.stderr
+        require(completed.returncode != 0 and expected_code in output, f"{expected_code} was not public")
+        require(len(output.encode("utf-8")) < 8 * 1024, f"{expected_code} output exceeded 8 KiB")
+        require("Traceback" not in output and str(workdir) not in output,
+                f"{expected_code} leaked traceback or absolute workdir")
+        require("cannot identify image file" not in output.lower() and "decompressionbomb" not in output.lower(),
+                f"{expected_code} leaked Pillow details")
+        require((output_root / "deck.pptx").read_bytes() == old_pptx,
+                f"{expected_code} replaced the old PPTX")
+        require(not (output_root / "deck.md").exists(), f"{expected_code} published Markdown")
+        assert_no_renderer_debris(output_root)
+        evidence[expected_code] = {"exit": completed.returncode, "output_bytes": len(output.encode("utf-8"))}
+    return evidence
+
+
 def determinism_gate(workdir: Path) -> dict[str, object]:
     manifest = load_manifest(SKILL_DIR)
     first_document = parse_document(FIXTURE_PATH, manifest)
@@ -1120,6 +1182,7 @@ GATES["cli-publication"] = cli_publication_gate
 GATES["best-effort"] = best_effort_gate
 GATES["publication-safety"] = publication_safety_gate
 GATES["publication-descriptor-race"] = publication_descriptor_race_gate
+GATES["object-error-bounded"] = object_error_bounded_gate
 GATES["determinism"] = determinism_gate
 GATES["phase_41_42_regression"] = phase_41_42_regression_gate
 
