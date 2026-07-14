@@ -112,6 +112,11 @@ def manifest_renderer_contract_gate(workdir: Path) -> dict[str, object]:
     report = run_template_report(workdir)
     manifest = template_report.read_yaml(MANIFEST_PATH)
     layouts = manifest["layouts"]
+    cover_subtitle = next(slot for slot in layouts["cover"]["slots"] if slot["id"] == "subtitle")
+    require(cover_subtitle["text_budget"]["max_chars"] == 72, "cover subtitle max_chars must be 72")
+    require(cover_subtitle["text_budget"]["max_lines"] == 2, "cover subtitle max_lines must be 2")
+    require(report["renderer_contract"]["cover_subtitle_budget"] == cover_subtitle["text_budget"],
+            "template-report cover subtitle evidence drifted")
     table = next(slot for slot in layouts["table"]["slots"] if slot["id"] == "table")
     gallery_items = next(slot for slot in layouts["gallery"]["slots"] if slot["id"] == "gallery_items")
     gallery_caption = next(slot for slot in layouts["gallery"]["slots"] if slot["id"] == "caption")
@@ -236,6 +241,38 @@ GATES = {
     "model_determinism_gate": model_determinism_gate,
     "measurement_gate": measurement_gate,
 }
+
+
+def frozen_slot_content_gate(workdir: Path) -> dict[str, object]:
+    del workdir
+    manifest = load_manifest(SKILL_DIR)
+    document = parse_document(FIXTURE_PATH, manifest)
+    first = pptx_paginate.build_deck_plan(document, manifest)
+    second = pptx_paginate.build_deck_plan(document, manifest)
+    require(first.to_projection() == second.to_projection(), "frozen projection is not deterministic")
+    two_column = [slide for slide in first.slides if slide.layout == "two-column"]
+    fragments = [fragment for slide in two_column for fragment in slide.fragments]
+    require([fragment.target_slot for fragment in fragments] ==
+            ["left_body", "right_body", "left_body", "right_body", "left_body"],
+            "D-06 target slot sequence changed")
+    require([fragment.block_index for fragment in fragments] == list(range(5)), "D-06 block inventory changed")
+    cover = next(slide for slide in first.slides if slide.layout == "cover")
+    values = dict(cover.slot_values)
+    require(values["title"] and len(values["subtitle"]) == 66, "canonical cover descriptor length changed")
+    require(all(value in values["subtitle"] for value in
+                ("示例职业技术学院", "智能制造学院", "智能产线安装与调试", "课程建设团队", "2026-07-13")),
+            "canonical cover descriptor lost metadata")
+    require("机电一体化技术" not in values["subtitle"] and "张老师" not in values["subtitle"],
+            "program/presenter leaked into cover subtitle")
+    overflow = copy.deepcopy(document)
+    overflow["metadata"]["school"] = "超长学校" * 30
+    overflow_plan = pptx_paginate.build_deck_plan(overflow, manifest)
+    require(any(item.code == "COVER_METADATA_OVERFLOW" and item.severity == "error"
+                for item in overflow_plan.diagnostics), "cover overflow did not fail")
+    return {"target_slots": [fragment.target_slot for fragment in fragments], "cover_length": len(values["subtitle"])}
+
+
+GATES["frozen-slot-content"] = frozen_slot_content_gate
 
 
 def _minimal_document(slides: list[dict[str, object]]) -> dict[str, object]:

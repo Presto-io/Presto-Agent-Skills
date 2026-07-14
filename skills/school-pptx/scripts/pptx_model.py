@@ -41,6 +41,8 @@ class BlockFragment:
     items: tuple[str, ...] = ()
     rows: tuple[tuple[str, ...], ...] = ()
     metadata: tuple[tuple[str, str], ...] = ()
+    target_slot: str | None = None
+    row_heights_emu: tuple[int, ...] = ()
 
     def to_projection(self) -> dict[str, Any]:
         return {
@@ -54,6 +56,8 @@ class BlockFragment:
             "items": list(self.items),
             "rows": [list(row) for row in self.rows],
             "metadata": {key: value for key, value in self.metadata},
+            "target_slot": self.target_slot,
+            "row_heights_emu": list(self.row_heights_emu),
         }
 
 
@@ -69,6 +73,7 @@ class PhysicalSlide:
     notes_intent: str | None = None
     selected_font_sizes: tuple[tuple[str, float], ...] = ()
     affected_pages: tuple[int, ...] = ()
+    slot_values: tuple[tuple[str, str], ...] = ()
 
     def to_projection(self) -> dict[str, Any]:
         return {
@@ -82,6 +87,7 @@ class PhysicalSlide:
             "notes_intent": self.notes_intent,
             "selected_font_sizes": {key: value for key, value in self.selected_font_sizes},
             "affected_pages": list(self.affected_pages),
+            "slot_values": {key: value for key, value in self.slot_values},
         }
 
 

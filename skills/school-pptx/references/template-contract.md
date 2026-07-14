@@ -11,6 +11,10 @@ Phase 41 defines the controlled template contract for `school-pptx`. Runtime beh
 
 Unknown theme validation must fail non-zero and print the available controlled theme id.
 
+## Cover Subtitle Descriptor
+
+The `cover.subtitle` slot owns a strict `max_chars: 72`, `max_lines: 2` budget. Its value is exactly two lines: line one is the authored YAML `subtitle`; line two joins the non-empty `school`, `department`, `course`, `author`, and `date` values in that order with ` · `. The `program` and `presenter` fields never enter this slot. A complete descriptor that exceeds either limit fails with `COVER_METADATA_OVERFLOW`; the renderer does not truncate characters or silently drop fields.
+
 ## Layouts
 
 The manifest covers exactly these 11 layout ids:

@@ -348,6 +348,10 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
                 None,
             ),
             "regions": renderer_regions,
+            "cover_subtitle_budget": next(
+                (item["text_budget"] for item in slots_evidence if item["layout"] == "cover" and item["slot"] == "subtitle"),
+                None,
+            ),
         },
         "failures": failures,
         "warnings": warnings,
@@ -400,6 +404,7 @@ def markdown_report(evidence: dict[str, object], out_json: Path | None) -> str:
             f"- highlight theme scheme：`{contract['highlight_scheme_color']}`",
             f"- gallery caption empty slot：`{contract['gallery_caption_empty_slot']}`",
             f"- 动态子区域证据：{len(contract['regions'])} 项",
+            f"- cover subtitle budget：`max_chars={contract['cover_subtitle_budget']['max_chars']}`、`max_lines={contract['cover_subtitle_budget']['max_lines']}`",
         ]
     )
     lines.extend(

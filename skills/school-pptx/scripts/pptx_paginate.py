@@ -358,6 +358,60 @@ def _simple_slide_fragments(
     return [tuple(page) for page in pages if page or not pages[0]], diagnostics
 
 
+def _two_column_fragments(
+    slide: dict[str, Any], logical_index: int, layout_manifest: dict[str, Any], measure: TextMeasure
+) -> tuple[list[tuple[BlockFragment, ...]], list[RenderDiagnostic]]:
+    blocks = list(slide.get("blocks", ()))
+    pages: list[tuple[BlockFragment, ...]] = []
+    diagnostics: list[RenderDiagnostic] = []
+    for pair_start in range(0, len(blocks), 2):
+        side_pages: list[list[tuple[BlockFragment, ...]]] = []
+        for offset, slot_id in enumerate(("left_body", "right_body")):
+            if pair_start + offset >= len(blocks):
+                side_pages.append([])
+                continue
+            slot = _slot(layout_manifest, slot_id)
+            synthetic = {"slots": [{**slot, "id": "body"}]}
+            found_pages, found = _simple_slide_fragments(
+                {**slide, "layout": "title-content", "blocks": [blocks[pair_start + offset]]},
+                logical_index,
+                synthetic,
+                measure,
+            )
+            diagnostics.extend(found)
+            side_pages.append([
+                tuple(replace(fragment, block_index=pair_start + offset, target_slot=slot_id) for fragment in page)
+                for page in found_pages
+            ])
+        for page_index in range(max(1, *(len(side) for side in side_pages))):
+            pages.append(tuple(
+                fragment
+                for side in side_pages
+                for fragment in (side[page_index] if page_index < len(side) else ())
+            ))
+    return pages or [tuple()], diagnostics
+
+
+def _cover_slot_values(document: dict[str, Any]) -> tuple[tuple[tuple[str, str], ...], RenderDiagnostic | None]:
+    metadata = document.get("metadata", {})
+    subtitle = str(metadata.get("subtitle") or "")
+    descriptor = " · ".join(
+        str(metadata.get(key)) for key in ("school", "department", "course", "author", "date")
+        if metadata.get(key)
+    )
+    complete = f"{subtitle}\n{descriptor}"
+    diagnostic = None
+    if len(complete) > 72 or complete.count("\n") + 1 > 2:
+        diagnostic = RenderDiagnostic(
+            code="COVER_METADATA_OVERFLOW",
+            message="complete cover subtitle descriptor exceeds the controlled 72-character/2-line budget",
+            severity="error",
+            source_line=1,
+            fix="shorten subtitle or cover metadata without dropping descriptor fields",
+        )
+    return (("title", str(document.get("document_title") or "")), ("subtitle", complete)), diagnostic
+
+
 def _image_text_fragments(
     slide: dict[str, Any], logical_index: int, layout_manifest: dict[str, Any], measure: TextMeasure
 ) -> tuple[list[tuple[BlockFragment, ...]], list[RenderDiagnostic]]:
@@ -622,7 +676,11 @@ def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> Physi
         layout = str(logical.get("layout", "title-content"))
         layout_manifest = manifest["layouts"][layout]
         selected_font_sizes: tuple[tuple[str, float], ...] = ()
-        if layout == "image-text":
+        if layout == "cover":
+            page_fragments, found = [tuple()], []
+        elif layout == "two-column":
+            page_fragments, found = _two_column_fragments(logical, logical_index, layout_manifest, measure)
+        elif layout == "image-text":
             page_fragments, found = _image_text_fragments(logical, logical_index, layout_manifest, measure)
         elif layout == "table":
             page_fragments, found, selected_font = _table_fragments(logical, logical_index, layout_manifest, measure)
@@ -642,6 +700,11 @@ def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> Physi
         physical_indices: list[int] = []
         notes = logical.get("notes")
         notes_intent = notes.get("markdown") if isinstance(notes, dict) else None
+        slot_values: tuple[tuple[str, str], ...] = ()
+        if layout == "cover":
+            slot_values, cover_diagnostic = _cover_slot_values(document)
+            if cover_diagnostic is not None:
+                diagnostics.append(cover_diagnostic)
         for fragment_index, fragments in enumerate(page_fragments):
             physical_index = len(slides)
             physical_indices.append(physical_index)
@@ -656,6 +719,7 @@ def build_deck_plan(document: dict[str, Any], manifest: dict[str, Any]) -> Physi
                 notes_intent=notes_intent,
                 selected_font_sizes=selected_font_sizes,
                 affected_pages=(physical_index,),
+                slot_values=slot_values,
             ))
         mapping.append((logical_index, tuple(physical_indices)))
     closing_specs = [item for item in document.get("implicit_slides", ()) if item.get("layout") == "closing"]
