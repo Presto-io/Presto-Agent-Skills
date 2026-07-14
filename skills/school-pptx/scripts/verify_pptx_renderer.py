@@ -1473,6 +1473,30 @@ def phase_41_42_regression_gate(workdir: Path) -> dict[str, object]:
     return {"template_layouts": len(template["layouts"]), "fixture_example": "PASS", "runtime_files": [p.name for p in runtime_files]}
 
 
+def template_reader_security_gate(workdir: Path) -> dict[str, object]:
+    completed = subprocess.run(
+        [sys.executable, str(SCRIPTS_DIR / "verify_template_manifest.py")],
+        cwd=SKILL_DIR.parent.parent,
+        text=True,
+        capture_output=True,
+        timeout=180,
+        check=False,
+    )
+    output = completed.stdout + completed.stderr
+    require(completed.returncode == 0, f"template reader security regressions failed: {output[:1024]}")
+    require("Traceback" not in output and str(workdir) not in output,
+            "template reader security gate leaked traceback or workdir")
+    require(len(output.encode("utf-8")) < 8 * 1024, "template reader security evidence exceeded 8 KiB")
+    evidence = json.loads(completed.stdout)
+    require(set(evidence["negative_vectors"]) == {
+        "entry_count", "declared_size", "actual_size", "duplicate", "traversal",
+        "doctype_entity", "external_relationship",
+    }, "template reader public vector set changed")
+    require(evidence["canonical"] == {"layouts": 11, "status": "PASS"},
+            "canonical template reader regression changed")
+    return evidence
+
+
 GATES["cli-publication"] = cli_publication_gate
 GATES["best-effort"] = best_effort_gate
 GATES["publication-safety"] = publication_safety_gate
@@ -1480,6 +1504,7 @@ GATES["publication-descriptor-race"] = publication_descriptor_race_gate
 GATES["object-error-bounded"] = object_error_bounded_gate
 GATES["determinism"] = determinism_gate
 GATES["phase_41_42_regression"] = phase_41_42_regression_gate
+GATES["template-reader-security"] = template_reader_security_gate
 
 
 PHASE_43_GATE_ORDER = (

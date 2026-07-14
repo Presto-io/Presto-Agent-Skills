@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from pathlib import PurePosixPath
 from xml.etree import ElementTree as ET
 from zipfile import BadZipFile, ZipFile
 
@@ -35,6 +37,135 @@ NS = {
     "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
 }
+REL_NS = {"r": "http://schemas.openxmlformats.org/package/2006/relationships"}
+MAX_PACKAGE_ENTRIES = 512
+MAX_PACKAGE_ENTRY_BYTES = 16 * 1024 * 1024
+MAX_PACKAGE_TOTAL_BYTES = 96 * 1024 * 1024
+MAX_PACKAGE_RELATIONSHIPS = 4096
+PACKAGE_READ_CHUNK_BYTES = 64 * 1024
+FORBIDDEN_XML_MARKERS = (b"<!DOCTYPE", b"<!ENTITY")
+
+
+class TemplatePackageError(RuntimeError):
+    pass
+
+
+def package_fail(code: str) -> None:
+    raise TemplatePackageError(code)
+
+
+def normalized_package_name(name: str, *, is_dir: bool) -> str:
+    if not name or "\\" in name or name.startswith("/"):
+        package_fail("TEMPLATE_PACKAGE_PATH_INVALID")
+    candidate = name[:-1] if is_dir and name.endswith("/") else name
+    parts = candidate.split("/")
+    if not candidate or any(part in {"", ".", ".."} for part in parts):
+        package_fail("TEMPLATE_PACKAGE_PATH_INVALID")
+    normalized = posixpath.normpath(candidate)
+    if normalized != candidate or PurePosixPath(normalized).is_absolute():
+        package_fail("TEMPLATE_PACKAGE_PATH_INVALID")
+    return normalized + ("/" if is_dir else "")
+
+
+def preflight_package(infos: list[object]) -> dict[str, object]:
+    if len(infos) > MAX_PACKAGE_ENTRIES:
+        package_fail("TEMPLATE_PACKAGE_ENTRY_COUNT")
+    seen: set[str] = set()
+    total = 0
+    checked: dict[str, object] = {}
+    for info in infos:
+        name = normalized_package_name(info.filename, is_dir=info.is_dir())
+        duplicate_key = name.rstrip("/")
+        if duplicate_key in seen:
+            package_fail("TEMPLATE_PACKAGE_DUPLICATE")
+        seen.add(duplicate_key)
+        if info.flag_bits & 0x1:
+            package_fail("TEMPLATE_PACKAGE_ENCRYPTED")
+        if info.file_size > MAX_PACKAGE_ENTRY_BYTES:
+            package_fail("TEMPLATE_PACKAGE_ENTRY_SIZE")
+        total += info.file_size
+        if total > MAX_PACKAGE_TOTAL_BYTES:
+            package_fail("TEMPLATE_PACKAGE_TOTAL_SIZE")
+        checked[name] = info
+    return checked
+
+
+def read_package_entry(package: ZipFile, info: object, remaining_total: int) -> tuple[bytes, int]:
+    chunks: list[bytes] = []
+    actual = 0
+    try:
+        with package.open(info, "r") as stream:
+            while True:
+                chunk = stream.read(PACKAGE_READ_CHUNK_BYTES)
+                if not chunk:
+                    break
+                actual += len(chunk)
+                if actual > MAX_PACKAGE_ENTRY_BYTES:
+                    package_fail("TEMPLATE_PACKAGE_ENTRY_SIZE")
+                if actual > remaining_total:
+                    package_fail("TEMPLATE_PACKAGE_TOTAL_SIZE")
+                chunks.append(chunk)
+    except TemplatePackageError:
+        raise
+    except BadZipFile:
+        package_fail("TEMPLATE_PACKAGE_ENTRY_SIZE")
+    if actual != info.file_size:
+        package_fail("TEMPLATE_PACKAGE_ENTRY_SIZE")
+    return b"".join(chunks), actual
+
+
+def validate_relationships(name: str, root: ET.Element, relationship_count: int) -> int:
+    owner = name[:-5]
+    if "/_rels/" in owner:
+        owner = owner.replace("/_rels/", "/", 1)
+    elif owner.startswith("_rels/"):
+        owner = owner[len("_rels/"):]
+    owner = owner.rsplit("/", 1)[0] if "/" in owner else ""
+    relationships = root.findall(".//r:Relationship", REL_NS)
+    relationship_count += len(relationships)
+    if relationship_count > MAX_PACKAGE_RELATIONSHIPS:
+        package_fail("TEMPLATE_PACKAGE_RELATIONSHIP_LIMIT")
+    for relationship in relationships:
+        target = relationship.attrib.get("Target", "")
+        if relationship.attrib.get("TargetMode") == "External":
+            package_fail("TEMPLATE_PACKAGE_RELATIONSHIP_INVALID")
+        if not target or "\\" in target or target.startswith("/"):
+            package_fail("TEMPLATE_PACKAGE_RELATIONSHIP_INVALID")
+        resolved = posixpath.normpath(posixpath.join(owner, target))
+        if resolved == ".." or resolved.startswith("../") or PurePosixPath(resolved).is_absolute():
+            package_fail("TEMPLATE_PACKAGE_RELATIONSHIP_INVALID")
+    return relationship_count
+
+
+def load_package_xml(template_path: Path) -> dict[str, ET.Element]:
+    try:
+        with ZipFile(template_path) as package:
+            checked = preflight_package(package.infolist())
+            total_actual = 0
+            relationship_count = 0
+            roots: dict[str, ET.Element] = {}
+            for name, info in checked.items():
+                if info.is_dir() or not (name.endswith(".xml") or name.endswith(".rels")):
+                    continue
+                payload, actual = read_package_entry(package, info, MAX_PACKAGE_TOTAL_BYTES - total_actual)
+                total_actual += actual
+                upper = payload.upper()
+                if any(marker in upper for marker in FORBIDDEN_XML_MARKERS):
+                    package_fail("TEMPLATE_PACKAGE_XML_FORBIDDEN")
+                try:
+                    root = ET.fromstring(payload)
+                except ET.ParseError:
+                    package_fail("TEMPLATE_PACKAGE_XML_INVALID")
+                if name.endswith(".rels"):
+                    relationship_count = validate_relationships(name, root, relationship_count)
+                roots[name] = root
+            return roots
+    except FileNotFoundError:
+        package_fail("TEMPLATE_PACKAGE_NOT_FOUND")
+    except TemplatePackageError:
+        raise
+    except (BadZipFile, OSError, RuntimeError, ValueError):
+        package_fail("TEMPLATE_PACKAGE_INVALID")
 
 
 def fail(message: str) -> None:
@@ -61,42 +192,39 @@ def write_text(path: Path, text: str) -> None:
 
 def load_shape_index(template_path: Path) -> dict[str, dict[int, dict[str, object]]]:
     try:
-        with ZipFile(template_path) as pptx:
-            index: dict[str, dict[int, dict[str, object]]] = {}
-            for name in pptx.namelist():
-                if not name.startswith("ppt/slideLayouts/slideLayout") or not name.endswith(".xml"):
+        roots = load_package_xml(template_path)
+        index: dict[str, dict[int, dict[str, object]]] = {}
+        for name, root in roots.items():
+            if not name.startswith("ppt/slideLayouts/slideLayout") or not name.endswith(".xml"):
+                continue
+            shapes: dict[int, dict[str, object]] = {}
+            for shape in root.findall(".//p:sp", NS):
+                cnv = shape.find("./p:nvSpPr/p:cNvPr", NS)
+                if cnv is None or "id" not in cnv.attrib:
                     continue
-                root = ET.fromstring(pptx.read(name))
-                shapes: dict[int, dict[str, object]] = {}
-                for shape in root.findall(".//p:sp", NS):
-                    cnv = shape.find("./p:nvSpPr/p:cNvPr", NS)
-                    if cnv is None or "id" not in cnv.attrib:
-                        continue
-                    xfrm = shape.find("./p:spPr/a:xfrm", NS)
-                    geometry = None
-                    if xfrm is not None:
-                        off = xfrm.find("./a:off", NS)
-                        ext = xfrm.find("./a:ext", NS)
-                        if off is not None and ext is not None:
-                            geometry = {
-                                "x": int(off.attrib.get("x", "0")),
-                                "y": int(off.attrib.get("y", "0")),
-                                "width": int(ext.attrib.get("cx", "0")),
-                                "height": int(ext.attrib.get("cy", "0")),
-                            }
-                    placeholder = shape.find("./p:nvSpPr/p:nvPr/p:ph", NS)
-                    shapes[int(cnv.attrib["id"])] = {
-                        "name": cnv.attrib.get("name", ""),
-                        "geometry": geometry,
-                        "type": placeholder.attrib.get("type", "") if placeholder is not None else "",
-                        "idx": placeholder.attrib.get("idx", "") if placeholder is not None else "",
-                    }
-                index[name] = shapes
-            return index
-    except FileNotFoundError:
-        fail(f"template not found: {template_path}")
-    except (BadZipFile, ET.ParseError) as exc:
-        fail(f"template pptx invalid: {exc}")
+                xfrm = shape.find("./p:spPr/a:xfrm", NS)
+                geometry = None
+                if xfrm is not None:
+                    off = xfrm.find("./a:off", NS)
+                    ext = xfrm.find("./a:ext", NS)
+                    if off is not None and ext is not None:
+                        geometry = {
+                            "x": int(off.attrib.get("x", "0")),
+                            "y": int(off.attrib.get("y", "0")),
+                            "width": int(ext.attrib.get("cx", "0")),
+                            "height": int(ext.attrib.get("cy", "0")),
+                        }
+                placeholder = shape.find("./p:nvSpPr/p:nvPr/p:ph", NS)
+                shapes[int(cnv.attrib["id"])] = {
+                    "name": cnv.attrib.get("name", ""),
+                    "geometry": geometry,
+                    "type": placeholder.attrib.get("type", "") if placeholder is not None else "",
+                    "idx": placeholder.attrib.get("idx", "") if placeholder is not None else "",
+                }
+            index[name] = shapes
+        return index
+    except TemplatePackageError:
+        raise
 
 
 def slot_error(layout_id: str, slot_id: str, message: str) -> str:
@@ -460,7 +588,11 @@ def main(argv: list[str]) -> int:
     tolerance = args.geometry_tolerance_emu
     if tolerance is None:
         tolerance = int(data.get("template", {}).get("geometry_tolerance_emu", 2000))
-    evidence = validate_manifest(data, manifest_path, template_path, tolerance)
+    try:
+        evidence = validate_manifest(data, manifest_path, template_path, tolerance)
+    except TemplatePackageError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     out_json = Path(args.out_json).resolve() if args.out_json else None
     out_md = Path(args.out_md).resolve() if args.out_md else None
     if out_json:
