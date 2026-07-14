@@ -28,6 +28,7 @@ RENDER_PRE_VALIDATE_HOOK: Callable[[Path], None] | None = None
 RENDER_PRE_SAVE_HOOK: Callable[[Any, BinaryIO], None] | None = None
 RENDER_PRE_PUBLISH_HOOK: Callable[[Path], None] | None = None
 RENDER_BETWEEN_REPLACE_HOOK: Callable[[Path], None] | None = None
+RENDER_POST_PARSE_HOOK: Callable[[Path], None] | None = None
 
 
 class RenderError(RuntimeError):
@@ -331,6 +332,9 @@ def render_command(args: argparse.Namespace) -> int:
         document = parse_document(input_path, manifest)
         safe_document = safe_document_for_pagination(document, manifest)
         plan = build_deck_plan(safe_document, manifest)
+        frozen_projection = plan.to_projection()
+        if RENDER_POST_PARSE_HOOK is not None:
+            RENDER_POST_PARSE_HOOK(input_path)
         parser_errors = [parser_diagnostic(item) for item in document.get("errors", ())]
         plan_errors = [item for item in plan.diagnostics if item.severity == "error"]
         warnings = list(document.get("warnings", ())) + [item for item in plan.diagnostics if item.severity == "warning"]
@@ -340,7 +344,9 @@ def render_command(args: argparse.Namespace) -> int:
             with destination.reserve_pptx() as staged_pptx:
                 if RENDER_PRE_SAVE_HOOK is not None:
                     RENDER_PRE_SAVE_HOOK(destination, staged_pptx)
-                emit_deck(plan, manifest, template_path, staged_pptx, media_root=input_path.parent)
+                emit_evidence = emit_deck(plan, manifest, template_path, staged_pptx, media_root=input_path.parent)
+                if plan.to_projection() != frozen_projection:
+                    raise RenderError("PPTX_PLAN_MUTATED", "发射阶段修改了冻结物理计划。", "检查 renderer 实现后重试。")
                 destination.assert_temporary("pptx")
                 if RENDER_PRE_VALIDATE_HOOK is not None:
                     try:
@@ -350,13 +356,14 @@ def render_command(args: argparse.Namespace) -> int:
                 validate_staged_package(staged_pptx, expected_slides=len(plan.slides))
             destination.assert_temporary("pptx")
             markdown_output, pptx_output = destination.publish()
-        affected = affected_slides(document, parser_errors, plan_errors)
-        if parser_errors or plan_errors:
+        runtime_errors = list(emit_evidence.get("runtime_diagnostics", ()))
+        affected = affected_slides(document, [*parser_errors, *runtime_errors], plan_errors)
+        if parser_errors or plan_errors or runtime_errors:
             print("渲染完成但输入存在异常")
             print("本次渲染不成功，命令退出码非零。")
             print(f"输入 Markdown：{input_path}")
             print(f"主题：{document.get('metadata', {}).get('theme') or manifest.get('theme_id') or '-'}")
-            print(f"错误：{len(parser_errors) + len(plan_errors)}；警告：{len(warnings)}")
+            print(f"错误：{len(parser_errors) + len(plan_errors) + len(runtime_errors)}；警告：{len(warnings)}")
             print(f"受影响逻辑页：{'、'.join(affected)}")
             for item in parser_errors[:MAX_PUBLIC_DIAGNOSTICS]:
                 print_diagnostic(item)
@@ -365,6 +372,12 @@ def render_command(args: argparse.Namespace) -> int:
                 print(f"  slide: {','.join(map(str, item.logical_indices)) or 'unknown'}")
                 print("  layout: unknown")
                 print(f"  fix: {item.fix}")
+            remaining = max(0, MAX_PUBLIC_DIAGNOSTICS - len(parser_errors) - len(plan_errors))
+            for item in runtime_errors[:remaining]:
+                print(f"{input_path}:{item['source_line']}:1 [{item['code']}] {item['message']}")
+                print(f"  slide: {','.join(map(str, item['logical_indices']))}")
+                print("  layout: unknown")
+                print(f"  fix: {item['fix']}")
             print(f"Markdown：{markdown_output}")
             print(f"异常 PPTX：{pptx_output}")
             print("请修正 Markdown 后重新渲染覆盖，或在自动工作流结束后手工修改可编辑 PPTX。")
