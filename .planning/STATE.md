@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: executing
-stopped_at: Phase 43 gap-closure plan 43-10 ready to execute
-last_updated: "2026-07-14T12:08:42.728Z"
-last_activity: 2026-07-14 -- Phase 43 planning complete
+stopped_at: Completed 43-10-PLAN.md
+last_updated: "2026-07-14T13:28:13.219Z"
+last_activity: 2026-07-14
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 14
-  completed_plans: 13
-  percent: 93
+  completed_plans: 14
+  percent: 100
 ---
 
 # State: Presto Agent Skills
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 43 — editable-pptx-renderer-and-pagination
+**Current focus:** Phase 44 — Verification Gate, Runtime Notes, and UAT
 
 ## Current Position
 
-Phase: 43 (Editable PPTX Renderer and Pagination) — READY TO EXECUTE
-Plan: 9 of 10
-Status: Ready to execute
-Last activity: 2026-07-14 -- Phase 43 planning complete
+Phase: 43 (Editable PPTX Renderer and Pagination) — COMPLETE
+Plan: 10 of 10
+Status: Phase complete; ready to plan Phase 44
+Last activity: 2026-07-14 -- Phase 43 Plan 43-10 completed
 
-Progress: [█████████░] 90%
+Progress: [██████████] 100%
 
 ## Workflow Preferences
 
@@ -88,6 +88,8 @@ Phase order:
 - [Phase 43]: Header-only tables are valid one-page native tables with exactly one frozen row and positive row height.
 - [Phase 43]: Pillow bomb and format/decode failures cross the public boundary only through precise allowlisted codes and bounded generic diagnostics.
 - [Phase 43]: Phase 43 aggregate has one immutable 18-gate order with exact historical and R43 gap mappings. — Required/called equality and zero dynamic skips prevent aggregate false-green results.
+- [Phase 43]: Mixed body pagination and native emission share frozen 24pt/22pt target-slot typography and controlled spacing. — This prevents successful PPTX output from silently clipping code measured at a smaller size.
+- [Phase 43]: Media validation and `add_picture` consume one bounded descriptor-read payload, while the aggregate derives closure from a fixed 20-gate evidence set. — This closes the media TOCTOU window and hard-coded outcome audit.
 
 ### Pending Todos
 
@@ -113,6 +115,7 @@ None yet.
 | Phase 43 P07 | 16 min | 3 tasks | 8 files |
 | Phase 43 P08 | 18 min | 2 tasks | 3 files |
 | Phase 43 P09 | 27 min | 3 tasks | 4 files |
+| Phase 43 P10 | 25 min | 3 tasks | 5 files |
 
 ## Deferred Items
 
@@ -120,6 +123,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-07-14T09:29:25.502Z
-Stopped at: Phase 43 verification gaps found after 43-09
+Last session: 2026-07-14T13:28:13.213Z
+Stopped at: Completed 43-10-PLAN.md
 Resume file: None
