@@ -38,7 +38,7 @@
 
 - [x] **Phase 41: Standard Template and Manifest** - Normalize the school visual sample into a skill-local PPTX template with a committed slot manifest and template validation command. (completed 2026-07-13)
 - [x] **Phase 42: Markdown Contract and Full Fixture** - Define the constrained YAML plus slide-block Markdown contract and produce a full fixture covering all supported layouts and edge cases. (completed 2026-07-13)
-- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (9/10 plans executed; gap-closure plan ready)
+- [x] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (completed 2026-07-14)
 - [ ] **Phase 44: Verification Gate, Runtime Notes, and UAT** - Add repeatable structural verification, negative cases, six-runtime guidance, repository discoverability, and manual visual acceptance evidence.
 
 ## Phase Details
@@ -120,7 +120,7 @@ Plans:
 - [x] 43-09-PLAN.md — Close non-code fenced-code fidelity, header-only native tables, and bounded Pillow media errors.
 
 **Wave 10** *(blocked on Wave 9 completion)*
-- [ ] 43-10-PLAN.md — Close mixed-fragment capacity, evidence-derived aggregate auditing, and descriptor-bound media race gaps.
+- [x] 43-10-PLAN.md — Close mixed-fragment capacity, evidence-derived aggregate auditing, and descriptor-bound media race gaps.
 **UI hint**: yes
 
 ### Phase 44: Verification Gate, Runtime Notes, and UAT
@@ -145,7 +145,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 9/10 | Gap closure planned | - |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 10/10 | Complete   | 2026-07-14 |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
@@ -197,11 +197,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phases 41-42 are complete and independently verified. Phase 43 has executed 9/10 plans; 43-10 is independently plan-checked and ready to close the remaining critical and warning gaps.
+Phases 41-43 are complete. Phase 43 closes mixed-fragment capacity, descriptor-bound media emission, and evidence-derived aggregate auditing with all 20 automated gates passing.
 
 ## Next Step
 
-Run `/gsd:execute-phase 43` to execute 43-10 and re-verify the mixed-code pagination, aggregate evidence, and media race closures before Phase 44.
+Run `/gsd:plan-phase 44` to plan the public verification gate, runtime notes, discoverability, and manual viewer UAT.
 
 ## Backlog
 
