@@ -120,7 +120,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PPTX-05 | Phase 43 | Complete |
 | PPTX-06 | Phase 43 | Complete |
 | PPTX-07 | Phase 43 | Complete |
-| PPTX-08 | Phase 43 | Complete |
+| PPTX-08 | Phase 43 | Pending |
 | PPTX-09 | Phase 43 | Complete |
 | PPTX-10 | Phase 43 | Complete |
 | PPTX-11 | Phase 43 | Complete |
@@ -128,7 +128,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PPTX-13 | Phase 43 | Complete |
 | VER-01 | Phase 42 | Complete |
 | VER-02 | Phase 41 | Complete |
-| VER-03 | Phase 43 | Complete |
+| VER-03 | Phase 43 | Pending |
 | VER-04 | Phase 44 | Pending |
 | VER-05 | Phase 44 | Pending |
 | VER-06 | Phase 44 | Pending |
