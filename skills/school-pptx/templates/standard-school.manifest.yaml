@@ -68,7 +68,7 @@ layouts:
           type: subTitle
           idx: 1
         geometry: {x: 1524000, y: 3602038, width: 9144000, height: 1655762}
-        text_budget: {max_chars: 48, max_lines: 2, font_size_min: 18, font_size_max: 28, overflow: shrink}
+        text_budget: {max_chars: 72, max_lines: 2, font_size_min: 18, font_size_max: 28, overflow: shrink}
         empty_slot: hide
         continuation: none
   contents:
