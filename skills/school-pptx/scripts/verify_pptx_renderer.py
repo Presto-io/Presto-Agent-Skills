@@ -33,6 +33,7 @@ MANIFEST_PATH = SKILL_DIR / "templates" / "standard-school.manifest.yaml"
 TEMPLATE_PATH = SKILL_DIR / "templates" / "standard-school.pptx"
 PUBLIC_CLI = SCRIPTS_DIR / "school-pptx.sh"
 FIXTURE_PATH = SKILL_DIR / "fixtures" / "school-pptx-full.md"
+CANONICAL_PHYSICAL_SLIDES = 26
 MAX_ZIP_ENTRIES = 256
 MAX_ZIP_ENTRY_BYTES = 4 * 1024 * 1024
 MAX_ZIP_TOTAL_BYTES = 32 * 1024 * 1024
@@ -244,7 +245,6 @@ GATES = {
 
 
 def frozen_slot_content_gate(workdir: Path) -> dict[str, object]:
-    del workdir
     manifest = load_manifest(SKILL_DIR)
     document = parse_document(FIXTURE_PATH, manifest)
     first = pptx_paginate.build_deck_plan(document, manifest)
@@ -269,7 +269,34 @@ def frozen_slot_content_gate(workdir: Path) -> dict[str, object]:
     overflow_plan = pptx_paginate.build_deck_plan(overflow, manifest)
     require(any(item.code == "COVER_METADATA_OVERFLOW" and item.severity == "error"
                 for item in overflow_plan.diagnostics), "cover overflow did not fail")
-    return {"target_slots": [fragment.target_slot for fragment in fragments], "cover_length": len(values["subtitle"])}
+    overflow_source = workdir / "cover-overflow.md"
+    overflow_source.write_text(
+        "---\n"
+        'title: "独立封面负例"\n'
+        'subtitle: "只验证非 canonical 超长封面"\n'
+        f'school: "{"超长学校" * 30}"\n'
+        'department: "智能制造学院"\n'
+        'course: "智能产线安装与调试"\n'
+        'author: "课程建设团队"\n'
+        'date: "2026-07-13"\n'
+        'theme: "standard-school"\n'
+        "---\n\n"
+        '::: slide {layout="cover"}\n:::\n',
+        encoding="utf-8",
+    )
+    overflow_output = workdir / "cover-overflow-output"
+    overflow_output.mkdir()
+    overflow_result = run_public_render(overflow_source, overflow_output, "overflow")
+    overflow_text = overflow_result.stdout + overflow_result.stderr
+    require(overflow_result.returncode != 0 and "COVER_METADATA_OVERFLOW" in overflow_text,
+            "independent public cover overflow did not fail bounded")
+    require("Traceback" not in overflow_text and len(overflow_text.encode("utf-8")) < 8 * 1024,
+            "public cover overflow leaked traceback or unbounded output")
+    return {
+        "target_slots": [fragment.target_slot for fragment in fragments],
+        "cover_length": len(values["subtitle"]),
+        "public_overflow_code": "COVER_METADATA_OVERFLOW",
+    }
 
 
 GATES["frozen-slot-content"] = frozen_slot_content_gate
@@ -816,6 +843,11 @@ def editable_objects_gate(workdir: Path) -> dict[str, object]:
     else:
         raise GateFailure("nested inline span did not fail")
 
+    manifest = load_manifest(SKILL_DIR)
+    table_slot = next(slot for slot in manifest["layouts"]["table"]["slots"] if slot["id"] == "table")
+    table_budget = table_slot["geometry"]["height"] - table_slot["subregions"]["table_name"]["geometry"]["height"]
+    table_row_heights = (table_budget // 2, table_budget - table_budget // 2)
+
     rich = BlockFragment(
         kind="paragraph", logical_index=0, block_index=0, fragment_index=0, source_line=1,
         text="甲**粗体**==高亮==乙",
@@ -824,6 +856,7 @@ def editable_objects_gate(workdir: Path) -> dict[str, object]:
         kind="table", logical_index=1, block_index=0, fragment_index=0, source_line=2,
         rows=(("列一", "列二"), ("数据", "内容")),
         metadata=(("table_name", ""), ("table_name_placeholder", "true"), ("repeat_header", "true")),
+        row_heights_emu=table_row_heights,
     )
     timeline = BlockFragment(
         kind="timeline", logical_index=2, block_index=0, fragment_index=0, source_line=3,
@@ -851,7 +884,6 @@ def editable_objects_gate(workdir: Path) -> dict[str, object]:
     )
     plan = PhysicalDeckPlan(slides)
     output = workdir / "editable-objects.pptx"
-    manifest = load_manifest(SKILL_DIR)
     pptx_emit.emit_deck(plan, manifest, TEMPLATE_PATH, output, media_root=SKILL_DIR / "fixtures")
     reopened = pptx_emit.require_dependencies()["pptx"].Presentation(output)
     require(len(reopened.slides) == len(slides), "editable deck slide count")
@@ -1094,7 +1126,8 @@ def cli_publication_gate(workdir: Path) -> dict[str, object]:
     require(completed.returncode == 0, f"public render failed: {completed.stdout}{completed.stderr}")
     lines = completed.stdout.splitlines()
     require(lines and lines[0] == "渲染成功", "success heading order changed")
-    require("逻辑页：13；物理页：24" in completed.stdout, "success pagination summary missing")
+    require(f"逻辑页：13；物理页：{CANONICAL_PHYSICAL_SLIDES}" in completed.stdout,
+            "success pagination summary missing")
     require(completed.stdout.rstrip().endswith("校验结果：PASS"), "success validation footer missing")
     markdown = output / "course-deck.md"
     pptx = output / "course-deck.pptx"
@@ -1104,12 +1137,17 @@ def cli_publication_gate(workdir: Path) -> dict[str, object]:
     require(command_owned_files(output) == {"caller-owned.txt", "course-deck.md", "course-deck.pptx"},
             "success public root contains non-pair artifacts")
     inventory = semantic_package_inventory(pptx)
-    require(inventory["slides"] == 24 and inventory["native_tables"] > 0, "published PPTX did not reopen structurally")
+    require(inventory["slides"] == CANONICAL_PHYSICAL_SLIDES and inventory["native_tables"] > 0,
+            "published PPTX did not reopen structurally")
     help_result = subprocess.run([str(PUBLIC_CLI), "--help"], text=True, capture_output=True, check=False)
     require(help_result.returncode == 0 and
             "render --input <reviewed.md> --out-dir <delivery-dir> [--stem <name>]" in help_result.stdout,
             "literal render usage missing")
-    return {"files": sorted(command_owned_files(output)), "inventory": inventory}
+    return {
+        "files": sorted(command_owned_files(output)),
+        "inventory": inventory,
+        "pagination_explanation": "43-07 freezes three ordered two-column pairs as three physical pages",
+    }
 
 
 def best_effort_gate(workdir: Path) -> dict[str, object]:
@@ -1364,6 +1402,8 @@ def publication_descriptor_race_gate(workdir: Path) -> dict[str, object]:
         "sentinel_sha256": sentinel_hash,
         "attacker_symlink_retained": True,
         "fds_closed": True,
+        "renderer_owned_inode_reclaimed": True,
+        "renderer_owned_regular_debris": [],
     }
 
 
@@ -1510,15 +1550,52 @@ GATES["template-reader-security"] = template_reader_security_gate
 PHASE_43_GATE_ORDER = (
     "contract-model",
     "pagination",
+    "frozen-slot-content",
+    "frozen-numbering-row-heights",
     "ooxml-bootstrap",
     "editable-objects",
+    "code-literal-roundtrip",
     "emit-structure",
+    "frozen-plan-emission",
     "cli-publication",
     "best-effort",
     "publication-safety",
+    "publication-descriptor-race",
+    "object-error-bounded",
+    "template-reader-security",
     "determinism",
     "phase_41_42_regression",
 )
+
+PHASE_43_REQUIRED_GATES = frozenset({
+    "contract-model", "pagination", "frozen-slot-content", "frozen-numbering-row-heights",
+    "ooxml-bootstrap", "editable-objects", "code-literal-roundtrip", "emit-structure",
+    "frozen-plan-emission", "cli-publication", "best-effort", "publication-safety",
+    "publication-descriptor-race", "object-error-bounded", "template-reader-security",
+    "determinism", "phase_41_42_regression",
+})
+
+GAP_COVERAGE = {
+    "C-01": ("publication-descriptor-race",),
+    "C-02": ("code-literal-roundtrip",),
+    "W-01": ("object-error-bounded",),
+    "W-02": ("frozen-slot-content", "frozen-plan-emission"),
+    "W-03": ("frozen-slot-content", "frozen-plan-emission"),
+    "W-04": ("frozen-numbering-row-heights", "frozen-plan-emission"),
+    "W-05": ("frozen-numbering-row-heights", "frozen-plan-emission"),
+    "W-06": ("template-reader-security",),
+}
+
+REQUIREMENT_COVERAGE = {
+    "PPTX-03": ("editable-objects", "code-literal-roundtrip", "frozen-slot-content", "frozen-plan-emission"),
+    "PPTX-04": ("editable-objects", "frozen-numbering-row-heights", "frozen-plan-emission"),
+    "PPTX-08": ("pagination", "frozen-slot-content", "frozen-numbering-row-heights", "frozen-plan-emission"),
+    "PPTX-10": ("code-literal-roundtrip",),
+    "VER-03": (
+        "cli-publication", "best-effort", "publication-safety", "publication-descriptor-race",
+        "object-error-bounded", "template-reader-security",
+    ),
+}
 
 
 def run_named_gate(name: str, workdir: Path) -> dict[str, object]:
@@ -1538,11 +1615,7 @@ def run_named_gate(name: str, workdir: Path) -> dict[str, object]:
 
 def run_phase_43() -> dict[str, object]:
     require(len(PHASE_43_GATE_ORDER) == len(set(PHASE_43_GATE_ORDER)), "phase-43 registry contains duplicates")
-    required = {
-        "contract-model", "pagination", "ooxml-bootstrap", "editable-objects", "emit-structure",
-        "cli-publication", "best-effort", "publication-safety", "determinism", "phase_41_42_regression",
-    }
-    require(set(PHASE_43_GATE_ORDER) == required, "phase-43 registry coverage changed")
+    require(set(PHASE_43_GATE_ORDER) == PHASE_43_REQUIRED_GATES, "phase-43 registry coverage changed")
     evidence: dict[str, object] = {}
     called: list[str] = []
     with tempfile.TemporaryDirectory(prefix="school-pptx-phase-43-") as temporary:
@@ -1553,6 +1626,15 @@ def run_phase_43() -> dict[str, object]:
             evidence[name] = run_named_gate(name, gate_dir)
             called.append(name)
     require(tuple(called) == PHASE_43_GATE_ORDER, "phase-43 registry skipped or reordered a gate")
+    called_set = set(called)
+    require(set(GAP_COVERAGE) == {"C-01", "C-02", "W-01", "W-02", "W-03", "W-04", "W-05", "W-06"},
+            "phase-43 gap coverage set changed")
+    require(all(gates and set(gates) <= called_set for gates in GAP_COVERAGE.values()),
+            "phase-43 gap coverage names an uncalled gate")
+    require(set(REQUIREMENT_COVERAGE) == {"PPTX-03", "PPTX-04", "PPTX-08", "PPTX-10", "VER-03"},
+            "blocked requirement coverage set changed")
+    require(all(gates and set(gates) <= called_set for gates in REQUIREMENT_COVERAGE.values()),
+            "blocked requirement coverage names an uncalled gate")
     evidence["decision_coverage"] = {
         "D-01..D-05": "pagination",
         "D-06..D-10": "pagination",
@@ -1561,11 +1643,18 @@ def run_phase_43() -> dict[str, object]:
         "D-19": "publication-safety",
         "D-20..D-21": "cli-publication,publication-safety",
     }
-    evidence["requirement_coverage"] = {
-        "PPTX-01..PPTX-12": "contract-model,pagination,ooxml-bootstrap,editable-objects,emit-structure",
-        "PPTX-13": "cli-publication,publication-safety",
-        "VER-03": "cli-publication,best-effort",
-        "SKILL-03": "phase_41_42_regression",
+    evidence["gap_coverage"] = GAP_COVERAGE
+    evidence["requirement_coverage"] = REQUIREMENT_COVERAGE
+    evidence["registry"] = {
+        "required": PHASE_43_GATE_ORDER,
+        "called": tuple(called),
+        "unique": True,
+        "dynamic_skips": 0,
+    }
+    evidence["phase_boundary"] = {
+        "public_verify_command": False,
+        "runtime_adapter_changes": False,
+        "manual_viewer_uat_claimed": False,
     }
     return evidence
 
