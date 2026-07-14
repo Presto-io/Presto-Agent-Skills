@@ -15,9 +15,9 @@ from pptx_model import PhysicalDeckPlan
 from pptx_objects import (
     PptxObjectError,
     add_contain_picture,
+    add_fragment_text_frame,
     add_gallery_card,
     add_literal_text,
-    add_plain_lines,
     add_rich_text,
     add_table,
     add_timeline,
@@ -201,19 +201,16 @@ def emit_deck(
                     body_slot = slots.get(body_slot_id)
                     if body_slot is None:
                         continue
-                    lines: list[str] = []
-                    for fragment in text_fragments:
-                        if (fragment.target_slot or "body") != body_slot_id:
-                            continue
-                        if fragment.heading:
-                            lines.append(fragment.heading)
-                        if fragment.text is not None:
-                            lines.append(fragment.text)
-                        lines.extend(fragment.items)
+                    slot_fragments = tuple(
+                        fragment for fragment in text_fragments
+                        if (fragment.target_slot or "body") == body_slot_id
+                    )
                     budget = body_slot["text_budget"]
-                    add_plain_lines(
-                        slide, body_slot["geometry"], lines,
-                        font_size=budget["font_size_max"],
+                    add_fragment_text_frame(
+                        slide, body_slot["geometry"], slot_fragments,
+                        font_size=dict(physical.selected_font_sizes).get(
+                            body_slot_id, dict(physical.selected_font_sizes).get("body", budget["font_size_max"])
+                        ),
                         highlight_scheme=highlight, name=f"school-pptx:{body_slot_id}",
                     )
                 image_fragment = next((fragment for fragment in physical.fragments if fragment.kind == "image"), None)
