@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: executing
-stopped_at: Completed 43-10-PLAN.md
-last_updated: "2026-07-14T13:28:13.219Z"
-last_activity: 2026-07-14
+stopped_at: Phase 43 verification gaps found after 43-10
+last_updated: "2026-07-14T14:38:36.000Z"
+last_activity: 2026-07-14 -- Phase 43 verification found 2 critical and 2 warning gaps
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 2
   total_plans: 14
   completed_plans: 14
   percent: 100
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 44 — Verification Gate, Runtime Notes, and UAT
+**Current focus:** Phase 43 — editable-pptx-renderer-and-pagination
 
 ## Current Position
 
-Phase: 43 (Editable PPTX Renderer and Pagination) — COMPLETE
+Phase: 43 (Editable PPTX Renderer and Pagination) — VERIFYING
 Plan: 10 of 10
-Status: Phase complete; ready to plan Phase 44
-Last activity: 2026-07-14 -- Phase 43 Plan 43-10 completed
+Status: Verification gaps found — gap planning required
+Last activity: 2026-07-14 -- Phase 43 verification found 2 critical and 2 warning gaps
 
 Progress: [██████████] 100%
 
@@ -87,9 +87,9 @@ Phase order:
 - [Phase 43]: Every non-code body slot uses one mixed-fragment textbox; code fragments are direct monospace runs while ordinary fragments retain native rich-text styles.
 - [Phase 43]: Header-only tables are valid one-page native tables with exactly one frozen row and positive row height.
 - [Phase 43]: Pillow bomb and format/decode failures cross the public boundary only through precise allowlisted codes and bounded generic diagnostics.
-- [Phase 43]: Phase 43 aggregate has one immutable 18-gate order with exact historical and R43 gap mappings. — Required/called equality and zero dynamic skips prevent aggregate false-green results.
+- [Phase 43]: Phase 43 aggregate currently has a fixed 20-gate order with exact required/called equality and zero dynamic skips, but coverage breadth and producer-derived evidence remain necessary to prevent false-green results.
 - [Phase 43]: Mixed body pagination and native emission share frozen 24pt/22pt target-slot typography and controlled spacing. — This prevents successful PPTX output from silently clipping code measured at a smaller size.
-- [Phase 43]: Media validation and `add_picture` consume one bounded descriptor-read payload, while the aggregate derives closure from a fixed 20-gate evidence set. — This closes the media TOCTOU window and hard-coded outcome audit.
+- [Phase 43]: Media validation and `add_picture` consume one bounded descriptor-read payload, closing the media TOCTOU window; the 20-gate aggregate still requires broader capacity vectors and source-derived producer evidence.
 
 ### Pending Todos
 
@@ -124,5 +124,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-07-14T13:28:13.213Z
-Stopped at: Completed 43-10-PLAN.md
+Stopped at: Phase 43 verification gaps found after 43-10
 Resume file: None
