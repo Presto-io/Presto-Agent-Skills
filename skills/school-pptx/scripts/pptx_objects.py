@@ -102,6 +102,55 @@ def add_literal_text(
     return shape
 
 
+def add_fragment_text_frame(
+    slide: Any,
+    geometry: dict[str, int],
+    fragments: Iterable[Any],
+    *,
+    font_size: float,
+    highlight_scheme: str,
+    name: str,
+    code_font_name: str = "Consolas",
+) -> Any:
+    from pptx.util import Pt
+
+    shape = slide.shapes.add_textbox(*_geometry(geometry))
+    shape.name = name
+    text_frame = shape.text_frame
+    _configure_text_frame(text_frame)
+    first_paragraph = True
+
+    def append_rich_paragraph(authored: str) -> None:
+        nonlocal first_paragraph
+        paragraph = text_frame.paragraphs[0] if first_paragraph else text_frame.add_paragraph()
+        first_paragraph = False
+        for kind, text in normalize_rich_text(authored):
+            run = paragraph.add_run()
+            run.text = text
+            run.font.size = Pt(font_size)
+            if kind == "bold":
+                run.font.bold = True
+            elif kind == "highlight":
+                set_run_highlight(run, highlight_scheme)
+
+    for fragment in fragments:
+        if fragment.heading:
+            append_rich_paragraph(fragment.heading)
+        if fragment.kind == "code":
+            paragraph = text_frame.paragraphs[0] if first_paragraph else text_frame.add_paragraph()
+            first_paragraph = False
+            run = paragraph.add_run()
+            run.text = fragment.text
+            run.font.size = Pt(font_size)
+            run.font.name = code_font_name
+        elif fragment.kind == "list":
+            for item in fragment.items:
+                append_rich_paragraph(item)
+        elif fragment.text is not None:
+            append_rich_paragraph(fragment.text)
+    return shape
+
+
 def add_plain_lines(
     slide: Any, geometry: dict[str, int], lines: Iterable[str], *, font_size: float,
     highlight_scheme: str, name: str, monospace: bool = False

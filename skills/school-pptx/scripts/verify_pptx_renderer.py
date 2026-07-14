@@ -697,45 +697,44 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
     require(len(runs) == 1 and runs[0].text == vector, "literal code is not stored in one run")
     require(all(run.font.name == "Consolas" for run in runs), "literal code run is not monospace")
 
-    wide_line = "wide = '" + "中" * 180 + "'"
-    authored_code = (
-        "if a == b == c\n"
-        "return **value**\n"
-        "x = ***raw***\n"
-        "\n"
-        "  leading spaces\n"
-        "trailing spaces  \n"
-        + wide_line
-    )
+    wide_line = "wide = '" + "中" * 48 + "'"
+    title_code = "if a == b == c\nreturn **value**\n" + wide_line
+    column_code = "column = ==literal== and ***raw***"
     markdown = workdir / "code-roundtrip.md"
     markdown.write_text(
         "---\n"
         'title: "代码保真"\n'
         'theme: "standard-school"\n'
         "---\n"
-        '::: slide {layout="code"}\n'
-        "## 代码页\n"
-        "### 原样代码\n"
+        '::: slide {layout="title-content"}\n'
+        "## 混排代码页\n"
+        "普通 **bold** 与 ==highlight==。\n"
         "```text\n"
-        + authored_code
+        + title_code
         + "\n```\n"
         ":::\n"
-        '::: slide {layout="title-content"}\n'
-        "## 富文本页\n"
-        "普通 **bold** 与 ==highlight==。\n"
+        '::: slide {layout="two-column"}\n'
+        "## 双栏代码页\n"
+        "```text\n"
+        + column_code
+        + "\n```\n"
+        "右栏 **bold** 与 ==highlight==。\n"
         ":::\n",
         encoding="utf-8",
     )
     manifest = load_manifest(SKILL_DIR)
     document = parse_document(markdown, manifest)
     require(not document["errors"], f"code round-trip parser errors: {document['errors']}")
-    parser_text = document["logical_slides"][0]["blocks"][0]["text"]
-    require(parser_text == authored_code, "parser changed authored code")
+    parser_title_code = document["logical_slides"][0]["blocks"][1]["text"]
+    parser_column_code = document["logical_slides"][1]["blocks"][0]["text"]
+    require(parser_title_code == title_code and parser_column_code == column_code, "parser changed authored code")
     plan = pptx_paginate.build_deck_plan(document, manifest)
-    code_slides = [slide for slide in plan.slides if slide.layout == "code"]
-    require(len(code_slides) == 1, "code vector unexpectedly split into multiple physical slides")
-    frozen_text = next(fragment.text for fragment in code_slides[0].fragments if fragment.kind == "code")
-    require(frozen_text == parser_text, "frozen plan changed authored code")
+    content_slide = next(slide for slide in plan.slides if slide.layout == "title-content")
+    column_slide = next(slide for slide in plan.slides if slide.layout == "two-column")
+    frozen_title_code = next(fragment.text for fragment in content_slide.fragments if fragment.kind == "code")
+    frozen_column_code = next(fragment.text for fragment in column_slide.fragments if fragment.kind == "code")
+    require(frozen_title_code == parser_title_code and frozen_column_code == parser_column_code,
+            "frozen plan changed authored code")
 
     emitter_tree = ast.parse((SCRIPTS_DIR / "pptx_emit.py").read_text(encoding="utf-8"), filename="pptx_emit.py")
     emitter_imports = {
@@ -747,6 +746,28 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
         node.module for node in ast.walk(emitter_tree) if isinstance(node, ast.ImportFrom) and node.module
     }
     require("pptx_paginate" not in emitter_imports, "emitter imports paginator")
+    mixed_helper = next(
+        node for node in ast.parse(source, filename="pptx_objects.py").body
+        if isinstance(node, ast.FunctionDef) and node.name == "add_fragment_text_frame"
+    )
+    helper_calls = {
+        node.func.id for node in ast.walk(mixed_helper)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+    require(not {"add_rich_text", "add_plain_lines", "inline_spans"} & helper_calls,
+            "mixed-fragment helper delegates code through rich-text line normalization")
+    code_kind_branches = [
+        node for node in ast.walk(mixed_helper)
+        if isinstance(node, ast.If) and "fragment.kind == 'code'" in ast.unparse(node.test)
+    ]
+    require(len(code_kind_branches) == 1, "mixed-fragment helper code branch missing")
+    code_branch_source = ast.unparse(code_kind_branches[0].body)
+    require("run.text = fragment.text" in code_branch_source,
+            "mixed-fragment helper does not assign frozen code text directly")
+    require(not {"normalize_rich_text", "inline_spans", "add_rich_text", "add_plain_lines"} & {
+        node.id for statement in code_kind_branches[0].body for node in ast.walk(statement)
+        if isinstance(node, ast.Name)
+    }, "mixed-fragment code branch reaches delimiter normalization")
     code_branches = [
         node for node in ast.walk(emitter_tree)
         if isinstance(node, ast.If)
@@ -792,33 +813,72 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
         "code text is not reconstructed from frozen fragments in plan order",
     )
 
-    emitted = workdir / "code-full-chain.pptx"
-    pptx_emit.emit_deck(plan, manifest, TEMPLATE_PATH, emitted, media_root=workdir)
-    reopened_chain = Presentation(emitted)
-    reopened_code = next(
-        shape for shape in reopened_chain.slides[code_slides[0].physical_index].shapes
-        if shape.name == "school-pptx:code"
+    generic_branch = next(
+        node for node in ast.walk(emitter_tree)
+        if isinstance(node, ast.For)
+        and isinstance(node.target, ast.Name)
+        and node.target.id == "body_slot_id"
     )
-    require(reopened_code.text == frozen_text == parser_text, "parser-plan-PPTX code text differs")
-    require(wide_line in reopened_code.text and reopened_code.text.count(wide_line) == 1,
+    generic_calls = [
+        node for statement in generic_branch.body for node in ast.walk(statement)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        and node.func.id == "add_fragment_text_frame"
+    ]
+    require(len(generic_calls) == 1, "emitter must call mixed-fragment helper once per target slot")
+
+    output_root = workdir / "public-code-roundtrip"
+    completed = run_public_render(markdown, output_root, "code-full-chain")
+    require(completed.returncode == 0, f"public mixed-code render failed: {completed.stdout + completed.stderr}")
+    emitted = output_root / "code-full-chain.pptx"
+    require({path.name for path in output_root.iterdir()} == {"code-full-chain.md", "code-full-chain.pptx"},
+            "public mixed-code render leaked sidecar artifacts")
+    public_output = completed.stdout + completed.stderr
+    require("Traceback" not in public_output and str(SKILL_DIR) not in public_output
+            and str(Path.home() / ".cache" / "uv") not in public_output,
+            "public mixed-code success leaked internal paths or traceback")
+    reopened_chain = Presentation(emitted)
+    content_body_shapes = [
+        shape for shape in reopened_chain.slides[content_slide.physical_index].shapes
+        if shape.name == "school-pptx:body"
+    ]
+    left_body_shapes = [
+        shape for shape in reopened_chain.slides[column_slide.physical_index].shapes
+        if shape.name == "school-pptx:left_body"
+    ]
+    right_body_shapes = [
+        shape for shape in reopened_chain.slides[column_slide.physical_index].shapes
+        if shape.name == "school-pptx:right_body"
+    ]
+    require(len(content_body_shapes) == len(left_body_shapes) == len(right_body_shapes) == 1,
+            "non-code layout created overlapping body text proxies")
+    content_body = content_body_shapes[0]
+    left_body = left_body_shapes[0]
+    require([paragraph.text for paragraph in content_body.text_frame.paragraphs] == [
+        "普通 bold 与 highlight。", frozen_title_code
+    ], "title-content paragraph order differs from frozen fragment order")
+    require(left_body.text == frozen_column_code == parser_column_code,
+            "two-column parser-plan-PPTX code text differs")
+    require(wide_line in content_body.text and content_body.text.count(wide_line) == 1,
             "soft wrap inserted a newline into the wide source line")
-    code_runs = [run for paragraph in reopened_code.text_frame.paragraphs for run in paragraph.runs]
+    title_code_runs = content_body.text_frame.paragraphs[1].runs
+    column_code_runs = left_body.text_frame.paragraphs[0].runs
+    code_runs = [*title_code_runs, *column_code_runs]
+    require(len(title_code_runs) == len(column_code_runs) == 1,
+            "each code fragment must occupy one paragraph and one run")
     require(all(run.font.name == "Consolas" and run.font.bold is not True for run in code_runs),
             "code run gained non-literal styling")
-    code_xml = safe_package_entries(emitted)["ppt/slides/slide1.xml"]
-    require(b"<a:highlight>" not in code_xml and b'b="1"' not in code_xml,
+    require(all("<a:highlight>" not in run._r.xml and 'b="1"' not in run._r.xml for run in code_runs),
             "code delimiters generated rich-text OOXML")
-    rich_shape = next(
-        shape for shape in reopened_chain.slides[1].shapes if shape.name == "school-pptx:body"
-    )
-    rich_runs = [run for paragraph in rich_shape.text_frame.paragraphs for run in paragraph.runs]
+    rich_runs = content_body.text_frame.paragraphs[0].runs
     require(any(run.font.bold is True and run.text == "bold" for run in rich_runs),
             "ordinary bold rich text regressed")
-    rich_xml = safe_package_entries(emitted)["ppt/slides/slide2.xml"]
-    require(b"<a:highlight>" in rich_xml, "ordinary highlight rich text regressed")
+    require(any("<a:highlight>" in run._r.xml and run.text == "highlight" for run in rich_runs),
+            "ordinary highlight rich text regressed")
     return {
-        "characters": len(parser_text), "runs": len(code_runs), "font": code_runs[0].font.name,
+        "characters": len(parser_title_code) + len(parser_column_code),
+        "runs": len(code_runs), "font": code_runs[0].font.name,
         "parser_plan_pptx_equal": True, "wide_line_newlines": 0, "rich_text_regression": "PASS",
+        "body_shapes_per_slot": 1, "public_artifacts": 2,
     }
 
 
