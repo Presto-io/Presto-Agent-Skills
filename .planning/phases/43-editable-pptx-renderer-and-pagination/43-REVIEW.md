@@ -1,57 +1,74 @@
 ---
 status: issues_found
 phase: 43-editable-pptx-renderer-and-pagination
+plan: 43-10
 depth: standard
-files_reviewed: 9
+files_reviewed: 5
 findings:
-  critical: 1
+  critical: 2
   warning: 2
   info: 0
-  total: 3
+  total: 4
 ---
 
-# Phase 43 代码审查
+# Phase 43 Plan 43-10 代码审查
+
+## 审查范围
+
+- 变更提交：`7e399f8`、`5a024e8`、`f9f335e`，并核对当前 `HEAD`。
+- 源文件：`pptx_paginate.py`、`pptx_emit.py`、`pptx_objects.py`、`pptx_render.py`、`verify_pptx_renderer.py`。
+- 重点：descriptor traversal、绝对/相对路径与 symlink、fd/bytes 上限、异常泄漏、分页/发射同源排版、runtime diagnostic、aggregate false-green、测试可信度与回归。
 
 ## Critical
 
-### [C-01] mixed-fragment code 的冻结字号与实际发射字号不一致，可在成功成品中静默裁切代码
+### [C-01] `contents.body` 仍按 18pt 分页、按冻结的 26pt 发射，合法成功成品可静默裁切目录
 
-- 定位：`skills/school-pptx/scripts/pptx_emit.py:209`
-- 相关：`skills/school-pptx/scripts/pptx_paginate.py:206`、`skills/school-pptx/scripts/pptx_paginate.py:274`、`skills/school-pptx/scripts/pptx_paginate.py:708`、`skills/school-pptx/scripts/verify_pptx_renderer.py:855`
-- 问题：paginator 对正文和 fenced code 一律使用 slot 的 `font_size_min` 计算高度与 code display lines；除 table 外，`PhysicalSlide.selected_font_sizes` 保持为空。43-09 的通用 emitter 却在没有冻结字号时回退到 `budget["font_size_max"]`，并把这个最大字号同时用于普通段落和 code run。因而 plan 认为能放入一页的 code，在成品中可能以更大字号产生更多软换行并超过同一冻结 geometry。
-- 复现：临时 `title-content` 向量包含 4 行、每行 40 个中文字符。冻结计划只生成 1 个物理页，按 16pt 估算为 4 个 display lines；重开成品的 code run 实际为 24pt，按同一测量器为 8 个 display lines、236.4pt 高，而 body slot 仅 118.12pt。公开 render 仍退出 0，文本虽留在 OOXML 中，但放映时会被 text frame 裁切。
-- 影响：破坏 D-03/PPTX-08 的“soft wrap 计入分页”以及冻结 plan -> emitter 机械一致性；R43-C01 的逐字符回读门只检查 OOXML 文本、字体名和 shape 数，不检查实际字号或槽高度，因此完整 aggregate 当前仍会假绿。
-- 建议：在 paginator 中为每个正文 target slot 冻结实际采用的字号，并让 emitter 只消费该值；或让 paginator 与 emitter 明确统一使用同一个 manifest 字号。为 mixed `title-content`/`two-column` 增加接近槽容量的多行 code 向量，断言冻结字号等于重开 run 字号、发射后的 display height 不超过 slot，必要时产生额外物理页而不是裁切。
+- 定位：`skills/school-pptx/scripts/pptx_paginate.py:690`
+- 相关：`skills/school-pptx/scripts/pptx_paginate.py:789`、`skills/school-pptx/scripts/pptx_emit.py:241`
+- 问题：`build_deck_plan()` 为 `contents.body` 冻结 `font_size_max=26pt`，emitter 也机械消费该值；但 `_contents_fragments()` 仍独立读取 `font_size_min=18pt`，并按 18pt 的单项高度进行分区。该专用分页路径没有消费本计划新建的 frozen typography，也没有计入 emitter 对每个目录段落设置的 2pt `space_after`。
+- 复现：合法 Markdown 含一个空 `contents` slide 和 5 个后续章节。公开 render 退出 `0` 并打印“渲染成功”，计划只生成 1 张目录物理页；重开后 5 个 26pt 段落按同一 `TextMeasure` 合计 `156.0pt`，而 body effective height 仅 `118.125pt`。
+- 影响：重新制造了 Plan 43-10 要关闭的“规划字号小于发射字号”缺口，直接阻断 PPTX-08 与 Phase 43 目标。目录文本仍存在于 OOXML，但 viewer 中可能被 text frame 裁切。
+- 建议：让 `_contents_fragments()` 接收并使用与 emitter 完全相同的 frozen font/margins/line spacing/paragraph spacing 与 effective geometry；增加 5 项临界目录黑盒向量，重开后按整帧所有段落重测并要求扩页。
+
+### [C-02] fragment 子标题未计入分页高度，带 `###` 的 mixed code 仍可退出 0 且每页超槽
+
+- 定位：`skills/school-pptx/scripts/pptx_paginate.py:239`
+- 相关：`skills/school-pptx/scripts/pptx_objects.py:177`、`skills/school-pptx/scripts/verify_pptx_renderer.py:984`
+- 问题：`_fragment_height()` 只测量 `fragment.text` 或 `fragment.items`，完全忽略 `fragment.heading`；但 `add_fragment_text_frame()` 会先把 heading 发射为一个独立的 24pt/22pt 段落，再发射正文或 code 段落。分页后的每个 code fragment 都保留同一个 heading，因此遗漏会在每张派生页重复发生。
+- 复现：合法 `title-content` 仅包含 `### 源码` 和 4 行×40 个中文字符的 fenced code。公开 render 退出 `0`，生成 2 张正文物理页；每页 code 自身为 `117.2pt`，heading 另占 `28.8pt`，整帧合计 `146.0pt > 118.125pt`。
+- 影响：R43-C03 声称的“任何物理页 display height 不超过 effective content height”不成立，且现有 aggregate 仍 PASS。普通 paragraph/list heading 也受同一遗漏影响。
+- 建议：分页成本必须按 emitter 的真实段落序列计算，包括 heading、每个 list item、code 段落及各段 `space_after`；测试应重测完整 text frame，而不是只测 Consolas run 对应的 `fragment.text`。
 
 ## Warning
 
-### [W-01] aggregate 的 gap outcome 是硬编码声明，未由 gate evidence 推导
+### [W-01] 通用 body typography helper 使专用 `code` 布局改为 14pt 规划、10pt 发射
 
-- 定位：`skills/school-pptx/scripts/verify_pptx_renderer.py:1787`
-- 相关：`skills/school-pptx/scripts/verify_pptx_renderer.py:1753`、`skills/school-pptx/scripts/verify_pptx_renderer.py:1767`、`skills/school-pptx/scripts/verify_pptx_renderer.py:835`、`skills/school-pptx/scripts/verify_pptx_renderer.py:1491`
-- 问题：`called`/`gap_calls` 只能证明注册函数返回成功，`gap_outcome_audit` 中 `public_success`、`bounded_output` 和 `failure_vectors` 却直接写死为 `True`/`4`，没有读取各 gate 返回的真实 evidence。尤其 `table_header_only_gate()` 不审计成功输出的字节上限或内部路径，`code_literal_roundtrip_gate()` 也不审计输出长度；即使这些断言缺失或未来退化，aggregate 仍会输出 `bounded_output: true`。
-- 影响：报告 JSON 会把未验证属性表示成已验证事实，削弱 43-09 用 aggregate 阻断 R43-C01/C02/W01 的目标，并掩盖 C-01 这类“gate 通过但冻结/发射不一致”的回归。
-- 建议：让每个 gap gate 返回结构化 outcome（实际 exit、output bytes、路径审计、页数/高度等），aggregate 从 `evidence` 中校验并复制这些值；不要生成独立硬编码的成功布尔值。为 C-01 的字号/高度一致性增加 blocking assertion。
+- 定位：`skills/school-pptx/scripts/pptx_paginate.py:367`
+- 相关：`skills/school-pptx/scripts/pptx_emit.py:179`
+- 问题：`_simple_slide_fragments()` 对所有布局无条件调用 `_selected_body_typography()`，因此专用 `code` slot 使用 manifest `font_size_max=14pt` 分页；`build_deck_plan()` 却不冻结 `code` 字号，emitter 继续回退 `font_size_min=10pt`。43-10 之前两端均使用最小字号，本次重构引入新的规划—发射漂移。
+- 影响：不会导致裁切，但会让合法专用 code deck 产生不必要的额外物理页，并违反计划中“专用 code/table 保留既有受控字号语义”的回归边界。
+- 建议：body helper 只用于普通 body target；专用 code 明确冻结并共享其受控字号，或继续在两端统一使用 10pt。增加 dedicated-code frozen/reopen 字号与页数回归。
 
-### [W-02] 受检媒体路径在校验后被再次打开，替换竞态仍可绕过 Pillow 错误映射
+### [W-02] 新 gate 只重测 code run，aggregate 因窄向量与硬编码 evidence 再次 false-green
 
-- 定位：`skills/school-pptx/scripts/pptx_objects.py:239`
-- 相关：`skills/school-pptx/scripts/pptx_objects.py:207`、`skills/school-pptx/scripts/pptx_objects.py:244`、`skills/school-pptx/scripts/pptx_emit.py:225`、`skills/school-pptx/scripts/pptx_render.py:390`
-- 问题：`_safe_image_size()` 已正确封装首次 `Image.open/size/verify` 的 bomb/identify/decode 异常，但返回后 `slide.shapes.add_picture(str(path), ...)` 会按路径再次打开文件。若媒体在两次打开之间被替换，第二次 Pillow `DecompressionBombError` 不在 `_safe_image_size()` 的 `try` 内，也不是 `PptxObjectError` 或 render 顶层捕获的异常类型。
-- 复现：先让 `_safe_image_size()` 验证 1x1 PNG，随后在 `add_picture()` 前将同一路径替换为 20000x10000 PNG 头；第二次打开直接抛出未映射的 `PIL.Image.DecompressionBombError`，错误原文包含像素阈值。现有四向量都是静态文件，无法覆盖这个二次打开窗口。
-- 影响：并发可写媒体目录中仍可能产生 traceback/Pillow 原文和绝对路径，绕过 R43-W01/VER-03 的 bounded public error 边界。旧 PPTX 因 PPTX-last 提交仍可保留，但公开诊断契约失守。
-- 建议：校验后从同一已持有的只读 descriptor/内存 bytes 创建图片，避免按路径二次读取；至少把 `add_picture()` 的 Pillow bomb/format/decode 异常映射为相同 stable code，并增加“校验后替换”故障注入 gate。
+- 定位：`skills/school-pptx/scripts/verify_pptx_renderer.py:903`
+- 相关：`skills/school-pptx/scripts/verify_pptx_renderer.py:1008`、`skills/school-pptx/scripts/verify_pptx_renderer.py:1038`、`skills/school-pptx/scripts/verify_pptx_renderer.py:1967`、`skills/school-pptx/scripts/verify_pptx_renderer.py:2154`
+- 问题：`mixed_fragment_capacity_gate()` 的输入不含 `###` heading，且高度断言只测 `fragment.text` 对应的 code run，没有汇总同一 text frame 的所有段落；它也不覆盖被新冻结的 `contents.body`。此外 gate 返回中仍存在 `joined_equality: True`、`frozen_projection_equal: True`、`old_target_preserved: True`，媒体 `embedded_hash` 还回填为预期 `original_hash` 而不是实际 `embedded_hashes` 项；AST 审计只检查最终 `gap_outcome_audit` assignment，无法发现这些上游常量。
+- 影响：本次官方 `mixed-fragment-capacity`、`media-descriptor-binding` 与 20-gate `phase-43` 全部 PASS，但 C-01/C-02 两个公开成功裁切反例同时成立，说明 R43-W02 的 aggregate false-green 只被表面关闭。
+- 建议：gate 返回实际比较表达式和实际提取值；aggregate 校验整帧高度、所有 frozen body 布局以及 heading/list/code 组合。AST/source guard 应覆盖证据生产函数，或直接删除可由原始 evidence 重算的成功布尔字段。
 
-## 已确认正常
+## 安全审查结果
 
-- header-only table 会产生唯一 header fragment、唯一正整数 `row_heights_emu`，公开成品重开后是 1 行 native table，空 `school-pptx:table-name` placeholder 保留。
-- 静态 Pillow bomb error/warning、无法识别图片和 verify/decode 失败均精确映射到 allowlist code，失败输出低于 8 KiB，旧 PPTX 不被替换。
-- 同一 body slot 的普通 rich text 与 fenced code 由单一 textbox 按 fragment 顺序发射；code run 不经过 delimiter normalization，bold/highlight 普通 run 保持可编辑样式。
+- 相对媒体从 Markdown 父目录、绝对媒体从 `/` 开始逐分量 `O_NOFOLLOW` 打开；中间目录和最终普通文件均经 descriptor 状态确认，已覆盖相对中间/最终 symlink 与绝对最终 symlink。
+- 最终 fd 读取受 `MAX_MEDIA_BYTES + 1` 限制，所有成功/失败路径在 `finally` 逆序关闭；Pillow 校验与 `add_picture(BytesIO(payload))` 消费同一 immutable bytes，未发现二次路径打开。
+- bomb、格式、decode、symlink 与未知第三方异常均收敛为 bounded domain code；公开故障输出未泄漏 traceback、Pillow 原文或绝对媒体路径。
+- runtime `MEDIA_MISSING` 会生成可编辑占位符、合并结构化 error、发布同 stem best-effort 双产物并退出非零；未发现 frozen plan 被修改。
 
 ## 验证记录
 
-- `python3 skills/school-pptx/scripts/verify_pptx_renderer.py code-literal-roundtrip`：PASS。
-- `python3 skills/school-pptx/scripts/verify_pptx_renderer.py table-header-only`：PASS。
-- `python3 skills/school-pptx/scripts/verify_pptx_renderer.py object-error-bounded`：PASS，4 个失败向量 code/退出码/旧目标保持均符合预期。
-- `python3 skills/school-pptx/scripts/verify_pptx_renderer.py phase-43`：18 个固定顶层 gate 全部 PASS；同时额外向量确认 C-01 与 W-02 不在现有 aggregate 覆盖范围内。
-- 未修改生产源码，未提交。
+- `python3 -m py_compile`（5 个受审文件）：PASS。
+- `python3 skills/school-pptx/scripts/verify_pptx_renderer.py mixed-fragment-capacity`：PASS，但未覆盖 C-01/C-02。
+- `python3 skills/school-pptx/scripts/verify_pptx_renderer.py media-descriptor-binding`：PASS。
+- `python3 skills/school-pptx/scripts/verify_pptx_renderer.py phase-43`：20 个固定顶层 gate 全部 PASS，`required/called` 一致、`dynamic_skips=0`；仍被上述两个反例证明 false-green。
+- 手工黑盒反例：带 heading 的 mixed code 为 `146.0pt > 118.125pt` 且公开退出 0；5 项 contents 为 `156.0pt > 118.125pt` 且公开退出 0。
+- 未修改实现代码，未提交。
