@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-import base64
 import contextlib
 import copy
 import fcntl
@@ -1479,6 +1478,65 @@ def _png_chunk(kind: bytes, payload: bytes) -> bytes:
     return len(payload).to_bytes(4, "big") + kind + payload + zlib.crc32(kind + payload).to_bytes(4, "big")
 
 
+def _minimal_png(width: int, height: int, *, invalid_idat: bool = False) -> bytes:
+    ihdr = width.to_bytes(4, "big") + height.to_bytes(4, "big") + bytes((8, 2, 0, 0, 0))
+    chunks = [_png_chunk(b"IHDR", ihdr)]
+    if invalid_idat:
+        payload = b"not-a-valid-zlib-stream"
+        chunks.append(len(payload).to_bytes(4, "big") + b"IDAT" + payload + b"\x00\x00\x00\x00")
+    chunks.append(_png_chunk(b"IEND", b""))
+    return b"\x89PNG\r\n\x1a\n" + b"".join(chunks)
+
+
+def table_header_only_gate(workdir: Path) -> dict[str, object]:
+    try:
+        from pptx import Presentation
+    except ImportError as exc:
+        raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
+
+    source = workdir / "header-only.md"
+    source.write_text(
+        '---\ntitle: "仅表头表格"\ntheme: "standard-school"\n---\n'
+        '::: slide {layout="table"}\n## 字段定义\n| 字段 | 说明 |\n|---|---|\n:::\n',
+        encoding="utf-8",
+    )
+    manifest = load_manifest(SKILL_DIR)
+    document = parse_document(source, manifest)
+    require(not document["errors"], f"header-only parser errors: {document['errors']}")
+    plan = pptx_paginate.build_deck_plan(document, manifest)
+    require(not plan.diagnostics, f"header-only pagination diagnostics: {plan.diagnostics}")
+    table_slides = [slide for slide in plan.slides if slide.layout == "table"]
+    require(len(table_slides) == 1, "header-only table did not produce exactly one table physical page")
+    fragment = table_slides[0].fragments[0]
+    require(len(fragment.rows) == len(fragment.row_heights_emu) == 1,
+            "header-only frozen rows and heights must each contain exactly one item")
+    require(fragment.row_heights_emu[0] > 0, "header-only frozen row height must be positive")
+
+    output_root = workdir / "delivery"
+    completed = run_public_render(source, output_root, "header-only")
+    require(completed.returncode == 0, f"header-only public render failed: {completed.stdout + completed.stderr}")
+    require({path.name for path in output_root.iterdir()} == {"header-only.md", "header-only.pptx"},
+            "header-only public render leaked sidecars")
+    reopened = Presentation(output_root / "header-only.pptx")
+    slide = reopened.slides[table_slides[0].physical_index]
+    tables = [shape.table for shape in slide.shapes if getattr(shape, "has_table", False)]
+    require(len(tables) == 1 and len(tables[0].rows) == 1,
+            "header-only output is not one editable native table row")
+    require(tables[0].rows[0].height == fragment.row_heights_emu[0],
+            "header-only reopened row height differs from frozen plan")
+    placeholders = [shape for shape in slide.shapes if shape.name == "school-pptx:table-name"]
+    require(len(placeholders) == 1 and placeholders[0].text == "",
+            "header-only empty table-name placeholder is missing or contains prompt text")
+    return {
+        "table_physical_pages": 1,
+        "rows": len(fragment.rows),
+        "row_heights_emu": list(fragment.row_heights_emu),
+        "native_table_rows": len(tables[0].rows),
+        "empty_table_name": True,
+        "public_exit": completed.returncode,
+    }
+
+
 def object_error_bounded_gate(workdir: Path) -> dict[str, object]:
     import pptx_emit
     from pptx_objects import PptxObjectError
@@ -1487,19 +1545,17 @@ def object_error_bounded_gate(workdir: Path) -> dict[str, object]:
     require(unknown.code == "PPTX_OBJECT_INVALID" and "/tmp/secret" not in unknown.message,
             "unknown object error was not normalized")
 
-    vectors: list[tuple[str, bytes, str]] = []
-    vectors.append((
-        "invalid.gif",
-        base64.b64decode("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="),
-        "PPTX_MEDIA_FORMAT_INVALID",
-    ))
-    ihdr = (10_000).to_bytes(4, "big") + (5_000).to_bytes(4, "big") + bytes((8, 2, 0, 0, 0))
-    oversized_png = b"\x89PNG\r\n\x1a\n" + _png_chunk(b"IHDR", ihdr) + _png_chunk(b"IEND", b"")
-    vectors.append(("oversized.png", oversized_png, "PPTX_MEDIA_PIXEL_LIMIT"))
+    vectors = (
+        ("bomb-error", "bomb-error.png", _minimal_png(20_000, 10_000), "PPTX_MEDIA_PIXEL_LIMIT"),
+        ("bomb-warning", "bomb-warning.png", _minimal_png(10_000, 10_000), "PPTX_MEDIA_PIXEL_LIMIT"),
+        ("unidentified", "unidentified.png", b"not-an-image", "PPTX_MEDIA_FORMAT_INVALID"),
+        ("verify-decode", "verify-decode.png", _minimal_png(1, 1, invalid_idat=True),
+         "PPTX_MEDIA_FORMAT_INVALID"),
+    )
 
     evidence: dict[str, object] = {}
-    for media_name, payload, expected_code in vectors:
-        vector_root = workdir / expected_code.lower()
+    for label, media_name, payload, expected_code in vectors:
+        vector_root = workdir / label
         vector_root.mkdir()
         media_path = vector_root / media_name
         media_path.write_bytes(payload)
@@ -1511,17 +1567,26 @@ def object_error_bounded_gate(workdir: Path) -> dict[str, object]:
         (output_root / "deck.pptx").write_bytes(old_pptx)
         completed = run_public_render(source, output_root, "deck")
         output = completed.stdout + completed.stderr
-        require(completed.returncode != 0 and expected_code in output, f"{expected_code} was not public")
+        require(completed.returncode != 0 and expected_code in output,
+                f"{label} did not return {expected_code}: {output[:1024]}")
         require(len(output.encode("utf-8")) < 8 * 1024, f"{expected_code} output exceeded 8 KiB")
-        require("Traceback" not in output and str(workdir) not in output,
+        forbidden_paths = (str(media_path), str(vector_root), str(workdir), str(SKILL_DIR),
+                           str(Path.home() / ".cache" / "uv"))
+        require("Traceback" not in output and not any(path in output for path in forbidden_paths),
                 f"{expected_code} leaked traceback or absolute workdir")
-        require("cannot identify image file" not in output.lower() and "decompressionbomb" not in output.lower(),
+        require("cannot identify image file" not in output.lower() and "decompressionbomb" not in output.lower()
+                and "image size" not in output.lower() and "pillow" not in output.lower(),
                 f"{expected_code} leaked Pillow details")
         require((output_root / "deck.pptx").read_bytes() == old_pptx,
                 f"{expected_code} replaced the old PPTX")
         require(not (output_root / "deck.md").exists(), f"{expected_code} published Markdown")
         assert_no_renderer_debris(output_root)
-        evidence[expected_code] = {"exit": completed.returncode, "output_bytes": len(output.encode("utf-8"))}
+        evidence[label] = {
+            "code": expected_code,
+            "exit": completed.returncode,
+            "output_bytes": len(output.encode("utf-8")),
+            "old_pptx_preserved": True,
+        }
     return evidence
 
 
@@ -1601,6 +1666,7 @@ GATES["cli-publication"] = cli_publication_gate
 GATES["best-effort"] = best_effort_gate
 GATES["publication-safety"] = publication_safety_gate
 GATES["publication-descriptor-race"] = publication_descriptor_race_gate
+GATES["table-header-only"] = table_header_only_gate
 GATES["object-error-bounded"] = object_error_bounded_gate
 GATES["determinism"] = determinism_gate
 GATES["phase_41_42_regression"] = phase_41_42_regression_gate
