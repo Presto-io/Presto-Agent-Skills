@@ -33,7 +33,7 @@ MANIFEST_PATH = SKILL_DIR / "templates" / "standard-school.manifest.yaml"
 TEMPLATE_PATH = SKILL_DIR / "templates" / "standard-school.pptx"
 PUBLIC_CLI = SCRIPTS_DIR / "school-pptx.sh"
 FIXTURE_PATH = SKILL_DIR / "fixtures" / "school-pptx-full.md"
-CANONICAL_PHYSICAL_SLIDES = 26
+CANONICAL_PHYSICAL_SLIDES = 27
 MAX_ZIP_ENTRIES = 256
 MAX_ZIP_ENTRY_BYTES = 4 * 1024 * 1024
 MAX_ZIP_TOTAL_BYTES = 32 * 1024 * 1024
@@ -1120,8 +1120,19 @@ def editable_objects_gate(workdir: Path) -> dict[str, object]:
         kind="code", logical_index=4, block_index=0, fragment_index=0, source_line=5,
         text="print('原始换行')\nreturn True",
     )
+    body_typography = (
+        ("typography.body.margin_left_points", "0.0"),
+        ("typography.body.margin_right_points", "0.0"),
+        ("typography.body.margin_top_points", "0.0"),
+        ("typography.body.margin_bottom_points", "0.0"),
+        ("typography.body.line_spacing", "1.2"),
+        ("typography.body.paragraph_spacing_points", "2.0"),
+    )
     slides = (
-        PhysicalSlide(0, 0, "title-content", "富文本", 0, 1, (rich,), "逐字说明", affected_pages=(0,)),
+        PhysicalSlide(
+            0, 0, "title-content", "富文本", 0, 1, (rich,), "逐字说明",
+            selected_font_sizes=(("body", 24.0),), affected_pages=(0,), slot_values=body_typography,
+        ),
         PhysicalSlide(1, 1, "table", "原生表格", 0, 2, (table,), None,
                       selected_font_sizes=(("table", 14.0),), affected_pages=(1,)),
         PhysicalSlide(2, 2, "timeline", "原生时间线", 0, 3, (timeline,), None, affected_pages=(2,)),
@@ -2082,6 +2093,7 @@ PHASE_43_GATE_ORDER = (
     "ooxml-bootstrap",
     "editable-objects",
     "code-literal-roundtrip",
+    "mixed-fragment-capacity",
     "emit-structure",
     "frozen-plan-emission",
     "cli-publication",
@@ -2090,6 +2102,7 @@ PHASE_43_GATE_ORDER = (
     "publication-descriptor-race",
     "table-header-only",
     "object-error-bounded",
+    "media-descriptor-binding",
     "template-reader-security",
     "determinism",
     "phase_41_42_regression",
@@ -2098,8 +2111,10 @@ PHASE_43_GATE_ORDER = (
 PHASE_43_REQUIRED_GATES = frozenset({
     "contract-model", "pagination", "frozen-slot-content", "frozen-numbering-row-heights",
     "ooxml-bootstrap", "editable-objects", "code-literal-roundtrip", "emit-structure",
+    "mixed-fragment-capacity",
     "frozen-plan-emission", "cli-publication", "best-effort", "publication-safety",
     "publication-descriptor-race", "table-header-only", "object-error-bounded", "template-reader-security",
+    "media-descriptor-binding",
     "determinism", "phase_41_42_regression",
 })
 
@@ -2115,18 +2130,43 @@ GAP_COVERAGE = {
     "R43-C01": ("code-literal-roundtrip",),
     "R43-C02": ("table-header-only",),
     "R43-W01": ("object-error-bounded",),
+    "R43-C03": ("mixed-fragment-capacity",),
+    "R43-W02": ("mixed-fragment-capacity", "media-descriptor-binding"),
+    "R43-W03": ("media-descriptor-binding",),
 }
 
 REQUIREMENT_COVERAGE = {
     "PPTX-03": ("code-literal-roundtrip", "editable-objects", "frozen-slot-content", "frozen-plan-emission"),
     "PPTX-04": ("table-header-only", "editable-objects", "frozen-numbering-row-heights", "frozen-plan-emission"),
-    "PPTX-08": ("pagination", "frozen-slot-content", "frozen-numbering-row-heights", "frozen-plan-emission"),
+    "PPTX-05": ("media-descriptor-binding", "editable-objects", "emit-structure"),
+    "PPTX-08": (
+        "mixed-fragment-capacity", "pagination", "frozen-slot-content",
+        "frozen-numbering-row-heights", "frozen-plan-emission",
+    ),
     "PPTX-10": ("code-literal-roundtrip",),
     "VER-03": (
         "cli-publication", "best-effort", "publication-safety", "publication-descriptor-race",
-        "table-header-only", "object-error-bounded", "template-reader-security",
+        "table-header-only", "object-error-bounded", "media-descriptor-binding", "template-reader-security",
     ),
 }
+
+
+def _assert_gap_outcome_source_derived() -> None:
+    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"), filename=__file__)
+    function = next(
+        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "run_phase_43"
+    )
+    assignments = [
+        node for node in ast.walk(function)
+        if isinstance(node, ast.Assign)
+        and any("gap_outcome_audit" in ast.unparse(target) for target in node.targets)
+    ]
+    require(len(assignments) == 1, "gap outcome audit assignment changed")
+    value = assignments[0].value
+    require(not any(isinstance(node, ast.Constant) and node.value is True for node in ast.walk(value)),
+            "gap outcome audit contains a hard-coded success boolean")
+    require(not any(isinstance(node, ast.Constant) and node.value == "failure_vectors" for node in ast.walk(value)),
+            "gap outcome audit contains a fixed failure-vector field")
 
 
 def run_named_gate(name: str, workdir: Path) -> dict[str, object]:
@@ -2160,7 +2200,7 @@ def run_phase_43() -> dict[str, object]:
     called_set = set(called)
     require(set(GAP_COVERAGE) == {
         "C-01", "C-02", "W-01", "W-02", "W-03", "W-04", "W-05", "W-06",
-        "R43-C01", "R43-C02", "R43-W01",
+        "R43-C01", "R43-C02", "R43-W01", "R43-C03", "R43-W02", "R43-W03",
     },
             "phase-43 gap coverage set changed")
     require(all(gates and set(gates) <= called_set for gates in GAP_COVERAGE.values()),
@@ -2170,7 +2210,9 @@ def run_phase_43() -> dict[str, object]:
         for gap, gates in GAP_COVERAGE.items()
     }
     require(gap_calls == GAP_COVERAGE, "phase-43 gap evidence differs from actual called gates")
-    require(set(REQUIREMENT_COVERAGE) == {"PPTX-03", "PPTX-04", "PPTX-08", "PPTX-10", "VER-03"},
+    require(set(REQUIREMENT_COVERAGE) == {
+        "PPTX-03", "PPTX-04", "PPTX-05", "PPTX-08", "PPTX-10", "VER-03",
+    },
             "blocked requirement coverage set changed")
     require(all(gates and set(gates) <= called_set for gates in REQUIREMENT_COVERAGE.values()),
             "blocked requirement coverage names an uncalled gate")
@@ -2185,10 +2227,74 @@ def run_phase_43() -> dict[str, object]:
     evidence["gap_coverage"] = GAP_COVERAGE
     evidence["gap_calls"] = gap_calls
     evidence["requirement_coverage"] = REQUIREMENT_COVERAGE
+    mixed = evidence["mixed-fragment-capacity"]["mixed-fragment-capacity"]
+    media = evidence["media-descriptor-binding"]["media-descriptor-binding"]
+    mixed_vectors = mixed["vectors"]
+    for layout, expected_font in (("title-content", 24.0), ("two-column", 22.0)):
+        vector = mixed_vectors[layout]
+        require(vector["public_exit"] == 0 and vector["physical_pages"] > 1,
+                f"{layout} mixed capacity public result failed")
+        require(vector["selected_font_sizes"] and all(
+            value == expected_font for value in vector["selected_font_sizes"]
+        ), f"{layout} mixed capacity font evidence failed")
+        require(vector["frozen_typography"] == vector["reopened_typography"],
+                f"{layout} typography evidence failed")
+        require(all(
+            display <= effective
+            for display, effective in zip(
+                vector["display_height_points"], vector["effective_content_height_points"], strict=True
+            )
+        ), f"{layout} display height evidence failed")
+        require(all(vector["page_equalities"]) and vector["joined_equality"],
+                f"{layout} text equality evidence failed")
+        require(vector["output_bytes"] < 8192 and len(vector["artifact_paths"]) == 2
+                and Path(vector["artifact_paths"][0]).stem == Path(vector["artifact_paths"][1]).stem,
+                f"{layout} output or artifact evidence failed")
+    relative = media["relative_success"]
+    absolute = media["absolute_success"]
+    require(relative["public_exit"] == absolute["public_exit"] == 0,
+            "relative or absolute media success evidence failed")
+    require(relative["validated_hash"] == relative["embedded_hash"] != relative["replacement_hash"],
+            "validated media hash binding evidence failed")
+    require(relative["hook_called"] > 0 and relative["crop"] == absolute["crop"] == [0.0, 0.0, 0.0, 0.0],
+            "media hook or crop evidence failed")
+    require(len(relative["artifact_paths"]) == len(absolute["artifact_paths"]) == 2,
+            "media success artifact paths failed")
+    symlinks = media["symlink_failures"]
+    require(set(symlinks) == {"relative-intermediate", "relative-final", "absolute-final"},
+            "media symlink vector set changed")
+    require(all(
+        item["public_exit"] != 0 and item["code"] == "PPTX_MEDIA_PATH_INVALID"
+        and item["output_bytes"] < 8192 and item["old_target_preserved"]
+        for item in symlinks.values()
+    ), "media symlink failure evidence failed")
+    runtime_missing = media["runtime_missing"]
+    require(runtime_missing["public_exit"] != 0 and runtime_missing["code"] == "MEDIA_MISSING"
+            and runtime_missing["editable_placeholders"] > 0
+            and runtime_missing["artifacts"] == ["deck.md", "deck.pptx"]
+            and runtime_missing["frozen_projection_equal"] and runtime_missing["output_bytes"] < 8192
+            and len(runtime_missing["artifact_paths"]) == 2,
+            "runtime missing evidence failed")
+    add_picture_fault = media["add_picture_fault"]
+    require(add_picture_fault["public_exit"] != 0
+            and add_picture_fault["code"] == "PPTX_MEDIA_FORMAT_INVALID"
+            and add_picture_fault["output_bytes"] < 8192 and add_picture_fault["old_target_preserved"],
+            "add_picture fault evidence failed")
+    _assert_gap_outcome_source_derived()
+    code_outcome = evidence["code-literal-roundtrip"]["code-literal-roundtrip"]
+    table_outcome = evidence["table-header-only"]["table-header-only"]
+    object_outcome = evidence["object-error-bounded"]["object-error-bounded"]
     evidence["gap_outcome_audit"] = {
-        "R43-C01": {"gate": "code-literal-roundtrip", "public_success": True, "bounded_output": True},
-        "R43-C02": {"gate": "table-header-only", "public_success": True, "bounded_output": True},
-        "R43-W01": {"gate": "object-error-bounded", "failure_vectors": 4, "bounded_output": True},
+        "R43-C01": {"gate": "code-literal-roundtrip", "evidence": code_outcome},
+        "R43-C02": {"gate": "table-header-only", "evidence": table_outcome},
+        "R43-W01": {"gate": "object-error-bounded", "evidence": object_outcome},
+        "R43-C03": {"gate": "mixed-fragment-capacity", "evidence": mixed_vectors},
+        "R43-W02": {
+            "gates": ("mixed-fragment-capacity", "media-descriptor-binding"),
+            "mixed": mixed_vectors,
+            "media": media,
+        },
+        "R43-W03": {"gate": "media-descriptor-binding", "evidence": media},
     }
     evidence["registry"] = {
         "required": PHASE_43_GATE_ORDER,
