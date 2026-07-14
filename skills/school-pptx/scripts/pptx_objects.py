@@ -144,7 +144,7 @@ def add_fragment_text_frame(
             run.text = fragment.text
             run.font.size = Pt(font_size)
             run.font.name = code_font_name
-        elif fragment.kind == "list":
+        elif fragment.items:
             for item in fragment.items:
                 append_rich_paragraph(item)
         elif fragment.text is not None:
