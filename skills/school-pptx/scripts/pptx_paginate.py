@@ -545,7 +545,7 @@ def _table_fragments(
             orphan_count += sum(item[1] for item in measured)
         header_height, data_heights = heights[0], heights[1:]
         data_capacity = max(1, content_budget_emu - header_height)
-        ranges = ordered_contiguous_partition(data_heights, data_capacity)
+        ranges = ((0, 0),) if not data_heights else ordered_contiguous_partition(data_heights, data_capacity)
         loads = [header_height + sum(data_heights[start:end]) for start, end in ranges]
         overflow = sum(load > content_budget_emu for load in loads)
         mean = sum(loads) / len(loads)

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -204,17 +205,26 @@ def add_table(
 
 
 def _safe_image_size(path: Path) -> tuple[int, int]:
-    from PIL import Image
+    from PIL import Image, UnidentifiedImageError
 
     if path.stat().st_size > MAX_MEDIA_BYTES:
         raise PptxObjectError("PPTX_MEDIA_SIZE_LIMIT")
-    with Image.open(path) as image:
-        if image.format not in ALLOWED_MEDIA_FORMATS:
-            raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID")
-        width, height = image.size
-        if width <= 0 or height <= 0 or width * height > MAX_MEDIA_PIXELS:
-            raise PptxObjectError("PPTX_MEDIA_PIXEL_LIMIT")
-        image.verify()
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(path) as image:
+                if image.format not in ALLOWED_MEDIA_FORMATS:
+                    raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID")
+                width, height = image.size
+                if width <= 0 or height <= 0 or width * height > MAX_MEDIA_PIXELS:
+                    raise PptxObjectError("PPTX_MEDIA_PIXEL_LIMIT")
+                image.verify()
+    except PptxObjectError:
+        raise
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise PptxObjectError("PPTX_MEDIA_PIXEL_LIMIT") from None
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+        raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID") from None
     return width, height
 
 
