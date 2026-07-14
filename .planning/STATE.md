@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
-status: executing
-stopped_at: Phase 43 gap-closure plan 43-09 ready
-last_updated: "2026-07-14T08:52:02.616Z"
-last_activity: 2026-07-14 -- Phase 43 planning complete
+status: ready
+stopped_at: Completed 43-09-PLAN.md
+last_updated: "2026-07-14T09:29:25.509Z"
+last_activity: 2026-07-14 -- Phase 43 gap closure complete
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 13
-  completed_plans: 12
-  percent: 92
+  completed_plans: 13
+  percent: 100
 ---
 
 # State: Presto Agent Skills
@@ -21,16 +21,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 43 — editable-pptx-renderer-and-pagination
+**Current focus:** Phase 44 — Verification Gate, Runtime Notes, and UAT
 
 ## Current Position
 
-Phase: 43 (editable-pptx-renderer-and-pagination) — PLANNED
-Plan: 8 of 9
-Status: Ready to execute 43-09 gap closure
-Last activity: 2026-07-14 -- Phase 43 planning complete
+Phase: 43 (Editable PPTX Renderer and Pagination) — COMPLETE
+Plan: 9 of 9
+Status: Ready to plan Phase 44
+Last activity: 2026-07-14 -- Phase 43 gap closure complete
 
-Progress: [█████████░] 89%
+Progress: [██████████] 100%
 
 ## Workflow Preferences
 
@@ -84,7 +84,10 @@ Phase order:
 - [Phase 43]: Two-column target slots, cover slot values, visible contents numbering, and native table row heights are immutable plan fields consumed mechanically by the emitter.
 - [Phase 43]: Table content height is derived only from `table.height - table_name.height`; measured rows use ceil-to-EMU bounds and repeated headers retain one frozen height.
 - [Phase 43]: Public template-report preflights all ZIP metadata, then chunk-reads bounded XML before parsing or relationship use. — This closes production reader drift while keeping public failures stable and bounded.
-- [Phase 43]: Phase 43 aggregate has one immutable 17-gate order with exact gap and blocked-requirement mappings. — Required/called equality and zero dynamic skips prevent aggregate false-green results.
+- [Phase 43]: Every non-code body slot uses one mixed-fragment textbox; code fragments are direct monospace runs while ordinary fragments retain native rich-text styles.
+- [Phase 43]: Header-only tables are valid one-page native tables with exactly one frozen row and positive row height.
+- [Phase 43]: Pillow bomb and format/decode failures cross the public boundary only through precise allowlisted codes and bounded generic diagnostics.
+- [Phase 43]: Phase 43 aggregate has one immutable 18-gate order with exact historical and R43 gap mappings. — Required/called equality and zero dynamic skips prevent aggregate false-green results.
 
 ### Pending Todos
 
@@ -109,6 +112,7 @@ None yet.
 | Phase 43 P06 | 29 min | 2 tasks | 3 files |
 | Phase 43 P07 | 16 min | 3 tasks | 8 files |
 | Phase 43 P08 | 18 min | 2 tasks | 3 files |
+| Phase 43 P09 | 27 min | 3 tasks | 4 files |
 
 ## Deferred Items
 
@@ -116,6 +120,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-07-14T05:36:11.951Z
-Stopped at: Phase 43 verification gaps found
+Last session: 2026-07-14T09:29:25.502Z
+Stopped at: Completed 43-09-PLAN.md
 Resume file: None
