@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: executing
-stopped_at: Completed 43-06 literal code round-trip
-last_updated: "2026-07-14T04:05:16Z"
-last_activity: 2026-07-14 -- Completed Phase 43 Plan 06
+stopped_at: Completed 43-07 frozen plan boundary
+last_updated: "2026-07-14T04:57:00Z"
+last_activity: 2026-07-14 -- Completed Phase 43 Plan 07
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 12
-  completed_plans: 10
-  percent: 83
+  completed_plans: 11
+  percent: 92
 ---
 
 # State: Presto Agent Skills
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 Phase: 43 (editable-pptx-renderer-and-pagination) — EXECUTING
-Plan: 6 of 8
-Status: Plan 43-06 complete; ready for 43-07
-Last activity: 2026-07-14 -- Closed C-02 literal code round-trip through native editable PPTX emission
+Plan: 7 of 8
+Status: Plan 43-07 complete; ready for 43-08
+Last activity: 2026-07-14 -- Froze two-column slots, cover metadata, contents numbering, and table row heights
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 88%
 
 ## Workflow Preferences
 
@@ -81,6 +81,8 @@ Phase order:
 - [Phase 43]: Public object failures expose only allowlisted stable codes and generic remediation; unknown object errors collapse to PPTX_OBJECT_INVALID.
 - [Phase 43]: Code body text uses a delimiter-agnostic one-run monospace helper; optional code subheadings remain separate rich-text shapes.
 - [Phase 43]: Multiple frozen code fragments on one physical slide are reconstructed only at their existing source-line boundary before literal emission.
+- [Phase 43]: Two-column target slots, cover slot values, visible contents numbering, and native table row heights are immutable plan fields consumed mechanically by the emitter.
+- [Phase 43]: Table content height is derived only from `table.height - table_name.height`; measured rows use ceil-to-EMU bounds and repeated headers retain one frozen height.
 
 ### Pending Todos
 
@@ -103,6 +105,7 @@ None yet.
 | Phase 43 P04 | 19 min | 3 tasks | 3 files |
 | Phase 43 P05 | 20 min | 2 tasks | 3 files |
 | Phase 43 P06 | 29 min | 2 tasks | 3 files |
+| Phase 43 P07 | 16 min | 3 tasks | 8 files |
 
 ## Deferred Items
 

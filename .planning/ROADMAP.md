@@ -90,7 +90,7 @@ Plans:
   3. User sees long text, tables, timelines, and galleries split into additional physical slides according to template budgets instead of overflowing or shrinking into unreadable content.
   4. User sees table continuation slides repeat the header and add a continuation marker to table continuation titles, while other continuation slides avoid visible "续" markers.
   5. Standard successful delivery always contains exactly two same-stem public artifacts: the reviewed Markdown source and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
-**Plans**: 5/8 plans complete
+**Plans**: 7/8 plans complete
 Plans:
 **Wave 1**
 - [x] 43-01-PLAN.md — Establish manifest-owned renderer geometry, frozen physical models, CJK measurement, and contract gates.
@@ -111,7 +111,7 @@ Plans:
 - [x] 43-06-PLAN.md — Preserve authored code text byte-for-byte through native editable PPTX emission.
 
 **Wave 7** *(blocked on Wave 6 completion)*
-- [ ] 43-07-PLAN.md — Freeze two-column, cover, contents, and table geometry decisions into the physical plan.
+- [x] 43-07-PLAN.md — Freeze two-column, cover, contents, and table geometry decisions into the physical plan.
 
 **Wave 8** *(blocked on Wave 7 completion)*
 - [ ] 43-08-PLAN.md — Bound production template parsing and aggregate all Phase 43 gap regressions.
@@ -139,7 +139,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 6/8 | Gap closure in progress | - |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 7/8 | Gap closure in progress | - |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
@@ -195,7 +195,7 @@ Phases 41-42 are complete and independently verified. The controlled template, M
 
 ## Next Step
 
-Execute 43-07 to freeze two-column, cover, contents, and table geometry decisions into the physical plan.
+Execute 43-08 to bound production template parsing and aggregate all Phase 43 gap regressions.
 
 ## Backlog
 
