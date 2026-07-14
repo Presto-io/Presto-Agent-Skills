@@ -45,6 +45,7 @@ OBJECT_ERROR_MESSAGES = {
     "PPTX_MEDIA_SIZE_LIMIT": "媒体文件大小超过安全上限。",
     "PPTX_MEDIA_FORMAT_INVALID": "媒体格式不受支持，请使用 JPEG 或 PNG。",
     "PPTX_MEDIA_PIXEL_LIMIT": "媒体像素数量超过安全上限。",
+    "PPTX_TABLE_ROW_HEIGHT_MISMATCH": "冻结表格行高与表格行数不一致。",
 }
 
 
@@ -124,6 +125,16 @@ def emit_deck(
             slide = presentation.slides.add_slide(layouts[physical.layout])
             layout_manifest = manifest["layouts"][physical.layout]
             slots = {slot["id"]: slot for slot in layout_manifest.get("slots", ())}
+            if physical.layout == "cover":
+                for slot_id, value in physical.slot_values:
+                    slot = slots[slot_id]
+                    add_rich_text(
+                        slide, slot["geometry"], value,
+                        font_size=slot["text_budget"]["font_size_max"], highlight_scheme=highlight,
+                        name=f"school-pptx:cover-{slot_id}",
+                    )
+                set_notes(slide, physical.notes_intent)
+                continue
             if "title" in slots:
                 title_budget = slots["title"]["text_budget"]
                 add_rich_text(
@@ -164,6 +175,7 @@ def emit_deck(
                 add_table(
                     slide, slots["table"], fragment,
                     font_size=dict(physical.selected_font_sizes).get("table", slots["table"]["text_budget"]["font_size_min"]),
+                    row_heights_emu=fragment.row_heights_emu,
                 )
             elif physical.layout == "timeline" and physical.fragments:
                 add_timeline(slide, slots["timeline_items"], physical.fragments[0].rows, highlight_scheme=highlight)
@@ -179,14 +191,20 @@ def emit_deck(
                         highlight_scheme=highlight, font_size=slots["caption"]["text_budget"]["font_size_min"],
                     )
             else:
-                body_slot_id = "body"
-                if physical.layout == "two-column":
-                    body_slot_id = "left_body"
-                body_slot = slots.get(body_slot_id)
                 text_fragments = [fragment for fragment in physical.fragments if fragment.kind != "image"]
-                if body_slot is not None:
+                target_slot_ids = tuple(dict.fromkeys(
+                    fragment.target_slot or "body" for fragment in text_fragments
+                ))
+                if physical.layout == "two-column":
+                    target_slot_ids = ("left_body", "right_body")
+                for body_slot_id in target_slot_ids:
+                    body_slot = slots.get(body_slot_id)
+                    if body_slot is None:
+                        continue
                     lines: list[str] = []
                     for fragment in text_fragments:
+                        if (fragment.target_slot or "body") != body_slot_id:
+                            continue
                         if fragment.heading:
                             lines.append(fragment.heading)
                         if fragment.text is not None:
@@ -199,9 +217,9 @@ def emit_deck(
                         highlight_scheme=highlight, name=f"school-pptx:{body_slot_id}",
                     )
                 image_fragment = next((fragment for fragment in physical.fragments if fragment.kind == "image"), None)
-                if image_fragment is not None and ("media" in slots or body_slot is not None):
+                if image_fragment is not None and ("media" in slots or "body" in slots):
                     metadata = dict(image_fragment.metadata)
-                    media_geometry = slots["media"]["geometry"] if "media" in slots else body_slot["geometry"]
+                    media_geometry = slots["media"]["geometry"] if "media" in slots else slots["body"]["geometry"]
                     add_contain_picture(
                         slide, _media_path(metadata.get("authored_path", ""), media_root), media_geometry,
                         name="school-pptx:image-text-picture",

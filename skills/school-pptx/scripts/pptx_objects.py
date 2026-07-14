@@ -112,7 +112,10 @@ def add_plain_lines(
     )
 
 
-def add_table(slide: Any, slot: dict[str, Any], fragment: Any, *, font_size: float) -> tuple[Any, Any]:
+def add_table(
+    slide: Any, slot: dict[str, Any], fragment: Any, *, font_size: float,
+    row_heights_emu: tuple[int, ...],
+) -> tuple[Any, Any]:
     from pptx.util import Pt
 
     geometry = slot["geometry"]
@@ -128,6 +131,8 @@ def add_table(slide: Any, slot: dict[str, Any], fragment: Any, *, font_size: flo
         )
 
     rows = fragment.rows or (("",),)
+    if len(row_heights_emu) != len(rows) or any(not isinstance(value, int) or value <= 0 for value in row_heights_emu):
+        raise PptxObjectError("PPTX_TABLE_ROW_HEIGHT_MISMATCH")
     columns = max(1, max(len(row) for row in rows))
     table_y = table_name_geometry["y"] + table_name_geometry["height"]
     table_height = geometry["y"] + geometry["height"] - table_y
@@ -136,8 +141,8 @@ def add_table(slide: Any, slot: dict[str, Any], fragment: Any, *, font_size: flo
     table = graphic.table
     for column in table.columns:
         column.width = int(geometry["width"] / columns)
-    for row in table.rows:
-        row.height = int(table_height / len(rows))
+    for row, height in zip(table.rows, row_heights_emu):
+        row.height = height
     for row_index, values in enumerate(rows):
         for column_index in range(columns):
             cell = table.cell(row_index, column_index)
