@@ -108,7 +108,7 @@ Plans:
 - [x] 43-05-PLAN.md — Close descriptor-bound PPTX publication and bounded public object-error handling gaps.
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 43-06-PLAN.md — Preserve authored code text byte-for-byte through native editable PPTX emission.
+- [x] 43-06-PLAN.md — Preserve authored code text byte-for-byte through native editable PPTX emission.
 
 **Wave 7** *(blocked on Wave 6 completion)*
 - [ ] 43-07-PLAN.md — Freeze two-column, cover, contents, and table geometry decisions into the physical plan.
@@ -139,7 +139,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 5/8 | Gap closure in progress | - |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 6/8 | Gap closure in progress | - |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
@@ -195,7 +195,7 @@ Phases 41-42 are complete and independently verified. The controlled template, M
 
 ## Next Step
 
-Execute 43-06 to preserve authored code text byte-for-byte through native editable PPTX emission.
+Execute 43-07 to freeze two-column, cover, contents, and table geometry decisions into the physical plan.
 
 ## Backlog
 

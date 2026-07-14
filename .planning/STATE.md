@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: executing
-stopped_at: Completed 43-05 descriptor publication and bounded object errors
-last_updated: "2026-07-14T03:28:52Z"
-last_activity: 2026-07-14 -- Completed Phase 43 Plan 05
+stopped_at: Completed 43-06 literal code round-trip
+last_updated: "2026-07-14T04:05:16Z"
+last_activity: 2026-07-14 -- Completed Phase 43 Plan 06
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 12
-  completed_plans: 9
-  percent: 75
+  completed_plans: 10
+  percent: 83
 ---
 
 # State: Presto Agent Skills
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 Phase: 43 (editable-pptx-renderer-and-pagination) — EXECUTING
-Plan: 5 of 8
-Status: Plan 43-05 complete; ready for 43-06
-Last activity: 2026-07-14 -- Closed C-01 descriptor publication and W-01 bounded object errors
+Plan: 6 of 8
+Status: Plan 43-06 complete; ready for 43-07
+Last activity: 2026-07-14 -- Closed C-02 literal code round-trip through native editable PPTX emission
 
-Progress: [██████░░░░] 63%
+Progress: [████████░░] 75%
 
 ## Workflow Preferences
 
@@ -79,6 +79,8 @@ Phase order:
 - [Phase 43]: Structurally valid best-effort decks remain editable and visually unpolluted while render exits non-zero and names affected logical slides. — Artifact existence must not be confused with successful rendering.
 - [Phase 43]: Staged PPTX save and validation remain bound to duplicated streams for one held O_RDWR inode; path names are used only for identity checks and descriptor-relative replace.
 - [Phase 43]: Public object failures expose only allowlisted stable codes and generic remediation; unknown object errors collapse to PPTX_OBJECT_INVALID.
+- [Phase 43]: Code body text uses a delimiter-agnostic one-run monospace helper; optional code subheadings remain separate rich-text shapes.
+- [Phase 43]: Multiple frozen code fragments on one physical slide are reconstructed only at their existing source-line boundary before literal emission.
 
 ### Pending Todos
 
@@ -100,6 +102,7 @@ None yet.
 | Phase 43 P03 | 14 min | 3 tasks | 4 files |
 | Phase 43 P04 | 19 min | 3 tasks | 3 files |
 | Phase 43 P05 | 20 min | 2 tasks | 3 files |
+| Phase 43 P06 | 29 min | 2 tasks | 3 files |
 
 ## Deferred Items
 
