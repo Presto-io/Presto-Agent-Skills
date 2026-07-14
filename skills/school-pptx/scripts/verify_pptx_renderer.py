@@ -1687,6 +1687,7 @@ PHASE_43_GATE_ORDER = (
     "best-effort",
     "publication-safety",
     "publication-descriptor-race",
+    "table-header-only",
     "object-error-bounded",
     "template-reader-security",
     "determinism",
@@ -1697,7 +1698,7 @@ PHASE_43_REQUIRED_GATES = frozenset({
     "contract-model", "pagination", "frozen-slot-content", "frozen-numbering-row-heights",
     "ooxml-bootstrap", "editable-objects", "code-literal-roundtrip", "emit-structure",
     "frozen-plan-emission", "cli-publication", "best-effort", "publication-safety",
-    "publication-descriptor-race", "object-error-bounded", "template-reader-security",
+    "publication-descriptor-race", "table-header-only", "object-error-bounded", "template-reader-security",
     "determinism", "phase_41_42_regression",
 })
 
@@ -1710,16 +1711,19 @@ GAP_COVERAGE = {
     "W-04": ("frozen-numbering-row-heights", "frozen-plan-emission"),
     "W-05": ("frozen-numbering-row-heights", "frozen-plan-emission"),
     "W-06": ("template-reader-security",),
+    "R43-C01": ("code-literal-roundtrip",),
+    "R43-C02": ("table-header-only",),
+    "R43-W01": ("object-error-bounded",),
 }
 
 REQUIREMENT_COVERAGE = {
-    "PPTX-03": ("editable-objects", "code-literal-roundtrip", "frozen-slot-content", "frozen-plan-emission"),
-    "PPTX-04": ("editable-objects", "frozen-numbering-row-heights", "frozen-plan-emission"),
+    "PPTX-03": ("code-literal-roundtrip", "editable-objects", "frozen-slot-content", "frozen-plan-emission"),
+    "PPTX-04": ("table-header-only", "editable-objects", "frozen-numbering-row-heights", "frozen-plan-emission"),
     "PPTX-08": ("pagination", "frozen-slot-content", "frozen-numbering-row-heights", "frozen-plan-emission"),
     "PPTX-10": ("code-literal-roundtrip",),
     "VER-03": (
         "cli-publication", "best-effort", "publication-safety", "publication-descriptor-race",
-        "object-error-bounded", "template-reader-security",
+        "table-header-only", "object-error-bounded", "template-reader-security",
     ),
 }
 
@@ -1753,10 +1757,18 @@ def run_phase_43() -> dict[str, object]:
             called.append(name)
     require(tuple(called) == PHASE_43_GATE_ORDER, "phase-43 registry skipped or reordered a gate")
     called_set = set(called)
-    require(set(GAP_COVERAGE) == {"C-01", "C-02", "W-01", "W-02", "W-03", "W-04", "W-05", "W-06"},
+    require(set(GAP_COVERAGE) == {
+        "C-01", "C-02", "W-01", "W-02", "W-03", "W-04", "W-05", "W-06",
+        "R43-C01", "R43-C02", "R43-W01",
+    },
             "phase-43 gap coverage set changed")
     require(all(gates and set(gates) <= called_set for gates in GAP_COVERAGE.values()),
             "phase-43 gap coverage names an uncalled gate")
+    gap_calls = {
+        gap: tuple(gate for gate in PHASE_43_GATE_ORDER if gate in gates and gate in called_set)
+        for gap, gates in GAP_COVERAGE.items()
+    }
+    require(gap_calls == GAP_COVERAGE, "phase-43 gap evidence differs from actual called gates")
     require(set(REQUIREMENT_COVERAGE) == {"PPTX-03", "PPTX-04", "PPTX-08", "PPTX-10", "VER-03"},
             "blocked requirement coverage set changed")
     require(all(gates and set(gates) <= called_set for gates in REQUIREMENT_COVERAGE.values()),
@@ -1770,7 +1782,13 @@ def run_phase_43() -> dict[str, object]:
         "D-20..D-21": "cli-publication,publication-safety",
     }
     evidence["gap_coverage"] = GAP_COVERAGE
+    evidence["gap_calls"] = gap_calls
     evidence["requirement_coverage"] = REQUIREMENT_COVERAGE
+    evidence["gap_outcome_audit"] = {
+        "R43-C01": {"gate": "code-literal-roundtrip", "public_success": True, "bounded_output": True},
+        "R43-C02": {"gate": "table-header-only", "public_success": True, "bounded_output": True},
+        "R43-W01": {"gate": "object-error-bounded", "failure_vectors": 4, "bounded_output": True},
+    }
     evidence["registry"] = {
         "required": PHASE_43_GATE_ORDER,
         "called": tuple(called),
