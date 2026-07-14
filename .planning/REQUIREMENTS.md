@@ -35,7 +35,7 @@
 - [x] **PPTX-05**: Images and icons are emitted as picture objects with contain-style placement that preserves aspect ratio and avoids default cropping.
 - [x] **PPTX-06**: Gallery layout places up to four images per physical slide and automatically creates additional physical slides when a logical gallery contains more than four images.
 - [x] **PPTX-07**: Timeline layout is horizontal and automatically splits long timelines into additional physical slides instead of compressing items into unreadable slots.
-- [x] **PPTX-08**: Long text, long tables, long timelines, and long galleries expand one Markdown logical slide into multiple PPTX physical slides according to template budgets.
+- [ ] **PPTX-08**: Long text, long tables, long timelines, and long galleries expand one Markdown logical slide into multiple PPTX physical slides according to template budgets.
 - [x] **PPTX-09**: Table pagination repeats the table header and automatically adds a continuation marker to table continuation titles; other continuation slides do not add a visible "续" marker.
 - [x] **PPTX-10**: Code blocks render as editable monospace text with stable background/spacing; syntax highlighting is not required in v1.17.
 - [x] **PPTX-11**: Slides with Markdown speaker notes contain corresponding PPTX notes, and slides without notes do not gain accidental notes content.
@@ -120,7 +120,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PPTX-05 | Phase 43 | Complete |
 | PPTX-06 | Phase 43 | Complete |
 | PPTX-07 | Phase 43 | Complete |
-| PPTX-08 | Phase 43 | Complete |
+| PPTX-08 | Phase 43 | Blocked |
 | PPTX-09 | Phase 43 | Complete |
 | PPTX-10 | Phase 43 | Complete |
 | PPTX-11 | Phase 43 | Complete |
@@ -150,4 +150,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-07-13*
-*Last updated: 2026-07-14 after Phase 43 final verification found three remaining gaps*
+*Last updated: 2026-07-14 after Phase 43 post-execution verification found four remaining gaps*
