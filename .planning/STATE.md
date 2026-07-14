@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
 status: executing
-stopped_at: Phase 43 gap closure planned
-last_updated: "2026-07-14T02:48:15.466Z"
-last_activity: 2026-07-14 -- Phase 43 planning complete
+stopped_at: Completed 43-05 descriptor publication and bounded object errors
+last_updated: "2026-07-14T03:28:52Z"
+last_activity: 2026-07-14 -- Completed Phase 43 Plan 05
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 12
-  completed_plans: 8
-  percent: 67
+  completed_plans: 9
+  percent: 75
 ---
 
 # State: Presto Agent Skills
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 Phase: 43 (editable-pptx-renderer-and-pagination) — EXECUTING
-Plan: 4 of 8
-Status: Ready to execute
-Last activity: 2026-07-14 -- Phase 43 planning complete
+Plan: 5 of 8
+Status: Plan 43-05 complete; ready for 43-06
+Last activity: 2026-07-14 -- Closed C-01 descriptor publication and W-01 bounded object errors
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 63%
 
 ## Workflow Preferences
 
@@ -77,6 +77,8 @@ Phase order:
 - [Phase 43]: Render imports canonical parse_document in-process and publishes only the reviewed Markdown plus validated PPTX. — Avoids parser drift and public logical-model sidecars.
 - [Phase 43]: Markdown-first and PPTX-last are individually atomic publications; PPTX is the deck-ready commit point. — Two independent files cannot form one cross-file transaction, so the crash window stays explicit and tested.
 - [Phase 43]: Structurally valid best-effort decks remain editable and visually unpolluted while render exits non-zero and names affected logical slides. — Artifact existence must not be confused with successful rendering.
+- [Phase 43]: Staged PPTX save and validation remain bound to duplicated streams for one held O_RDWR inode; path names are used only for identity checks and descriptor-relative replace.
+- [Phase 43]: Public object failures expose only allowlisted stable codes and generic remediation; unknown object errors collapse to PPTX_OBJECT_INVALID.
 
 ### Pending Todos
 
@@ -97,6 +99,7 @@ None yet.
 | Phase 43 P02 | 12 min | 3 tasks | 2 files |
 | Phase 43 P03 | 14 min | 3 tasks | 4 files |
 | Phase 43 P04 | 19 min | 3 tasks | 3 files |
+| Phase 43 P05 | 20 min | 2 tasks | 3 files |
 
 ## Deferred Items
 
