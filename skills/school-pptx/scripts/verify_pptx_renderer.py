@@ -508,6 +508,7 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
         from pptx import Presentation
         from pptx.enum.shapes import MSO_SHAPE_TYPE
         from pptx.util import Inches
+        import pptx_emit
         import pptx_objects
     except ImportError as exc:
         raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
@@ -543,7 +544,130 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
     runs = [run for paragraph in code_shape.text_frame.paragraphs for run in paragraph.runs]
     require(len(runs) == 1 and runs[0].text == vector, "literal code is not stored in one run")
     require(all(run.font.name == "Consolas" for run in runs), "literal code run is not monospace")
-    return {"characters": len(vector), "runs": len(runs), "font": runs[0].font.name}
+
+    wide_line = "wide = '" + "中" * 180 + "'"
+    authored_code = (
+        "if a == b == c\n"
+        "return **value**\n"
+        "x = ***raw***\n"
+        "\n"
+        "  leading spaces\n"
+        "trailing spaces  \n"
+        + wide_line
+    )
+    markdown = workdir / "code-roundtrip.md"
+    markdown.write_text(
+        "---\n"
+        'title: "代码保真"\n'
+        'theme: "standard-school"\n'
+        "---\n"
+        '::: slide {layout="code"}\n'
+        "## 代码页\n"
+        "### 原样代码\n"
+        "```text\n"
+        + authored_code
+        + "\n```\n"
+        ":::\n"
+        '::: slide {layout="title-content"}\n'
+        "## 富文本页\n"
+        "普通 **bold** 与 ==highlight==。\n"
+        ":::\n",
+        encoding="utf-8",
+    )
+    manifest = load_manifest(SKILL_DIR)
+    document = parse_document(markdown, manifest)
+    require(not document["errors"], f"code round-trip parser errors: {document['errors']}")
+    parser_text = document["logical_slides"][0]["blocks"][0]["text"]
+    require(parser_text == authored_code, "parser changed authored code")
+    plan = pptx_paginate.build_deck_plan(document, manifest)
+    code_slides = [slide for slide in plan.slides if slide.layout == "code"]
+    require(len(code_slides) == 1, "code vector unexpectedly split into multiple physical slides")
+    frozen_text = next(fragment.text for fragment in code_slides[0].fragments if fragment.kind == "code")
+    require(frozen_text == parser_text, "frozen plan changed authored code")
+
+    emitter_tree = ast.parse((SCRIPTS_DIR / "pptx_emit.py").read_text(encoding="utf-8"), filename="pptx_emit.py")
+    emitter_imports = {
+        alias.name
+        for node in ast.walk(emitter_tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    } | {
+        node.module for node in ast.walk(emitter_tree) if isinstance(node, ast.ImportFrom) and node.module
+    }
+    require("pptx_paginate" not in emitter_imports, "emitter imports paginator")
+    code_branches = [
+        node for node in ast.walk(emitter_tree)
+        if isinstance(node, ast.If)
+        and any(
+            isinstance(candidate, ast.Compare)
+            and isinstance(candidate.left, ast.Attribute)
+            and isinstance(candidate.left.value, ast.Name)
+            and candidate.left.value.id == "physical"
+            and candidate.left.attr == "layout"
+            and len(candidate.ops) == 1
+            and isinstance(candidate.ops[0], ast.Eq)
+            and len(candidate.comparators) == 1
+            and isinstance(candidate.comparators[0], ast.Constant)
+            and candidate.comparators[0].value == "code"
+            for candidate in ast.walk(node.test)
+        )
+    ]
+    require(len(code_branches) == 1, "dedicated code emitter branch missing")
+    code_branch_nodes = [candidate for statement in code_branches[0].body for candidate in ast.walk(statement)]
+    branch_calls = {
+        node.func.id for node in code_branch_nodes
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+    require("add_literal_text" in branch_calls, "code branch does not call literal helper")
+    require("add_plain_lines" not in branch_calls, "code body reaches line-joining rich-text helper")
+    literal_call = next(
+        node for node in code_branch_nodes
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "add_literal_text"
+    )
+    require(
+        len(literal_call.args) >= 3 and ast.unparse(literal_call.args[2]) == "code_text",
+        "literal helper does not consume the ordered frozen code text",
+    )
+    code_text_assignments = [
+        node for node in code_branch_nodes
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "code_text" for target in node.targets)
+    ]
+    require(
+        len(code_text_assignments) == 1
+        and "item.text" in ast.unparse(code_text_assignments[0].value)
+        and "code_fragments" in ast.unparse(code_text_assignments[0].value),
+        "code text is not reconstructed from frozen fragments in plan order",
+    )
+
+    emitted = workdir / "code-full-chain.pptx"
+    pptx_emit.emit_deck(plan, manifest, TEMPLATE_PATH, emitted, media_root=workdir)
+    reopened_chain = Presentation(emitted)
+    reopened_code = next(
+        shape for shape in reopened_chain.slides[code_slides[0].physical_index].shapes
+        if shape.name == "school-pptx:code"
+    )
+    require(reopened_code.text == frozen_text == parser_text, "parser-plan-PPTX code text differs")
+    require(wide_line in reopened_code.text and reopened_code.text.count(wide_line) == 1,
+            "soft wrap inserted a newline into the wide source line")
+    code_runs = [run for paragraph in reopened_code.text_frame.paragraphs for run in paragraph.runs]
+    require(all(run.font.name == "Consolas" and run.font.bold is not True for run in code_runs),
+            "code run gained non-literal styling")
+    code_xml = safe_package_entries(emitted)["ppt/slides/slide1.xml"]
+    require(b"<a:highlight>" not in code_xml and b'b="1"' not in code_xml,
+            "code delimiters generated rich-text OOXML")
+    rich_shape = next(
+        shape for shape in reopened_chain.slides[1].shapes if shape.name == "school-pptx:body"
+    )
+    rich_runs = [run for paragraph in rich_shape.text_frame.paragraphs for run in paragraph.runs]
+    require(any(run.font.bold is True and run.text == "bold" for run in rich_runs),
+            "ordinary bold rich text regressed")
+    rich_xml = safe_package_entries(emitted)["ppt/slides/slide2.xml"]
+    require(b"<a:highlight>" in rich_xml, "ordinary highlight rich text regressed")
+    return {
+        "characters": len(parser_text), "runs": len(code_runs), "font": code_runs[0].font.name,
+        "parser_plan_pptx_equal": True, "wide_line_newlines": 0, "rich_text_regression": "PASS",
+    }
 
 
 GATES["code-literal-roundtrip"] = code_literal_roundtrip_gate
