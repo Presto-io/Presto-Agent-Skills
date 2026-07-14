@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 from importlib import import_module
+import os
 import posixpath
 from pathlib import Path, PurePosixPath
-from typing import Any, Callable
+from typing import Any, BinaryIO, Callable
 from xml.etree import ElementTree as ET
 from zipfile import BadZipFile, ZipFile
 
@@ -39,6 +40,11 @@ MAX_PACKAGE_TOTAL_BYTES = 96 * 1024 * 1024
 MAX_PACKAGE_RELATIONSHIPS = 4096
 FORBIDDEN_XML_MARKERS = (b"<!DOCTYPE", b"<!ENTITY")
 REL_NS = {"r": "http://schemas.openxmlformats.org/package/2006/relationships"}
+OBJECT_ERROR_MESSAGES = {
+    "PPTX_MEDIA_SIZE_LIMIT": "媒体文件大小超过安全上限。",
+    "PPTX_MEDIA_FORMAT_INVALID": "媒体格式不受支持，请使用 JPEG 或 PNG。",
+    "PPTX_MEDIA_PIXEL_LIMIT": "媒体像素数量超过安全上限。",
+}
 
 
 def require_dependencies(importer: Callable[[str], Any] = import_module) -> dict[str, Any]:
@@ -101,88 +107,97 @@ def bootstrap_template(template_path: Path, manifest: dict[str, Any]) -> tuple[A
 
 
 def emit_deck(
-    plan: PhysicalDeckPlan, manifest: dict[str, Any], template_path: Path, output_path: Path,
+    plan: PhysicalDeckPlan, manifest: dict[str, Any], template_path: Path, output: Path | BinaryIO,
     *, media_root: Path | None = None,
 ) -> dict[str, Any]:
     """Emit only the frozen plan; pagination is intentionally absent from this module."""
     presentation, layouts, evidence = bootstrap_template(template_path, manifest)
     highlight = manifest["inline_styles"]["highlight"]["scheme_color"]
-    for physical in plan.slides:
-        slide = presentation.slides.add_slide(layouts[physical.layout])
-        layout_manifest = manifest["layouts"][physical.layout]
-        slots = {slot["id"]: slot for slot in layout_manifest.get("slots", ())}
-        if "title" in slots:
-            title_budget = slots["title"]["text_budget"]
-            add_rich_text(
-                slide, slots["title"]["geometry"], physical.title,
-                font_size=title_budget["font_size_max"], highlight_scheme=highlight,
-                name="school-pptx:slide-title",
-            )
-        if physical.layout == "closing":
+    try:
+        for physical in plan.slides:
+            slide = presentation.slides.add_slide(layouts[physical.layout])
+            layout_manifest = manifest["layouts"][physical.layout]
+            slots = {slot["id"]: slot for slot in layout_manifest.get("slots", ())}
+            if "title" in slots:
+                title_budget = slots["title"]["text_budget"]
+                add_rich_text(
+                    slide, slots["title"]["geometry"], physical.title,
+                    font_size=title_budget["font_size_max"], highlight_scheme=highlight,
+                    name="school-pptx:slide-title",
+                )
+            if physical.layout == "closing":
+                set_notes(slide, physical.notes_intent)
+                continue
+            if physical.layout == "table" and physical.fragments:
+                fragment = physical.fragments[0]
+                add_table(
+                    slide, slots["table"], fragment,
+                    font_size=dict(physical.selected_font_sizes).get("table", slots["table"]["text_budget"]["font_size_min"]),
+                )
+            elif physical.layout == "timeline" and physical.fragments:
+                add_timeline(slide, slots["timeline_items"], physical.fragments[0].rows, highlight_scheme=highlight)
+            elif physical.layout == "gallery":
+                gallery_slot = slots["gallery_items"]
+                count = len(physical.fragments)
+                presets = gallery_slot["item_presets"][count]
+                for index, (fragment, preset) in enumerate(zip(physical.fragments, presets)):
+                    metadata = dict(fragment.metadata)
+                    path = _media_path(metadata.get("authored_path", ""), media_root)
+                    add_gallery_card(
+                        slide, preset, path, metadata.get("caption", ""), index=index,
+                        highlight_scheme=highlight, font_size=slots["caption"]["text_budget"]["font_size_min"],
+                    )
+            else:
+                body_slot_id = "code" if physical.layout == "code" else "body"
+                if physical.layout == "two-column":
+                    body_slot_id = "left_body"
+                body_slot = slots.get(body_slot_id)
+                text_fragments = [fragment for fragment in physical.fragments if fragment.kind != "image"]
+                if body_slot is not None:
+                    lines: list[str] = []
+                    for fragment in text_fragments:
+                        if fragment.heading:
+                            lines.append(fragment.heading)
+                        if fragment.text is not None:
+                            lines.append(fragment.text)
+                        lines.extend(fragment.items)
+                    budget = body_slot["text_budget"]
+                    add_plain_lines(
+                        slide, body_slot["geometry"], lines,
+                        font_size=budget["font_size_min"] if physical.layout == "code" else budget["font_size_max"],
+                        highlight_scheme=highlight, name=f"school-pptx:{body_slot_id}",
+                        monospace=physical.layout == "code",
+                    )
+                image_fragment = next((fragment for fragment in physical.fragments if fragment.kind == "image"), None)
+                if image_fragment is not None and ("media" in slots or body_slot is not None):
+                    metadata = dict(image_fragment.metadata)
+                    media_geometry = slots["media"]["geometry"] if "media" in slots else body_slot["geometry"]
+                    add_contain_picture(
+                        slide, _media_path(metadata.get("authored_path", ""), media_root), media_geometry,
+                        name="school-pptx:image-text-picture",
+                    )
             set_notes(slide, physical.notes_intent)
-            continue
-        if physical.layout == "table" and physical.fragments:
-            fragment = physical.fragments[0]
-            add_table(
-                slide, slots["table"], fragment,
-                font_size=dict(physical.selected_font_sizes).get("table", slots["table"]["text_budget"]["font_size_min"]),
-            )
-        elif physical.layout == "timeline" and physical.fragments:
-            add_timeline(slide, slots["timeline_items"], physical.fragments[0].rows, highlight_scheme=highlight)
-        elif physical.layout == "gallery":
-            gallery_slot = slots["gallery_items"]
-            count = len(physical.fragments)
-            presets = gallery_slot["item_presets"][count]
-            for index, (fragment, preset) in enumerate(zip(physical.fragments, presets)):
-                metadata = dict(fragment.metadata)
-                path = _media_path(metadata.get("authored_path", ""), media_root)
-                add_gallery_card(
-                    slide, preset, path, metadata.get("caption", ""), index=index,
-                    highlight_scheme=highlight, font_size=slots["caption"]["text_budget"]["font_size_min"],
-                )
+    except PptxObjectError as exc:
+        code = str(exc) if str(exc) in OBJECT_ERROR_MESSAGES else "PPTX_OBJECT_INVALID"
+        message = OBJECT_ERROR_MESSAGES.get(code, "PPTX 对象内容无效。")
+        raise PptxEmitError(code, message) from None
+    try:
+        if hasattr(output, "write"):
+            output.seek(0)
+            output.truncate(0)
+            presentation.save(output)
+            output.flush()
+            os.fsync(output.fileno())
+            output.seek(0)
         else:
-            body_slot_id = "code" if physical.layout == "code" else "body"
-            if physical.layout == "two-column":
-                body_slot_id = "left_body"
-            body_slot = slots.get(body_slot_id)
-            text_fragments = [fragment for fragment in physical.fragments if fragment.kind != "image"]
-            if body_slot is not None:
-                lines: list[str] = []
-                for fragment in text_fragments:
-                    if fragment.heading:
-                        lines.append(fragment.heading)
-                    if fragment.text is not None:
-                        lines.append(fragment.text)
-                    lines.extend(fragment.items)
-                budget = body_slot["text_budget"]
-                add_plain_lines(
-                    slide, body_slot["geometry"], lines,
-                    font_size=budget["font_size_min"] if physical.layout == "code" else budget["font_size_max"],
-                    highlight_scheme=highlight, name=f"school-pptx:{body_slot_id}",
-                    monospace=physical.layout == "code",
-                )
-            image_fragment = next((fragment for fragment in physical.fragments if fragment.kind == "image"), None)
-            if image_fragment is not None and ("media" in slots or body_slot is not None):
-                metadata = dict(image_fragment.metadata)
-                media_geometry = slots["media"]["geometry"] if "media" in slots else body_slot["geometry"]
-                add_contain_picture(
-                    slide, _media_path(metadata.get("authored_path", ""), media_root), media_geometry,
-                    name="school-pptx:image-text-picture",
-                )
-        set_notes(slide, physical.notes_intent)
-    try:
-        presentation.save(str(output_path))
-    except OSError as exc:
+            presentation.save(str(output))
+    except (OSError, ValueError) as exc:
         raise PptxEmitError("PPTX_PACKAGE_INVALID", "无法保存 staged PPTX。") from exc
-    try:
-        package = validate_staged_package(output_path, expected_slides=len(plan.slides))
-    except PptxEmitError:
-        output_path.unlink(missing_ok=True)
-        raise
+    package = validate_staged_package(output, expected_slides=len(plan.slides))
     return {
         **evidence,
         "physical_slides": len(plan.slides),
-        "output": str(output_path),
+        "output": str(output) if isinstance(output, Path) else "<staged-stream>",
         "transition_mode": "none",
         "package": package,
     }
@@ -208,11 +223,21 @@ def _relationship_source(name: str) -> str:
     return str(parent / source_name)
 
 
-def validate_staged_package(path: Path, *, expected_slides: int | None = None) -> dict[str, int]:
+def _reader(source: Path | BinaryIO) -> tuple[BinaryIO | Path, Callable[[], None]]:
+    if not hasattr(source, "read"):
+        return source, lambda: None
+    source.flush()
+    duplicate = os.fdopen(os.dup(source.fileno()), "rb")
+    duplicate.seek(0)
+    return duplicate, duplicate.close
+
+
+def validate_staged_package(source: Path | BinaryIO, *, expected_slides: int | None = None) -> dict[str, int]:
     """Apply bounded ZIP/XML/relationship checks before a staged file may be published."""
     dependencies = require_dependencies()
     try:
-        with ZipFile(path) as package:
+        zip_source, close_zip_source = _reader(source)
+        with ZipFile(zip_source) as package:
             infos = package.infolist()
             if len(infos) > MAX_PACKAGE_ENTRIES:
                 raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX ZIP entry 数量超限。")
@@ -250,8 +275,8 @@ def validate_staged_package(path: Path, *, expected_slides: int | None = None) -
                     relationship_count += len(relationships)
                     if relationship_count > MAX_PACKAGE_RELATIONSHIPS:
                         raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX relationship 数量超限。")
-                    source = _relationship_source(info.filename)
-                    source_dir = posixpath.dirname(source)
+                    relationship_source = _relationship_source(info.filename)
+                    source_dir = posixpath.dirname(relationship_source)
                     for relationship in relationships:
                         if relationship.get("TargetMode") == "External":
                             raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX 禁止 external relationship。")
@@ -265,10 +290,17 @@ def validate_staged_package(path: Path, *, expected_slides: int | None = None) -
                 raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX slide count 与冻结计划不一致。")
     except (BadZipFile, OSError) as exc:
         raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX ZIP 无法读取。") from exc
+    finally:
+        if "close_zip_source" in locals():
+            close_zip_source()
     try:
-        reopened = dependencies["pptx"].Presentation(str(path))
+        reopen_source, close_reopen_source = _reader(source)
+        reopened = dependencies["pptx"].Presentation(reopen_source)
     except (OSError, ValueError, KeyError) as exc:
         raise PptxEmitError("PPTX_PACKAGE_INVALID", "PPTX 无法由 python-pptx 重开。") from exc
+    finally:
+        if "close_reopen_source" in locals():
+            close_reopen_source()
     if expected_slides is not None and len(reopened.slides) != expected_slides:
         raise PptxEmitError("PPTX_PACKAGE_INVALID", "重开后的 slide count 与冻结计划不一致。")
     return {
