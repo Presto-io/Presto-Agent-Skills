@@ -42,12 +42,24 @@ def _geometry(value: dict[str, int]) -> tuple[int, int, int, int]:
     return value["x"], value["y"], value["width"], value["height"]
 
 
-def _configure_text_frame(text_frame: Any) -> None:
+def _configure_text_frame(
+    text_frame: Any,
+    *,
+    margin_left_points: float = 0.0,
+    margin_right_points: float = 0.0,
+    margin_top_points: float = 0.0,
+    margin_bottom_points: float = 0.0,
+) -> None:
     from pptx.enum.text import MSO_AUTO_SIZE
+    from pptx.util import Pt
 
     text_frame.clear()
     text_frame.word_wrap = True
     text_frame.auto_size = MSO_AUTO_SIZE.NONE
+    text_frame.margin_left = Pt(margin_left_points)
+    text_frame.margin_right = Pt(margin_right_points)
+    text_frame.margin_top = Pt(margin_top_points)
+    text_frame.margin_bottom = Pt(margin_bottom_points)
 
 
 def add_rich_text(
@@ -111,6 +123,12 @@ def add_fragment_text_frame(
     font_size: float,
     highlight_scheme: str,
     name: str,
+    margin_left_points: float,
+    margin_right_points: float,
+    margin_top_points: float,
+    margin_bottom_points: float,
+    line_spacing: float,
+    paragraph_spacing_points: float,
     code_font_name: str = "Consolas",
 ) -> Any:
     from pptx.util import Pt
@@ -118,13 +136,21 @@ def add_fragment_text_frame(
     shape = slide.shapes.add_textbox(*_geometry(geometry))
     shape.name = name
     text_frame = shape.text_frame
-    _configure_text_frame(text_frame)
+    _configure_text_frame(
+        text_frame,
+        margin_left_points=margin_left_points,
+        margin_right_points=margin_right_points,
+        margin_top_points=margin_top_points,
+        margin_bottom_points=margin_bottom_points,
+    )
     first_paragraph = True
 
     def append_rich_paragraph(authored: str) -> None:
         nonlocal first_paragraph
         paragraph = text_frame.paragraphs[0] if first_paragraph else text_frame.add_paragraph()
         first_paragraph = False
+        paragraph.line_spacing = line_spacing
+        paragraph.space_after = Pt(paragraph_spacing_points)
         for kind, text in normalize_rich_text(authored):
             run = paragraph.add_run()
             run.text = text
@@ -140,6 +166,8 @@ def add_fragment_text_frame(
         if fragment.kind == "code":
             paragraph = text_frame.paragraphs[0] if first_paragraph else text_frame.add_paragraph()
             first_paragraph = False
+            paragraph.line_spacing = line_spacing
+            paragraph.space_after = Pt(paragraph_spacing_points)
             run = paragraph.add_run()
             run.text = fragment.text
             run.font.size = Pt(font_size)

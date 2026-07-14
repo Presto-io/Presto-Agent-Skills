@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import zlib
+from dataclasses import replace
 from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree as ET
 from zipfile import BadZipFile, ZIP_DEFLATED, ZipFile
@@ -728,10 +729,18 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
     parser_column_code = document["logical_slides"][1]["blocks"][0]["text"]
     require(parser_title_code == title_code and parser_column_code == column_code, "parser changed authored code")
     plan = pptx_paginate.build_deck_plan(document, manifest)
-    content_slide = next(slide for slide in plan.slides if slide.layout == "title-content")
-    column_slide = next(slide for slide in plan.slides if slide.layout == "two-column")
-    frozen_title_code = next(fragment.text for fragment in content_slide.fragments if fragment.kind == "code")
-    frozen_column_code = next(fragment.text for fragment in column_slide.fragments if fragment.kind == "code")
+    content_slides = [slide for slide in plan.slides if slide.layout == "title-content"]
+    column_slides = [slide for slide in plan.slides if slide.layout == "two-column"]
+    content_slide = content_slides[0]
+    column_slide = column_slides[0]
+    frozen_title_fragments = [
+        fragment.text or "" for slide in content_slides for fragment in slide.fragments if fragment.kind == "code"
+    ]
+    frozen_column_fragments = [
+        fragment.text or "" for slide in column_slides for fragment in slide.fragments if fragment.kind == "code"
+    ]
+    frozen_title_code = "\n".join(frozen_title_fragments)
+    frozen_column_code = "\n".join(frozen_column_fragments)
     require(frozen_title_code == parser_title_code and frozen_column_code == parser_column_code,
             "frozen plan changed authored code")
 
@@ -837,33 +846,40 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
             "public mixed-code success leaked internal paths or traceback")
     reopened_chain = Presentation(emitted)
     content_body_shapes = [
-        shape for shape in reopened_chain.slides[content_slide.physical_index].shapes
+        shape for physical in content_slides for shape in reopened_chain.slides[physical.physical_index].shapes
         if shape.name == "school-pptx:body"
     ]
     left_body_shapes = [
-        shape for shape in reopened_chain.slides[column_slide.physical_index].shapes
+        shape for physical in column_slides for shape in reopened_chain.slides[physical.physical_index].shapes
         if shape.name == "school-pptx:left_body"
     ]
     right_body_shapes = [
-        shape for shape in reopened_chain.slides[column_slide.physical_index].shapes
+        shape for physical in column_slides for shape in reopened_chain.slides[physical.physical_index].shapes
         if shape.name == "school-pptx:right_body"
     ]
-    require(len(content_body_shapes) == len(left_body_shapes) == len(right_body_shapes) == 1,
-            "non-code layout created overlapping body text proxies")
+    require(content_body_shapes and left_body_shapes and right_body_shapes,
+            "non-code layout did not create required body textboxes")
     content_body = content_body_shapes[0]
-    left_body = left_body_shapes[0]
-    require([paragraph.text for paragraph in content_body.text_frame.paragraphs] == [
-        "普通 bold 与 highlight。", frozen_title_code
-    ], "title-content paragraph order differs from frozen fragment order")
-    require(left_body.text == frozen_column_code == parser_column_code,
+    title_code_runs = [
+        run for shape in content_body_shapes for paragraph in shape.text_frame.paragraphs
+        for run in paragraph.runs if run.font.name == "Consolas"
+    ]
+    column_code_runs = [
+        run for shape in left_body_shapes for paragraph in shape.text_frame.paragraphs
+        for run in paragraph.runs if run.font.name == "Consolas"
+    ]
+    require(content_body.text_frame.paragraphs[0].text == "普通 bold 与 highlight。",
+            "title-content rich paragraph order differs from frozen fragment order")
+    require("\n".join(run.text for run in column_code_runs) == frozen_column_code == parser_column_code,
             "two-column parser-plan-PPTX code text differs")
-    require(wide_line in content_body.text and content_body.text.count(wide_line) == 1,
+    require(sum(shape.text.count(wide_line) for shape in content_body_shapes) == 1,
             "soft wrap inserted a newline into the wide source line")
-    title_code_runs = content_body.text_frame.paragraphs[1].runs
-    column_code_runs = left_body.text_frame.paragraphs[0].runs
     code_runs = [*title_code_runs, *column_code_runs]
-    require(len(title_code_runs) == len(column_code_runs) == 1,
-            "each code fragment must occupy one paragraph and one run")
+    require("\n".join(run.text for run in title_code_runs) == frozen_title_code,
+            "title-content reopened code differs from frozen fragments")
+    require(len(title_code_runs) == len(frozen_title_fragments)
+            and len(column_code_runs) == len(frozen_column_fragments),
+            "each frozen code fragment must occupy one paragraph and one run")
     require(all(run.font.name == "Consolas" and run.font.bold is not True for run in code_runs),
             "code run gained non-literal styling")
     require(all("<a:highlight>" not in run._r.xml and 'b="1"' not in run._r.xml for run in code_runs),
@@ -882,6 +898,180 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
 
 
 GATES["code-literal-roundtrip"] = code_literal_roundtrip_gate
+
+
+def mixed_fragment_capacity_gate(workdir: Path) -> dict[str, object]:
+    try:
+        from pptx import Presentation
+        import pptx_emit
+        from pptx_model import PhysicalDeckPlan
+    except ImportError as exc:
+        raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
+
+    code_text = "\n".join("中" * 40 for _ in range(4))
+    markdown = workdir / "mixed-fragment-capacity.md"
+    markdown.write_text(
+        "---\n"
+        'title: "混排容量"\n'
+        'theme: "standard-school"\n'
+        "---\n"
+        '::: slide {layout="title-content"}\n'
+        "## 标题正文容量\n"
+        "普通 **bold** 与 ==highlight==。\n\n"
+        "```text\n" + code_text + "\n```\n"
+        ":::\n"
+        '::: slide {layout="two-column"}\n'
+        "## 双栏容量\n"
+        "```text\n" + code_text + "\n```\n"
+        "右栏 **bold** 与 ==highlight==。\n"
+        ":::\n",
+        encoding="utf-8",
+    )
+    manifest = load_manifest(SKILL_DIR)
+    document = parse_document(markdown, manifest)
+    require(not document["errors"], f"mixed capacity parser errors: {document['errors']}")
+    plan = pptx_paginate.build_deck_plan(document, manifest)
+    parser_codes = {
+        "title-content": document["logical_slides"][0]["blocks"][1]["text"],
+        "two-column": document["logical_slides"][1]["blocks"][0]["text"],
+    }
+    output_root = workdir / "delivery"
+    completed = run_public_render(markdown, output_root, "mixed-fragment-capacity")
+    public_output = completed.stdout + completed.stderr
+    require(completed.returncode == 0, f"mixed capacity render failed: {public_output[:1024]}")
+    pptx_path = output_root / "mixed-fragment-capacity.pptx"
+    markdown_path = output_root / "mixed-fragment-capacity.md"
+    require({path.name for path in output_root.iterdir()} == {markdown_path.name, pptx_path.name},
+            "mixed capacity public artifacts changed")
+    reopened = Presentation(pptx_path)
+
+    vectors: dict[str, object] = {}
+    for layout, slot_id, expected_font in (
+        ("title-content", "body", 24.0),
+        ("two-column", "left_body", 22.0),
+    ):
+        physical_slides = [slide for slide in plan.slides if slide.layout == layout]
+        code_slides = [slide for slide in physical_slides if any(fragment.kind == "code" for fragment in slide.fragments)]
+        require(len(physical_slides) > 1 and len(code_slides) > 1,
+                f"{layout} over-capacity code did not add physical pages")
+        frozen_fragments: list[str] = []
+        reopened_runs: list[str] = []
+        page_equalities: list[bool] = []
+        display_heights: list[float] = []
+        effective_heights: list[float] = []
+        effective_widths: list[float] = []
+        frozen_typographies: list[dict[str, float]] = []
+        reopened_typographies: list[dict[str, float]] = []
+        selected_fonts: list[float] = []
+        slot = next(item for item in manifest["layouts"][layout]["slots"] if item["id"] == slot_id)
+        for physical in code_slides:
+            selected = dict(physical.selected_font_sizes)[slot_id]
+            selected_fonts.append(selected)
+            require(selected == expected_font, f"{layout} frozen font differs from target slot")
+            values = dict(physical.slot_values)
+            typography = {
+                key: float(values[f"typography.{slot_id}.{key}"])
+                for key in (
+                    "margin_left_points", "margin_right_points", "margin_top_points", "margin_bottom_points",
+                    "line_spacing", "paragraph_spacing_points",
+                )
+            }
+            frozen_typographies.append(typography)
+            shape = next(
+                shape for shape in reopened.slides[physical.physical_index].shapes
+                if shape.name == f"school-pptx:{slot_id}"
+            )
+            code_paragraph, code_run = next(
+                (paragraph, run) for paragraph in shape.text_frame.paragraphs for run in paragraph.runs
+                if run.font.name == "Consolas"
+            )
+            fragment = next(fragment for fragment in physical.fragments if fragment.kind == "code")
+            frozen_fragments.append(fragment.text or "")
+            reopened_runs.append(code_run.text)
+            page_equalities.append(fragment.text == code_run.text)
+            require(code_run.font.size is not None and code_run.font.size.pt == expected_font,
+                    f"{layout} reopened code font differs from frozen font")
+            reopened_typography = {
+                "margin_left_points": shape.text_frame.margin_left.pt,
+                "margin_right_points": shape.text_frame.margin_right.pt,
+                "margin_top_points": shape.text_frame.margin_top.pt,
+                "margin_bottom_points": shape.text_frame.margin_bottom.pt,
+                "line_spacing": float(code_paragraph.line_spacing),
+                "paragraph_spacing_points": code_paragraph.space_after.pt,
+            }
+            reopened_typographies.append(reopened_typography)
+            require(reopened_typography == typography, f"{layout} reopened typography differs from frozen plan")
+            effective_width = slot["geometry"]["width"] / pptx_paginate.EMU_PER_POINT
+            effective_width -= typography["margin_left_points"] + typography["margin_right_points"]
+            effective_height = slot["geometry"]["height"] / pptx_paginate.EMU_PER_POINT
+            effective_height -= typography["margin_top_points"] + typography["margin_bottom_points"]
+            measurement = pptx_paginate.TextMeasure(
+                line_spacing=typography["line_spacing"],
+                paragraph_spacing_points=typography["paragraph_spacing_points"],
+            ).measure(
+                fragment.text or "",
+                width_emu=round(effective_width * pptx_paginate.EMU_PER_POINT),
+                font_size=selected,
+                font_size_min=selected,
+                font_size_max=selected,
+                kind="code",
+            )
+            require(measurement.height_points <= effective_height,
+                    f"{layout} reopened display height exceeds effective content height")
+            display_heights.append(measurement.height_points)
+            effective_heights.append(effective_height)
+            effective_widths.append(effective_width)
+        require(parser_codes[layout] == "\n".join(frozen_fragments) == "\n".join(reopened_runs),
+                f"{layout} parser-plan-PPTX joined code changed")
+        require(all(page_equalities), f"{layout} per-page code text changed")
+        vectors[layout] = {
+            "public_exit": completed.returncode,
+            "physical_pages": len(physical_slides),
+            "code_pages": len(code_slides),
+            "selected_font_sizes": selected_fonts,
+            "frozen_typography": frozen_typographies,
+            "reopened_typography": reopened_typographies,
+            "effective_content_width_points": effective_widths,
+            "display_height_points": display_heights,
+            "effective_content_height_points": effective_heights,
+            "page_equalities": page_equalities,
+            "joined_equality": True,
+            "output_bytes": len(public_output.encode("utf-8")),
+            "artifact_paths": [str(markdown_path), str(pptx_path)],
+        }
+
+    body_slide = next(slide for slide in plan.slides if slide.layout == "title-content")
+    missing_font_slide = replace(body_slide, selected_font_sizes=())
+    missing_font_plan = PhysicalDeckPlan(
+        tuple(missing_font_slide if slide is body_slide else slide for slide in plan.slides),
+        plan.diagnostics,
+        plan.logical_to_physical,
+    )
+    try:
+        pptx_emit.emit_deck(missing_font_plan, manifest, TEMPLATE_PATH, workdir / "missing-font.pptx")
+    except pptx_emit.PptxEmitError as exc:
+        require(exc.code == "PPTX_PLAN_FONT_MISSING", "missing body font did not fail closed")
+    else:
+        raise GateFailure("missing body font emitted successfully")
+    missing_typography_slide = replace(body_slide, slot_values=())
+    missing_typography_plan = PhysicalDeckPlan(
+        tuple(missing_typography_slide if slide is body_slide else slide for slide in plan.slides),
+        plan.diagnostics,
+        plan.logical_to_physical,
+    )
+    try:
+        pptx_emit.emit_deck(missing_typography_plan, manifest, TEMPLATE_PATH, workdir / "missing-typography.pptx")
+    except pptx_emit.PptxEmitError as exc:
+        require(exc.code == "PPTX_PLAN_TYPOGRAPHY_MISSING", "missing typography did not fail closed")
+    else:
+        raise GateFailure("missing body typography emitted successfully")
+    return {
+        "vectors": vectors,
+        "fail_closed_codes": ["PPTX_PLAN_FONT_MISSING", "PPTX_PLAN_TYPOGRAPHY_MISSING"],
+    }
+
+
+GATES["mixed-fragment-capacity"] = mixed_fragment_capacity_gate
 
 
 def editable_objects_gate(workdir: Path) -> dict[str, object]:
