@@ -526,28 +526,33 @@ def _table_fragments(
     budget = table_slot["text_budget"]
     columns = max(1, len(block.get("headers", ())))
     cell_width = int(geometry["width"] / columns)
-    table_name_height = table_slot["subregions"]["table_name"]["geometry"]["height"] / EMU_PER_POINT
-    capacity = geometry["height"] / EMU_PER_POINT - table_name_height
+    table_name_geometry = table_slot["subregions"]["table_name"]["geometry"]
+    if any(table_name_geometry[key] != geometry[key] for key in ("x", "y", "width")):
+        raise ValueError("table_name geometry must share table x/y/width")
+    content_budget_emu = int(geometry["height"] - table_name_geometry["height"])
+    if content_budget_emu <= 0:
+        raise ValueError("derived table content budget must be positive")
     preferred = float(budget["font_size_max"])
-    candidates: list[tuple[tuple[float, ...], float, list[float], tuple[tuple[int, int], ...]]] = []
+    candidates: list[tuple[tuple[float, ...], float, list[int], tuple[tuple[int, int], ...]]] = []
     all_rows = [tuple(map(str, block.get("headers", ()))), *[tuple(map(str, row)) for row in block.get("rows", ())]]
     for font in range(int(budget["font_size_min"]), int(budget["font_size_max"]) + 1):
-        heights: list[float] = []
+        heights: list[int] = []
         orphan_count = 0
         for row in all_rows:
             measured = [_wrapped_cell(cell, cell_width, float(font), measure) for cell in row]
-            heights.append(max((item[0] for item in measured), default=font * 1.2))
+            measured_points = max((item[0] for item in measured), default=font * 1.2)
+            heights.append(max(1, math.ceil(measured_points * EMU_PER_POINT)))
             orphan_count += sum(item[1] for item in measured)
         header_height, data_heights = heights[0], heights[1:]
-        data_capacity = max(1.0, capacity - header_height)
+        data_capacity = max(1, content_budget_emu - header_height)
         ranges = ordered_contiguous_partition(data_heights, data_capacity)
         loads = [header_height + sum(data_heights[start:end]) for start, end in ranges]
-        overflow = sum(load > capacity for load in loads)
+        overflow = sum(load > content_budget_emu for load in loads)
         mean = sum(loads) / len(loads)
         variance = sum((load - mean) ** 2 for load in loads)
         cost = (float(overflow), float(orphan_count), float(len(ranges)), abs(font - preferred), variance, -float(font))
-        candidates.append((cost, float(font), data_heights, ranges))
-    cost, selected_font, _, ranges = min(candidates, key=lambda item: item[0])
+        candidates.append((cost, float(font), heights, ranges))
+    cost, selected_font, measured_heights, ranges = min(candidates, key=lambda item: item[0])
     diagnostics: list[RenderDiagnostic] = []
     if cost[0]:
         diagnostics.append(RenderDiagnostic(
@@ -561,13 +566,37 @@ def _table_fragments(
     headers = tuple(map(str, block.get("headers", ())))
     for page_index, (start, end) in enumerate(ranges):
         name = f"{table_name}（续）" if table_name and page_index else table_name
+        page_heights = _allocate_row_heights(
+            (measured_heights[0], *measured_heights[start + 1:end + 1]), content_budget_emu,
+            fixed_prefix=1,
+        )
         fragment = BlockFragment(
             kind="table", logical_index=logical_index, block_index=0, fragment_index=page_index,
             source_line=int(block.get("source_line", 1)), heading=block.get("heading"), rows=(headers, *rows[start:end]),
             metadata=(("table_name", name), ("table_name_placeholder", "true"), ("repeat_header", "true")),
+            row_heights_emu=page_heights,
         )
         pages.append((fragment,))
     return pages or [tuple()], diagnostics, selected_font
+
+
+def _allocate_row_heights(
+    measured: Sequence[int], content_budget_emu: int, *, fixed_prefix: int = 0
+) -> tuple[int, ...]:
+    heights = tuple(int(value) for value in measured)
+    if not heights or any(value <= 0 for value in heights):
+        raise ValueError("table row measurements must be positive integers")
+    measured_total = sum(heights)
+    if measured_total >= content_budget_emu:
+        return heights
+    adjustable = len(heights) - fixed_prefix
+    if adjustable <= 0:
+        return heights
+    quotient, remainder = divmod(content_budget_emu - measured_total, adjustable)
+    return tuple(
+        value if index < fixed_prefix else value + quotient + (1 if index - fixed_prefix < remainder else 0)
+        for index, value in enumerate(heights)
+    )
 
 
 def _timeline_fragments(
@@ -631,7 +660,8 @@ def _contents_fragments(
     pages = [(
         BlockFragment(
             kind="contents", logical_index=logical_index, block_index=0, fragment_index=page_index,
-            source_line=source_line, items=tuple(entries[start:end]),
+            source_line=source_line,
+            items=tuple(f"{index}. {entries[index - 1]}" for index in range(start + 1, end + 1)),
             metadata=(("number_start", str(start + 1)), ("number_end", str(end))),
         ),
     ) for page_index, (start, end) in enumerate(ranges)]

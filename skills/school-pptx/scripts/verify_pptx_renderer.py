@@ -275,6 +275,41 @@ def frozen_slot_content_gate(workdir: Path) -> dict[str, object]:
 GATES["frozen-slot-content"] = frozen_slot_content_gate
 
 
+def frozen_numbering_row_heights_gate(workdir: Path) -> dict[str, object]:
+    del workdir
+    manifest = load_manifest(SKILL_DIR)
+    document = parse_document(FIXTURE_PATH, manifest)
+    plan = pptx_paginate.build_deck_plan(document, manifest)
+    contents = [slide for slide in plan.slides if slide.layout == "contents"]
+    visible = [item for slide in contents for fragment in slide.fragments for item in fragment.items]
+    require(visible == [f"{index}. {entry}" for index, entry in enumerate(document["contents_entries"], 1)],
+            "contents visible numbering changed")
+    require(all(slide.title == "目录" for slide in contents), "contents title changed")
+    table_slot = next(slot for slot in manifest["layouts"]["table"]["slots"] if slot["id"] == "table")
+    budget = table_slot["geometry"]["height"] - table_slot["subregions"]["table_name"]["geometry"]["height"]
+    tables = [slide.fragments[0] for slide in plan.slides if slide.layout == "table"]
+    require(budget > 0 and tables, "derived table budget is invalid")
+    require(all(len(fragment.row_heights_emu) == len(fragment.rows) for fragment in tables),
+            "table row-height vector length changed")
+    require(all(all(isinstance(value, int) and value > 0 for value in fragment.row_heights_emu)
+                and sum(fragment.row_heights_emu) <= budget for fragment in tables),
+            "table row-height vector exceeds derived budget")
+    require(all(fragment.row_heights_emu[0] == tables[0].row_heights_emu[0] for fragment in tables),
+            "repeated table header height changed")
+    require(pptx_paginate._allocate_row_heights((4, 6), 10) == (4, 6),
+            "equal-budget allocation changed measured heights")
+    require(pptx_paginate._allocate_row_heights((4, 6), 15) == (7, 8),
+            "positive slack allocation is unstable")
+    projection = plan.to_projection()
+    require(any(fragment["row_heights_emu"] for slide in projection["slides"]
+                for fragment in slide["fragments"] if fragment["kind"] == "table"),
+            "row heights missing from projection")
+    return {"contents_items": len(visible), "content_budget_emu": budget, "table_pages": len(tables)}
+
+
+GATES["frozen-numbering-row-heights"] = frozen_numbering_row_heights_gate
+
+
 def _minimal_document(slides: list[dict[str, object]]) -> dict[str, object]:
     return {
         "document_title": "测试文稿",
@@ -392,7 +427,8 @@ def pagination_structured_gate(workdir: Path) -> dict[str, object]:
     content_counts = [len(slide.fragments[0].items) for slide in contents]
     require(all(slide.title == "目录" for slide in contents), "D-10 contents title")
     require(max(content_counts) - min(content_counts) <= 1, "D-10 contents count balance")
-    require([item for slide in contents for item in slide.fragments[0].items] == entries, "D-10 contents order")
+    require([item for slide in contents for item in slide.fragments[0].items] ==
+            [f"{index}. {entry}" for index, entry in enumerate(entries, 1)], "D-10 contents order")
     try:
         pptx_paginate.ordered_contiguous_partition([1.0] * 300, 10.0)
     except ValueError as exc:
@@ -460,7 +496,8 @@ def pagination_full_gate(workdir: Path) -> dict[str, object]:
     require(len(image_text) >= 3 and all(any(fragment.kind == "image" for fragment in slide.fragments)
                                          for slide in image_text), "image-text cartesian planning")
     contents = [slide for slide in first.slides if slide.layout == "contents"]
-    require([item for slide in contents for item in slide.fragments[0].items] == document["contents_entries"],
+    require([item for slide in contents for item in slide.fragments[0].items] ==
+            [f"{index}. {entry}" for index, entry in enumerate(document["contents_entries"], 1)],
             "full fixture contents order")
     return {
         "gallery_vectors": gallery_vectors,
