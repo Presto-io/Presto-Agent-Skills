@@ -38,7 +38,7 @@
 
 - [x] **Phase 41: Standard Template and Manifest** - Normalize the school visual sample into a skill-local PPTX template with a committed slot manifest and template validation command. (completed 2026-07-13)
 - [x] **Phase 42: Markdown Contract and Full Fixture** - Define the constrained YAML plus slide-block Markdown contract and produce a full fixture covering all supported layouts and edge cases. (completed 2026-07-13)
-- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (10/10 plans executed; verification gaps found)
+- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (10/11 plans executed; gap closure planned)
 - [ ] **Phase 44: Verification Gate, Runtime Notes, and UAT** - Add repeatable structural verification, negative cases, six-runtime guidance, repository discoverability, and manual visual acceptance evidence.
 
 ## Phase Details
@@ -90,7 +90,7 @@ Plans:
   3. User sees long text, tables, timelines, and galleries split into additional physical slides according to template budgets instead of overflowing or shrinking into unreadable content.
   4. User sees table continuation slides repeat the header and add a continuation marker to table continuation titles, while other continuation slides avoid visible "续" markers.
   5. Standard successful delivery always contains exactly two same-stem public artifacts: the reviewed Markdown source and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
-**Plans**: 10/10 plans complete
+**Plans**: 10/11 plans complete
 Plans:
 **Wave 1**
 - [x] 43-01-PLAN.md — Establish manifest-owned renderer geometry, frozen physical models, CJK measurement, and contract gates.
@@ -121,6 +121,9 @@ Plans:
 
 **Wave 10** *(blocked on Wave 9 completion)*
 - [x] 43-10-PLAN.md — Close mixed-fragment capacity, evidence-derived aggregate auditing, and descriptor-bound media race gaps.
+
+**Wave 11** *(blocked on Wave 10 completion)*
+- [ ] 43-11-PLAN.md — Close contents and fragment-heading capacity, freeze dedicated-code typography, and harden aggregate evidence against false-green results.
 **UI hint**: yes
 
 ### Phase 44: Verification Gate, Runtime Notes, and UAT
@@ -145,7 +148,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 10/10 | Gaps found | - |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 10/11 | Gap closure planned | - |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
@@ -197,11 +200,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phases 41-42 are complete. Phase 43 has executed 10/10 plans, but post-execution verification found two deterministic capacity blockers and two evidence/typography warnings.
+Phases 41-42 are complete. Phase 43 has executed 10/11 plans; Plan 43-11 is ready to close two deterministic capacity blockers and two evidence/typography warnings.
 
 ## Next Step
 
-Run `/gsd:plan-phase 43 --gaps` to plan the remaining contents, fragment-heading, dedicated-code, and aggregate evidence closures before Phase 44.
+Run `/gsd:execute-phase 43` to execute Plan 43-11 and close the remaining contents, fragment-heading, dedicated-code, and aggregate evidence gaps before Phase 44.
 
 ## Backlog
 
