@@ -503,6 +503,52 @@ def ooxml_bootstrap_gate(workdir: Path) -> dict[str, object]:
 GATES["ooxml-bootstrap"] = ooxml_bootstrap_gate
 
 
+def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
+    try:
+        from pptx import Presentation
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
+        from pptx.util import Inches
+        import pptx_objects
+    except ImportError as exc:
+        raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
+
+    vector = "if a == b == c\nreturn **value**\nx = ***raw***\n  keep  spaces  "
+    source = (SCRIPTS_DIR / "pptx_objects.py").read_text(encoding="utf-8")
+    tree = ast.parse(source, filename="pptx_objects.py")
+    helper = next(
+        node for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "add_literal_text"
+    )
+    forbidden = {"normalize_rich_text", "inline_spans", "add_rich_text", "set_run_highlight"}
+    referenced = {node.id for node in ast.walk(helper) if isinstance(node, ast.Name)}
+    require(not forbidden & referenced, "C-02 literal helper reaches delimiter parser or highlight helper")
+
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    pptx_objects.add_literal_text(
+        slide,
+        {"x": Inches(1), "y": Inches(1), "width": Inches(8), "height": Inches(4)},
+        vector,
+        font_size=18,
+        name="school-pptx:code",
+    )
+    output = workdir / "code-literal-roundtrip.pptx"
+    presentation.save(output)
+    reopened = Presentation(output)
+    code_shapes = [shape for shape in reopened.slides[0].shapes if shape.name == "school-pptx:code"]
+    require(len(code_shapes) == 1, "literal vector is not in exactly one school-pptx:code shape")
+    code_shape = code_shapes[0]
+    require(code_shape.shape_type == MSO_SHAPE_TYPE.TEXT_BOX, "literal code is not a native textbox")
+    require(code_shape.text == vector, "literal code changed after PPTX reopen")
+    runs = [run for paragraph in code_shape.text_frame.paragraphs for run in paragraph.runs]
+    require(len(runs) == 1 and runs[0].text == vector, "literal code is not stored in one run")
+    require(all(run.font.name == "Consolas" for run in runs), "literal code run is not monospace")
+    return {"characters": len(vector), "runs": len(runs), "font": runs[0].font.name}
+
+
+GATES["code-literal-roundtrip"] = code_literal_roundtrip_gate
+
+
 def editable_objects_gate(workdir: Path) -> dict[str, object]:
     try:
         import pptx_emit

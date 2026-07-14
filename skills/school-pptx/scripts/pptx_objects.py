@@ -79,6 +79,29 @@ def add_rich_text(
     return shape
 
 
+def add_literal_text(
+    slide: Any,
+    geometry: dict[str, int],
+    text: str,
+    *,
+    font_size: float,
+    name: str,
+    font_name: str = "Consolas",
+) -> Any:
+    from pptx.util import Pt
+
+    shape = slide.shapes.add_textbox(*_geometry(geometry))
+    shape.name = name
+    text_frame = shape.text_frame
+    _configure_text_frame(text_frame)
+    paragraph = text_frame.paragraphs[0]
+    run = paragraph.add_run()
+    run.text = text
+    run.font.size = Pt(font_size)
+    run.font.name = font_name
+    return shape
+
+
 def add_plain_lines(
     slide: Any, geometry: dict[str, int], lines: Iterable[str], *, font_size: float,
     highlight_scheme: str, name: str, monospace: bool = False
