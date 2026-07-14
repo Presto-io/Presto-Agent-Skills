@@ -310,6 +310,57 @@ def frozen_numbering_row_heights_gate(workdir: Path) -> dict[str, object]:
 GATES["frozen-numbering-row-heights"] = frozen_numbering_row_heights_gate
 
 
+def frozen_plan_emission_gate(workdir: Path) -> dict[str, object]:
+    import pptx_emit
+
+    manifest = load_manifest(SKILL_DIR)
+    document = parse_document(FIXTURE_PATH, manifest)
+    plan = pptx_paginate.build_deck_plan(document, manifest)
+    output = workdir / "frozen-plan.pptx"
+    pptx_emit.emit_deck(plan, manifest, TEMPLATE_PATH, output, media_root=FIXTURE_PATH.parent)
+    presentation = pptx_emit.require_dependencies()["pptx"].Presentation(output)
+    require(len(presentation.slides) == len(plan.slides), "emitted slide count differs from frozen plan")
+
+    for physical, slide in zip(plan.slides, presentation.slides):
+        names = {shape.name: shape for shape in slide.shapes}
+        if physical.layout == "cover":
+            require(names["school-pptx:cover-title"].text == dict(physical.slot_values)["title"],
+                    "cover title differs from frozen slot value")
+            require(names["school-pptx:cover-subtitle"].text == dict(physical.slot_values)["subtitle"],
+                    "cover subtitle differs from frozen slot value")
+        elif physical.layout == "two-column":
+            for slot_id in ("left_body", "right_body"):
+                require(f"school-pptx:{slot_id}" in names, f"missing native {slot_id} shape")
+                expected: list[str] = []
+                for fragment in physical.fragments:
+                    if fragment.target_slot != slot_id:
+                        continue
+                    if fragment.heading:
+                        expected.append(fragment.heading)
+                    if fragment.text is not None:
+                        expected.append(fragment.text)
+                    expected.extend(fragment.items)
+                require(names[f"school-pptx:{slot_id}"].text == "\n".join(expected),
+                        f"{slot_id} text differs from frozen fragments")
+        elif physical.layout == "contents":
+            require(names["school-pptx:body"].text == "\n".join(physical.fragments[0].items),
+                    "contents visible numbering differs from frozen items")
+        elif physical.layout == "table":
+            table_shape = names["school-pptx:native-table"]
+            require(tuple(row.height for row in table_shape.table.rows) == physical.fragments[0].row_heights_emu,
+                    "native table row heights differ from frozen EMU vector")
+
+    source = (SCRIPTS_DIR / "pptx_emit.py").read_text(encoding="utf-8")
+    require("pptx_paginate" not in source and "pptx_measure" not in source,
+            "emitter imports pagination or measurement")
+    require("table_height / len(rows)" not in (SCRIPTS_DIR / "pptx_objects.py").read_text(encoding="utf-8"),
+            "average row-height formula remains")
+    return {"slides": len(plan.slides), "two_column_pages": sum(s.layout == "two-column" for s in plan.slides)}
+
+
+GATES["frozen-plan-emission"] = frozen_plan_emission_gate
+
+
 def _minimal_document(slides: list[dict[str, object]]) -> dict[str, object]:
     return {
         "document_title": "测试文稿",
