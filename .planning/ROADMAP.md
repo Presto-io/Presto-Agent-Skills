@@ -38,7 +38,7 @@
 
 - [x] **Phase 41: Standard Template and Manifest** - Normalize the school visual sample into a skill-local PPTX template with a committed slot manifest and template validation command. (completed 2026-07-13)
 - [x] **Phase 42: Markdown Contract and Full Fixture** - Define the constrained YAML plus slide-block Markdown contract and produce a full fixture covering all supported layouts and edge cases. (completed 2026-07-13)
-- [x] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (completed 2026-07-14)
+- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (9/9 plans executed; verification gaps found)
 - [ ] **Phase 44: Verification Gate, Runtime Notes, and UAT** - Add repeatable structural verification, negative cases, six-runtime guidance, repository discoverability, and manual visual acceptance evidence.
 
 ## Phase Details
@@ -142,7 +142,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 9/9 | Complete   | 2026-07-14 |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 9/9 | Gaps found | - |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
@@ -194,11 +194,11 @@ Detailed phase goals, requirements, success criteria, and verification evidence 
 
 ## Current Position
 
-Phases 41-42 are complete and independently verified. The controlled template, Markdown contract, full fixture, bounded diagnostics, and secure deterministic example workflow are ready for renderer planning.
+Phases 41-42 are complete and independently verified. Phase 43 has executed 9/9 plans, but final verification still reports one critical and two warning gaps.
 
 ## Next Step
 
-Plan Phase 44 to add the structural verification command, six-runtime guidance, repository discoverability, and manual viewer UAT.
+Run `/gsd:plan-phase 43 --gaps` to plan the remaining mixed-code pagination, aggregate evidence, and media race closures before Phase 44.
 
 ## Backlog
 
