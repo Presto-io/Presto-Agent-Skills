@@ -37,7 +37,7 @@
 - [x] **PPTX-07**: Timeline layout is horizontal and automatically splits long timelines into additional physical slides instead of compressing items into unreadable slots.
 - [x] **PPTX-08**: Long text, long tables, long timelines, and long galleries expand one Markdown logical slide into multiple PPTX physical slides according to template budgets.
 - [x] **PPTX-09**: Table pagination repeats the table header and automatically adds a continuation marker to table continuation titles; other continuation slides do not add a visible "续" marker.
-- [ ] **PPTX-10**: Code blocks render as editable monospace text with stable background/spacing; syntax highlighting is not required in v1.17.
+- [x] **PPTX-10**: Code blocks render as editable monospace text with stable background/spacing; syntax highlighting is not required in v1.17.
 - [x] **PPTX-11**: Slides with Markdown speaker notes contain corresponding PPTX notes, and slides without notes do not gain accidental notes content.
 - [x] **PPTX-12**: Slide transition behavior is optional: the renderer may preserve or generate a reliable 0.5s smooth transition, but no-transition output remains valid if transition support is unstable.
 - [x] **PPTX-13**: Standard successful public output always contains exactly two same-stem artifacts, the reviewed Markdown source with its input bytes preserved and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.

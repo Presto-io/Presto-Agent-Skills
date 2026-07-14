@@ -38,7 +38,7 @@
 
 - [x] **Phase 41: Standard Template and Manifest** - Normalize the school visual sample into a skill-local PPTX template with a committed slot manifest and template validation command. (completed 2026-07-13)
 - [x] **Phase 42: Markdown Contract and Full Fixture** - Define the constrained YAML plus slide-block Markdown contract and produce a full fixture covering all supported layouts and edge cases. (completed 2026-07-13)
-- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output.
+- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (8/8 plans executed; verification pending)
 - [ ] **Phase 44: Verification Gate, Runtime Notes, and UAT** - Add repeatable structural verification, negative cases, six-runtime guidance, repository discoverability, and manual visual acceptance evidence.
 
 ## Phase Details
@@ -114,7 +114,7 @@ Plans:
 - [x] 43-07-PLAN.md — Freeze two-column, cover, contents, and table geometry decisions into the physical plan.
 
 **Wave 8** *(blocked on Wave 7 completion)*
-- [ ] 43-08-PLAN.md — Bound production template parsing and aggregate all Phase 43 gap regressions.
+- [x] 43-08-PLAN.md — Bound production template parsing and aggregate all Phase 43 gap regressions.
 **UI hint**: yes
 
 ### Phase 44: Verification Gate, Runtime Notes, and UAT
@@ -139,7 +139,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 7/8 | Gap closure in progress | - |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 8/8 | Verification pending | - |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
