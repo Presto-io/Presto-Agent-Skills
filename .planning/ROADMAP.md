@@ -38,7 +38,7 @@
 
 - [x] **Phase 41: Standard Template and Manifest** - Normalize the school visual sample into a skill-local PPTX template with a committed slot manifest and template validation command. (completed 2026-07-13)
 - [x] **Phase 42: Markdown Contract and Full Fixture** - Define the constrained YAML plus slide-block Markdown contract and produce a full fixture covering all supported layouts and edge cases. (completed 2026-07-13)
-- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (8/8 plans executed; verification gaps found)
+- [ ] **Phase 43: Editable PPTX Renderer and Pagination** - Render accepted Markdown into editable PPTX objects with logical-to-physical pagination, notes, media handling, and clean public output. (8/9 plans executed; gap-closure plan ready)
 - [ ] **Phase 44: Verification Gate, Runtime Notes, and UAT** - Add repeatable structural verification, negative cases, six-runtime guidance, repository discoverability, and manual visual acceptance evidence.
 
 ## Phase Details
@@ -90,7 +90,7 @@ Plans:
   3. User sees long text, tables, timelines, and galleries split into additional physical slides according to template budgets instead of overflowing or shrinking into unreadable content.
   4. User sees table continuation slides repeat the header and add a continuation marker to table continuation titles, while other continuation slides avoid visible "续" markers.
   5. Standard successful delivery always contains exactly two same-stem public artifacts: the reviewed Markdown source and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
-**Plans**: 7/8 plans complete
+**Plans**: 8/9 plans complete
 Plans:
 **Wave 1**
 - [x] 43-01-PLAN.md — Establish manifest-owned renderer geometry, frozen physical models, CJK measurement, and contract gates.
@@ -115,6 +115,9 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 - [x] 43-08-PLAN.md — Bound production template parsing and aggregate all Phase 43 gap regressions.
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [ ] 43-09-PLAN.md — Close non-code fenced-code fidelity, header-only native tables, and bounded Pillow media errors.
 **UI hint**: yes
 
 ### Phase 44: Verification Gate, Runtime Notes, and UAT
@@ -139,7 +142,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 8/8 | Gaps found | - |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 8/9 | Gap closure planned | - |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
@@ -195,7 +198,7 @@ Phases 41-42 are complete and independently verified. The controlled template, M
 
 ## Next Step
 
-Execute 43-08 to bound production template parsing and aggregate all Phase 43 gap regressions.
+Execute 43-09 to close the three remaining Phase 43 verification gaps and rerun the blocking aggregate.
 
 ## Backlog
 
