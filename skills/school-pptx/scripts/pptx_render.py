@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import argparse
 import copy
+import fcntl
 import inspect
 import os
 import stat
 import sys
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, BinaryIO, Callable
 
 from markdown_contract import ManifestError, load_manifest, parse_document, print_diagnostic
 from pptx_emit import PptxEmitError, emit_deck, validate_staged_package
@@ -24,6 +25,7 @@ TEMP_NAMES = {
     "pptx": tuple(f".school-pptx-render-pptx.tmp-{index}" for index in range(100)),
 }
 RENDER_PRE_VALIDATE_HOOK: Callable[[Path], None] | None = None
+RENDER_PRE_SAVE_HOOK: Callable[[Any, BinaryIO], None] | None = None
 RENDER_PRE_PUBLISH_HOOK: Callable[[Path], None] | None = None
 RENDER_BETWEEN_REPLACE_HOOK: Callable[[Path], None] | None = None
 
@@ -80,7 +82,7 @@ class SecureRenderDestination:
         self.input_path = input_path
         self.root_fd: int | None = None
         self.root_identity: tuple[int, int] | None = None
-        self.temporary: dict[str, tuple[str, tuple[int, int]]] = {}
+        self.temporary: dict[str, tuple[str, tuple[int, int], int]] = {}
         self.final_names = {"markdown": f"{self.stem}.md", "pptx": f"{self.stem}.pptx"}
 
     def __enter__(self) -> SecureRenderDestination:
@@ -153,14 +155,18 @@ class SecureRenderDestination:
         assert self.root_fd is not None
         for name in TEMP_NAMES[kind]:
             try:
+                access_mode = os.O_RDWR if kind == "pptx" else os.O_WRONLY
                 file_descriptor = os.open(
                     name,
-                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                    access_mode | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
                     0o600,
                     dir_fd=self.root_fd,
                 )
                 created = os.fstat(file_descriptor)
-                self.temporary[kind] = (name, (created.st_dev, created.st_ino))
+                if kind == "pptx" and fcntl.fcntl(file_descriptor, fcntl.F_GETFL) & os.O_ACCMODE != os.O_RDWR:
+                    os.close(file_descriptor)
+                    raise RenderError("OUTPUT_TEMP_FAILED", "PPTX 临时文件不是 read-write descriptor。", "改用兼容运行时后重试。")
+                self.temporary[kind] = (name, (created.st_dev, created.st_ino), file_descriptor)
                 return file_descriptor, name
             except FileExistsError:
                 continue
@@ -180,22 +186,28 @@ class SecureRenderDestination:
             os.fsync(file_descriptor)
         except OSError as exc:
             raise RenderError("OUTPUT_TEMP_FAILED", "无法完整暂存 Markdown bytes。", "检查可用空间和目录权限后重试。") from exc
-        finally:
-            os.close(file_descriptor)
 
-    def reserve_pptx(self) -> Path:
-        file_descriptor, name = self._create_temporary("pptx")
-        os.close(file_descriptor)
-        return self.output_root / name
+    def reserve_pptx(self) -> BinaryIO:
+        owner_fd, _ = self._create_temporary("pptx")
+        duplicate = os.fdopen(os.dup(owner_fd), "w+b")
+        duplicate_status = os.fstat(duplicate.fileno())
+        owner_status = os.fstat(owner_fd)
+        if ((duplicate_status.st_dev, duplicate_status.st_ino)
+                != (owner_status.st_dev, owner_status.st_ino)):
+            duplicate.close()
+            raise RenderError("OUTPUT_TEMP_FAILED", "PPTX duplicate descriptor 身份不一致。", "改用兼容运行时后重试。")
+        return duplicate
 
     def assert_temporary(self, kind: str) -> None:
         assert self.root_fd is not None
-        name, identity = self.temporary[kind]
+        name, identity, owner_fd = self.temporary[kind]
         try:
             result = os.stat(name, dir_fd=self.root_fd, follow_symlinks=False)
         except OSError as exc:
             raise RenderError("OUTPUT_TEMP_CHANGED", "命令自有临时文件在渲染期间被替换。", "检查输出目录安全后重试。") from exc
-        if not stat.S_ISREG(result.st_mode) or (result.st_dev, result.st_ino) != identity:
+        held = os.fstat(owner_fd)
+        if ((held.st_dev, held.st_ino) != identity or not stat.S_ISREG(result.st_mode)
+                or (result.st_dev, result.st_ino) != identity):
             raise RenderError("OUTPUT_TEMP_CHANGED", "命令自有临时文件在渲染期间被替换。", "检查输出目录安全后重试。")
 
     def publish(self) -> tuple[Path, Path]:
@@ -214,7 +226,6 @@ class SecureRenderDestination:
         markdown_temp = self.temporary["markdown"][0]
         pptx_temp = self.temporary["pptx"][0]
         os.replace(markdown_temp, self.final_names["markdown"], src_dir_fd=self.root_fd, dst_dir_fd=self.root_fd)
-        del self.temporary["markdown"]
         if RENDER_BETWEEN_REPLACE_HOOK is not None:
             try:
                 RENDER_BETWEEN_REPLACE_HOOK(self.output_root)
@@ -228,17 +239,20 @@ class SecureRenderDestination:
         self.assert_final_paths()
         self.assert_temporary("pptx")
         os.replace(pptx_temp, self.final_names["pptx"], src_dir_fd=self.root_fd, dst_dir_fd=self.root_fd)
-        del self.temporary["pptx"]
         os.fsync(self.root_fd)
         return self.output_root / self.final_names["markdown"], self.output_root / self.final_names["pptx"]
 
     def close(self) -> None:
         if self.root_fd is not None:
-            for name, identity in tuple(self.temporary.values()):
+            for name, identity, owner_fd in tuple(self.temporary.values()):
                 try:
                     result = os.stat(name, dir_fd=self.root_fd, follow_symlinks=False)
                     if stat.S_ISREG(result.st_mode) and (result.st_dev, result.st_ino) == identity:
                         os.unlink(name, dir_fd=self.root_fd)
+                except OSError:
+                    pass
+                try:
+                    os.close(owner_fd)
                 except OSError:
                     pass
             self.temporary.clear()
@@ -323,15 +337,17 @@ def render_command(args: argparse.Namespace) -> int:
         template_path = Path(args.skill_dir) / "templates" / "standard-school.pptx"
         with SecureRenderDestination(output_root, stem, input_path) as destination:
             destination.stage_markdown(raw_markdown)
-            staged_pptx = destination.reserve_pptx()
-            emit_deck(plan, manifest, template_path, staged_pptx, media_root=input_path.parent)
-            destination.assert_temporary("pptx")
-            if RENDER_PRE_VALIDATE_HOOK is not None:
-                try:
-                    RENDER_PRE_VALIDATE_HOOK(staged_pptx)
-                except Exception as exc:
-                    raise RenderError("PPTX_STAGED_INTERRUPTED", "staged PPTX 校验前故障注入已中止渲染。", "排除 staged 故障后重试。") from exc
-            validate_staged_package(staged_pptx, expected_slides=len(plan.slides))
+            with destination.reserve_pptx() as staged_pptx:
+                if RENDER_PRE_SAVE_HOOK is not None:
+                    RENDER_PRE_SAVE_HOOK(destination, staged_pptx)
+                emit_deck(plan, manifest, template_path, staged_pptx, media_root=input_path.parent)
+                destination.assert_temporary("pptx")
+                if RENDER_PRE_VALIDATE_HOOK is not None:
+                    try:
+                        RENDER_PRE_VALIDATE_HOOK(staged_pptx)
+                    except Exception as exc:
+                        raise RenderError("PPTX_STAGED_INTERRUPTED", "staged PPTX 校验前故障注入已中止渲染。", "排除 staged 故障后重试。") from exc
+                validate_staged_package(staged_pptx, expected_slides=len(plan.slides))
             destination.assert_temporary("pptx")
             markdown_output, pptx_output = destination.publish()
         affected = affected_slides(document, parser_errors, plan_errors)

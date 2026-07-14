@@ -7,6 +7,7 @@ import argparse
 import ast
 import contextlib
 import copy
+import fcntl
 import hashlib
 import io
 import json
@@ -883,7 +884,13 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
     corruption_root = workdir / "corruption"
     corruption_root.mkdir()
     (corruption_root / "deck.pptx").write_bytes(old_pptx)
-    pptx_render.RENDER_PRE_VALIDATE_HOOK = lambda path: path.write_bytes(b"corrupt")
+    def corrupt(stream: object) -> None:
+        stream.seek(0)
+        stream.truncate(0)
+        stream.write(b"corrupt")
+        stream.flush()
+
+    pptx_render.RENDER_PRE_VALIDATE_HOOK = corrupt
     try:
         result, output = invoke_render_module(FIXTURE_PATH, corruption_root, "deck")
     finally:
@@ -970,6 +977,97 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
     return {"staged_corruption": "blocked", "crash_window": "markdown-new-pptx-old", "exchange": "blocked"}
 
 
+def publication_descriptor_race_gate(workdir: Path) -> dict[str, object]:
+    import pptx_render
+
+    normal_root = workdir / "normal"
+    normal_root.mkdir()
+    descriptor_evidence: dict[str, object] = {}
+
+    def inspect_descriptors(destination: object, duplicate: object) -> None:
+        _, identity, owner_fd = destination.temporary["pptx"]
+        owner_flags = fcntl.fcntl(owner_fd, fcntl.F_GETFL) & os.O_ACCMODE
+        duplicate_flags = fcntl.fcntl(duplicate.fileno(), fcntl.F_GETFL) & os.O_ACCMODE
+        owner_status = os.fstat(owner_fd)
+        duplicate_status = os.fstat(duplicate.fileno())
+        probe = os.fdopen(os.dup(duplicate.fileno()), "r+b")
+        probe.write(b"descriptor-probe")
+        probe.seek(0)
+        require(probe.read() == b"descriptor-probe", "duplicate is not independently seekable/readable/writable")
+        probe.close()
+        require(os.fstat(owner_fd).st_ino == owner_status.st_ino, "closing duplicate closed owner")
+        require(owner_flags == duplicate_flags == os.O_RDWR, "PPTX descriptors are not read-write")
+        require((owner_status.st_dev, owner_status.st_ino) ==
+                (duplicate_status.st_dev, duplicate_status.st_ino) == identity,
+                "owner and duplicate inode differ")
+        descriptor_evidence.update({"owner_fd": owner_fd, "duplicate_fd": duplicate.fileno(), "identity": identity})
+
+    pptx_render.RENDER_PRE_SAVE_HOOK = inspect_descriptors
+    try:
+        result, output = invoke_render_module(FIXTURE_PATH, normal_root, "deck")
+    finally:
+        pptx_render.RENDER_PRE_SAVE_HOOK = None
+    require(result == 0, f"descriptor-only canonical render failed: {output}")
+    safe_package_entries(normal_root / "deck.pptx")
+    import pptx_emit
+    require(len(pptx_emit.require_dependencies()["pptx"].Presentation(normal_root / "deck.pptx").slides) > 0,
+            "published descriptor deck did not reopen")
+    for key in ("owner_fd", "duplicate_fd"):
+        try:
+            os.fstat(int(descriptor_evidence[key]))
+        except OSError:
+            pass
+        else:
+            raise GateFailure(f"{key} remained open after render")
+
+    race_root = workdir / "race"
+    race_root.mkdir()
+    sentinel = workdir / "outside-sentinel.bin"
+    sentinel_bytes = b"caller-owned-sentinel\x00bytes"
+    sentinel.write_bytes(sentinel_bytes)
+    sentinel_hash = hashlib.sha256(sentinel_bytes).hexdigest()
+    race_fds: dict[str, int] = {}
+    attacker_name: dict[str, str] = {}
+
+    def exchange(destination: object, duplicate: object) -> None:
+        name, _, owner_fd = destination.temporary["pptx"]
+        race_fds.update({"owner_fd": owner_fd, "duplicate_fd": duplicate.fileno()})
+        attacker_name["name"] = name
+        os.unlink(name, dir_fd=destination.root_fd)
+        os.symlink(str(sentinel), name, dir_fd=destination.root_fd)
+
+    pptx_render.RENDER_PRE_SAVE_HOOK = exchange
+    try:
+        result, output = invoke_render_module(FIXTURE_PATH, race_root, "deck")
+    finally:
+        pptx_render.RENDER_PRE_SAVE_HOOK = None
+    require(result != 0 and "OUTPUT_TEMP_CHANGED" in output, "staged symlink exchange was not blocked")
+    require(sentinel.read_bytes() == sentinel_bytes and sentinel.stat().st_size == len(sentinel_bytes)
+            and hashlib.sha256(sentinel.read_bytes()).hexdigest() == sentinel_hash,
+            "external sentinel changed during descriptor race")
+    retained = race_root / attacker_name["name"]
+    require(retained.is_symlink() and retained.resolve() == sentinel.resolve(), "attacker symlink was not retained")
+    for key, descriptor in race_fds.items():
+        try:
+            os.fstat(descriptor)
+        except OSError:
+            pass
+        else:
+            raise GateFailure(f"race {key} remained open")
+    regular_debris = [path for path in race_root.iterdir() if path.is_file() and not path.is_symlink()]
+    require(not regular_debris and not (race_root / "deck.pptx").exists() and not (race_root / "deck.md").exists(),
+            "renderer-owned publication debris remains after race")
+    return {
+        "descriptor_access": "O_RDWR",
+        "same_inode": True,
+        "zip_and_reopen": "PASS",
+        "race_code": "OUTPUT_TEMP_CHANGED",
+        "sentinel_sha256": sentinel_hash,
+        "attacker_symlink_retained": True,
+        "fds_closed": True,
+    }
+
+
 def determinism_gate(workdir: Path) -> dict[str, object]:
     manifest = load_manifest(SKILL_DIR)
     first_document = parse_document(FIXTURE_PATH, manifest)
@@ -1021,6 +1119,7 @@ def phase_41_42_regression_gate(workdir: Path) -> dict[str, object]:
 GATES["cli-publication"] = cli_publication_gate
 GATES["best-effort"] = best_effort_gate
 GATES["publication-safety"] = publication_safety_gate
+GATES["publication-descriptor-race"] = publication_descriptor_race_gate
 GATES["determinism"] = determinism_gate
 GATES["phase_41_42_regression"] = phase_41_42_regression_gate
 
