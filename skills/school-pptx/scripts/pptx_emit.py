@@ -14,6 +14,7 @@ from zipfile import BadZipFile, ZipFile
 from pptx_model import PhysicalDeckPlan
 from pptx_objects import (
     PptxObjectError,
+    MediaReference,
     add_contain_picture,
     add_fragment_text_frame,
     add_gallery_card,
@@ -45,6 +46,7 @@ OBJECT_ERROR_MESSAGES = {
     "PPTX_MEDIA_SIZE_LIMIT": "媒体文件大小超过安全上限。",
     "PPTX_MEDIA_FORMAT_INVALID": "媒体格式不受支持，请使用 JPEG 或 PNG。",
     "PPTX_MEDIA_PIXEL_LIMIT": "媒体像素数量超过安全上限。",
+    "PPTX_MEDIA_PATH_INVALID": "媒体路径包含不安全的目录项。",
     "PPTX_TABLE_ROW_HEIGHT_MISMATCH": "冻结表格行高与表格行数不一致。",
 }
 
@@ -137,6 +139,18 @@ def emit_deck(
     """Emit only the frozen plan; pagination is intentionally absent from this module."""
     presentation, layouts, evidence = bootstrap_template(template_path, manifest)
     highlight = manifest["inline_styles"]["highlight"]["scheme_color"]
+    runtime_diagnostics: list[dict[str, Any]] = []
+
+    def record_missing(physical: Any) -> None:
+        runtime_diagnostics.append({
+            "code": "MEDIA_MISSING",
+            "severity": "error",
+            "message": "发射时媒体不存在，已保留可编辑占位符。",
+            "fix": "恢复媒体文件后重新渲染。",
+            "logical_indices": [physical.logical_index],
+            "physical_indices": [physical.physical_index],
+            "source_line": physical.source_line,
+        })
     try:
         for physical in plan.slides:
             slide = presentation.slides.add_slide(layouts[physical.layout])
@@ -202,11 +216,13 @@ def emit_deck(
                 presets = gallery_slot["item_presets"][count]
                 for index, (fragment, preset) in enumerate(zip(physical.fragments, presets)):
                     metadata = dict(fragment.metadata)
-                    path = _media_path(metadata.get("authored_path", ""), media_root)
-                    add_gallery_card(
-                        slide, preset, path, metadata.get("caption", ""), index=index,
+                    reference = _media_path(metadata.get("authored_path", ""), media_root)
+                    _, missing, _ = add_gallery_card(
+                        slide, preset, reference, metadata.get("caption", ""), index=index,
                         highlight_scheme=highlight, font_size=slots["caption"]["text_budget"]["font_size_min"],
                     )
+                    if missing:
+                        record_missing(physical)
             else:
                 text_fragments = [fragment for fragment in physical.fragments if fragment.kind != "image"]
                 target_slot_ids = tuple(dict.fromkeys(
@@ -238,10 +254,12 @@ def emit_deck(
                 if image_fragment is not None and ("media" in slots or "body" in slots):
                     metadata = dict(image_fragment.metadata)
                     media_geometry = slots["media"]["geometry"] if "media" in slots else slots["body"]["geometry"]
-                    add_contain_picture(
+                    _, missing, _ = add_contain_picture(
                         slide, _media_path(metadata.get("authored_path", ""), media_root), media_geometry,
                         name="school-pptx:image-text-picture",
                     )
+                    if missing:
+                        record_missing(physical)
             set_notes(slide, physical.notes_intent)
     except PptxObjectError as exc:
         raise map_object_error(exc) from None
@@ -264,18 +282,25 @@ def emit_deck(
         "output": str(output) if isinstance(output, Path) else "<staged-stream>",
         "transition_mode": "none",
         "package": package,
+        "runtime_diagnostics": runtime_diagnostics,
     }
 
 
-def _media_path(authored: str, media_root: Path | None) -> Path | None:
+def _media_path(authored: str, media_root: Path | None) -> MediaReference | None:
     if not authored:
         return None
     path = Path(authored)
     if path.is_absolute():
-        return path
+        parts = tuple(part for part in path.parts if part != path.anchor)
+        if not parts or any(part in {"", ".", ".."} for part in parts):
+            raise PptxObjectError("PPTX_MEDIA_PATH_INVALID")
+        return MediaReference(Path(path.anchor), parts, True)
     if media_root is None:
         return None
-    return (media_root / path).resolve(strict=False)
+    parts = path.parts
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        raise PptxObjectError("PPTX_MEDIA_PATH_INVALID")
+    return MediaReference(media_root, tuple(parts), False)
 
 
 def _relationship_source(name: str) -> str:

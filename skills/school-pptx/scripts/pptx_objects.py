@@ -4,8 +4,14 @@
 from __future__ import annotations
 
 import warnings
+import errno
+import hashlib
+import io
+import os
+import stat
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from markdown_contract import inline_spans
 from pptx_ooxml import set_run_highlight
@@ -14,10 +20,18 @@ from pptx_ooxml import set_run_highlight
 MAX_MEDIA_BYTES = 16 * 1024 * 1024
 MAX_MEDIA_PIXELS = 40_000_000
 ALLOWED_MEDIA_FORMATS = {"JPEG", "PNG"}
+MEDIA_AFTER_VALIDATE_HOOK: Callable[["MediaReference"], None] | None = None
 
 
 class PptxObjectError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class MediaReference:
+    traversal_root: Path
+    path_parts: tuple[str, ...]
+    absolute: bool
 
 
 def normalize_rich_text(authored: str) -> tuple[tuple[str, str], ...]:
@@ -232,15 +246,41 @@ def add_table(
     return name_shape, graphic
 
 
-def _safe_image_size(path: Path) -> tuple[int, int]:
+def _load_validated_image(reference: MediaReference) -> tuple[bytes, int, int, str]:
     from PIL import Image, UnidentifiedImageError
 
-    if path.stat().st_size > MAX_MEDIA_BYTES:
-        raise PptxObjectError("PPTX_MEDIA_SIZE_LIMIT")
+    descriptors: list[int] = []
     try:
+        root_fd = os.open(reference.traversal_root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        descriptors.append(root_fd)
+        directory_fd = root_fd
+        for part in reference.path_parts[:-1]:
+            next_fd = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory_fd)
+            descriptors.append(next_fd)
+            if not stat.S_ISDIR(os.fstat(next_fd).st_mode):
+                raise PptxObjectError("PPTX_MEDIA_PATH_INVALID")
+            directory_fd = next_fd
+        final_fd = os.open(reference.path_parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_fd)
+        descriptors.append(final_fd)
+        final_status = os.fstat(final_fd)
+        if not stat.S_ISREG(final_status.st_mode):
+            raise PptxObjectError("PPTX_MEDIA_PATH_INVALID")
+        if final_status.st_size > MAX_MEDIA_BYTES:
+            raise PptxObjectError("PPTX_MEDIA_SIZE_LIMIT")
+        chunks: list[bytes] = []
+        remaining = MAX_MEDIA_BYTES + 1
+        while remaining:
+            chunk = os.read(final_fd, min(1024 * 1024, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        payload = b"".join(chunks)
+        if len(payload) > MAX_MEDIA_BYTES:
+            raise PptxObjectError("PPTX_MEDIA_SIZE_LIMIT")
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
-            with Image.open(path) as image:
+            with Image.open(io.BytesIO(payload)) as image:
                 if image.format not in ALLOWED_MEDIA_FORMATS:
                     raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID")
                 width, height = image.size
@@ -249,44 +289,82 @@ def _safe_image_size(path: Path) -> tuple[int, int]:
                 image.verify()
     except PptxObjectError:
         raise
+    except FileNotFoundError:
+        raise PptxObjectError("MEDIA_MISSING") from None
+    except OSError as exc:
+        if exc.errno == errno.ENOENT:
+            raise PptxObjectError("MEDIA_MISSING") from None
+        if exc.errno in {errno.ELOOP, errno.ENOTDIR, errno.EACCES, errno.EPERM}:
+            raise PptxObjectError("PPTX_MEDIA_PATH_INVALID") from None
+        raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID") from None
     except (Image.DecompressionBombError, Image.DecompressionBombWarning):
         raise PptxObjectError("PPTX_MEDIA_PIXEL_LIMIT") from None
     except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
         raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID") from None
-    return width, height
+    finally:
+        for descriptor in reversed(descriptors):
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+    return payload, width, height, hashlib.sha256(payload).hexdigest()
 
 
-def add_contain_picture(slide: Any, path: Path | None, geometry: dict[str, int], *, name: str) -> Any:
-    if path is None or not path.is_file():
-        from pptx.enum.shapes import MSO_SHAPE
+def _missing_media_placeholder(slide: Any, geometry: dict[str, int], name: str) -> Any:
+    from pptx.enum.shapes import MSO_SHAPE
 
-        shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, *_geometry(geometry))
-        shape.name = name.replace("picture", "missing-media")
-        shape.text = "媒体缺失"
-        return shape
-    width, height = _safe_image_size(path)
+    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, *_geometry(geometry))
+    shape.name = name.replace("picture", "missing-media")
+    shape.text = "媒体缺失"
+    return shape
+
+
+def add_contain_picture(
+    slide: Any, reference: MediaReference | None, geometry: dict[str, int], *, name: str
+) -> tuple[Any, bool, str | None]:
+    from PIL import Image, UnidentifiedImageError
+
+    if reference is None:
+        return _missing_media_placeholder(slide, geometry, name), True, None
+    try:
+        payload, width, height, payload_hash = _load_validated_image(reference)
+    except PptxObjectError as exc:
+        if str(exc) == "MEDIA_MISSING":
+            return _missing_media_placeholder(slide, geometry, name), True, None
+        raise
     scale = min(geometry["width"] / width, geometry["height"] / height)
     target_width, target_height = int(width * scale), int(height * scale)
     left = geometry["x"] + int((geometry["width"] - target_width) / 2)
     top = geometry["y"] + int((geometry["height"] - target_height) / 2)
-    picture = slide.shapes.add_picture(str(path), left, top, target_width, target_height)
+    try:
+        if MEDIA_AFTER_VALIDATE_HOOK is not None:
+            MEDIA_AFTER_VALIDATE_HOOK(reference)
+        picture = slide.shapes.add_picture(io.BytesIO(payload), left, top, target_width, target_height)
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise PptxObjectError("PPTX_MEDIA_PIXEL_LIMIT") from None
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+        raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID") from None
+    except Exception:
+        raise PptxObjectError("PPTX_OBJECT_INVALID") from None
     picture.name = name
     picture.crop_left = picture.crop_top = picture.crop_right = picture.crop_bottom = 0
-    return picture
+    return picture, False, payload_hash
 
 
 def add_gallery_card(
-    slide: Any, preset: dict[str, Any], path: Path | None, caption: str, *, index: int,
+    slide: Any, preset: dict[str, Any], reference: MediaReference | None, caption: str, *, index: int,
     highlight_scheme: str, font_size: float
-) -> Any:
-    picture = add_contain_picture(slide, path, preset["picture"], name=f"school-pptx:gallery-picture:{index}")
+) -> tuple[Any, bool, str | None]:
+    picture, missing, payload_hash = add_contain_picture(
+        slide, reference, preset["picture"], name=f"school-pptx:gallery-picture:{index}"
+    )
     caption_shape = add_rich_text(
         slide, preset["caption"], caption, font_size=font_size, highlight_scheme=highlight_scheme,
         name=f"school-pptx:gallery-caption:{index}",
     )
     group = slide.shapes.add_group_shape((picture, caption_shape))
     group.name = f"school-pptx:gallery-card:{index}"
-    return group
+    return group, missing, payload_hash
 
 
 def add_timeline(slide: Any, slot: dict[str, Any], rows: tuple[tuple[str, ...], ...], *, highlight_scheme: str) -> list[Any]:

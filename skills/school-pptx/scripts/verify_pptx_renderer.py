@@ -1780,6 +1780,217 @@ def object_error_bounded_gate(workdir: Path) -> dict[str, object]:
     return evidence
 
 
+def _valid_png_bytes() -> bytes:
+    from PIL import Image
+
+    payload = io.BytesIO()
+    Image.new("RGB", (1, 1), (20, 80, 140)).save(payload, format="PNG")
+    return payload.getvalue()
+
+
+def _embedded_media_hashes(path: Path) -> list[str]:
+    with ZipFile(path) as package:
+        return sorted(
+            hashlib.sha256(package.read(name)).hexdigest()
+            for name in package.namelist()
+            if name.startswith("ppt/media/")
+        )
+
+
+def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
+    try:
+        from pptx import Presentation
+        import pptx_objects
+        import pptx_render
+    except ImportError as exc:
+        raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
+
+    original_payload = _valid_png_bytes()
+    original_hash = hashlib.sha256(original_payload).hexdigest()
+    replacement_payload = _minimal_png(20_000, 10_000)
+    replacement_hash = hashlib.sha256(replacement_payload).hexdigest()
+
+    race_root = workdir / "replace-after-validate"
+    race_root.mkdir()
+    media_path = race_root / "image.png"
+    media_path.write_bytes(original_payload)
+    replacement_path = race_root / "replacement.png"
+    replacement_path.write_bytes(replacement_payload)
+    source = race_root / "deck.md"
+    source.write_text(_media_markdown("image.png"), encoding="utf-8")
+    delivery = race_root / "delivery"
+    hook_calls: list[str] = []
+
+    def replace_after_validation(reference: object) -> None:
+        hook_calls.append("called")
+        os.replace(replacement_path, media_path)
+
+    pptx_objects.MEDIA_AFTER_VALIDATE_HOOK = replace_after_validation
+    try:
+        race_exit, race_output = invoke_render_module(source, delivery, "deck")
+    finally:
+        pptx_objects.MEDIA_AFTER_VALIDATE_HOOK = None
+    require(race_exit == 0 and hook_calls == ["called"],
+            f"validated-byte replacement render failed: {race_output}")
+    embedded_hashes = _embedded_media_hashes(delivery / "deck.pptx")
+    require(original_hash in embedded_hashes and replacement_hash not in embedded_hashes,
+            "replacement path changed embedded validated media")
+    reopened = Presentation(delivery / "deck.pptx")
+    pictures = [shape for slide in reopened.slides for shape in slide.shapes if shape.shape_type == 13]
+    require(len(pictures) == 1 and all(
+        value == 0 for value in (
+            pictures[0].crop_left, pictures[0].crop_top, pictures[0].crop_right, pictures[0].crop_bottom
+        )
+    ), "validated-byte vector lost native zero-crop picture")
+
+    absolute_root = workdir / "absolute"
+    absolute_root.mkdir()
+    absolute_media = absolute_root / "absolute.png"
+    absolute_media.write_bytes(original_payload)
+    absolute_source = absolute_root / "deck.md"
+    absolute_source.write_text(_media_markdown(str(absolute_media.resolve())), encoding="utf-8")
+    absolute_delivery = absolute_root / "delivery"
+    absolute_result = run_public_render(absolute_source, absolute_delivery, "deck")
+    require(absolute_result.returncode == 0, f"absolute PNG failed: {absolute_result.stdout + absolute_result.stderr}")
+    absolute_hashes = _embedded_media_hashes(absolute_delivery / "deck.pptx")
+    require(original_hash in absolute_hashes, "absolute PNG embedded hash changed")
+
+    symlink_evidence: dict[str, object] = {}
+    for label, authored_builder in (
+        ("relative-intermediate", lambda root, target: (root / "linked").symlink_to(target.parent, target_is_directory=True) or "linked/image.png"),
+        ("relative-final", lambda root, target: (root / "linked.png").symlink_to(target) or "linked.png"),
+        ("absolute-final", lambda root, target: (root / "absolute-linked.png").symlink_to(target) or str(root / "absolute-linked.png")),
+    ):
+        vector_root = workdir / label
+        vector_root.mkdir()
+        target_root = vector_root / "target"
+        target_root.mkdir()
+        target = target_root / "image.png"
+        target.write_bytes(original_payload)
+        authored = authored_builder(vector_root, target)
+        vector_source = vector_root / "deck.md"
+        vector_source.write_text(_media_markdown(str(authored)), encoding="utf-8")
+        vector_delivery = vector_root / "delivery"
+        vector_delivery.mkdir()
+        old_target = b"old-pptx-media-symlink"
+        (vector_delivery / "deck.pptx").write_bytes(old_target)
+        result = run_public_render(vector_source, vector_delivery, "deck")
+        output = result.stdout + result.stderr
+        require(result.returncode != 0 and "PPTX_MEDIA_PATH_INVALID" in output,
+                f"{label} symlink did not fail closed: {output[:1024]}")
+        require((vector_delivery / "deck.pptx").read_bytes() == old_target
+                and not (vector_delivery / "deck.md").exists(),
+                f"{label} symlink replaced public artifacts")
+        require(len(output.encode("utf-8")) < 8192 and "Traceback" not in output
+                and str(target) not in output and str(vector_root) not in output,
+                f"{label} symlink failure was not bounded")
+        symlink_evidence[label] = {
+            "public_exit": result.returncode,
+            "code": "PPTX_MEDIA_PATH_INVALID",
+            "output_bytes": len(output.encode("utf-8")),
+            "old_target_preserved": True,
+        }
+
+    missing_root = workdir / "runtime-missing"
+    missing_root.mkdir()
+    missing_media = missing_root / "image.png"
+    missing_media.write_bytes(original_payload)
+    missing_source = missing_root / "deck.md"
+    missing_source.write_text(_media_markdown("image.png"), encoding="utf-8")
+    manifest = load_manifest(SKILL_DIR)
+    frozen_plan = pptx_paginate.build_deck_plan(parse_document(missing_source, manifest), manifest)
+    before_projection = frozen_plan.to_projection()
+    missing_delivery = missing_root / "delivery"
+
+    def delete_after_parse(input_path: Path) -> None:
+        del input_path
+        missing_media.unlink()
+
+    pptx_render.RENDER_POST_PARSE_HOOK = delete_after_parse
+    try:
+        missing_exit, missing_output = invoke_render_module(missing_source, missing_delivery, "deck")
+    finally:
+        pptx_render.RENDER_POST_PARSE_HOOK = None
+    require(missing_exit != 0 and "MEDIA_MISSING" in missing_output and "受影响逻辑页" in missing_output,
+            f"runtime missing did not report structured diagnostic: {missing_output[:1024]}")
+    require({path.name for path in missing_delivery.iterdir()} == {"deck.md", "deck.pptx"},
+            "runtime missing did not publish clean best-effort pair")
+    missing_reopened = Presentation(missing_delivery / "deck.pptx")
+    placeholders = [
+        shape for slide in missing_reopened.slides for shape in slide.shapes
+        if "missing-media" in shape.name
+    ]
+    require(placeholders and all(shape.has_text_frame for shape in placeholders),
+            "runtime missing did not emit editable placeholder")
+    require(frozen_plan.to_projection() == before_projection, "runtime missing mutated frozen plan projection")
+
+    fault_root = workdir / "add-picture-fault"
+    fault_root.mkdir()
+    fault_media = fault_root / "image.png"
+    fault_media.write_bytes(original_payload)
+    fault_source = fault_root / "deck.md"
+    fault_source.write_text(_media_markdown("image.png"), encoding="utf-8")
+    fault_delivery = fault_root / "delivery"
+    fault_delivery.mkdir()
+    fault_old = b"old-pptx-add-picture"
+    (fault_delivery / "deck.pptx").write_bytes(fault_old)
+
+    def fail_add_picture(reference: object) -> None:
+        del reference
+        raise OSError("private Pillow stream failure")
+
+    pptx_objects.MEDIA_AFTER_VALIDATE_HOOK = fail_add_picture
+    try:
+        fault_exit, fault_output = invoke_render_module(fault_source, fault_delivery, "deck")
+    finally:
+        pptx_objects.MEDIA_AFTER_VALIDATE_HOOK = None
+    require(fault_exit != 0 and "PPTX_MEDIA_FORMAT_INVALID" in fault_output,
+            "add_picture fault did not map to stable code")
+    require(len(fault_output.encode("utf-8")) < 8192 and "Traceback" not in fault_output
+            and "private Pillow stream failure" not in fault_output and str(fault_root) not in fault_output,
+            "add_picture fault leaked internal details")
+    require((fault_delivery / "deck.pptx").read_bytes() == fault_old
+            and not (fault_delivery / "deck.md").exists(),
+            "add_picture fault replaced old target")
+
+    return {
+        "relative_success": {
+            "public_exit": race_exit,
+            "validated_hash": original_hash,
+            "embedded_hash": original_hash,
+            "replacement_hash": replacement_hash,
+            "hook_called": len(hook_calls),
+            "crop": [0.0, 0.0, 0.0, 0.0],
+            "artifact_paths": [str(delivery / "deck.md"), str(delivery / "deck.pptx")],
+        },
+        "absolute_success": {
+            "public_exit": absolute_result.returncode,
+            "embedded_hash": original_hash,
+            "crop": [0.0, 0.0, 0.0, 0.0],
+            "artifact_paths": [str(absolute_delivery / "deck.md"), str(absolute_delivery / "deck.pptx")],
+        },
+        "symlink_failures": symlink_evidence,
+        "runtime_missing": {
+            "public_exit": missing_exit,
+            "code": "MEDIA_MISSING",
+            "editable_placeholders": len(placeholders),
+            "artifacts": sorted(path.name for path in missing_delivery.iterdir()),
+            "frozen_projection_equal": True,
+            "output_bytes": len(missing_output.encode("utf-8")),
+            "artifact_paths": [str(missing_delivery / "deck.md"), str(missing_delivery / "deck.pptx")],
+        },
+        "add_picture_fault": {
+            "public_exit": fault_exit,
+            "code": "PPTX_MEDIA_FORMAT_INVALID",
+            "output_bytes": len(fault_output.encode("utf-8")),
+            "old_target_preserved": True,
+        },
+    }
+
+
+GATES["media-descriptor-binding"] = media_descriptor_binding_gate
+
+
 def determinism_gate(workdir: Path) -> dict[str, object]:
     manifest = load_manifest(SKILL_DIR)
     first_document = parse_document(FIXTURE_PATH, manifest)
