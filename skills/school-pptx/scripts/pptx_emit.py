@@ -54,6 +54,23 @@ def map_object_error(error: PptxObjectError) -> PptxEmitError:
     return PptxEmitError(code, OBJECT_ERROR_MESSAGES.get(code, "PPTX 对象内容无效。"))
 
 
+def _frozen_body_typography(physical: Any, slot_id: str) -> dict[str, float]:
+    fonts = dict(physical.selected_font_sizes)
+    if slot_id not in fonts:
+        raise PptxEmitError("PPTX_PLAN_FONT_MISSING", "冻结物理计划缺少正文槽字号。")
+    values = dict(physical.slot_values)
+    keys = (
+        "margin_left_points", "margin_right_points", "margin_top_points", "margin_bottom_points",
+        "line_spacing", "paragraph_spacing_points",
+    )
+    try:
+        typography = {key: float(values[f"typography.{slot_id}.{key}"]) for key in keys}
+    except (KeyError, TypeError, ValueError) as exc:
+        raise PptxEmitError("PPTX_PLAN_TYPOGRAPHY_MISSING", "冻结物理计划缺少正文槽排版参数。") from exc
+    typography["font_size"] = float(fonts[slot_id])
+    return typography
+
+
 def require_dependencies(importer: Callable[[str], Any] = import_module) -> dict[str, Any]:
     try:
         pptx = importer("pptx")
@@ -205,12 +222,16 @@ def emit_deck(
                         fragment for fragment in text_fragments
                         if (fragment.target_slot or "body") == body_slot_id
                     )
-                    budget = body_slot["text_budget"]
+                    typography = _frozen_body_typography(physical, body_slot_id)
                     add_fragment_text_frame(
                         slide, body_slot["geometry"], slot_fragments,
-                        font_size=dict(physical.selected_font_sizes).get(
-                            body_slot_id, dict(physical.selected_font_sizes).get("body", budget["font_size_max"])
-                        ),
+                        font_size=typography["font_size"],
+                        margin_left_points=typography["margin_left_points"],
+                        margin_right_points=typography["margin_right_points"],
+                        margin_top_points=typography["margin_top_points"],
+                        margin_bottom_points=typography["margin_bottom_points"],
+                        line_spacing=typography["line_spacing"],
+                        paragraph_spacing_points=typography["paragraph_spacing_points"],
                         highlight_scheme=highlight, name=f"school-pptx:{body_slot_id}",
                     )
                 image_fragment = next((fragment for fragment in physical.fragments if fragment.kind == "image"), None)
