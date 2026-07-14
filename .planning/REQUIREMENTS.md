@@ -122,7 +122,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PPTX-07 | Phase 43 | Complete |
 | PPTX-08 | Phase 43 | Complete |
 | PPTX-09 | Phase 43 | Complete |
-| PPTX-10 | Phase 43 | Verification gap |
+| PPTX-10 | Phase 43 | Complete |
 | PPTX-11 | Phase 43 | Complete |
 | PPTX-12 | Phase 43 | Complete |
 | PPTX-13 | Phase 43 | Complete |
