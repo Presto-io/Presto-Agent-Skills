@@ -90,7 +90,7 @@ Plans:
   3. User sees long text, tables, timelines, and galleries split into additional physical slides according to template budgets instead of overflowing or shrinking into unreadable content.
   4. User sees table continuation slides repeat the header and add a continuation marker to table continuation titles, while other continuation slides avoid visible "续" markers.
   5. Standard successful delivery always contains exactly two same-stem public artifacts: the reviewed Markdown source and the rendered PPTX (`.pptx`); manifests, logical JSON, diagnostics, logs, debug files, verification evidence, and temporary files stay hidden or in verification workdirs.
-**Plans**: 4/8 plans complete
+**Plans**: 5/8 plans complete
 Plans:
 **Wave 1**
 - [x] 43-01-PLAN.md — Establish manifest-owned renderer geometry, frozen physical models, CJK measurement, and contract gates.
@@ -105,7 +105,7 @@ Plans:
 - [x] 43-04-PLAN.md — Add the public render state machine, safe dual-artifact publication, and Phase 43 aggregate gate.
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 43-05-PLAN.md — Close descriptor-bound PPTX publication and bounded public object-error handling gaps.
+- [x] 43-05-PLAN.md — Close descriptor-bound PPTX publication and bounded public object-error handling gaps.
 
 **Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 43-06-PLAN.md — Preserve authored code text byte-for-byte through native editable PPTX emission.
@@ -139,7 +139,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 |-------|-----------|----------------|--------|-----------|
 | 41. Standard Template and Manifest | v1.17 | 1/1 | Complete | 2026-07-13 |
 | 42. Markdown Contract and Full Fixture | v1.17 | 3/3 | Complete    | 2026-07-13 |
-| 43. Editable PPTX Renderer and Pagination | v1.17 | 4/8 | Ready to execute gap closure | - |
+| 43. Editable PPTX Renderer and Pagination | v1.17 | 5/8 | Gap closure in progress | - |
 | 44. Verification Gate, Runtime Notes, and UAT | v1.17 | 0/TBD | Not started | - |
 
 ## Completed Phase Archive
@@ -195,7 +195,7 @@ Phases 41-42 are complete and independently verified. The controlled template, M
 
 ## Next Step
 
-Plan Phase 43: Editable PPTX Renderer and Pagination.
+Execute 43-06 to preserve authored code text byte-for-byte through native editable PPTX emission.
 
 ## Backlog
 
