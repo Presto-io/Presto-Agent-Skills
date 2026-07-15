@@ -35,7 +35,7 @@
 - [x] **PPTX-05**: Images and icons are emitted as picture objects with contain-style placement that preserves aspect ratio and avoids default cropping.
 - [x] **PPTX-06**: Gallery layout places up to four images per physical slide and automatically creates additional physical slides when a logical gallery contains more than four images.
 - [x] **PPTX-07**: Timeline layout is horizontal and automatically splits long timelines into additional physical slides instead of compressing items into unreadable slots.
-- [ ] **PPTX-08**: Long text, long tables, long timelines, and long galleries expand one Markdown logical slide into multiple PPTX physical slides according to template budgets.
+- [x] **PPTX-08**: Long text, long tables, long timelines, and long galleries expand one Markdown logical slide into multiple PPTX physical slides according to template budgets.
 - [x] **PPTX-09**: Table pagination repeats the table header and automatically adds a continuation marker to table continuation titles; other continuation slides do not add a visible "续" marker.
 - [x] **PPTX-10**: Code blocks render as editable monospace text with stable background/spacing; syntax highlighting is not required in v1.17.
 - [x] **PPTX-11**: Slides with Markdown speaker notes contain corresponding PPTX notes, and slides without notes do not gain accidental notes content.
@@ -47,22 +47,22 @@
 - [x] **VER-01**: The skill provides a repeatable `example` command that writes the full Markdown fixture.
 - [x] **VER-02**: The skill provides a repeatable `template-report` or equivalent command that validates template layouts, slots, placeholders, and manifest consistency.
 - [x] **VER-03**: The skill provides a repeatable `render` command that turns finalized Markdown into PPTX and fails non-zero on invalid input.
-- [ ] **VER-04**: The skill provides a repeatable `verify --workdir <dir>` command that exercises example generation, template validation, rendering, and structural PPTX inspection.
-- [ ] **VER-05**: Verification checks dependency readiness, including Python, `python-pptx`, and optional Pandoc availability where used.
-- [ ] **VER-06**: Verification checks generated slide count, layout mapping, logical-to-physical pagination mapping, and contents entries.
-- [ ] **VER-07**: Verification checks notes, media relationships, table structure, code text editability, and absence of whole-slide screenshot shortcuts.
-- [ ] **VER-08**: Verification includes negative cases for unknown theme, unknown layout, missing media, unsupported styling, unresolved review markers, and template/manifest mismatch.
-- [ ] **VER-09**: Verification records transition mode honestly as `none`, `preserved`, or `generated`; transition absence must not fail v1.17.
-- [ ] **VER-10**: Manual visual UAT evidence is recorded for the normalized template and at least one rendered full fixture PPTX before milestone acceptance.
+- [x] **VER-04**: The skill provides a repeatable `verify --workdir <dir>` command that exercises example generation, template validation, rendering, and structural PPTX inspection.
+- [x] **VER-05**: Verification checks dependency readiness, including Python, `python-pptx`, and optional Pandoc availability where used.
+- [x] **VER-06**: Verification checks generated slide count, layout mapping, logical-to-physical pagination mapping, and contents entries.
+- [x] **VER-07**: Verification checks notes, media relationships, table structure, code text editability, and absence of whole-slide screenshot shortcuts.
+- [x] **VER-08**: Verification includes negative cases for unknown theme, unknown layout, missing media, unsupported styling, unresolved review markers, and template/manifest mismatch.
+- [x] **VER-09**: Verification records transition mode honestly as `none`, `preserved`, or `generated`; transition absence must not fail v1.17.
+- [x] **VER-10**: Manual visual UAT evidence is recorded for the normalized template and at least one rendered full fixture PPTX before milestone acceptance.
 
 ### Skill Delivery
 
-- [ ] **SKILL-01**: The repository adds `skills/school-pptx/SKILL.md` with a concise canonical workflow, trigger wording, inputs, outputs, safety boundaries, and verification instructions.
-- [ ] **SKILL-02**: Long authoring rules, template normalization rules, renderer behavior, and verification details live in `skills/school-pptx/references/` rather than bloating the canonical entry.
+- [x] **SKILL-01**: The repository adds `skills/school-pptx/SKILL.md` with a concise canonical workflow, trigger wording, inputs, outputs, safety boundaries, and verification instructions.
+- [x] **SKILL-02**: Long authoring rules, template normalization rules, renderer behavior, and verification details live in `skills/school-pptx/references/` rather than bloating the canonical entry.
 - [x] **SKILL-03**: Script implementation is skill-local under `skills/school-pptx/scripts/` and does not call sibling skill scripts at runtime.
-- [ ] **SKILL-04**: Runtime adapter notes explicitly cover Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent, including support-file discovery, external command use, dependencies, and write boundaries.
-- [ ] **SKILL-05**: Repository discoverability is updated for `README.md`, `skills/README.md`, `docs/directory-spec.md` if needed, and `docs/compatibility-matrix.md`.
-- [ ] **SKILL-06**: The skill documents concise clarification questions for missing school/PPT metadata and missing media before final rendering.
+- [x] **SKILL-04**: Runtime adapter notes explicitly cover Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent, including support-file discovery, external command use, dependencies, and write boundaries.
+- [x] **SKILL-05**: Repository discoverability is updated for `README.md`, `skills/README.md`, `docs/directory-spec.md` if needed, and `docs/compatibility-matrix.md`.
+- [x] **SKILL-06**: The skill documents concise clarification questions for missing school/PPT metadata and missing media before final rendering.
 
 ## Future Requirements
 
@@ -120,7 +120,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PPTX-05 | Phase 43 | Complete |
 | PPTX-06 | Phase 43 | Complete |
 | PPTX-07 | Phase 43 | Complete |
-| PPTX-08 | Phase 43 | Blocked |
+| PPTX-08 | Phase 43 | Complete |
 | PPTX-09 | Phase 43 | Complete |
 | PPTX-10 | Phase 43 | Complete |
 | PPTX-11 | Phase 43 | Complete |
@@ -129,19 +129,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VER-01 | Phase 42 | Complete |
 | VER-02 | Phase 41 | Complete |
 | VER-03 | Phase 43 | Complete |
-| VER-04 | Phase 44 | Pending |
-| VER-05 | Phase 44 | Pending |
-| VER-06 | Phase 44 | Pending |
-| VER-07 | Phase 44 | Pending |
-| VER-08 | Phase 44 | Pending |
-| VER-09 | Phase 44 | Pending |
-| VER-10 | Phase 44 | Pending |
-| SKILL-01 | Phase 44 | Pending |
-| SKILL-02 | Phase 44 | Pending |
+| VER-04 | Phase 44 | Complete |
+| VER-05 | Phase 44 | Complete |
+| VER-06 | Phase 44 | Complete |
+| VER-07 | Phase 44 | Complete |
+| VER-08 | Phase 44 | Complete |
+| VER-09 | Phase 44 | Complete |
+| VER-10 | Phase 44 | Complete |
+| SKILL-01 | Phase 44 | Complete |
+| SKILL-02 | Phase 44 | Complete |
 | SKILL-03 | Phase 43 | Complete |
-| SKILL-04 | Phase 44 | Pending |
-| SKILL-05 | Phase 44 | Pending |
-| SKILL-06 | Phase 44 | Pending |
+| SKILL-04 | Phase 44 | Complete |
+| SKILL-05 | Phase 44 | Complete |
+| SKILL-06 | Phase 44 | Complete |
 
 **Coverage:**
 - v1.17 requirements: 44 total
@@ -150,4 +150,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-07-13*
-*Last updated: 2026-07-14 after Phase 43 post-execution verification found four remaining gaps*
+*Last updated: 2026-07-16 after hash-bound WPS viewer UAT passed for Phase 44 Plan 44-04*

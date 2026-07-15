@@ -8,7 +8,7 @@
 
 **Active milestone:** v1.17 school-pptx
 
-**Status:** Phase 42 complete — the constrained Markdown contract, canonical full fixture, bounded diagnostics, and secure deterministic example workflow are verified; Phase 43 editable PPTX rendering is next.
+**Status:** Phases 41-44 complete — the editable PPTX renderer, fixed verification registries, runtime guidance, and hash-bound WPS human UAT are complete; v1.17 is ready for milestone audit.
 
 **Delivered in v1.16:**
 - Added `tiaokedan`, a Markdown-first `调课单` document workflow skill.
@@ -34,7 +34,7 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-Build `school-pptx`, a school-template PPTX generation skill that turns structured Markdown logical slides into editable, template-consistent `.pptx` files.
+Audit v1.17 `school-pptx` against its milestone requirements before archive/release.
 
 ## Current Milestone: v1.17 school-pptx
 
@@ -156,15 +156,16 @@ Build `school-pptx`, a school-template PPTX generation skill that turns structur
 - [x] Implement skill-local Markdown-to-Typst and PDF generation without runtime dependency on other skill scripts. - v1.16 Phases 39-40
 - [x] Document the skill's missing-information questions so agents ask for required adjustment-form facts before rendering. - v1.16 Phase 40
 
-### Validated in v1.17 (Phases 41-42)
+### Validated in v1.17 (Phases 41-44)
 
 - [x] Establish a standardized, machine-mappable PPTX template from the supplied human-friendly `.potx` visual sample before automating rendering. - v1.17 Phase 41
 - [x] Establish the accepted Markdown formatter and slide-block contract before treating script output as final. - v1.17 Phase 42
+- [x] Implement Markdown-to-PPTX generation with editable native objects, deterministic logical-slide pagination, speaker notes, and strict template-slot behavior. - v1.17 Phase 43
+- [x] Verify fixed 8/6/21 registries, six-runtime documentation, and hash-bound WPS viewer UAT with 10/10 human checks passed. - v1.17 Phase 44
 
 ### Active
 
 - [ ] Create the `school-pptx` skill as a Markdown-first school PPTX workflow with a canonical `SKILL.md`, references, templates, scripts, and fixtures.
-- [ ] Implement Markdown-to-PPTX generation with editable objects, automatic logical-slide pagination, speaker notes, and strict template-slot behavior.
 - [ ] Verify the generated `.pptx` through repeatable artifact checks covering slide count, layout mapping, notes, media, tables, code text, pagination, and non-empty output.
 
 ### Out of Scope
@@ -313,7 +314,7 @@ The next milestone has not been defined yet. Start it with `/gsd:new-milestone`.
 | Use one scheduling model for both modules | Calendar and hour facts must not be calculated independently by the two modules | Good - shipped in v1.15 |
 | Start v1.17 as `school-pptx` with template-first build order | User requested a school-template Markdown-to-PPTX skill and explicitly set the build order as standard template, standard Markdown, then script | Good - Phases 41-42 established the controlled template and accepted Markdown boundary |
 | Treat `theme` as a controlled standard-template identifier | Future `.potx` templates may exist, but Markdown must not control styling or layout details directly | Good - `standard-school` is manifest-controlled and arbitrary styling is rejected |
-| Keep `school-pptx` output editable instead of screenshot-based | The value of the skill is template-consistent PPTX that can still be edited in PowerPoint | Pending |
+| Keep `school-pptx` output editable instead of screenshot-based | The value of the skill is template-consistent PPTX that can still be edited in PowerPoint | Good - Phase 43 emits native editable text, tables, pictures, groups, and notes |
 
 ## Evolution
 
@@ -333,4 +334,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-07-14 after completing Phase 42 Markdown contract and full fixture*
+*Last updated: 2026-07-15 after Phase 43 editable renderer and pagination verification passed*
