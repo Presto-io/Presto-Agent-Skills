@@ -1130,12 +1130,9 @@ def foundation_self_test() -> None:
         with hold_workdir(rerun_path) as root:
             sentinel.write_bytes(b"caller-owned")
             with build_owned_tree(root, "0" * 16) as first_tree:
-                passed = build_candidate(first_tree, dependency_gate=lambda: gate_result(
-                    "failed", "VERIFY_DEPENDENCY_MISSING", "Synthetic dependency fault."
-                ))
-                for result in passed["gates"].values():
-                    result.update(gate_result("passed", "OK", "Observed test vector passed."))
-                passed["status"] = _aggregate_status(passed["gates"], list(VERIFY_GATE_ORDER))
+                passed = build_candidate(first_tree)
+                if passed["status"] != "passed":
+                    raise VerifyFailure("VERIFY_EVIDENCE_INVALID", "Foundation PASS fixture did not pass.")
                 publish_evidence(first_tree, passed)
             with build_owned_tree(root, "1" * 16) as failed_tree:
                 failed = build_candidate(failed_tree, dependency_gate=lambda: gate_result(
