@@ -10,6 +10,7 @@ Usage:
   school-pptx.sh validate --input <deck.md> [--out-json <logical-document.json>]
   school-pptx.sh example --out-dir <dir>
   school-pptx.sh render --input <reviewed.md> --out-dir <delivery-dir> [--stem <name>]
+  school-pptx.sh verify --workdir <dir>
   school-pptx.sh template-report --theme <theme-id> --out-md <report.md> --out-json <report.json>
                                   [--manifest <manifest.yaml>] [--template <template.pptx>]
                                   [--geometry-tolerance-emu <integer>]
@@ -19,6 +20,7 @@ Commands:
   validate         Validate Markdown and optionally write the logical document JSON.
   example          Generate the deterministic full fixture and four companion media files.
   render           Publish same-stem Markdown and editable PPTX artifacts.
+  verify           Run isolated verification and publish bounded evidence under the caller workdir.
   template-report  Validate the controlled PPTX template and write Markdown/JSON evidence.
   info             Print the skill-local template and manifest paths.
 USAGE
@@ -41,6 +43,9 @@ main() {
       ;;
     render)
       "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/pptx_render.py" "$SKILL_DIR" "$@"
+      ;;
+    verify)
+      "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/verify_school_pptx.py" "$SKILL_DIR" "$@"
       ;;
     template-report)
       "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/template_report.py" "$SKILL_DIR" "$@"

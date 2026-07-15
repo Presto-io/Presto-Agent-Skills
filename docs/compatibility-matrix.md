@@ -47,6 +47,13 @@
 - 渲染依赖 `python3` 和 skill-local renderer；PDF gate 额外依赖 `typst` CLI，只有 `typst compile` 成功且 PDF 非空才能声称 final PDF passed。
 - 成功路径只发布显式请求的 `.typ`/`.pdf`；logs、diffs、status、debug JSON 和 failure diagnostics 必须留在隐藏 `.tiaokedan/` 或 phase evidence 目录，不得混入教师公开输出根目录。
 
+### School PPTX
+
+- `school-pptx` 必须 whole-folder 安装，保留 canonical `skills/school-pptx/SKILL.md`、`references/`、`scripts/`、`templates/` 和 `fixtures/`；只复制入口会丢失 Markdown/template contract、normalized PPTX/manifest、canonical fixture、verification 与 UAT 规则。
+- required prerequisites 是 Python、python-pptx、Pillow、lxml、PyYAML；Pandoc 当前为 optional。runtime 不得联网或自动安装依赖，shell/Python external command 的 execute 权限、support/media read 权限、delivery/workdir write 权限和 sandbox/allowlist 必须在安装时核验。
+- 自动脚本发现不可用时，统一 explicit invocation fallback 是 `skills/school-pptx/scripts/school-pptx.sh <command>`；`verify --workdir <caller-workdir>` 只可在调用方 root 下写 delivery/evidence/work，不能污染普通交付或仓库 source。
+- 六 runtime 的具体路径/发现差异只保留在 canonical `Runtime Adapter Notes`。OpenClaw 与 Hermes Agent 的 exact path、frontmatter/support-file discovery、automatic script discovery 和 workdir boundary 必须 installation-time verification，不声明未实测支持；真实 PowerPoint/WPS UAT 也不能由 runtime 自动 PASS。
+
 ### Codex
 
 - Put persistent project instructions in `AGENTS.md`.

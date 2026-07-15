@@ -29,6 +29,8 @@ TEXT_BUDGET_KEYS = ["max_chars", "max_lines", "font_size_min", "font_size_max", 
 ALLOWED_OVERFLOW = {"shrink", "paginate", "fail"}
 ALLOWED_EMPTY_SLOT = {"hide", "preserve", "fail"}
 ALLOWED_CONTINUATION = {"none", "paginate", "repeat_header"}
+ALLOWED_PARAGRAPH_ALIGNMENT = {"left", "center", "right", "justify"}
+ALLOWED_VERTICAL_ANCHOR = {"top", "middle", "bottom"}
 ALLOWED_SCHEME_COLORS = {
     "dk1", "lt1", "dk2", "lt2", "accent1", "accent2", "accent3",
     "accent4", "accent5", "accent6", "hlink", "folHlink",
@@ -241,6 +243,16 @@ def valid_geometry(value: object) -> bool:
     )
 
 
+def valid_rgb(value: object) -> bool:
+    if not isinstance(value, str) or len(value) != 6:
+        return False
+    try:
+        int(value, 16)
+    except ValueError:
+        return False
+    return True
+
+
 def contains(parent: dict, child: dict) -> bool:
     return (
         child["x"] >= parent["x"]
@@ -304,6 +316,19 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
     slots_evidence: list[dict[str, object]] = []
     layout_evidence: list[dict[str, object]] = []
     renderer_regions: list[dict[str, object]] = []
+    template_config = data.get("template") if isinstance(data.get("template"), dict) else {}
+    mapping_strategy = template_config.get("mapping_strategy")
+    allowed_mapping_strategies = {"native-slide-layout-xml", "renderer-owned-native-shapes"}
+    if mapping_strategy not in allowed_mapping_strategies:
+        failures.append("template.mapping_strategy 不受支持。")
+    renderer_owned_shapes = mapping_strategy == "renderer-owned-native-shapes"
+    if not isinstance(template_config.get("seed_slides"), int) or template_config["seed_slides"] < 0:
+        failures.append("template.seed_slides 必须是非负整数。")
+    if (
+        not isinstance(template_config.get("seed_notes_relationships"), int)
+        or template_config["seed_notes_relationships"] < 0
+    ):
+        failures.append("template.seed_notes_relationships 必须是非负整数。")
 
     available = data.get("available_themes") or []
     theme_id = data.get("theme_id")
@@ -347,7 +372,7 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
         slot_ids = [slot.get("id") for slot in slot_list if isinstance(slot, dict)]
         for required_slot in required_slots:
             if required_slot not in slot_ids:
-                failures.append(f'布局 "{layout_id}" 缺少槽位 "{required_slot}"。请恢复占位符映射或更新 manifest。')
+                failures.append(f'布局 "{layout_id}" 缺少槽位 "{required_slot}"。请更新 manifest。')
         seen: set[str] = set()
         for slot in slot_list:
             if not isinstance(slot, dict):
@@ -360,15 +385,21 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
             placeholder = slot.get("placeholder") if isinstance(slot.get("placeholder"), dict) else {}
             file_name = str(placeholder.get("file", layout.get("pptx_layout", "")))
             shape_id = placeholder.get("shape_id")
-            shape = shape_index.get(file_name, {}).get(int(shape_id)) if isinstance(shape_id, int) else None
-            if not shape or (placeholder.get("name") and placeholder.get("name") != shape.get("name")):
-                failures.append(f'槽位 "{layout_id}.{slot_id}" 找不到对应 PPTX 占位符。请勿删除或替换映射锚点。')
             expected_geometry = slot.get("geometry") if isinstance(slot.get("geometry"), dict) else None
-            actual_geometry = shape.get("geometry") if shape else None
-            if not expected_geometry or not actual_geometry:
-                failures.append(f'槽位 "{layout_id}.{slot_id}" 的 PPTX 几何与 manifest 不一致。请同步 manifest 或重新调整模板。')
-            elif any(abs(int(expected_geometry[key]) - int(actual_geometry[key])) > tolerance for key in ("x", "y", "width", "height")):
-                failures.append(f'槽位 "{layout_id}.{slot_id}" 的 PPTX 几何与 manifest 不一致。请同步 manifest 或重新调整模板。')
+            if renderer_owned_shapes:
+                file_name = str(layout.get("pptx_layout", ""))
+                shape_id = None
+                if not valid_geometry(expected_geometry):
+                    failures.append(f'槽位 "{layout_id}.{slot_id}" 必须定义 renderer-owned geometry。')
+            else:
+                shape = shape_index.get(file_name, {}).get(int(shape_id)) if isinstance(shape_id, int) else None
+                if not shape or (placeholder.get("name") and placeholder.get("name") != shape.get("name")):
+                    failures.append(f'槽位 "{layout_id}.{slot_id}" 找不到对应 PPTX 占位符。请勿删除或替换映射锚点。')
+                actual_geometry = shape.get("geometry") if shape else None
+                if not expected_geometry or not actual_geometry:
+                    failures.append(f'槽位 "{layout_id}.{slot_id}" 的 PPTX 几何与 manifest 不一致。请同步 manifest 或重新调整模板。')
+                elif any(abs(int(expected_geometry[key]) - int(actual_geometry[key])) > tolerance for key in ("x", "y", "width", "height")):
+                    failures.append(f'槽位 "{layout_id}.{slot_id}" 的 PPTX 几何与 manifest 不一致。请同步 manifest 或重新调整模板。')
             budget = slot.get("text_budget")
             if not isinstance(budget, dict) or any(key not in budget for key in TEXT_BUDGET_KEYS):
                 failures.append(f'槽位 "{layout_id}.{slot_id}" 的文本预算不完整。必须包含 max_chars、max_lines、font_size_min、font_size_max 和 overflow。')
@@ -378,6 +409,13 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
                 failures.append(f'槽位 "{layout_id}.{slot_id}" 的 empty_slot 不受支持。')
             if slot.get("continuation") not in ALLOWED_CONTINUATION:
                 failures.append(f'槽位 "{layout_id}.{slot_id}" 的 continuation 不受支持。')
+            if (
+                slot.get("paragraph_alignment") is not None
+                and slot.get("paragraph_alignment") not in ALLOWED_PARAGRAPH_ALIGNMENT
+            ):
+                failures.append(f'槽位 "{layout_id}.{slot_id}" 的 paragraph_alignment 不受支持。')
+            if slot.get("vertical_anchor") is not None and slot.get("vertical_anchor") not in ALLOWED_VERTICAL_ANCHOR:
+                failures.append(f'槽位 "{layout_id}.{slot_id}" 的 vertical_anchor 不受支持。')
             slots_evidence.append(
                 {
                     "layout": layout_id,
@@ -411,6 +449,17 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
                 renderer_regions.extend(timeline_regions)
                 if {item["name"] for item in timeline_regions} != {"axis", "node_band"}:
                     failures.append("timeline 必须完整定义 axis 与 node_band 子区域。")
+                axis = slot.get("subregions", {}).get("axis", {})
+                gradient = axis.get("gradient") if isinstance(axis, dict) else None
+                if (
+                    not isinstance(gradient, dict)
+                    or set(gradient) != {"start_scheme", "start_rgb", "end_scheme", "end_rgb"}
+                    or gradient.get("start_scheme") not in ALLOWED_SCHEME_COLORS
+                    or gradient.get("end_scheme") not in ALLOWED_SCHEME_COLORS
+                    or not valid_rgb(gradient.get("start_rgb"))
+                    or not valid_rgb(gradient.get("end_rgb"))
+                ):
+                    failures.append("timeline.axis.gradient 必须定义受控的主题色端点和 RGB 插值端点。")
                 node_template = slot.get("node_template")
                 if not isinstance(node_template, dict) or not valid_geometry(node_template.get("geometry")):
                     failures.append("timeline.node_template 必须定义非负本地 geometry。")
@@ -425,6 +474,13 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
                     renderer_regions.extend(node_regions)
                     if {item["name"] for item in node_regions} != {"marker", "time", "title", "description"}:
                         failures.append("timeline node 必须完整定义 marker/time/title/description。")
+                    raw_node_regions = node_template.get("subregions", {})
+                    for role in ("time", "title", "description"):
+                        region = raw_node_regions.get(role, {}) if isinstance(raw_node_regions, dict) else {}
+                        if region.get("paragraph_alignment") not in ALLOWED_PARAGRAPH_ALIGNMENT:
+                            failures.append(f"timeline.{role}.paragraph_alignment 不受支持。")
+                        if region.get("vertical_anchor") not in ALLOWED_VERTICAL_ANCHOR:
+                            failures.append(f"timeline.{role}.vertical_anchor 不受支持。")
 
             if layout_id == "gallery" and slot_id == "gallery_items" and valid_geometry(expected_geometry):
                 presets = slot.get("item_presets")
@@ -469,6 +525,7 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
         "layouts": layout_evidence,
         "slots": slots_evidence,
         "renderer_contract": {
+            "mapping_strategy": mapping_strategy,
             "closing_part_path": manifest_layouts.get("closing", {}).get("pptx_layout"),
             "highlight_scheme_color": scheme_color,
             "gallery_caption_empty_slot": next(
@@ -513,8 +570,13 @@ def markdown_report(evidence: dict[str, object], out_json: Path | None) -> str:
         lines.append(f"| `{layout['id']}` | `{layout['pptx_layout']}` | {layout['slot_count']} |")
     lines.extend(["", "## 槽位映射", "", "| 布局 | 槽位 | 类型 | 占位符 |", "|------|------|------|--------|"])
     for slot in evidence["slots"]:
+        object_source = (
+            "renderer-owned"
+            if slot["shape_id"] is None
+            else f"{slot['placeholder_file']}#{slot['shape_id']}"
+        )
         lines.append(
-            f"| `{slot['layout']}` | `{slot['slot']}` | `{slot['kind']}` | `{slot['placeholder_file']}#{slot['shape_id']}` |"
+            f"| `{slot['layout']}` | `{slot['slot']}` | `{slot['kind']}` | `{object_source}` |"
         )
     lines.extend(["", "## 文本预算", "", "| 布局 | 槽位 | max_chars | max_lines | overflow |", "|------|------|-----------|-----------|----------|"])
     for slot in evidence["slots"]:
@@ -528,6 +590,7 @@ def markdown_report(evidence: dict[str, object], out_json: Path | None) -> str:
             "",
             "## Phase 43 渲染契约",
             "",
+            f"- mapping strategy：`{contract['mapping_strategy']}`",
             f"- closing part path：`{contract['closing_part_path']}`",
             f"- highlight theme scheme：`{contract['highlight_scheme_color']}`",
             f"- gallery caption empty slot：`{contract['gallery_caption_empty_slot']}`",
@@ -540,8 +603,9 @@ def markdown_report(evidence: dict[str, object], out_json: Path | None) -> str:
             "",
             "## 手动编辑守则",
             "",
-            "- 允许：drag and resize mapped placeholders；add decorative template-owned shapes；refine template-owned typography, colors, and polish。",
-            "- 禁止：delete mapped placeholders；replace mapped placeholders with ordinary shapes；remove mapping anchors；duplicate slots without unique ids；add content slots without manifest entries。",
+            "- 母版/layout 允许不保留任何内容占位符；renderer 根据 manifest geometry 创建原生可编辑对象。",
+            "- 允许：调整母版/layout 装饰、背景、颜色和 footer；同步调整 manifest-owned geometry。",
+            "- 禁止：删除受控 layout part、创建重复 slot id、添加未登记的内容槽位或让动态对象越过受控区域。",
             "- 编辑后必须重新运行 `template-report --theme standard-school --out-md ... --out-json ...`。",
             "",
             "## 校验结果详情",
@@ -551,7 +615,7 @@ def markdown_report(evidence: dict[str, object], out_json: Path | None) -> str:
     if failures:
         lines.extend(f"- FAIL: {item}" for item in failures)
     else:
-        lines.append("- PASS: manifest、布局、槽位、占位符、几何和文本预算一致。")
+        lines.append("- PASS: manifest、布局、renderer-owned 槽位几何和文本预算一致。")
     if warnings:
         lines.extend(f"- WARNING: {item}" for item in warnings)
     if out_json:
@@ -601,6 +665,8 @@ def main(argv: list[str]) -> int:
         write_text(out_md, markdown_report(evidence, out_json))
     for failure in evidence["failures"]:
         print(failure, file=sys.stderr)
+    if evidence["failures"]:
+        print("TEMPLATE_MANIFEST_MISMATCH", file=sys.stderr)
     return 1 if evidence["failures"] else 0
 
 

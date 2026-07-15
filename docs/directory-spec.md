@@ -24,6 +24,7 @@
 | `skills/<skill-name>/references/` | 可按需读取的长参考资料、支持文件和格式说明 |
 | `skills/<skill-name>/scripts/` | 技能需要调用的辅助脚本 |
 | `skills/<skill-name>/templates/` | 技能输出模板或文件模板 |
+| `skills/school-pptx/fixtures/` | `school-pptx` skill-local canonical Markdown 与 companion media；由 public `example` 复制，不是通用模板目录 |
 
 `skills/` 下的 `SKILL.md` 是 semantic source of truth。它应该保留触发意图、目标、输入、核心流程、脚本调用入口、输出概览、验证入口、安全边界和 `Runtime Adapter Notes`。长格式规则、完整字段表、示例、renderer notes、artifact 明细、UAT 清单和排障说明应放进同一技能的 `references/`，并从 `SKILL.md` 显式链接。技能正文应该尽量 runtime-neutral；遇到 runtime 差异时，写在同一个 `SKILL.md` 的 `Runtime Adapter Notes` 中。v1 不维护独立 adapter 文件，也不要复制出多份语义不同的技能。
 
@@ -44,6 +45,8 @@
 | `docs/compatibility-matrix.md` | 记录各 runtime 的加载路径、能力差异和注意事项 |
 
 runtime 差异优先写进 canonical `SKILL.md` 的 `Runtime Adapter Notes`。如果未来某个 runtime 真的需要独立说明或生成式运行时 shim，必须先重新打开范围，记录生成规则、来源 `SKILL.md`、安全边界和验证步骤；v1 不保留独立 adapter 目录，也不默认实现 wrapper。
+
+`school-pptx` 的 normalized `.pptx` 与 manifest 归 `skills/school-pptx/templates/`，canonical fixture 归 skill-local `fixtures/`。可复用 viewer checklist 归该 skill 的 `references/visual-uat.md`；具体里程碑的 tester、viewer、timestamp、artifact hash 和逐项结果只归 `.planning/phases/<phase>/`，不得进入公开 delivery、canonical reference 或 template。
 
 ## Document Workflow
 

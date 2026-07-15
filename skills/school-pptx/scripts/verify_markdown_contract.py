@@ -210,7 +210,7 @@ theme: standard-school
     require(result.returncode == 0 and "校验通过" in result.stdout, "positive source did not pass")
     require(model["errors"] == [], "positive JSON contains errors")
     require(model["document_title"] == "文档回退标题", "title fallback failed")
-    require(model["contents_entries"] == ["第一章", "第二章", "双栏比较", "图文说明", "数据表", "建设进度", "成果图集", "示例代码"],
+    require(model["contents_entries"] == ["第二章"],
             "contents order failed")
     require(len(model["implicit_slides"]) == 1 and model["implicit_slides"][0]["layout"] == "closing", "implicit closing failed")
     require(set(model["coverage"]["explicit_layouts"]) == {"cover", "contents", "section", "title-content", "two-column",
@@ -653,7 +653,9 @@ def full_fixture_gate(work: Path) -> None:
     require(set(model["coverage"]["explicit_layouts"]) == {"cover", "contents", "section", "title-content", "two-column", "image-text", "table", "timeline", "gallery", "code"}, "full fixture explicit coverage incomplete")
     require(model["coverage"]["implicit_layouts"] == ["closing"], "full fixture implicit closing changed")
     slides = model["logical_slides"]
-    require(model["contents_entries"] == [slide["title"] for slide in slides if slide["title"]], "full fixture contents order changed")
+    require(model["contents_entries"] == [
+        slide["title"] for slide in slides if slide["layout"] == "section"
+    ], "full fixture section-only contents order changed")
     require(any(slide.get("notes") for slide in slides), "full fixture notes missing")
     require(all(all(block.get("kind") != "notes" for block in slide["blocks"]) for slide in slides), "notes leaked into visible blocks")
     media = [block for slide in slides for block in slide["blocks"] if block.get("kind") == "image"]
@@ -693,7 +695,7 @@ theme: standard-school
     result, model = validate(fallback, work / "fallback.json")
     require(result.returncode == 0, "optional metadata/title fallback variant failed")
     require(model["metadata"] == {"theme": "standard-school"}, "optional metadata placeholders invented")
-    require(model["document_title"] == "回退标题" and model["contents_entries"] == ["图文条目"], "# fallback or contents isolation failed")
+    require(model["document_title"] == "回退标题" and model["contents_entries"] == [], "# fallback or contents isolation failed")
     media = [block for slide in model["logical_slides"] for block in slide["blocks"] if block["kind"] == "image"]
     require(any(not block["absolute_authored"] and block["resolved_path"] == str(relative.resolve()) for block in media), "relative media variant failed")
     require(any(block["absolute_authored"] and block["resolved_path"] == str(absolute.resolve()) for block in media), "absolute media variant failed")
