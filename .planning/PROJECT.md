@@ -222,7 +222,7 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 
 ## Next Milestone Goals
 
-下一里程碑优先承接 backlog Phase 999.1「全技能干净交付目录标准化改造」：先用 `$gsd-review-backlog` 晋升该事项，再通过 `/gsd:new-milestone` 定义正式需求、范围与阶段编号。
+下一里程碑承接已从 backlog Phase 999.1 晋升的 Phase 45「全技能干净交付目录标准化改造」；下一步通过 `/gsd:new-milestone` 定义正式需求、验收范围与后续阶段拆分。
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
