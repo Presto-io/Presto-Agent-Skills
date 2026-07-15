@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-07-16 after shipping v1.17
+**Last updated:** 2026-07-16 after promoting backlog Phase 999.1
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -26,14 +26,13 @@
 - **Shipped: v1.16 调课单 Skill** - Phases 37-40, shipped 2026-06-21. Archives: `.planning/milestones/v1.16-ROADMAP.md`, `.planning/milestones/v1.16-REQUIREMENTS.md`, `.planning/milestones/v1.16-MILESTONE-AUDIT.md`
 - **Shipped: v1.17 school-pptx** - Phases 41-44, shipped 2026-07-16. Archives: `.planning/milestones/v1.17-ROADMAP.md`, `.planning/milestones/v1.17-REQUIREMENTS.md`, `.planning/milestones/v1.17-MILESTONE-AUDIT.md`
 
-## Backlog
+## Next Milestone
 
-Phase 999.1 是 v1.17 关闭后优先开启的下一里程碑候选；先通过 `$gsd-review-backlog` 晋升，再定义新里程碑需求与正式阶段编号。
-
-### Phase 999.1: 全技能干净交付目录标准化改造 (BACKLOG)
+### Phase 45: 全技能干净交付目录标准化改造
 
 **Goal:** 在 v1.17 结束后，依据 `docs/clean-delivery-directory-contract.md` 完整改造当前全部技能，统一交付一级目录、支持资料分组、多轮修改成套归档、最小验证和失败清理行为，并为历史 agent 散乱产物整理提供可复用流程。
 **Requirements:** TBD
+**Depends on:** Phase 44
 **Plans:** 0 plans
 
 Plans:
@@ -42,7 +41,7 @@ Plans:
 - [ ] 改造公共脚本，使候选版本先进入 `.work/`，成功后成套归档旧版本并原子发布新版本
 - [ ] 删除非必要持久验证产物，并验证失败运行不会污染当前成功交付
 - [ ] 更新 README、目录规范、兼容性矩阵、技能入口和 artifact contract
-- [ ] 使用 `$gsd-review-backlog` 在 v1.17 结束后晋升并正式规划
+- [ ] 在新 milestone 中定义正式需求、验收边界和后续阶段拆分
 
 ---
-*Roadmap updated: 2026-07-16 after shipping v1.17*
+*Roadmap updated: 2026-07-16 after promoting backlog Phase 999.1 to Phase 45*

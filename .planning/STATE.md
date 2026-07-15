@@ -5,7 +5,7 @@ milestone_name: school-pptx
 status: Awaiting next milestone
 stopped_at: v1.17 shipped and archived; awaiting next milestone
 last_updated: "2026-07-16T05:30:00+08:00"
-last_activity: 2026-07-16 — Milestone v1.17 completed, archived, and prepared for tagging
+last_activity: 2026-07-16 — Backlog Phase 999.1 promoted to Phase 45 for the next milestone
 progress:
   total_phases: 4
   completed_phases: 4
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-16)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Promote backlog Phase 999.1 into the next milestone
+**Current focus:** Start the next milestone from promoted Phase 45
 
 ## Current Position
 
 Phase: Milestone v1.17 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-16 — Milestone v1.17 completed and archived
+Last activity: 2026-07-16 — Backlog Phase 999.1 promoted to Phase 45
 
 ## Workflow Preferences
 
@@ -108,7 +108,7 @@ None yet.
 
 ### Blockers/Concerns
 
-None. v1.17 is shipped; Phase 999.1 is the next milestone candidate.
+None. v1.17 is shipped; Phase 45 is promoted and ready for next-milestone initialization.
 
 ## Performance Metrics
 
@@ -145,5 +145,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Promote Phase 999.1 with `$gsd-review-backlog`.
-- Start the resulting milestone with `/gsd:new-milestone`.
+- Start the milestone from Phase 45 with `/gsd:new-milestone`.

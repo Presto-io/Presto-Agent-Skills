@@ -20,7 +20,7 @@
 - Requirements: `.planning/milestones/v1.17-REQUIREMENTS.md`
 - Audit: `.planning/milestones/v1.17-MILESTONE-AUDIT.md`
 
-**What's next:** Promote backlog Phase 999.1「全技能干净交付目录标准化改造」into the next milestone.
+**What's next:** Start the next milestone from promoted Phase 45「全技能干净交付目录标准化改造」.
 
 ---
 
