@@ -8,16 +8,18 @@ Phase 41 defines the controlled template contract for `school-pptx`. Runtime beh
 - Available themes: `standard-school`
 - Runtime template: `standard-school.pptx`
 - Manifest: `standard-school.manifest.yaml`
+- Runtime template seed contract: 26 reviewed seventh-version slides and 26 notes relationships; bootstrap removes all seed slides before emission.
+- 第七版人工母版只保留 8 个 physical slide layouts；11 个 semantic layout ids 可复用同一个 physical layout，由 manifest geometry 和 renderer-owned native shapes 区分。
 
 Unknown theme validation must fail non-zero and print the available controlled theme id.
 
 ## Cover Subtitle Descriptor
 
-The `cover.subtitle` slot owns a strict `max_chars: 72`, `max_lines: 2` budget. Its value is exactly two lines: line one is the authored YAML `subtitle`; line two joins the non-empty `school`, `department`, `course`, `author`, and `date` values in that order with ` · `. The `program` and `presenter` fields never enter this slot. A complete descriptor that exceeds either limit fails with `COVER_METADATA_OVERFLOW`; the renderer does not truncate characters or silently drop fields.
+The `cover.subtitle` slot owns a strict `max_chars: 96`, `max_lines: 3` display budget and renders as a centered three-line information bar: line one is the authored YAML `subtitle`; line two joins `school` and `department`; line three joins `course`, `author`, and `date`. Empty groups are omitted without introducing blank placeholder lines. The `program` and `presenter` fields never enter this slot. A complete descriptor that exceeds either limit fails with `COVER_METADATA_OVERFLOW`; the renderer does not truncate characters or silently drop fields.
 
 ## Layouts
 
-The manifest covers exactly these 11 layout ids:
+The manifest covers exactly these 11 semantic layout ids, mapped onto 8 physical PPTX layouts:
 
 1. `cover`
 2. `contents`
@@ -31,7 +33,7 @@ The manifest covers exactly these 11 layout ids:
 10. `code`
 11. `closing`
 
-Each layout points to an inspectable PPTX slide-layout XML file. Content layouts define semantic slots; the `closing` layout is a fixed template-owned page with no Markdown-controllable `title` or `subtitle` slot and is appended automatically at the end of every deck. Slot ids are stable public identifiers such as `title`, `subtitle`, `body`, `media`, `caption`, `left_body`, `right_body`, `table`, `timeline_items`, `gallery_items`, and `code`; raw localized PowerPoint placeholder names stay inside placeholder mapping metadata.
+Each layout points to an inspectable PPTX slide-layout XML file. Content layouts define semantic slots, but masters and layouts intentionally contain no content placeholders. The renderer creates native editable objects from manifest-owned geometry. The `closing` layout is a fixed template-owned page with no Markdown-controllable `title` or `subtitle` slot and is appended automatically at the end of every deck. Slot ids are stable public identifiers such as `title`, `subtitle`, `body`, `media`, `caption`, `left_body`, `right_body`, `table`, `timeline_items`, `gallery_items`, and `code`.
 
 ## Manifest Schema
 
@@ -68,9 +70,10 @@ Each slot includes:
 Phase 43 的动态可编辑对象仍由 manifest 拥有视觉事实：
 
 - `table.table.subregions.table_name` 定义表名文本框的 geometry、text budget 和 `empty_slot: preserve`；即使没有表名，也创建无提示文字的空编辑槽。
+- `table` 绑定 `标题和内容` layout；`table_style` 定义蓝色表头/表体和文字颜色，renderer 固定所有 cell 水平、垂直居中。
 - `gallery.gallery_items.item_presets` 分别定义 1、2、3、4 项时每张 card、picture 和 caption 的 geometry；每张图片和图注形成一个原生可编辑组。
-- `timeline.timeline_items.subregions` 定义 axis 与 node band，`node_template` 定义 marker、time、title 和 description 的节点本地子区域与文字预算。
-- `inline_styles.highlight.scheme_color` 只允许引用 PowerPoint theme scheme token；渲染器不得复制 RGB 值。
+- `timeline.timeline_items.subregions` 定义 axis 与 node band；axis gradient 从 `accent6` 绿到 `accent1` 蓝，`node_template` 定义 marker、time、title 和 description 的节点本地子区域、对齐和文字预算。
+- `inline_styles.highlight.scheme_color` 只允许引用 PowerPoint theme scheme token；普通高亮 run 必须同时使用该主题蓝色背景、`FFFFFF` 白色字体和粗体。白字是高亮文字的受控前景色，不把主题高亮背景降级为任意 RGB。
 
 这些动态文本框和组合对象不要求修改二进制模板中的占位符。它们必须从 manifest 子区域创建，不能在发射器中复制坐标、字号范围或颜色。空 caption 和空 table name 在放映时不显示提示文字，但仍保留为可选择、可编辑的对象。
 
@@ -82,7 +85,9 @@ Markdown cannot override geometry, fonts, colors, decorative assets, footer beha
 
 Text slots use fixed frame geometry with bounded elastic text behavior. A renderer may shrink text only within the slot's `font_size_min` and `font_size_max` range and must obey the slot's `overflow` policy.
 
-`closing` 必须通过 OOXML part path `ppt/slideLayouts/slideLayout7.xml` 解析实际结束页布局，不能使用 cover layout、布局显示名或数字索引猜测。
+`closing` 必须通过 OOXML part path `ppt/slideLayouts/slideLayout8.xml` 解析实际结束页布局，不能使用 cover layout、布局显示名或数字索引猜测。
+
+人工修订基准冻结了以下模板视觉角色：封面标题/副标题为 60/20pt，章节标题为 66pt 且左下对齐，普通横排内容页顶部标题为两端对齐 48pt，时间线页标题和节点 time/title 居中、description 左对齐，竖排代码标题为左对齐 48pt，标题正文页普通正文为 28pt、密集列表页为 26pt；目录使用独立 `目录` layout 且正文垂直居中，正文、表格、时间线和 gallery 使用受控内容区域；图文图片、table body、timeline axis/node band 与 gallery presets 均由 manifest 明确拥有几何。
 
 ## Phase 41 Scope Fence
 

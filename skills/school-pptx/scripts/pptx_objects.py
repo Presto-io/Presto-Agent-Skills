@@ -85,24 +85,81 @@ def add_rich_text(
     highlight_scheme: str,
     name: str,
     monospace: bool = False,
+    font_name: str | None = None,
+    font_theme_color: str | None = None,
+    margin_left_points: float = 0.0,
+    margin_right_points: float = 0.0,
+    margin_top_points: float = 0.0,
+    margin_bottom_points: float = 0.0,
+    line_spacing: float | None = None,
+    paragraph_spacing_points: float | None = None,
+    paragraph_alignment: str | None = None,
+    vertical_anchor: str | None = None,
 ) -> Any:
+    from pptx.dml.color import RGBColor
+    from pptx.enum.dml import MSO_THEME_COLOR
+    from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
     from pptx.util import Pt
 
     shape = slide.shapes.add_textbox(*_geometry(geometry))
     shape.name = name
     text_frame = shape.text_frame
-    _configure_text_frame(text_frame)
+    _configure_text_frame(
+        text_frame,
+        margin_left_points=margin_left_points,
+        margin_right_points=margin_right_points,
+        margin_top_points=margin_top_points,
+        margin_bottom_points=margin_bottom_points,
+    )
     paragraph = text_frame.paragraphs[0]
+    alignments = {
+        "left": PP_ALIGN.LEFT,
+        "center": PP_ALIGN.CENTER,
+        "right": PP_ALIGN.RIGHT,
+        "justify": PP_ALIGN.JUSTIFY,
+    }
+    anchors = {
+        "top": MSO_VERTICAL_ANCHOR.TOP,
+        "middle": MSO_VERTICAL_ANCHOR.MIDDLE,
+        "bottom": MSO_VERTICAL_ANCHOR.BOTTOM,
+    }
+    if paragraph_alignment:
+        try:
+            paragraph.alignment = alignments[paragraph_alignment]
+        except KeyError as exc:
+            raise PptxObjectError("PPTX_PARAGRAPH_ALIGNMENT_INVALID") from exc
+    if vertical_anchor:
+        try:
+            text_frame.vertical_anchor = anchors[vertical_anchor]
+        except KeyError as exc:
+            raise PptxObjectError("PPTX_VERTICAL_ANCHOR_INVALID") from exc
+    if line_spacing is not None:
+        paragraph.line_spacing = line_spacing
+    if paragraph_spacing_points is not None:
+        paragraph.space_after = Pt(paragraph_spacing_points)
     for kind, text in normalize_rich_text(authored):
         run = paragraph.add_run()
         run.text = text
         run.font.size = Pt(font_size)
-        if monospace:
-            run.font.name = "Consolas"
+        if font_name or monospace:
+            run.font.name = font_name or "Consolas"
+        if font_theme_color:
+            theme_colors = {
+                "background1": MSO_THEME_COLOR.BACKGROUND_1,
+                "text1": MSO_THEME_COLOR.TEXT_1,
+                "background2": MSO_THEME_COLOR.BACKGROUND_2,
+                "text2": MSO_THEME_COLOR.TEXT_2,
+            }
+            try:
+                run.font.color.theme_color = theme_colors[font_theme_color]
+            except KeyError as exc:
+                raise PptxObjectError("PPTX_FONT_THEME_COLOR_INVALID") from exc
         if kind == "bold":
             run.font.bold = True
         elif kind == "highlight":
             set_run_highlight(run, highlight_scheme)
+            run.font.bold = True
+            run.font.color.rgb = RGBColor(255, 255, 255)
     return shape
 
 
@@ -114,14 +171,28 @@ def add_literal_text(
     font_size: float,
     name: str,
     font_name: str = "Consolas",
+    margin_left_points: float = 0.0,
+    margin_right_points: float = 0.0,
+    margin_top_points: float = 0.0,
+    margin_bottom_points: float = 0.0,
+    line_spacing: float = 1.2,
+    paragraph_spacing_points: float = 2.0,
 ) -> Any:
     from pptx.util import Pt
 
     shape = slide.shapes.add_textbox(*_geometry(geometry))
     shape.name = name
     text_frame = shape.text_frame
-    _configure_text_frame(text_frame)
+    _configure_text_frame(
+        text_frame,
+        margin_left_points=margin_left_points,
+        margin_right_points=margin_right_points,
+        margin_top_points=margin_top_points,
+        margin_bottom_points=margin_bottom_points,
+    )
     paragraph = text_frame.paragraphs[0]
+    paragraph.line_spacing = line_spacing
+    paragraph.space_after = Pt(paragraph_spacing_points)
     run = paragraph.add_run()
     run.text = text
     run.font.size = Pt(font_size)
@@ -144,8 +215,13 @@ def add_fragment_text_frame(
     line_spacing: float,
     paragraph_spacing_points: float,
     code_font_name: str = "Consolas",
+    paragraph_alignment: str | None = None,
+    vertical_anchor: str | None = None,
 ) -> Any:
+    from pptx.dml.color import RGBColor
+    from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
     from pptx.util import Pt
+    from pptx_model import fragment_paragraph_sequence
 
     shape = slide.shapes.add_textbox(*_geometry(geometry))
     shape.name = name
@@ -157,6 +233,22 @@ def add_fragment_text_frame(
         margin_top_points=margin_top_points,
         margin_bottom_points=margin_bottom_points,
     )
+    alignments = {
+        "left": PP_ALIGN.LEFT,
+        "center": PP_ALIGN.CENTER,
+        "right": PP_ALIGN.RIGHT,
+        "justify": PP_ALIGN.JUSTIFY,
+    }
+    anchors = {
+        "top": MSO_VERTICAL_ANCHOR.TOP,
+        "middle": MSO_VERTICAL_ANCHOR.MIDDLE,
+        "bottom": MSO_VERTICAL_ANCHOR.BOTTOM,
+    }
+    if vertical_anchor:
+        try:
+            text_frame.vertical_anchor = anchors[vertical_anchor]
+        except KeyError as exc:
+            raise PptxObjectError("PPTX_VERTICAL_ANCHOR_INVALID") from exc
     first_paragraph = True
 
     def append_rich_paragraph(authored: str) -> None:
@@ -165,6 +257,11 @@ def add_fragment_text_frame(
         first_paragraph = False
         paragraph.line_spacing = line_spacing
         paragraph.space_after = Pt(paragraph_spacing_points)
+        if paragraph_alignment:
+            try:
+                paragraph.alignment = alignments[paragraph_alignment]
+            except KeyError as exc:
+                raise PptxObjectError("PPTX_PARAGRAPH_ALIGNMENT_INVALID") from exc
         for kind, text in normalize_rich_text(authored):
             run = paragraph.add_run()
             run.text = text
@@ -173,24 +270,24 @@ def add_fragment_text_frame(
                 run.font.bold = True
             elif kind == "highlight":
                 set_run_highlight(run, highlight_scheme)
+                run.font.bold = True
+                run.font.color.rgb = RGBColor(255, 255, 255)
 
     for fragment in fragments:
-        if fragment.heading:
-            append_rich_paragraph(fragment.heading)
-        if fragment.kind == "code":
-            paragraph = text_frame.paragraphs[0] if first_paragraph else text_frame.add_paragraph()
-            first_paragraph = False
-            paragraph.line_spacing = line_spacing
-            paragraph.space_after = Pt(paragraph_spacing_points)
-            run = paragraph.add_run()
-            run.text = fragment.text
-            run.font.size = Pt(font_size)
-            run.font.name = code_font_name
-        elif fragment.items:
-            for item in fragment.items:
-                append_rich_paragraph(item)
-        elif fragment.text is not None:
-            append_rich_paragraph(fragment.text)
+        for projection in fragment_paragraph_sequence(fragment):
+            if projection.role == "code":
+                text = projection.authored_text
+                paragraph = text_frame.paragraphs[0] if first_paragraph else text_frame.add_paragraph()
+                first_paragraph = False
+                paragraph.line_spacing = line_spacing
+                paragraph.space_after = Pt(paragraph_spacing_points)
+                paragraph.alignment = PP_ALIGN.LEFT
+                run = paragraph.add_run()
+                run.text = text
+                run.font.size = Pt(font_size)
+                run.font.name = code_font_name
+            else:
+                append_rich_paragraph(projection.authored_text)
     return shape
 
 
@@ -208,6 +305,8 @@ def add_table(
     slide: Any, slot: dict[str, Any], fragment: Any, *, font_size: float,
     row_heights_emu: tuple[int, ...],
 ) -> tuple[Any, Any]:
+    from pptx.dml.color import RGBColor
+    from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
     from pptx.util import Pt
 
     geometry = slot["geometry"]
@@ -226,23 +325,40 @@ def add_table(
     if len(row_heights_emu) != len(rows) or any(not isinstance(value, int) or value <= 0 for value in row_heights_emu):
         raise PptxObjectError("PPTX_TABLE_ROW_HEIGHT_MISMATCH")
     columns = max(1, max(len(row) for row in rows))
-    table_y = table_name_geometry["y"] + table_name_geometry["height"]
-    table_height = geometry["y"] + geometry["height"] - table_y
-    graphic = slide.shapes.add_table(len(rows), columns, geometry["x"], table_y, geometry["width"], table_height)
+    table_body_geometry = slot.get("subregions", {}).get("table_body", {}).get("geometry")
+    if table_body_geometry is None:
+        table_y = table_name_geometry["y"] + table_name_geometry["height"]
+        table_body_geometry = {
+            "x": geometry["x"],
+            "y": table_y,
+            "width": geometry["width"],
+            "height": geometry["y"] + geometry["height"] - table_y,
+        }
+    graphic = slide.shapes.add_table(len(rows), columns, *_geometry(table_body_geometry))
     graphic.name = "school-pptx:native-table"
     table = graphic.table
+    style = slot.get("table_style", {})
+    header_fill = RGBColor.from_string(style.get("header_fill", "4472C4"))
+    body_fill = RGBColor.from_string(style.get("body_fill", "D9EAF7"))
+    header_text = RGBColor.from_string(style.get("header_text", "FFFFFF"))
+    body_text = RGBColor.from_string(style.get("body_text", "1F4E79"))
     for column in table.columns:
-        column.width = int(geometry["width"] / columns)
+        column.width = int(table_body_geometry["width"] / columns)
     for row, height in zip(table.rows, row_heights_emu):
         row.height = height
     for row_index, values in enumerate(rows):
         for column_index in range(columns):
             cell = table.cell(row_index, column_index)
             cell.text = values[column_index] if column_index < len(values) else ""
+            cell.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = header_fill if row_index == 0 else body_fill
             for paragraph in cell.text_frame.paragraphs:
+                paragraph.alignment = PP_ALIGN.CENTER
                 for run in paragraph.runs:
                     run.font.size = Pt(font_size)
                     run.font.bold = row_index == 0
+                    run.font.color.rgb = header_text if row_index == 0 else body_text
     return name_shape, graphic
 
 
@@ -319,6 +435,31 @@ def _missing_media_placeholder(slide: Any, geometry: dict[str, int], name: str) 
     return shape
 
 
+def _apply_picture_shadow(picture: Any) -> None:
+    from pptx.oxml.ns import qn
+    from pptx.oxml.xmlchemy import OxmlElement
+
+    properties = picture._element.spPr
+    for existing in tuple(properties):
+        if existing.tag in {qn("a:effectLst"), qn("a:effectDag")}:
+            properties.remove(existing)
+    effects = OxmlElement("a:effectLst")
+    shadow = OxmlElement("a:outerShdw")
+    shadow.set("blurRad", "63500")
+    shadow.set("dist", "38100")
+    shadow.set("dir", "2700000")
+    shadow.set("algn", "ctr")
+    shadow.set("rotWithShape", "0")
+    color = OxmlElement("a:srgbClr")
+    color.set("val", "000000")
+    alpha = OxmlElement("a:alpha")
+    alpha.set("val", "25000")
+    color.append(alpha)
+    shadow.append(color)
+    effects.append(shadow)
+    properties.insert_element_before(effects, "a:scene3d", "a:sp3d", "a:extLst")
+
+
 def add_contain_picture(
     slide: Any, reference: MediaReference | None, geometry: dict[str, int], *, name: str
 ) -> tuple[Any, bool, str | None]:
@@ -348,38 +489,90 @@ def add_contain_picture(
         raise PptxObjectError("PPTX_OBJECT_INVALID") from None
     picture.name = name
     picture.crop_left = picture.crop_top = picture.crop_right = picture.crop_bottom = 0
+    _apply_picture_shadow(picture)
     return picture, False, payload_hash
 
 
 def add_gallery_card(
     slide: Any, preset: dict[str, Any], reference: MediaReference | None, caption: str, *, index: int,
-    highlight_scheme: str, font_size: float
+    highlight_scheme: str, font_size: float, paragraph_alignment: str | None = None,
 ) -> tuple[Any, bool, str | None]:
     picture, missing, payload_hash = add_contain_picture(
         slide, reference, preset["picture"], name=f"school-pptx:gallery-picture:{index}"
     )
     caption_shape = add_rich_text(
         slide, preset["caption"], caption, font_size=font_size, highlight_scheme=highlight_scheme,
-        name=f"school-pptx:gallery-caption:{index}",
+        name=f"school-pptx:gallery-caption:{index}", paragraph_alignment=paragraph_alignment,
     )
     group = slide.shapes.add_group_shape((picture, caption_shape))
     group.name = f"school-pptx:gallery-card:{index}"
     return group, missing, payload_hash
 
 
+def _set_gradient_fill(shape: Any, start_scheme: str, end_scheme: str) -> None:
+    from pptx.oxml.ns import qn
+    from pptx.oxml.xmlchemy import OxmlElement
+
+    properties = shape._element.spPr
+    fill_tags = {qn(name) for name in (
+        "a:noFill", "a:solidFill", "a:gradFill", "a:blipFill", "a:pattFill", "a:grpFill"
+    )}
+    for child in tuple(properties):
+        if child.tag in fill_tags:
+            properties.remove(child)
+    gradient = OxmlElement("a:gradFill")
+    gradient.set("rotWithShape", "1")
+    stops = OxmlElement("a:gsLst")
+    for position, scheme in (("0", start_scheme), ("100000", end_scheme)):
+        stop = OxmlElement("a:gs")
+        stop.set("pos", position)
+        color = OxmlElement("a:schemeClr")
+        color.set("val", scheme)
+        stop.append(color)
+        stops.append(stop)
+    gradient.append(stops)
+    direction = OxmlElement("a:lin")
+    direction.set("ang", "10800000")
+    direction.set("scaled", "1")
+    gradient.append(direction)
+    insertion_index = next(
+        (index for index, child in enumerate(properties) if child.tag in {
+            qn("a:ln"), qn("a:effectLst"), qn("a:effectDag"), qn("a:scene3d"), qn("a:sp3d"), qn("a:extLst")
+        }),
+        len(properties),
+    )
+    properties.insert(insertion_index, gradient)
+    shape.line.fill.background()
+
+
+def _interpolate_rgb(start: str, end: str, position: float) -> tuple[int, int, int]:
+    ratio = min(1.0, max(0.0, position))
+    start_channels = tuple(int(start[index:index + 2], 16) for index in (0, 2, 4))
+    end_channels = tuple(int(end[index:index + 2], 16) for index in (0, 2, 4))
+    return tuple(round(left + (right - left) * ratio) for left, right in zip(start_channels, end_channels))
+
+
 def add_timeline(slide: Any, slot: dict[str, Any], rows: tuple[tuple[str, ...], ...], *, highlight_scheme: str) -> list[Any]:
+    from pptx.dml.color import RGBColor
     from pptx.enum.shapes import MSO_SHAPE
 
     axis_geometry = slot["subregions"]["axis"]["geometry"]
+    gradient = slot["subregions"]["axis"].get("gradient", {})
     axis = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, *_geometry(axis_geometry))
     axis.name = "school-pptx:timeline-axis"
+    _set_gradient_fill(
+        axis,
+        str(gradient.get("start_scheme", "accent6")),
+        str(gradient.get("end_scheme", "accent1")),
+    )
     results: list[Any] = [axis]
     node_band = slot["subregions"]["node_band"]["geometry"]
     template = slot["node_template"]
     count = max(1, len(rows))
-    node_width = int(node_band["width"] / count)
+    node_width = int(slot.get("node_width_emu") or node_band["width"] / count)
+    node_step = (node_band["width"] - node_width) / max(1, count - 1)
     for index, row in enumerate(rows):
-        base_x = node_band["x"] + index * node_width
+        base_x = node_band["x"] + round(index * node_step)
         shapes: list[Any] = []
         for role, value in zip(("time", "title", "description"), (*row, "", "")[:3]):
             local = template["subregions"][role]["geometry"]
@@ -390,21 +583,40 @@ def add_timeline(slide: Any, slot: dict[str, Any], rows: tuple[tuple[str, ...], 
                 "height": local["height"],
             }
             budget = template["subregions"][role]["text_budget"]
+            region = template["subregions"][role]
             shapes.append(add_rich_text(
                 slide, geometry, value, font_size=budget["font_size_min"], highlight_scheme=highlight_scheme,
                 name=f"school-pptx:timeline-{role}:{index}",
+                paragraph_alignment=region.get("paragraph_alignment"),
+                vertical_anchor=region.get("vertical_anchor"),
             ))
         marker_local = template["subregions"]["marker"]["geometry"]
+        marker_size = min(int(marker_local["width"]), int(marker_local["height"]))
         marker = slide.shapes.add_shape(
             MSO_SHAPE.OVAL,
-            base_x + int(marker_local["x"] * node_width / template["geometry"]["width"]),
-            node_band["y"] + marker_local["y"],
-            marker_local["width"], marker_local["height"],
+            base_x + int(marker_local["x"] * node_width / template["geometry"]["width"])
+            + (int(marker_local["width"]) - marker_size) // 2,
+            node_band["y"] + marker_local["y"]
+            + (int(marker_local["height"]) - marker_size) // 2,
+            marker_size, marker_size,
         )
         marker.name = f"school-pptx:timeline-marker:{index}"
+        marker_center = marker.left + marker.width / 2
+        marker_position = (marker_center - axis_geometry["x"]) / axis_geometry["width"]
+        marker.fill.solid()
+        marker.fill.fore_color.rgb = RGBColor(*_interpolate_rgb(
+            str(gradient.get("start_rgb", "70AD47")),
+            str(gradient.get("end_rgb", "4472C4")),
+            marker_position,
+        ))
+        marker.line.fill.background()
         shapes.append(marker)
         group = slide.shapes.add_group_shape(shapes)
         group.name = f"school-pptx:timeline-node:{index}"
+        if slot.get("node_group_width_emu"):
+            group.width = int(slot["node_group_width_emu"])
+        if slot.get("node_group_height_emu"):
+            group.height = int(slot["node_group_height_emu"])
         results.append(group)
     return results
 

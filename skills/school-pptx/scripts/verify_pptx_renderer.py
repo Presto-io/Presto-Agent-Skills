@@ -12,6 +12,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -33,7 +34,7 @@ MANIFEST_PATH = SKILL_DIR / "templates" / "standard-school.manifest.yaml"
 TEMPLATE_PATH = SKILL_DIR / "templates" / "standard-school.pptx"
 PUBLIC_CLI = SCRIPTS_DIR / "school-pptx.sh"
 FIXTURE_PATH = SKILL_DIR / "fixtures" / "school-pptx-full.md"
-CANONICAL_PHYSICAL_SLIDES = 27
+CANONICAL_PHYSICAL_SLIDES = 26
 MAX_ZIP_ENTRIES = 256
 MAX_ZIP_ENTRY_BYTES = 4 * 1024 * 1024
 MAX_ZIP_TOTAL_BYTES = 32 * 1024 * 1024
@@ -113,9 +114,13 @@ def manifest_renderer_contract_gate(workdir: Path) -> dict[str, object]:
     report = run_template_report(workdir)
     manifest = template_report.read_yaml(MANIFEST_PATH)
     layouts = manifest["layouts"]
+    require(manifest["template"]["mapping_strategy"] == "renderer-owned-native-shapes",
+            "renderer-owned mapping strategy changed")
+    require(report["renderer_contract"]["mapping_strategy"] == "renderer-owned-native-shapes",
+            "template-report mapping strategy drifted")
     cover_subtitle = next(slot for slot in layouts["cover"]["slots"] if slot["id"] == "subtitle")
-    require(cover_subtitle["text_budget"]["max_chars"] == 72, "cover subtitle max_chars must be 72")
-    require(cover_subtitle["text_budget"]["max_lines"] == 2, "cover subtitle max_lines must be 2")
+    require(cover_subtitle["text_budget"]["max_chars"] == 96, "cover subtitle max_chars must be 96")
+    require(cover_subtitle["text_budget"]["max_lines"] == 3, "cover subtitle max_lines must be 3")
     require(report["renderer_contract"]["cover_subtitle_budget"] == cover_subtitle["text_budget"],
             "template-report cover subtitle evidence drifted")
     table = next(slot for slot in layouts["table"]["slots"] if slot["id"] == "table")
@@ -132,9 +137,9 @@ def manifest_renderer_contract_gate(workdir: Path) -> dict[str, object]:
         set(timeline["node_template"]["subregions"]) == {"marker", "time", "title", "description"},
         "timeline node subdivisions incomplete",
     )
-    require(manifest["inline_styles"]["highlight"]["scheme_color"] in template_report.ALLOWED_SCHEME_COLORS,
-            "highlight scheme token invalid")
-    require(layouts["closing"]["pptx_layout"] == "ppt/slideLayouts/slideLayout7.xml", "closing part path invalid")
+    require(manifest["inline_styles"]["highlight"]["scheme_color"] == "accent1",
+            "sixth-version highlight must use theme-blue accent1")
+    require(layouts["closing"]["pptx_layout"] == "ppt/slideLayouts/slideLayout8.xml", "closing part path invalid")
     require(len(report["layouts"]) == 11 and len(report["slots"]) >= 1, "layout regression")
 
     invalid = copy.deepcopy(manifest)
@@ -144,6 +149,7 @@ def manifest_renderer_contract_gate(workdir: Path) -> dict[str, object]:
     require(any("越界" in item for item in bounded["failures"]), "out-of-bounds preset did not fail")
     return {
         "layout_count": len(report["layouts"]),
+        "mapping_strategy": report["renderer_contract"]["mapping_strategy"],
         "closing_part_path": layouts["closing"]["pptx_layout"],
         "highlight_scheme_color": manifest["inline_styles"]["highlight"]["scheme_color"],
         "gallery_presets": sorted(gallery_items["item_presets"]),
@@ -194,6 +200,7 @@ def expect_package_failure(path: Path, expected: str) -> None:
 
 
 def measurement_gate(workdir: Path) -> dict[str, object]:
+    manifest = load_manifest(SKILL_DIR)
     evidence = pptx_paginate.run_contract_model_self_check()
     vectors = evidence["vectors"]
     require(vectors["explicit_newline"]["display_lines"] == 3, "explicit newline vector failed")
@@ -214,7 +221,8 @@ def measurement_gate(workdir: Path) -> dict[str, object]:
     controlled = safe_package_entries(TEMPLATE_PATH)
     presentation = ET.fromstring(controlled["ppt/presentation.xml"])
     seed_count = len(presentation.findall(".//p:sldId", PRESENTATION_NS))
-    require(seed_count == 5, "controlled template seed count is not 5")
+    require(seed_count == manifest["template"]["seed_slides"],
+            "controlled template seed count differs from manifest")
 
     malformed = workdir / "malformed.pptx"
     malformed.write_bytes(b"not-a-zip")
@@ -258,7 +266,8 @@ def frozen_slot_content_gate(workdir: Path) -> dict[str, object]:
     require([fragment.block_index for fragment in fragments] == list(range(5)), "D-06 block inventory changed")
     cover = next(slide for slide in first.slides if slide.layout == "cover")
     values = dict(cover.slot_values)
-    require(values["title"] and len(values["subtitle"]) == 66, "canonical cover descriptor length changed")
+    require(values["title"] and len(values["subtitle"]) == 64, "canonical cover descriptor length changed")
+    require(values["subtitle"].count("\n") == 2, "canonical cover information bar is not three lines")
     require(all(value in values["subtitle"] for value in
                 ("示例职业技术学院", "智能制造学院", "智能产线安装与调试", "课程建设团队", "2026-07-13")),
             "canonical cover descriptor lost metadata")
@@ -309,11 +318,11 @@ def frozen_numbering_row_heights_gate(workdir: Path) -> dict[str, object]:
     plan = pptx_paginate.build_deck_plan(document, manifest)
     contents = [slide for slide in plan.slides if slide.layout == "contents"]
     visible = [item for slide in contents for fragment in slide.fragments for item in fragment.items]
-    require(visible == [f"{index}. {entry}" for index, entry in enumerate(document["contents_entries"], 1)],
-            "contents visible numbering changed")
+    require(visible == document["contents_entries"], "contents section entries changed")
+    require(all(not re.match(r"^\d+[.、]", item) for item in visible), "contents numbering was not removed")
     require(all(slide.title == "目录" for slide in contents), "contents title changed")
     table_slot = next(slot for slot in manifest["layouts"]["table"]["slots"] if slot["id"] == "table")
-    budget = table_slot["geometry"]["height"] - table_slot["subregions"]["table_name"]["geometry"]["height"]
+    budget = table_slot["subregions"]["table_body"]["geometry"]["height"]
     tables = [slide.fragments[0] for slide in plan.slides if slide.layout == "table"]
     require(budget > 0 and tables, "derived table budget is invalid")
     require(all(len(fragment.row_heights_emu) == len(fragment.rows) for fragment in tables),
@@ -339,6 +348,7 @@ GATES["frozen-numbering-row-heights"] = frozen_numbering_row_heights_gate
 
 def frozen_plan_emission_gate(workdir: Path) -> dict[str, object]:
     import pptx_emit
+    from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
 
     manifest = load_manifest(SKILL_DIR)
     document = parse_document(FIXTURE_PATH, manifest)
@@ -350,6 +360,29 @@ def frozen_plan_emission_gate(workdir: Path) -> dict[str, object]:
 
     for physical, slide in zip(plan.slides, presentation.slides):
         names = {shape.name: shape for shape in slide.shapes}
+        title_slot = next((
+            slot for slot in manifest["layouts"][physical.layout].get("slots", ())
+            if slot["id"] == "title"
+        ), None)
+        if title_slot is not None and physical.layout != "cover":
+            title = names["school-pptx:slide-title"]
+            expected_alignment = {
+                "left": PP_ALIGN.LEFT, "center": PP_ALIGN.CENTER, "right": PP_ALIGN.RIGHT,
+                "justify": PP_ALIGN.JUSTIFY,
+            }[title_slot["paragraph_alignment"]]
+            expected_anchor = {
+                "top": MSO_VERTICAL_ANCHOR.TOP,
+                "middle": MSO_VERTICAL_ANCHOR.MIDDLE,
+                "bottom": MSO_VERTICAL_ANCHOR.BOTTOM,
+            }[title_slot["vertical_anchor"]]
+            require(title.text_frame.paragraphs[0].alignment == expected_alignment,
+                    f"{physical.layout} title horizontal alignment changed")
+            require(title.text_frame.vertical_anchor == expected_anchor,
+                    f"{physical.layout} title vertical alignment changed")
+            expected_size = float(title_slot["text_budget"]["font_size_max"])
+            require(all(run.font.size and run.font.size.pt == expected_size
+                        for run in title.text_frame.paragraphs[0].runs),
+                    f"{physical.layout} title font size changed")
         if physical.layout == "cover":
             require(names["school-pptx:cover-title"].text == dict(physical.slot_values)["title"],
                     "cover title differs from frozen slot value")
@@ -358,6 +391,11 @@ def frozen_plan_emission_gate(workdir: Path) -> dict[str, object]:
         elif physical.layout == "two-column":
             for slot_id in ("left_body", "right_body"):
                 require(f"school-pptx:{slot_id}" in names, f"missing native {slot_id} shape")
+                require(all(
+                    paragraph.alignment == PP_ALIGN.JUSTIFY
+                    for paragraph in names[f"school-pptx:{slot_id}"].text_frame.paragraphs
+                    if paragraph.text.strip()
+                ), f"{slot_id} is not justified")
                 expected: list[str] = []
                 for fragment in physical.fragments:
                     if fragment.target_slot != slot_id:
@@ -371,11 +409,69 @@ def frozen_plan_emission_gate(workdir: Path) -> dict[str, object]:
                         f"{slot_id} text differs from frozen fragments")
         elif physical.layout == "contents":
             require(names["school-pptx:body"].text == "\n".join(physical.fragments[0].items),
-                    "contents visible numbering differs from frozen items")
+                    "contents visible entries differ from frozen items")
+            require(names["school-pptx:body"].text_frame.vertical_anchor == MSO_VERTICAL_ANCHOR.MIDDLE,
+                    "contents body is not vertically centered")
+            require(all(paragraph.alignment == PP_ALIGN.JUSTIFY
+                        for paragraph in names["school-pptx:body"].text_frame.paragraphs),
+                    "contents body is not justified")
         elif physical.layout == "table":
             table_shape = names["school-pptx:native-table"]
             require(tuple(row.height for row in table_shape.table.rows) == physical.fragments[0].row_heights_emu,
                     "native table row heights differ from frozen EMU vector")
+            for row_index, row in enumerate(table_shape.table.rows):
+                for cell in row.cells:
+                    require(cell.vertical_anchor == MSO_VERTICAL_ANCHOR.MIDDLE,
+                            "native table cell vertical alignment changed")
+                    require(all(p.alignment == PP_ALIGN.CENTER for p in cell.text_frame.paragraphs),
+                            "native table cell horizontal alignment changed")
+                    expected_fill = "4472C4" if row_index == 0 else "D9EAF7"
+                    require(str(cell.fill.fore_color.rgb) == expected_fill,
+                            "native table blue fill changed")
+        elif physical.layout == "timeline":
+            from pptx.oxml.ns import qn
+
+            axis = names["school-pptx:timeline-axis"]
+            gradient = axis._element.spPr.find(qn("a:gradFill"))
+            require(gradient is not None, "timeline axis gradient missing")
+            stops = gradient.findall(".//" + qn("a:gs"))
+            require([stop.get("pos") for stop in stops] == ["0", "100000"],
+                    "timeline axis gradient stops changed")
+            require([stop[0].get("val") for stop in stops] == ["accent6", "accent1"],
+                    "timeline axis theme gradient changed")
+            require(gradient.find(qn("a:lin")).get("ang") == "10800000",
+                    "timeline axis gradient direction changed")
+            groups = [shape for shape in slide.shapes if shape.name.startswith("school-pptx:timeline-node:")]
+            require(groups, "timeline node groups missing")
+            marker_colors: list[tuple[int, int, int]] = []
+            for group in groups:
+                xfrm = group._element.grpSpPr.xfrm
+                require(xfrm.ext.cx == xfrm.chExt.cx and xfrm.ext.cy == xfrm.chExt.cy,
+                        "timeline group non-uniformly scales its circular marker")
+                marker = next(shape for shape in group.shapes if "timeline-marker" in shape.name)
+                require(marker.width == marker.height, "timeline marker is not square")
+                marker_colors.append(tuple(marker.fill.fore_color.rgb))
+                for role, expected_size in (("timeline-time", 20.0), ("timeline-title", 20.0),
+                                            ("timeline-description", 16.0)):
+                    text_shape = next(shape for shape in group.shapes if role in shape.name)
+                    require(all(run.font.size and run.font.size.pt == expected_size
+                                for paragraph in text_shape.text_frame.paragraphs for run in paragraph.runs),
+                            f"{role} font size changed")
+                    expected_alignment = PP_ALIGN.LEFT if role == "timeline-description" else PP_ALIGN.CENTER
+                    require(all(paragraph.alignment == expected_alignment
+                                for paragraph in text_shape.text_frame.paragraphs),
+                            f"{role} alignment changed")
+                    require(text_shape.text_frame.vertical_anchor == MSO_VERTICAL_ANCHOR.MIDDLE,
+                            f"{role} vertical anchor changed")
+            require(marker_colors[0] != marker_colors[-1], "timeline marker gradient colors collapsed")
+            require(marker_colors[0][1] > marker_colors[-1][1]
+                    and marker_colors[0][2] < marker_colors[-1][2],
+                    "timeline marker colors do not follow green-to-blue axis")
+
+        require(physical.notes_intent and slide.has_notes_slide,
+                f"{physical.layout} speaker notes missing")
+        require(slide.notes_slide.notes_text_frame.text.strip() == physical.notes_intent.strip(),
+                f"{physical.layout} speaker notes changed")
 
     source = (SCRIPTS_DIR / "pptx_emit.py").read_text(encoding="utf-8")
     require("pptx_paginate" not in source and "pptx_measure" not in source,
@@ -505,8 +601,8 @@ def pagination_structured_gate(workdir: Path) -> dict[str, object]:
     content_counts = [len(slide.fragments[0].items) for slide in contents]
     require(all(slide.title == "目录" for slide in contents), "D-10 contents title")
     require(max(content_counts) - min(content_counts) <= 1, "D-10 contents count balance")
-    require([item for slide in contents for item in slide.fragments[0].items] ==
-            [f"{index}. {entry}" for index, entry in enumerate(entries, 1)], "D-10 contents order")
+    require([item for slide in contents for item in slide.fragments[0].items] == entries,
+            "D-10 unnumbered contents order")
     try:
         pptx_paginate.ordered_contiguous_partition([1.0] * 300, 10.0)
     except ValueError as exc:
@@ -556,16 +652,22 @@ def pagination_full_gate(workdir: Path) -> dict[str, object]:
     require(first.slides[-1].layout == "closing", "closing is not last")
     require(sum(slide.layout == "closing" for slide in first.slides) == 1, "closing count")
     require(dict(first.slides[-1].fragments[0].metadata)["pptx_layout"] ==
-            "ppt/slideLayouts/slideLayout7.xml", "closing part path")
+            "ppt/slideLayouts/slideLayout8.xml", "closing part path")
 
     for logical_index, indices in first.logical_to_physical:
         require(indices == tuple(range(indices[0], indices[-1] + 1)), "logical-to-physical mapping not contiguous")
         logical = document["logical_slides"][logical_index]
-        expected_notes = logical["notes"]["markdown"] if logical.get("notes") else None
+        expected_notes = (
+            logical["notes"]["markdown"] if logical.get("notes")
+            else pptx_paginate._default_notes(logical, logical_index, document["logical_slides"], document)
+        )
         derived = [first.slides[index] for index in indices]
         require(all(slide.notes_intent == expected_notes for slide in derived), "D-16 notes propagation")
-        if expected_notes is None:
-            require(all(slide.to_projection()["notes_intent"] is None for slide in derived), "D-16 false notes intent")
+        require(all(slide.to_projection()["notes_intent"] for slide in derived), "D-16 notes missing")
+
+    section_notes = [slide.notes_intent for slide in first.slides if slide.layout == "section"]
+    require(all(note and "本章内容概括" in note for note in section_notes), "section notes lack summary")
+    require(first.slides[-1].notes_intent, "closing notes missing")
 
     layouts = {slide.layout for slide in first.slides}
     require({"title-content", "two-column", "image-text", "table", "timeline", "gallery", "code"} <= layouts,
@@ -574,8 +676,7 @@ def pagination_full_gate(workdir: Path) -> dict[str, object]:
     require(len(image_text) >= 3 and all(any(fragment.kind == "image" for fragment in slide.fragments)
                                          for slide in image_text), "image-text cartesian planning")
     contents = [slide for slide in first.slides if slide.layout == "contents"]
-    require([item for slide in contents for item in slide.fragments[0].items] ==
-            [f"{index}. {entry}" for index, entry in enumerate(document["contents_entries"], 1)],
+    require([item for slide in contents for item in slide.fragments[0].items] == document["contents_entries"],
             "full fixture contents order")
     return {
         "gallery_vectors": gallery_vectors,
@@ -601,13 +702,13 @@ def ooxml_bootstrap_gate(workdir: Path) -> dict[str, object]:
     manifest = load_manifest(SKILL_DIR)
     presentation, layouts, evidence = pptx_emit.bootstrap_template(TEMPLATE_PATH, manifest)
     require(evidence == {
-        "seed_slides": 5,
-        "removed_seed_slides": 5,
-        "removed_seed_notes_relationships": 2,
-    }, "seed removal evidence mismatch")
+        "seed_slides": manifest["template"]["seed_slides"],
+        "removed_seed_slides": manifest["template"]["seed_slides"],
+        "removed_seed_notes_relationships": manifest["template"]["seed_notes_relationships"],
+    }, "third-version seed removal evidence mismatch")
     require(len(presentation.slides) == 0, "seed slides remain after bootstrap")
     require(set(layouts) == set(manifest["layouts"]), "layout part map incomplete")
-    require(str(layouts["closing"].part.partname).lstrip("/") == "ppt/slideLayouts/slideLayout7.xml",
+    require(str(layouts["closing"].part.partname).lstrip("/") == "ppt/slideLayouts/slideLayout8.xml",
             "closing layout did not resolve by part path")
 
     invalid = copy.deepcopy(manifest)
@@ -764,14 +865,16 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
     }
     require(not {"add_rich_text", "add_plain_lines", "inline_spans"} & helper_calls,
             "mixed-fragment helper delegates code through rich-text line normalization")
+    require("fragment_paragraph_sequence" in helper_calls,
+            "mixed-fragment helper does not consume shared paragraph sequence")
     code_kind_branches = [
         node for node in ast.walk(mixed_helper)
-        if isinstance(node, ast.If) and "fragment.kind == 'code'" in ast.unparse(node.test)
+        if isinstance(node, ast.If) and "role == 'code'" in ast.unparse(node.test)
     ]
     require(len(code_kind_branches) == 1, "mixed-fragment helper code branch missing")
     code_branch_source = ast.unparse(code_kind_branches[0].body)
-    require("run.text = fragment.text" in code_branch_source,
-            "mixed-fragment helper does not assign frozen code text directly")
+    require("run.text = text" in code_branch_source,
+            "mixed-fragment helper does not assign projected code text directly")
     require(not {"normalize_rich_text", "inline_spans", "add_rich_text", "add_plain_lines"} & {
         node.id for statement in code_kind_branches[0].body for node in ast.walk(statement)
         if isinstance(node, ast.Name)
@@ -887,8 +990,20 @@ def code_literal_roundtrip_gate(workdir: Path) -> dict[str, object]:
     rich_runs = content_body.text_frame.paragraphs[0].runs
     require(any(run.font.bold is True and run.text == "bold" for run in rich_runs),
             "ordinary bold rich text regressed")
-    require(any("<a:highlight>" in run._r.xml and run.text == "highlight" for run in rich_runs),
-            "ordinary highlight rich text regressed")
+    highlight_runs = [run for run in rich_runs if run.text == "highlight"]
+    require(len(highlight_runs) == 1, "ordinary highlight run count changed")
+    highlight_run = highlight_runs[0]
+    highlight_xml = highlight_run._r.xml
+    highlight_scheme = manifest["inline_styles"]["highlight"]["scheme_color"]
+    require(highlight_scheme == "accent1", "ordinary highlight theme token is not blue accent1")
+    require(
+        "<a:highlight>" in highlight_xml
+        and f'<a:schemeClr val="{highlight_scheme}"' in highlight_xml,
+        "ordinary highlight run lost theme-blue highlight OOXML",
+    )
+    require(highlight_run.font.bold is True, "ordinary highlight run is not bold")
+    require(str(highlight_run.font.color.rgb) == "FFFFFF",
+            "ordinary highlight run font color is not FFFFFF")
     return {
         "characters": len(parser_title_code) + len(parser_column_code),
         "runs": len(code_runs), "font": code_runs[0].font.name,
@@ -908,7 +1023,7 @@ def mixed_fragment_capacity_gate(workdir: Path) -> dict[str, object]:
     except ImportError as exc:
         raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
 
-    code_text = "\n".join("中" * 40 for _ in range(4))
+    code_text = "\n".join("中" * 40 for _ in range(8))
     markdown = workdir / "mixed-fragment-capacity.md"
     markdown.write_text(
         "---\n"
@@ -947,7 +1062,7 @@ def mixed_fragment_capacity_gate(workdir: Path) -> dict[str, object]:
 
     vectors: dict[str, object] = {}
     for layout, slot_id, expected_font in (
-        ("title-content", "body", 24.0),
+        ("title-content", "body", 28.0),
         ("two-column", "left_body", 22.0),
     ):
         physical_slides = [slide for slide in plan.slides if slide.layout == layout]
@@ -1021,7 +1136,10 @@ def mixed_fragment_capacity_gate(workdir: Path) -> dict[str, object]:
             display_heights.append(measurement.height_points)
             effective_heights.append(effective_height)
             effective_widths.append(effective_width)
-        require(parser_codes[layout] == "\n".join(frozen_fragments) == "\n".join(reopened_runs),
+        parser_text = parser_codes[layout]
+        frozen_text = "\n".join(frozen_fragments)
+        reopened_text = "\n".join(reopened_runs)
+        require(parser_text == frozen_text == reopened_text,
                 f"{layout} parser-plan-PPTX joined code changed")
         require(all(page_equalities), f"{layout} per-page code text changed")
         vectors[layout] = {
@@ -1035,7 +1153,11 @@ def mixed_fragment_capacity_gate(workdir: Path) -> dict[str, object]:
             "display_height_points": display_heights,
             "effective_content_height_points": effective_heights,
             "page_equalities": page_equalities,
-            "joined_equality": True,
+            "parser_text_hash": hashlib.sha256(parser_text.encode()).hexdigest(),
+            "frozen_text_hash": hashlib.sha256(frozen_text.encode()).hexdigest(),
+            "reopened_text_hash": hashlib.sha256(reopened_text.encode()).hexdigest(),
+            "text_lengths": [len(parser_text), len(frozen_text), len(reopened_text)],
+            "joined_equality": parser_text == frozen_text == reopened_text,
             "output_bytes": len(public_output.encode("utf-8")),
             "artifact_paths": [str(markdown_path), str(pptx_path)],
         }
@@ -1074,6 +1196,278 @@ def mixed_fragment_capacity_gate(workdir: Path) -> dict[str, object]:
 GATES["mixed-fragment-capacity"] = mixed_fragment_capacity_gate
 
 
+def frame_capacity_consistency_gate(workdir: Path) -> dict[str, object]:
+    try:
+        from pptx import Presentation
+        import pptx_emit
+        from pptx_model import PhysicalDeckPlan, fragment_paragraph_sequence
+    except ImportError as exc:
+        raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
+
+    manifest = load_manifest(SKILL_DIR)
+    code_lines = "\n".join("中" * 20 for _ in range(30))
+    long_code_heading = "**多行代码标题**" + "确定性可见文本" * 12 + "==高亮结尾=="
+    markdown = workdir / "frame-capacity-consistency.md"
+    markdown.write_text(
+        "---\n"
+        'title: "整帧容量"\n'
+        'theme: "standard-school"\n'
+        "---\n"
+        '::: slide {layout="contents"}\n:::\n'
+        + "".join(
+            f'::: slide {{layout="section"}}\n## 第{index}项\n:::\n'
+            for index in range(1, 11)
+        )
+        + "".join(
+            f'::: slide {{layout="title-content"}}\n## 第{index}项\n### 小标题\n正文内容。\n:::\n'
+            for index in range(1, 6)
+        )
+        + '::: slide {layout="title-content"}\n## 段落向量\n### **重复标题** ==高亮==\n段落 **粗体** 与 ==高亮==。\n:::\n'
+        + '::: slide {layout="title-content"}\n## 列表向量\n### **重复标题** ==高亮==\n- 第一项 **粗体**\n- 第二项 ==高亮==\n:::\n'
+        + '::: slide {layout="title-content"}\n## 混排代码向量\n### 源码\n```text\n'
+        + "\n".join("中" * 40 for _ in range(4)) + "\n```\n:::\n"
+        + '::: slide {layout="code"}\n## 专用代码\n```text\n' + code_lines + "\n```\n:::\n"
+        + '::: slide {layout="code"}\n## 带标题专用代码\n### ' + long_code_heading
+        + '\n```text\n' + code_lines + "\n```\n:::\n",
+        encoding="utf-8",
+    )
+    document = parse_document(markdown, manifest)
+    require(not document["errors"], f"frame capacity parser errors: {document['errors']}")
+    plan = pptx_paginate.build_deck_plan(document, manifest)
+    require(not [item for item in plan.diagnostics if item.severity == "error"],
+            f"frame capacity plan diagnostics: {plan.diagnostics}")
+    delivery = workdir / "delivery"
+    completed = run_public_render(markdown, delivery, "frame-capacity-consistency")
+    public_output = completed.stdout + completed.stderr
+    require(completed.returncode == 0, f"frame capacity render failed: {public_output[:1024]}")
+    pptx_path = delivery / "frame-capacity-consistency.pptx"
+    reopened = Presentation(pptx_path)
+    vectors: dict[str, object] = {}
+
+    for layout, slot_id in (("contents", "body"), ("title-content", "body"), ("code", "code")):
+        physical_slides = [slide for slide in plan.slides if slide.layout == layout]
+        page_evidence: list[dict[str, object]] = []
+        for physical in physical_slides:
+            plan_sequence = [projection for fragment in physical.fragments
+                             for projection in fragment_paragraph_sequence(fragment)]
+            plan_paragraphs = [{
+                "role": projection.role,
+                "authored_text": projection.authored_text,
+                "visible_text": projection.visible_text,
+            } for projection in plan_sequence]
+            names = [f"school-pptx:{slot_id}"]
+            if layout == "code" and any(item["role"] == "heading" for item in plan_paragraphs):
+                names.insert(0, "school-pptx:code-heading")
+            frames: list[dict[str, object]] = []
+            paragraph_offset = 0
+            for name in names:
+                shape = next(shape for shape in reopened.slides[physical.physical_index].shapes
+                             if shape.name == name)
+                paragraphs: list[dict[str, object]] = []
+                for paragraph in shape.text_frame.paragraphs:
+                    text = "".join(run.text for run in paragraph.runs)
+                    if not text:
+                        continue
+                    role = "heading" if name.endswith("code-heading") else (
+                        "code" if name.endswith(":code") else plan_paragraphs[paragraph_offset]["role"]
+                    )
+                    run_font = next(run.font.size.pt for run in paragraph.runs if run.font.size is not None)
+                    spacing = float(paragraph.line_spacing)
+                    space_after = paragraph.space_after.pt if paragraph.space_after is not None else 0.0
+                    width_emu = shape.width - round(
+                        (shape.text_frame.margin_left.pt + shape.text_frame.margin_right.pt)
+                        * pptx_paginate.EMU_PER_POINT
+                    )
+                    measurement = pptx_paginate.TextMeasure(
+                        line_spacing=spacing, paragraph_spacing_points=space_after
+                    ).measure(
+                        text, width_emu=width_emu,
+                        font_size=run_font, font_size_min=run_font, font_size_max=run_font,
+                        kind="code" if role == "code" else "paragraph",
+                    )
+                    paragraphs.append({
+                        "role": role,
+                        "text": text,
+                        "font_size": run_font,
+                        "display_lines": measurement.display_lines,
+                        "line_spacing": spacing,
+                        "space_after_points": space_after,
+                        "runs": [{
+                            "text": run.text,
+                            "bold": run.font.bold is True,
+                            "highlight": "<a:highlight>" in run._r.xml,
+                        } for run in paragraph.runs],
+                    })
+                    paragraph_offset += 1
+                frames.append({
+                    "shape_name": name,
+                    "geometry_emu": {
+                        "x": shape.left, "y": shape.top,
+                        "width": shape.width, "height": shape.height,
+                    },
+                    "margins_points": {
+                        "left": shape.text_frame.margin_left.pt,
+                        "right": shape.text_frame.margin_right.pt,
+                        "top": shape.text_frame.margin_top.pt,
+                        "bottom": shape.text_frame.margin_bottom.pt,
+                    },
+                    "paragraphs": paragraphs,
+                })
+            reopened_sequence = [
+                (paragraph["role"], paragraph["text"])
+                for frame in frames for paragraph in frame["paragraphs"]
+            ]
+            require([(item["role"], item["visible_text"]) for item in plan_paragraphs] == reopened_sequence,
+                    f"{layout} plan/reopen paragraph sequence changed")
+            for frame in frames:
+                full_height = sum(
+                    paragraph["display_lines"] * paragraph["font_size"] * paragraph["line_spacing"]
+                    + paragraph["space_after_points"]
+                    for paragraph in frame["paragraphs"]
+                )
+                geometry = frame["geometry_emu"]
+                margins = frame["margins_points"]
+                effective_height = geometry["height"] / pptx_paginate.EMU_PER_POINT
+                effective_height -= margins["top"] + margins["bottom"]
+                require(full_height <= effective_height + 0.001,
+                        f"{layout} reopened full frame exceeds effective geometry")
+            if layout == "code" and len(frames) == 2:
+                heading_geometry, code_geometry = frames[0]["geometry_emu"], frames[1]["geometry_emu"]
+                frozen_height = int(dict(physical.slot_values)["geometry.code.heading_height_emu"])
+                require(heading_geometry["height"] == frozen_height,
+                        "dedicated code heading shape height differs from frozen plan")
+                require(heading_geometry["y"] + heading_geometry["height"] == code_geometry["y"]
+                        and code_geometry["height"] > 0,
+                        "dedicated code remaining geometry is invalid")
+            page_evidence.append({
+                "physical_index": physical.physical_index,
+                "plan_paragraphs": plan_paragraphs,
+                "frames": frames,
+                "slot_geometry_emu": dict(next(
+                    item for item in manifest["layouts"][layout]["slots"] if item["id"] == slot_id
+                )["geometry"]),
+            })
+        vectors[layout] = {
+            "physical_pages": len(physical_slides),
+            "pages": page_evidence,
+        }
+
+    contents_pages = [slide for slide in plan.slides if slide.layout == "contents"]
+    require(len(contents_pages) > 1, "ten contents entries did not paginate beyond reviewed six-entry layout")
+    contents_items = [item for slide in contents_pages for fragment in slide.fragments for item in fragment.items]
+    require(contents_items[:5] == [f"第{index}项" for index in range(1, 6)],
+            "contents unnumbered entries changed")
+    require(all(dict(slide.selected_font_sizes).get("body") == 32.0 for slide in contents_pages),
+            "contents frozen font is not 32pt")
+    code_pages = [slide for slide in plan.slides if slide.layout == "code"]
+    require(code_pages and all(dict(slide.selected_font_sizes).get("code") == 14.0 for slide in code_pages),
+            "dedicated code frozen font is not 14pt")
+    require(all(
+        all(paragraph["font_size"] == 14.0 for frame in page["frames"] for paragraph in frame["paragraphs"])
+        for page in vectors["code"]["pages"]
+    ), "dedicated code reopen font is not 14pt")
+    styled = [
+        (paragraph["role"], paragraph["runs"])
+        for page in vectors["title-content"]["pages"]
+        for frame in page["frames"] for paragraph in frame["paragraphs"]
+    ]
+    require({role for role, runs in styled if any(run["bold"] for run in runs)} >= {"heading", "paragraph", "list"}
+            and {role for role, runs in styled if any(run["highlight"] for run in runs)} >= {"heading", "paragraph", "list"},
+            "bold/highlight heading, paragraph, and list vectors did not reopen with rich runs")
+
+    overflow_source = workdir / "code-heading-overflow.md"
+    overflow_source.write_text(
+        "---\n"
+        'title: "代码标题溢出"\n'
+        'theme: "standard-school"\n'
+        "---\n"
+        '::: slide {layout="code"}\n'
+        "## 代码标题溢出\n"
+        "### " + "超" * 1400 + "\n"
+        "```text\nprint('bounded')\n```\n"
+        ":::\n",
+        encoding="utf-8",
+    )
+    overflow_document = parse_document(overflow_source, manifest)
+    require(not overflow_document["errors"], "overflow heading parser errors")
+    overflow_plan = pptx_paginate.build_deck_plan(overflow_document, manifest)
+    overflow_diagnostics = [item.to_projection() for item in overflow_plan.diagnostics]
+    require(any(item["code"] == "TEXT_BLOCK_OVERFLOW" and item["severity"] == "error"
+                for item in overflow_diagnostics),
+            "overflow heading did not return the bounded semantic overflow diagnostic")
+    overflow_code_pages = [slide for slide in overflow_plan.slides if slide.layout == "code"]
+    code_slot_height = next(
+        item for item in manifest["layouts"]["code"]["slots"] if item["id"] == "code"
+    )["geometry"]["height"]
+    frozen_heading_heights = [
+        int(dict(slide.slot_values)["geometry.code.heading_height_emu"])
+        for slide in overflow_code_pages
+    ]
+    require(overflow_code_pages and all(0 < height < code_slot_height for height in frozen_heading_heights),
+            "overflow heading did not freeze bounded positive code geometry")
+
+    overflow_delivery = workdir / "overflow-delivery"
+    overflow_completed = run_public_render(overflow_source, overflow_delivery, "code-heading-overflow")
+    overflow_output = overflow_completed.stdout + overflow_completed.stderr
+    require(overflow_completed.returncode != 0 and "TEXT_BLOCK_OVERFLOW" in overflow_output
+            and "PPTX_RENDER_FAILED" not in overflow_output,
+            "overflow heading bypassed the structured best-effort diagnostic path")
+    require("Traceback" not in overflow_output and len(overflow_output.encode("utf-8")) < 8192,
+            "overflow heading public failure was unbounded")
+    require({path.name for path in overflow_delivery.iterdir()} == {
+        "code-heading-overflow.md", "code-heading-overflow.pptx"
+    }, "overflow heading did not publish the clean best-effort pair")
+    overflow_reopened = Presentation(overflow_delivery / "code-heading-overflow.pptx")
+    overflow_geometries: list[dict[str, int]] = []
+    for physical in overflow_code_pages:
+        shapes = {shape.name: shape for shape in overflow_reopened.slides[physical.physical_index].shapes}
+        heading_shape = shapes["school-pptx:code-heading"]
+        code_shape = shapes["school-pptx:code"]
+        require(heading_shape.height > 0 and code_shape.height > 0
+                and heading_shape.top + heading_shape.height == code_shape.top
+                and heading_shape.height + code_shape.height == code_slot_height,
+                "overflow heading produced invalid or negative code geometry")
+        overflow_geometries.append({
+            "heading_height": heading_shape.height,
+            "code_height": code_shape.height,
+            "slot_height": code_slot_height,
+        })
+
+    code_slide = code_pages[0]
+    fail_closed_codes: list[str] = []
+    for mutation, expected_code in (
+        (replace(code_slide, selected_font_sizes=()), "PPTX_PLAN_FONT_MISSING"),
+        (replace(code_slide, slot_values=()), "PPTX_PLAN_TYPOGRAPHY_MISSING"),
+    ):
+        mutated = PhysicalDeckPlan(tuple(mutation if slide is code_slide else slide for slide in plan.slides),
+                                   plan.diagnostics, plan.logical_to_physical)
+        try:
+            pptx_emit.emit_deck(mutated, manifest, TEMPLATE_PATH, workdir / f"{expected_code}.pptx")
+        except pptx_emit.PptxEmitError as exc:
+            require(exc.code == expected_code, f"dedicated code fail-closed mismatch: {exc.code}")
+            fail_closed_codes.append(exc.code)
+        else:
+            raise GateFailure(f"dedicated code mutation emitted: {expected_code}")
+    return {
+        "public_exit": completed.returncode,
+        "output_bytes": len(public_output.encode("utf-8")),
+        "artifact_paths": [str(delivery / markdown.name), str(pptx_path)],
+        "vectors": vectors,
+        "overflow_heading": {
+            "public_exit": overflow_completed.returncode,
+            "output_bytes": len(overflow_output.encode("utf-8")),
+            "diagnostics": overflow_diagnostics,
+            "frozen_heading_heights": frozen_heading_heights,
+            "geometries": overflow_geometries,
+            "artifact_names": sorted(path.name for path in overflow_delivery.iterdir()),
+        },
+        "fail_closed_codes": fail_closed_codes,
+    }
+
+
+GATES["frame-capacity-consistency"] = frame_capacity_consistency_gate
+
+
 def editable_objects_gate(workdir: Path) -> dict[str, object]:
     try:
         import pptx_emit
@@ -1094,7 +1488,7 @@ def editable_objects_gate(workdir: Path) -> dict[str, object]:
 
     manifest = load_manifest(SKILL_DIR)
     table_slot = next(slot for slot in manifest["layouts"]["table"]["slots"] if slot["id"] == "table")
-    table_budget = table_slot["geometry"]["height"] - table_slot["subregions"]["table_name"]["geometry"]["height"]
+    table_budget = table_slot["subregions"]["table_body"]["geometry"]["height"]
     table_row_heights = (table_budget // 2, table_budget - table_budget // 2)
 
     rich = BlockFragment(
@@ -1128,16 +1522,19 @@ def editable_objects_gate(workdir: Path) -> dict[str, object]:
         ("typography.body.line_spacing", "1.2"),
         ("typography.body.paragraph_spacing_points", "2.0"),
     )
+    code_typography = tuple((key.replace("body", "code"), value) for key, value in body_typography)
     slides = (
         PhysicalSlide(
             0, 0, "title-content", "富文本", 0, 1, (rich,), "逐字说明",
-            selected_font_sizes=(("body", 24.0),), affected_pages=(0,), slot_values=body_typography,
+            selected_font_sizes=(("body", 28.0),), affected_pages=(0,), slot_values=body_typography,
         ),
         PhysicalSlide(1, 1, "table", "原生表格", 0, 2, (table,), None,
                       selected_font_sizes=(("table", 14.0),), affected_pages=(1,)),
         PhysicalSlide(2, 2, "timeline", "原生时间线", 0, 3, (timeline,), None, affected_pages=(2,)),
         PhysicalSlide(3, 3, "gallery", "原生图集", 0, 4, (gallery,), "图集备注", affected_pages=(3,)),
-        PhysicalSlide(4, 4, "code", "代码", 0, 5, (code,), None, affected_pages=(4,)),
+        PhysicalSlide(4, 4, "code", "代码", 0, 5, (code,), None,
+                      selected_font_sizes=(("code", 14.0),), affected_pages=(4,),
+                      slot_values=code_typography),
         PhysicalSlide(5, 5, "closing", "", 0, 6, (
             BlockFragment(kind="closing", logical_index=5, block_index=0, fragment_index=0, source_line=6),
         ), None, affected_pages=(5,)),
@@ -1265,7 +1662,7 @@ def emit_structure_gate(workdir: Path) -> dict[str, object]:
     last_relationships = ET.fromstring(
         package_entries[f"ppt/slides/_rels/slide{len(plan.slides)}.xml.rels"]
     ).findall("r:Relationship", rel_namespace)
-    require(any(item.get("Target", "").endswith("slideLayout7.xml") for item in last_relationships),
+    require(any(item.get("Target", "").endswith("slideLayout8.xml") for item in last_relationships),
             "closing did not use manifest part")
     for slide in reopened.slides:
         for shape in slide.shapes:
@@ -1273,6 +1670,23 @@ def emit_structure_gate(workdir: Path) -> dict[str, object]:
                 require(not (shape.width == reopened.slide_width and shape.height == reopened.slide_height),
                         "whole-slide screenshot shortcut detected")
     require(image_relationships > 0, "native picture relationships missing")
+    picture_namespace = {
+        "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
+        "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+    }
+    renderer_picture_names: list[str] = []
+    for xml in slide_xml.values():
+        root = ET.fromstring(xml)
+        for picture in root.findall(".//p:pic", picture_namespace):
+            properties = picture.find("./p:nvPicPr/p:cNvPr", picture_namespace)
+            name = properties.get("name", "") if properties is not None else ""
+            renderer_picture_names.append(name)
+            require(
+                picture.find("./p:spPr/a:effectLst/a:outerShdw", picture_namespace) is not None,
+                f'renderer picture "{name}" lost a:effectLst/a:outerShdw',
+            )
+    require(renderer_picture_names and len(renderer_picture_names) == image_relationships,
+            "renderer picture shadow inventory does not match slide image relationships")
     require(all(b"<a:srcRect" not in xml or b"<a:srcRect/>" in xml or b'l="0"' in xml
                 for xml in slide_xml.values()),
             "picture crop is not zero")
@@ -1303,6 +1717,7 @@ def emit_structure_gate(workdir: Path) -> dict[str, object]:
         "gallery_slides": len(gallery_slides),
         "notes_slides": len(notes_indices),
         "image_relationships": image_relationships,
+        "renderer_picture_shadows": len(renderer_picture_names),
         "transition_mode": "none",
         "package": validated,
     }
@@ -1552,15 +1967,18 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
             "input/output identity was accepted")
     assert_no_renderer_debris(collision_root)
 
-    host_python = shutil.which("python3")
-    require(host_python is not None, "host python missing for dependency gate")
+    host_python = sys.executable
+    require(Path(host_python).is_file(), "host python missing for dependency gate")
     dependency_root = workdir / "dependency"
     dependency_root.mkdir()
     (dependency_root / "deck.pptx").write_bytes(old_pptx)
     environment = os.environ.copy()
-    yaml_root = next(path.parent for path in Path.home().glob(".cache/uv/archive-v0/*/yaml/__init__.py"))
+    yaml_root = next(path.parent.parent for path in Path.home().glob(".cache/uv/archive-v0/*/yaml/__init__.py"))
     environment["PYTHONPATH"] = str(yaml_root)
-    environment["SCHOOL_PPTX_PYTHON"] = host_python
+    isolated_python = workdir / "python-no-site"
+    isolated_python.write_text(f'#!/bin/sh\nexec "{host_python}" -S "$@"\n', encoding="utf-8")
+    isolated_python.chmod(0o700)
+    environment["SCHOOL_PPTX_PYTHON"] = str(isolated_python)
     dependency = subprocess.run(
         [str(PUBLIC_CLI), "render", "--input", str(FIXTURE_PATH), "--out-dir", str(dependency_root), "--stem", "deck"],
         text=True, capture_output=True, check=False, env=environment, timeout=30,
@@ -1885,6 +2303,7 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         vector_delivery.mkdir()
         old_target = b"old-pptx-media-symlink"
         (vector_delivery / "deck.pptx").write_bytes(old_target)
+        old_target_before_hash = hashlib.sha256(old_target).hexdigest()
         result = run_public_render(vector_source, vector_delivery, "deck")
         output = result.stdout + result.stderr
         require(result.returncode != 0 and "PPTX_MEDIA_PATH_INVALID" in output,
@@ -1895,11 +2314,14 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         require(len(output.encode("utf-8")) < 8192 and "Traceback" not in output
                 and str(target) not in output and str(vector_root) not in output,
                 f"{label} symlink failure was not bounded")
+        old_target_after_hash = hashlib.sha256((vector_delivery / "deck.pptx").read_bytes()).hexdigest()
         symlink_evidence[label] = {
             "public_exit": result.returncode,
             "code": "PPTX_MEDIA_PATH_INVALID",
             "output_bytes": len(output.encode("utf-8")),
-            "old_target_preserved": True,
+            "old_target_before_hash": old_target_before_hash,
+            "old_target_after_hash": old_target_after_hash,
+            "old_target_preserved": old_target_before_hash == old_target_after_hash,
         }
 
     missing_root = workdir / "runtime-missing"
@@ -1934,6 +2356,12 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
     require(placeholders and all(shape.has_text_frame for shape in placeholders),
             "runtime missing did not emit editable placeholder")
     require(frozen_plan.to_projection() == before_projection, "runtime missing mutated frozen plan projection")
+    projection_before_hash = hashlib.sha256(
+        json.dumps(before_projection, ensure_ascii=False, sort_keys=True).encode()
+    ).hexdigest()
+    projection_after_hash = hashlib.sha256(
+        json.dumps(frozen_plan.to_projection(), ensure_ascii=False, sort_keys=True).encode()
+    ).hexdigest()
 
     fault_root = workdir / "add-picture-fault"
     fault_root.mkdir()
@@ -1945,6 +2373,7 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
     fault_delivery.mkdir()
     fault_old = b"old-pptx-add-picture"
     (fault_delivery / "deck.pptx").write_bytes(fault_old)
+    fault_before_hash = hashlib.sha256(fault_old).hexdigest()
 
     def fail_add_picture(reference: object) -> None:
         del reference
@@ -1963,12 +2392,13 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
     require((fault_delivery / "deck.pptx").read_bytes() == fault_old
             and not (fault_delivery / "deck.md").exists(),
             "add_picture fault replaced old target")
+    fault_after_hash = hashlib.sha256((fault_delivery / "deck.pptx").read_bytes()).hexdigest()
 
     return {
         "relative_success": {
             "public_exit": race_exit,
             "validated_hash": original_hash,
-            "embedded_hash": original_hash,
+            "embedded_hashes": embedded_hashes,
             "replacement_hash": replacement_hash,
             "hook_called": len(hook_calls),
             "crop": [0.0, 0.0, 0.0, 0.0],
@@ -1976,7 +2406,7 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         },
         "absolute_success": {
             "public_exit": absolute_result.returncode,
-            "embedded_hash": original_hash,
+            "embedded_hashes": absolute_hashes,
             "crop": [0.0, 0.0, 0.0, 0.0],
             "artifact_paths": [str(absolute_delivery / "deck.md"), str(absolute_delivery / "deck.pptx")],
         },
@@ -1986,7 +2416,9 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
             "code": "MEDIA_MISSING",
             "editable_placeholders": len(placeholders),
             "artifacts": sorted(path.name for path in missing_delivery.iterdir()),
-            "frozen_projection_equal": True,
+            "projection_before_hash": projection_before_hash,
+            "projection_after_hash": projection_after_hash,
+            "frozen_projection_equal": projection_before_hash == projection_after_hash,
             "output_bytes": len(missing_output.encode("utf-8")),
             "artifact_paths": [str(missing_delivery / "deck.md"), str(missing_delivery / "deck.pptx")],
         },
@@ -1994,7 +2426,9 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
             "public_exit": fault_exit,
             "code": "PPTX_MEDIA_FORMAT_INVALID",
             "output_bytes": len(fault_output.encode("utf-8")),
-            "old_target_preserved": True,
+            "old_target_before_hash": fault_before_hash,
+            "old_target_after_hash": fault_after_hash,
+            "old_target_preserved": fault_before_hash == fault_after_hash,
         },
     }
 
@@ -2044,10 +2478,14 @@ def phase_41_42_regression_gate(workdir: Path) -> dict[str, object]:
             forbidden_calls.append(path.name)
     require(not forbidden_calls, f"sibling skill runtime calls found: {forbidden_calls}")
     shell_source = PUBLIC_CLI.read_text(encoding="utf-8")
-    require("pptx_render.py" in shell_source and "verify --workdir" not in shell_source,
-            "Phase 44 public verify leaked into Phase 43")
-    require(not (SKILL_DIR / "SKILL.md").exists(), "Phase 44 canonical skill entry was created early")
-    return {"template_layouts": len(template["layouts"]), "fixture_example": "PASS", "runtime_files": [p.name for p in runtime_files]}
+    require("pptx_render.py" in shell_source and "verify_school_pptx.py" in shell_source,
+            "public render or verify dispatcher is missing")
+    return {
+        "template_layouts": len(template["layouts"]),
+        "fixture_example": "PASS",
+        "runtime_files": [p.name for p in runtime_files],
+        "public_verify_dispatcher": True,
+    }
 
 
 def template_reader_security_gate(workdir: Path) -> dict[str, object]:
@@ -2094,6 +2532,7 @@ PHASE_43_GATE_ORDER = (
     "editable-objects",
     "code-literal-roundtrip",
     "mixed-fragment-capacity",
+    "frame-capacity-consistency",
     "emit-structure",
     "frozen-plan-emission",
     "cli-publication",
@@ -2111,7 +2550,7 @@ PHASE_43_GATE_ORDER = (
 PHASE_43_REQUIRED_GATES = frozenset({
     "contract-model", "pagination", "frozen-slot-content", "frozen-numbering-row-heights",
     "ooxml-bootstrap", "editable-objects", "code-literal-roundtrip", "emit-structure",
-    "mixed-fragment-capacity",
+    "mixed-fragment-capacity", "frame-capacity-consistency",
     "frozen-plan-emission", "cli-publication", "best-effort", "publication-safety",
     "publication-descriptor-race", "table-header-only", "object-error-bounded", "template-reader-security",
     "media-descriptor-binding",
@@ -2133,6 +2572,10 @@ GAP_COVERAGE = {
     "R43-C03": ("mixed-fragment-capacity",),
     "R43-W02": ("mixed-fragment-capacity", "media-descriptor-binding"),
     "R43-W03": ("media-descriptor-binding",),
+    "R43-C04": ("frame-capacity-consistency",),
+    "R43-C05": ("frame-capacity-consistency",),
+    "R43-W04": ("frame-capacity-consistency",),
+    "R43-W05": ("frame-capacity-consistency", "mixed-fragment-capacity", "media-descriptor-binding"),
 }
 
 REQUIREMENT_COVERAGE = {
@@ -2140,10 +2583,10 @@ REQUIREMENT_COVERAGE = {
     "PPTX-04": ("table-header-only", "editable-objects", "frozen-numbering-row-heights", "frozen-plan-emission"),
     "PPTX-05": ("media-descriptor-binding", "editable-objects", "emit-structure"),
     "PPTX-08": (
-        "mixed-fragment-capacity", "pagination", "frozen-slot-content",
+        "mixed-fragment-capacity", "frame-capacity-consistency", "pagination", "frozen-slot-content",
         "frozen-numbering-row-heights", "frozen-plan-emission",
     ),
-    "PPTX-10": ("code-literal-roundtrip",),
+    "PPTX-10": ("code-literal-roundtrip", "frame-capacity-consistency"),
     "VER-03": (
         "cli-publication", "best-effort", "publication-safety", "publication-descriptor-race",
         "table-header-only", "object-error-bounded", "media-descriptor-binding", "template-reader-security",
@@ -2152,21 +2595,130 @@ REQUIREMENT_COVERAGE = {
 
 
 def _assert_gap_outcome_source_derived() -> None:
-    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"), filename=__file__)
-    function = next(
-        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "run_phase_43"
+    source = Path(__file__).read_text(encoding="utf-8")
+
+    def check(candidate: str) -> None:
+        tree = ast.parse(candidate, filename=__file__)
+        functions = {
+            node.name: node for node in tree.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name in {
+                "mixed_fragment_capacity_gate", "media_descriptor_binding_gate",
+                "frame_capacity_consistency_gate", "run_phase_43",
+            }
+        }
+        require(len(functions) == 4, "source-derived producer set changed")
+        targets = {
+            "joined_equality", "embedded_hash", "embedded_hashes",
+            "frozen_projection_equal", "old_target_preserved",
+        }
+        for function in functions.values():
+            for mapping in (node for node in ast.walk(function) if isinstance(node, ast.Dict)):
+                for key, value in zip(mapping.keys, mapping.values):
+                    if not isinstance(key, ast.Constant) or key.value not in targets:
+                        continue
+                    require(not (isinstance(value, ast.Constant) and value.value is True),
+                            f"{key.value} contains a hard-coded success boolean")
+                    if key.value in {"embedded_hash", "embedded_hashes"}:
+                        require(not (isinstance(value, ast.Name) and value.id in {"original_hash", "expected_hash"}),
+                                "embedded hash is copied from expected input")
+        frame_function = functions["frame_capacity_consistency_gate"]
+        forbidden_frame_fields = {
+            "paragraph_hash", "full_height_points", "effective_height_points",
+            "capacity_equal", "projection_equal",
+        }
+        returned_keys = {
+            key.value
+            for mapping in ast.walk(frame_function) if isinstance(mapping, ast.Dict)
+            for key in mapping.keys if isinstance(key, ast.Constant) and isinstance(key.value, str)
+        }
+        require(not forbidden_frame_fields & returned_keys,
+                "frame producer returned derived capacity or equality evidence")
+        fail_closed_values = [
+            value for mapping in ast.walk(frame_function) if isinstance(mapping, ast.Dict)
+            for key, value in zip(mapping.keys, mapping.values)
+            if isinstance(key, ast.Constant) and key.value == "fail_closed_codes"
+        ]
+        require(len(fail_closed_values) == 1 and isinstance(fail_closed_values[0], ast.Name),
+                "frame fail-closed evidence is not the captured exception list")
+        run_function = functions["run_phase_43"]
+        assignments = [
+            node for node in ast.walk(run_function)
+            if isinstance(node, ast.Assign)
+            and any("gap_outcome_audit" in ast.unparse(target) for target in node.targets)
+        ]
+        require(len(assignments) == 1, "gap outcome audit assignment changed")
+        require(not any(isinstance(node, ast.Constant) and node.value is True
+                        for node in ast.walk(assignments[0].value)),
+                "gap outcome audit contains a hard-coded success boolean")
+
+    check(source)
+    mutations = (
+        source.replace('"joined_equality": parser_text == frozen_text == reopened_text',
+                       '"joined_equality": True', 1),
+        source.replace('"embedded_hashes": embedded_hashes', '"embedded_hashes": original_hash', 1),
+        source.replace('"frozen_projection_equal": projection_before_hash == projection_after_hash',
+                       '"frozen_projection_equal": True', 1),
+        source.replace('"old_target_preserved": old_target_before_hash == old_target_after_hash',
+                       '"old_target_preserved": True', 1),
+        source.replace('"fail_closed_codes": fail_closed_codes',
+                       '"fail_closed_codes": ["PPTX_PLAN_FONT_MISSING", "PPTX_PLAN_TYPOGRAPHY_MISSING"]', 1),
+        source.replace('"frames": frames,', '"frames": frames, "full_height_points": 1.0,', 1),
     )
-    assignments = [
-        node for node in ast.walk(function)
-        if isinstance(node, ast.Assign)
-        and any("gap_outcome_audit" in ast.unparse(target) for target in node.targets)
-    ]
-    require(len(assignments) == 1, "gap outcome audit assignment changed")
-    value = assignments[0].value
-    require(not any(isinstance(node, ast.Constant) and node.value is True for node in ast.walk(value)),
-            "gap outcome audit contains a hard-coded success boolean")
-    require(not any(isinstance(node, ast.Constant) and node.value == "failure_vectors" for node in ast.walk(value)),
-            "gap outcome audit contains a fixed failure-vector field")
+    for mutation in mutations:
+        rejected = False
+        try:
+            check(mutation)
+        except GateFailure:
+            rejected = True
+        require(rejected, "source-derived guard accepted a constant evidence mutation")
+
+
+def _recompute_frame_page(page: dict[str, object]) -> dict[str, object]:
+    plan_paragraphs = page["plan_paragraphs"]
+    frames = page["frames"]
+    plan_sequence = [(item["role"], item["visible_text"]) for item in plan_paragraphs]
+    reopen_sequence: list[tuple[str, str]] = []
+    frame_heights: list[tuple[float, float]] = []
+    for frame in frames:
+        geometry = frame["geometry_emu"]
+        margins = frame["margins_points"]
+        effective_width_emu = geometry["width"] - round(
+            (margins["left"] + margins["right"]) * pptx_paginate.EMU_PER_POINT
+        )
+        effective_height = geometry["height"] / pptx_paginate.EMU_PER_POINT
+        effective_height -= margins["top"] + margins["bottom"]
+        require(effective_width_emu > 0 and effective_height > 0,
+                "frame raw geometry is not independently measurable")
+        full_height = 0.0
+        for paragraph in frame["paragraphs"]:
+            measurement = pptx_paginate.TextMeasure(
+                line_spacing=paragraph["line_spacing"],
+                paragraph_spacing_points=paragraph["space_after_points"],
+            ).measure(
+                paragraph["text"],
+                width_emu=effective_width_emu,
+                font_size=paragraph["font_size"],
+                font_size_min=paragraph["font_size"],
+                font_size_max=paragraph["font_size"],
+                kind="code" if paragraph["role"] == "code" else "paragraph",
+            )
+            require(measurement.display_lines == paragraph["display_lines"],
+                    "captured display lines differ from raw text remeasurement")
+            full_height += (
+                measurement.display_lines * paragraph["font_size"] * paragraph["line_spacing"]
+                + paragraph["space_after_points"]
+            )
+            reopen_sequence.append((paragraph["role"], paragraph["text"]))
+        frame_heights.append((round(full_height, 3), round(effective_height, 3)))
+    raw_plan = json.dumps(plan_sequence, ensure_ascii=False, separators=(",", ":")).encode()
+    raw_reopen = json.dumps(reopen_sequence, ensure_ascii=False, separators=(",", ":")).encode()
+    return {
+        "plan_hash": hashlib.sha256(raw_plan).hexdigest(),
+        "reopen_hash": hashlib.sha256(raw_reopen).hexdigest(),
+        "frame_heights": frame_heights,
+        "sequence_equal": plan_sequence == reopen_sequence,
+    }
 
 
 def run_named_gate(name: str, workdir: Path) -> dict[str, object]:
@@ -2201,12 +2753,13 @@ def run_phase_43() -> dict[str, object]:
     require(set(GAP_COVERAGE) == {
         "C-01", "C-02", "W-01", "W-02", "W-03", "W-04", "W-05", "W-06",
         "R43-C01", "R43-C02", "R43-W01", "R43-C03", "R43-W02", "R43-W03",
+        "R43-C04", "R43-C05", "R43-W04", "R43-W05",
     },
             "phase-43 gap coverage set changed")
     require(all(gates and set(gates) <= called_set for gates in GAP_COVERAGE.values()),
             "phase-43 gap coverage names an uncalled gate")
     gap_calls = {
-        gap: tuple(gate for gate in PHASE_43_GATE_ORDER if gate in gates and gate in called_set)
+        gap: tuple(gate for gate in gates if gate in called_set)
         for gap, gates in GAP_COVERAGE.items()
     }
     require(gap_calls == GAP_COVERAGE, "phase-43 gap evidence differs from actual called gates")
@@ -2228,9 +2781,10 @@ def run_phase_43() -> dict[str, object]:
     evidence["gap_calls"] = gap_calls
     evidence["requirement_coverage"] = REQUIREMENT_COVERAGE
     mixed = evidence["mixed-fragment-capacity"]["mixed-fragment-capacity"]
+    frame = evidence["frame-capacity-consistency"]["frame-capacity-consistency"]
     media = evidence["media-descriptor-binding"]["media-descriptor-binding"]
     mixed_vectors = mixed["vectors"]
-    for layout, expected_font in (("title-content", 24.0), ("two-column", 22.0)):
+    for layout, expected_font in (("title-content", 28.0), ("two-column", 22.0)):
         vector = mixed_vectors[layout]
         require(vector["public_exit"] == 0 and vector["physical_pages"] > 1,
                 f"{layout} mixed capacity public result failed")
@@ -2245,7 +2799,9 @@ def run_phase_43() -> dict[str, object]:
                 vector["display_height_points"], vector["effective_content_height_points"], strict=True
             )
         ), f"{layout} display height evidence failed")
-        require(all(vector["page_equalities"]) and vector["joined_equality"],
+        require(all(vector["page_equalities"])
+                and vector["parser_text_hash"] == vector["frozen_text_hash"] == vector["reopened_text_hash"]
+                and len(set(vector["text_lengths"])) == 1,
                 f"{layout} text equality evidence failed")
         require(vector["output_bytes"] < 8192 and len(vector["artifact_paths"]) == 2
                 and Path(vector["artifact_paths"][0]).stem == Path(vector["artifact_paths"][1]).stem,
@@ -2254,7 +2810,8 @@ def run_phase_43() -> dict[str, object]:
     absolute = media["absolute_success"]
     require(relative["public_exit"] == absolute["public_exit"] == 0,
             "relative or absolute media success evidence failed")
-    require(relative["validated_hash"] == relative["embedded_hash"] != relative["replacement_hash"],
+    require(relative["validated_hash"] in relative["embedded_hashes"]
+            and relative["replacement_hash"] not in relative["embedded_hashes"],
             "validated media hash binding evidence failed")
     require(relative["hook_called"] > 0 and relative["crop"] == absolute["crop"] == [0.0, 0.0, 0.0, 0.0],
             "media hook or crop evidence failed")
@@ -2265,21 +2822,71 @@ def run_phase_43() -> dict[str, object]:
             "media symlink vector set changed")
     require(all(
         item["public_exit"] != 0 and item["code"] == "PPTX_MEDIA_PATH_INVALID"
-        and item["output_bytes"] < 8192 and item["old_target_preserved"]
+        and item["output_bytes"] < 8192
+        and item["old_target_before_hash"] == item["old_target_after_hash"]
         for item in symlinks.values()
     ), "media symlink failure evidence failed")
     runtime_missing = media["runtime_missing"]
     require(runtime_missing["public_exit"] != 0 and runtime_missing["code"] == "MEDIA_MISSING"
             and runtime_missing["editable_placeholders"] > 0
             and runtime_missing["artifacts"] == ["deck.md", "deck.pptx"]
-            and runtime_missing["frozen_projection_equal"] and runtime_missing["output_bytes"] < 8192
+            and runtime_missing["projection_before_hash"] == runtime_missing["projection_after_hash"]
+            and runtime_missing["output_bytes"] < 8192
             and len(runtime_missing["artifact_paths"]) == 2,
             "runtime missing evidence failed")
     add_picture_fault = media["add_picture_fault"]
     require(add_picture_fault["public_exit"] != 0
             and add_picture_fault["code"] == "PPTX_MEDIA_FORMAT_INVALID"
-            and add_picture_fault["output_bytes"] < 8192 and add_picture_fault["old_target_preserved"],
+            and add_picture_fault["output_bytes"] < 8192
+            and add_picture_fault["old_target_before_hash"] == add_picture_fault["old_target_after_hash"],
             "add_picture fault evidence failed")
+    require(frame["public_exit"] == 0 and frame["output_bytes"] < 8192,
+            "frame capacity public evidence failed")
+    require(frame["fail_closed_codes"] == [
+        "PPTX_PLAN_FONT_MISSING", "PPTX_PLAN_TYPOGRAPHY_MISSING"
+    ], "frame fail-closed exceptions differ from the observed codes")
+    for layout in ("contents", "title-content", "code"):
+        vector = frame["vectors"][layout]
+        recomputed = [_recompute_frame_page(page) for page in vector["pages"]]
+        require(all(item["sequence_equal"] and item["plan_hash"] == item["reopen_hash"]
+                    for item in recomputed), f"{layout} frame text projection differs")
+        require(all(full <= effective + 0.001
+                    for item in recomputed for full, effective in item["frame_heights"]),
+                f"{layout} full-frame capacity failed")
+    code_pages = frame["vectors"]["code"]["pages"]
+    heading_pages = [page for page in code_pages if len(page["frames"]) == 2]
+    require(heading_pages, "dedicated code heading evidence is missing")
+    require(any(
+        page["frames"][0]["paragraphs"][0]["display_lines"] >= 2
+        for page in heading_pages
+    ), "dedicated code heading vector did not exercise multiline geometry")
+    for page in code_pages:
+        frames = page["frames"]
+        slot = page["slot_geometry_emu"]
+        require(all(frame_item["geometry_emu"]["x"] == slot["x"]
+                    and frame_item["geometry_emu"]["width"] == slot["width"] for frame_item in frames),
+                "dedicated code frame width differs from the frozen slot")
+        require(frames[0]["geometry_emu"]["y"] == slot["y"],
+                "dedicated code frame start differs from the frozen slot")
+        require(sum(frame_item["geometry_emu"]["height"] for frame_item in frames) == slot["height"],
+                "dedicated code heading/code heights do not fill the frozen slot")
+        require(all(paragraph["font_size"] == 14.0 and paragraph["line_spacing"] == 1.2
+                    for frame_item in frames for paragraph in frame_item["paragraphs"]),
+                "dedicated code heading/body typography drifted")
+    overflow_heading = frame["overflow_heading"]
+    require(overflow_heading["public_exit"] != 0 and overflow_heading["output_bytes"] < 8192,
+            "overflow code heading public evidence failed")
+    require(any(item["code"] == "TEXT_BLOCK_OVERFLOW" and item["severity"] == "error"
+                for item in overflow_heading["diagnostics"]),
+            "overflow code heading diagnostic evidence failed")
+    require(overflow_heading["artifact_names"] == [
+        "code-heading-overflow.md", "code-heading-overflow.pptx"
+    ], "overflow code heading best-effort artifacts changed")
+    require(all(
+        geometry["heading_height"] > 0 and geometry["code_height"] > 0
+        and geometry["heading_height"] + geometry["code_height"] == geometry["slot_height"]
+        for geometry in overflow_heading["geometries"]
+    ), "overflow code heading raw geometry is invalid")
     _assert_gap_outcome_source_derived()
     code_outcome = evidence["code-literal-roundtrip"]["code-literal-roundtrip"]
     table_outcome = evidence["table-header-only"]["table-header-only"]
@@ -2295,12 +2902,21 @@ def run_phase_43() -> dict[str, object]:
             "media": media,
         },
         "R43-W03": {"gate": "media-descriptor-binding", "evidence": media},
+        "R43-C04": {"gate": "frame-capacity-consistency", "evidence": frame["vectors"]["contents"]},
+        "R43-C05": {"gate": "frame-capacity-consistency", "evidence": frame["vectors"]["title-content"]},
+        "R43-W04": {"gate": "frame-capacity-consistency", "evidence": frame["vectors"]["code"]},
+        "R43-W05": {
+            "gates": GAP_COVERAGE["R43-W05"],
+            "frame": frame,
+            "mixed": mixed_vectors,
+            "media": media,
+        },
     }
     evidence["registry"] = {
         "required": PHASE_43_GATE_ORDER,
         "called": tuple(called),
-        "unique": True,
-        "dynamic_skips": 0,
+        "unique": len(PHASE_43_GATE_ORDER) == len(set(PHASE_43_GATE_ORDER)),
+        "dynamic_skips": len(PHASE_43_GATE_ORDER) - len(called),
     }
     evidence["phase_boundary"] = {
         "public_verify_command": False,

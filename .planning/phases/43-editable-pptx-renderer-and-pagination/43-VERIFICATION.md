@@ -1,175 +1,109 @@
 ---
 phase: 43-editable-pptx-renderer-and-pagination
-verified: 2026-07-14T22:38:36+08:00
-status: gaps_found
-score: "14/15 phase requirements satisfied"
-requirements:
-  PPTX-01: satisfied
-  PPTX-02: satisfied
-  PPTX-03: satisfied
-  PPTX-04: satisfied
-  PPTX-05: satisfied
-  PPTX-06: satisfied
-  PPTX-07: satisfied
-  PPTX-08: blocked
-  PPTX-09: satisfied
-  PPTX-10: satisfied
-  PPTX-11: satisfied
-  PPTX-12: satisfied
-  PPTX-13: satisfied
-  VER-03: satisfied
-  SKILL-03: satisfied
-gaps:
-  - id: R43-C04
-    review_id: C-01
-    severity: critical
-    affects: [PPTX-08, Phase-Goal, Plan-02, Plan-07, Plan-10]
-    summary: "contents.body 仍按 18pt 且不含 emitter paragraph spacing 分页，却冻结并以 26pt/每段 2pt space-after 发射；5 项合法目录只规划 1 页，成品整帧 156.0pt 超过 118.125pt 槽高且公开 render 退出 0。"
-    fix: "让 contents 专用分页直接消费并冻结与 emitter 相同的 font、margins、line spacing、paragraph spacing 和 effective geometry；按整帧段落序列计高，加入 5 项临界目录 public render/reopen blocking 向量，要求自动扩页且每页总高度不超槽。"
-  - id: R43-C05
-    review_id: C-02
-    severity: critical
-    affects: [PPTX-08, Phase-Goal, Plan-02, Plan-09, Plan-10]
-    summary: "_fragment_height() 完全忽略 fragment.heading；带 ### 源码的 4×40 中文 mixed code 公开退出 0并生成 2 个正文页，但每页完整 text frame 为 146.0pt，超过 118.125pt 槽高。"
-    fix: "用与 add_fragment_text_frame 完全相同的段落序列计量 fragment：重复 heading、每个 list item、code/paragraph 正文及每段 spacing 全部入账；增加 heading+paragraph/list/code 三类整帧重开高度回归。"
-  - id: R43-W04
-    review_id: W-01
-    severity: warning
-    affects: [Phase-Goal, Plan-02, Plan-03, Plan-10]
-    summary: "专用 code layout 通过通用 body helper 按 manifest max=14pt 规划，但 build_deck_plan 不冻结 code 字号，emitter 回退 min=10pt；独立 public 向量确认 selected_font_sizes 为空而重开 run 为 10pt。"
-    fix: "为 dedicated code 明确一个受控字号并在计划中冻结，分页和 emitter 都只消费该值；加入 plan font、reopen font、物理页数与完整 text-frame capacity equality 回归。"
-  - id: R43-W05
-    review_id: W-02
-    severity: warning
-    affects: [Phase-Goal-Evidence, Plan-08, Plan-10]
-    summary: "20-gate aggregate 仍会在 R43-C04/C05 确定性反例成立时整体 PASS；mixed gate 不含 heading/contents/dedicated-code，且 evidence producer 仍写死 joined_equality、embedded_hash、frozen_projection_equal、old_target_preserved，AST 仅审计最终 gap_outcome_audit assignment。"
-    fix: "扩大 capacity gate 到 contents、heading+paragraph/list/code 与 dedicated code；所有 evidence 字段保存实际提取值或实际比较结果，aggregate 从原始值重算；AST/source guard 覆盖 evidence producer，禁止回填 expected hash/True。"
-human_verification:
-  required: false
-  deferred_to_phase: 44
-  note: "PowerPoint/WPS 的中文换行、视觉均衡、组合编辑和主题保真仍属于 Phase 44；本报告的阻断均由源码、public render、PPTX reopen 和同一确定性 TextMeasure 复现，不依赖 viewer 主观判断。"
+status: passed
+score: "15/15"
+verified_at: 2026-07-15T10:40:48+08:00
 ---
 
-# Phase 43 Verification Report
+# Phase 43 验证报告
 
-**Phase Goal:** Finalized Markdown renders to a non-empty editable PPTX whose physical slides follow the normalized template budgets.
+## 验证结论
 
-**Status:** `gaps_found`
+Phase 43 阶段目标已经达成。最终版 canonical Markdown 可通过公开 CLI 渲染为非空、可重开、可编辑的 PPTX，逻辑页到物理页的展开遵守 normalized manifest 预算。新鲜验证将 13 个逻辑页展开为 32 个物理页，并关闭了旧报告中的目录容量、mixed heading、dedicated-code 字号及 aggregate 假阳性缺口。
 
-## Verification Outcome
+最终状态为 `passed`，Phase 43 的 15 项 requirements 全部满足。Phase 44 仍负责公开 `verify --workdir`、六 runtime 说明、仓库可发现性及 PowerPoint/WPS 人工 viewer UAT；这些有意后置的交付不是 Phase 43 gap。
 
-Phase 43 尚未真正达到阶段目标。当前 `phase-43` aggregate 确实按固定顺序调用 20 个唯一 gate、`dynamic_skips=0` 并整体退出 0；canonical fixture 也可生成 27 张可重开、native/editable 的 PPTX。但独立 public 黑盒复现了两种“合法输入、退出 0、打印渲染成功、成品 text frame 超过模板槽高”的确定性反例，因此 aggregate 的 20/20 PASS 不能证明物理页遵守 normalized template budgets。
+## Must-Haves 证据
 
-15 个 Phase 43 requirements 中 14 个满足，`PPTX-08` 被目录和 fragment-heading 两个裁切反例阻断。`VER-03` 现已满足：public `render` 可重复执行，canonical 成功，invalid/runtime-missing 非零，descriptor-bound media 错误保持 bounded；本报告不再沿用旧验证中由媒体 TOCTOU 导致的 `VER-03 blocked` 结论。
+| Must-have / success criterion | 状态 | 新鲜证据 |
+|---|---|---|
+| 可重复公开 render 生成非空 PPTX，非法输入非零退出 | PASS | `school-pptx.sh render` 对 canonical fixture 返回 0并生成 446,805-byte PPTX；非法输入返回 1，输出 bounded diagnostics 和结构可编辑的 best-effort 双产物。 |
+| 适用内容保持可编辑，禁止整页截图捷径 | PASS | Aggregate 重开确认 native text/code runs、2 个 native table slides、18 个 editable groups、10 个 picture objects 和 9 个 notes slides；`code-literal-roundtrip` 以 Consolas 逐字符保留 123 字符；gate 明确拒绝宽高等于整页的 picture。 |
+| 长文本、表格、时间线、图集、目录和代码按 manifest 预算扩展 | PASS | Canonical fixture 从 13 logical 扩展到 32 physical；分页证据包含 5 个目录页 `[2,3,3,3,3]`、2 个表格页、2 个时间线页、最多 9 图的 gallery vectors、mixed-fragment 扩页及重开 full-frame 容量重算。 |
+| 续页语义正确 | PASS | Structured pagination 重复表头，只有已有表名添加 `（续）`；其他续页标题不增加可见续页标记；header-only table 保持一行 native table。 |
+| 标准成功交付严格包含同 stem Markdown 和 PPTX | PASS | Public publication gate 仅写入 `course-deck.md` 与 `course-deck.pptx`，保留 caller-owned 文件，不发布 logical JSON、manifest、diagnostics、logs 或临时 debris；Markdown 输入 bytes 保持，PPTX 最后发布。 |
 
-## Fresh Verification Evidence
+## Gap Closure
 
-环境：macOS、Python `3.14.6`、`python-pptx 1.0.2`、Pillow `12.3.0`、lxml `6.1.1`、PyYAML `6.0.3`；使用已有 uv cache 的离线 `PYTHONPATH`，未联网、未安装依赖、未创建仓库虚拟环境。
+Plan 43-11 已关闭旧验证报告中的四项缺口：
+
+| 旧 gap | 状态 | 证据 |
+|---|---|---|
+| R43-C04：目录测量与发射 typography 不一致 | CLOSED | 目录分页和发射统一使用 frozen 26pt、1.2 行距、2pt 段后距；5 项目录自动扩为多页，aggregate 使用重开段落和实际 geometry 独立重测。 |
+| R43-C05：容量计算遗漏 fragment heading | CLOSED | `fragment_paragraph_sequence()` 按发射顺序投影 heading、paragraph、每个 list item 与 code；`frame-capacity-consistency` 比较 frozen plan/reopen sequence，并阻断 full height 超过 effective height。 |
+| R43-W04：dedicated code 规划与发射字号不同 | CLOSED | Dedicated code 冻结 14pt typography；缺失 frozen font/typography 分别以 `PPTX_PLAN_FONT_MISSING`、`PPTX_PLAN_TYPOGRAPHY_MISSING` fail closed；重开 code 与多行 heading runs 均为 14pt。 |
+| R43-W05：aggregate 可接受 producer 常量证据 | CLOSED | Aggregate 从 raw plan/reopen hashes、段落序列、geometry、media hashes 及前后 snapshot 重算；producer 级 AST mutation guards 拒绝硬编码成功布尔、expected media hash、派生容量字段及固定 fail-closed code。 |
+
+超长 dedicated-code heading 负例也进入规定的 bounded overflow 路径：public exit 1、`TEXT_BLOCK_OVERFLOW`、无 traceback、输出小于 8 KiB，且 heading/code geometry 均为正并严格合计为 frozen slot height。
+
+## Requirements Traceability
+
+| Requirement | 状态 | 证据 |
+|---|---|---|
+| PPTX-01 | SATISFIED | Canonical render 生成非空、可重开的 32-slide PPTX。 |
+| PPTX-02 | SATISFIED | 使用 native text、table、picture 和 group；明确拒绝整页尺寸 picture。 |
+| PPTX-03 | SATISFIED | Text、rich runs、code、timeline labels 与 gallery captions 均为 editable objects。 |
+| PPTX-04 | SATISFIED | Table 重开为 native `<a:tbl>`，带 frozen row heights，并覆盖 header-only 输入。 |
+| PPTX-05 | SATISFIED | 图片使用 contain placement、zero crop 的 picture objects；validated descriptor bytes 与 embedded hashes 一致。 |
+| PPTX-06 | SATISFIED | Gallery 每物理页最多 4 图，并覆盖 5/6/8/9 图自动分页。 |
+| PPTX-07 | SATISFIED | Horizontal timeline 保序并将 canonical 12 项自动拆分到多个物理页。 |
+| PPTX-08 | SATISFIED | Text、contents、table、timeline、gallery、mixed fragments 与 dedicated code 均由固定 pagination/capacity gates 覆盖；canonical 输出 32 个物理页。 |
+| PPTX-09 | SATISFIED | 表格续页重复 header，只有已有表名添加 `（续）`。 |
+| PPTX-10 | SATISFIED | Code 可编辑、literal、monospace；dedicated code 冻结 14pt；parser/plan/PPTX 逐字符一致，soft wrap 不注入 authored newline。 |
+| PPTX-11 | SATISFIED | Authored notes 传播到全部派生页；canonical 有 9 个 notes slides，无 notes 页不产生 accidental notes。 |
+| PPTX-12 | SATISFIED | Transition mode 如实记录为 `none`，符合 v1.17 契约。 |
+| PPTX-13 | SATISFIED | 成功公开输出严格为同 stem Markdown/PPTX；sidecar 与验证产物留在 delivery 外。 |
+| VER-03 | SATISFIED | 公开 `render --input --out-dir [--stem]` 可重复；合法输入成功，非法或 runtime failure 非零且输出 bounded。 |
+| SKILL-03 | SATISFIED | Runtime 实现全部位于 `skills/school-pptx/scripts/`；Phase 41/42 regression 同时核实 skill-local runtime files。 |
+
+`.planning/REQUIREMENTS.md` 仍沿用旧 14/15 验证，将 `PPTX-08` 显示为 unchecked/Blocked。该跟踪字段相对 Plan 43-11、clean review、当前源码和新鲜门禁已经滞后。本 verifier 被明确限制为只覆盖本报告，因此仅记录差异，不修改 REQUIREMENTS、ROADMAP 或 STATE。
+
+## 自动化验证
+
+环境：
 
 ```bash
-python3 skills/school-pptx/scripts/verify_pptx_renderer.py mixed-fragment-capacity
-python3 skills/school-pptx/scripts/verify_pptx_renderer.py media-descriptor-binding
-python3 skills/school-pptx/scripts/verify_pptx_renderer.py phase-43
+PYTHONPATH=$HOME/.cache/uv/archive-v0/I2PFDpRQMCS91p6l
+SCHOOL_PPTX_PYTHON=$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3
+PYTHONPYCACHEPREFIX=/tmp/presto-pycache
 ```
 
-新鲜结果：三条命令均退出 0；完整 aggregate 的 20 个 required/called gate 完全一致。canonical evidence 为 13 logical -> 27 physical、117 ZIP entries、127 relationships、10 pictures、2 native tables、18 groups、6 notes、唯一 closing、transition=`none`。
+命令与结果：
 
-## Review Reproduction
+```bash
+$SCHOOL_PPTX_PYTHON skills/school-pptx/scripts/verify_pptx_renderer.py phase-43
+# PASS, exit 0（连续运行两次）
 
-### R43-C04 / REVIEW C-01 — CONFIRMED CRITICAL
+skills/school-pptx/scripts/school-pptx.sh render \
+  --input skills/school-pptx/fixtures/school-pptx-full.md \
+  --out-dir <isolated-workdir> --stem canonical
+# PASS, exit 0；logical 13，physical 32；Markdown 8,881 bytes；PPTX 446,805 bytes
 
-源码中 `_contents_fragments()` 直接读取 `contents.body.font_size_min=18` 形成 weights；`build_deck_plan()` 随后却为相同 body 冻结 `font_size_max=26`，emitter 再机械使用 26pt 与每段 2pt `space_after`。
+skills/school-pptx/scripts/school-pptx.sh render \
+  --input <invalid-markdown> --out-dir <isolated-workdir> --stem invalid
+# 预期失败，exit 1；bounded diagnostics 和同 stem editable best-effort pair
 
-独立合法 Markdown 含一个空 authored contents slide 和 5 个后续 `##` 标题：
+git diff --check -- <Phase-43 implementation/review/summary files>
+# PASS
+```
 
-| Evidence | Result |
-|---|---:|
-| Public exit / summary | `0` / `渲染成功` |
-| Contents entries / physical pages | `5` / `1` |
-| Planning font / frozen+reopened font | `18pt` / `26pt` |
-| Reopened full-frame height | `156.0pt` |
-| `contents.body` slot height | `118.125pt` |
+Aggregate 实际执行以下固定 21 门；`required == called`、顺序完全一致、元素唯一、`dynamic_skips=0`：
 
-这不是 Phase 44 viewer 主观问题：同一个 `TextMeasure` 对实际发射的五个 26pt 段落重测已超过固定 geometry 约 `37.875pt`。
+`contract-model`、`pagination`、`frozen-slot-content`、`frozen-numbering-row-heights`、`ooxml-bootstrap`、`editable-objects`、`code-literal-roundtrip`、`mixed-fragment-capacity`、`frame-capacity-consistency`、`emit-structure`、`frozen-plan-emission`、`cli-publication`、`best-effort`、`publication-safety`、`publication-descriptor-race`、`table-header-only`、`object-error-bounded`、`media-descriptor-binding`、`template-reader-security`、`determinism`、`phase_41_42_regression`。
 
-### R43-C05 / REVIEW C-02 — CONFIRMED CRITICAL
+Canonical 关键证据：32 slides、133 ZIP entries、146 relationships、10 image relationships、2 native table slides、18 groups、9 notes slides、2 gallery slides、2 timeline slides、transition mode `none`，physical-plan hash 稳定。Phase 41/42 regression 报告 11 个 template layouts 以及 fixture/example PASS。
 
-`_fragment_height()` 只测 `fragment.text/items`，不读取 `fragment.heading`；`add_fragment_text_frame()` 却会在每个派生 fragment 前追加 heading 段落，并为 heading、code 都设置相同 line/paragraph spacing。
+## Code Review
 
-独立合法 `title-content` 含 `### 源码` 与 4 行×40 个中文字符 fenced code：
+最新 `43-REVIEW.md` 状态为 `clean`，blocker、critical、warning、info 均为 0。`43-REVIEW-FIX.md` 记录最终超长 dedicated-code heading 修复，并确认 `frame-capacity-consistency`、`publication-safety` 和完整 21-gate aggregate 通过。本次新鲜验证在当前未提交 workspace implementation 上复现了这些结果。
 
-| Evidence | Result |
-|---|---:|
-| Public exit / summary | `0` / `渲染成功` |
-| Body physical pages | `2` |
-| 每页 code height | `117.2pt` |
-| 每页 heading + code full-frame height | `146.0pt` |
-| Body slot height | `118.125pt` |
+## 残余风险与 Phase 44 边界
 
-两张派生页都重复 `### 源码`，两页都超槽。现有 `mixed-fragment-capacity` gate 只重测 `Consolas` code run，因此其 `117.2 <= 118.125` 断言恰好漏掉 heading。
-
-### R43-W04 / REVIEW W-01 — CONFIRMED WARNING
-
-`_simple_slide_fragments()` 对 dedicated `code` slot 调 `_selected_body_typography()`，因此规划字号是 manifest `font_size_max=14`；但 `build_deck_plan()` 只为 contents/title-content/image-text、two-column、table 冻结字号，dedicated code 的 `selected_font_sizes` 仍为空。emitter 随后通过 `.get("code", font_size_min)` 以 10pt 发射。
-
-独立 public dedicated-code 向量退出 0、计划一张 code 页、`selected_font_sizes={}`、重开 `school-pptx:code` run 为 10pt。该漂移当前偏向过度分页而非裁切，但违反“分页决定冻结、发射机械消费”的阶段目标。
-
-### R43-W05 / REVIEW W-02 — CONFIRMED WARNING
-
-完整 aggregate 在 R43-C04/C05 同时成立时仍 20/20 PASS，已直接证明 false-green。原因有两层：
-
-1. coverage 只包含无 heading 的 mixed code，不包含 contents、fragment heading 或 dedicated code；
-2. producer 仍回填常量：`joined_equality: True`、`embedded_hash: original_hash`、`frozen_projection_equal: True`、`old_target_preserved: True`。`_assert_gap_outcome_source_derived()` 只检查最终 `gap_outcome_audit` assignment，因此看不到上游常量。
-
-这不会否定已由真实黑盒证据支持的媒体修复，但会否定“aggregate PASS 即 Phase 43 所有 budget 行为已关闭”的结论。
-
-## Original 43-10 Gap Status
-
-| Original gap | Verdict | Evidence |
-|---|---|---|
-| R43-C03 mixed code 字号漂移 | EXACT CASE CLOSED, BROADER PROPERTY BLOCKED | 无 heading 的 title-content/two-column 已分别统一为 24pt/22pt 并扩页；fragment heading 未计高形成 R43-C05。 |
-| R43-W03 media descriptor race | CLOSED | 校验与 `add_picture` 消费同一 immutable bytes；替换后 embedded hash 仍等于 original、不等于 replacement；相对/绝对 symlink fail closed，runtime missing 非零并发布 editable placeholder pair。 |
-| R43-W02 evidence-derived audit | NOT CLOSED | 最终 assignment 不再直接写成功常量，但 producer 仍回填 expected/True，且 aggregate 被 R43-C04/C05 证明 false-green；由 R43-W05 延续。 |
-
-## Requirement Coverage
-
-| Requirement | Status | Evidence / blocker |
-|---|---|---|
-| PPTX-01 | SATISFIED | canonical fixture 生成非空、可重开 27-slide PPTX。 |
-| PPTX-02 | SATISFIED | 文本、table、picture、group、notes 均为 native editable objects，无整页截图。 |
-| PPTX-03 | SATISFIED | ordinary text、code、timeline labels、gallery captions 均为 editable text objects；mixed code 字符逐字回读。 |
-| PPTX-04 | SATISFIED | 常规与 header-only table 均为 native `<a:tbl>`，frozen row heights 可回读。 |
-| PPTX-05 | SATISFIED | contain picture、crop=0；descriptor-bound validated bytes 与 embedded hash 一致，媒体竞态已关闭。 |
-| PPTX-06 | SATISFIED | gallery 每页最多 4 图，canonical overflow 自动扩页。 |
-| PPTX-07 | SATISFIED | horizontal timeline 保序、全局分区并自动扩页。 |
-| PPTX-08 | BLOCKED | 5 项 contents 与带 `###` mixed code 均公开退出 0但完整 text frame 超过模板槽高。 |
-| PPTX-09 | SATISFIED | table continuation 重复 header；仅既有表名加 `（续）`。 |
-| PPTX-10 | SATISFIED | code native editable、monospace、逐字符保真，soft wrap 不写回 newline；dedicated code 字号漂移作为阶段目标 warning 单列。 |
-| PPTX-11 | SATISFIED | authored notes 传播到全部派生页，无 notes 页不创建 accidental notes relationship。 |
-| PPTX-12 | SATISFIED | transition mode 诚实记录为 `none`。 |
-| PPTX-13 | SATISFIED | 成功目录仅有同 stem Markdown/PPTX，Markdown bytes 保留，无 sidecar/debris。 |
-| VER-03 | SATISFIED | public render 可重复；valid 成功，invalid/runtime media missing 非零，unrecoverable failure 保留旧目标且输出 bounded。 |
-| SKILL-03 | SATISFIED | runtime 实现均在 `skills/school-pptx/scripts/`，未调用 sibling skill runtime。 |
-
-**Requirements:** 14/15 satisfied，1/15 blocked。
-
-## Boundary Verification
-
-- Phase 43 必须自动保证 frozen pagination 与 emitted geometry 一致；R43-C04/C05/W04 均属于本阶段，不可推迟给人工 viewer UAT。
-- Phase 44 才拥有 public `verify --workdir`、六 runtime adapters、repository discoverability 和 PowerPoint/WPS 人工视觉证据。本报告没有提前要求这些交付。
-- 中文实际 viewer 换行、视觉均衡、组合编辑与主题保真仍需 Phase 44；本报告的数值反例仅使用当前 renderer 自己的确定性 measurement contract。
-
-## Next Gap Plan
-
-1. 统一 contents 专用分页与发射 typography，增加 5 项目录整帧 capacity gate。
-2. 将 heading 和所有 paragraph spacing 纳入 fragment/page 高度，覆盖 heading+paragraph/list/code。
-3. 冻结 dedicated code 字号，让 planner/emitter 严格相等。
-4. 删除 producer 中的 expected/True evidence 回填，并用以上三组反例扩展 aggregate。
+- PowerPoint/WPS 的字体 fallback、中文实际换行观感、grouped-object 编辑便利性和视觉均衡仍需 Phase 44 viewer UAT。结构可编辑性与 bounded geometry 已自动证明，因此这不是 Phase 43 gap。
+- Phase 44 需增加公开 `verify --workdir`、dependency readiness、negative-case packaging、六 runtime adapter notes、repository discoverability 及持久化 manual UAT evidence。
+- 成功双产物有意不宣称跨文件事务。Markdown 先原子替换、PPTX 后替换；两次 replace 之间中断可能暂时形成新 Markdown + 旧 PPTX，CLI 已如实报告该恢复边界。
+- 当前 Phase 43 implementation 与 closeout artifacts 尚未提交。这是管理状态而非 renderer 目标失败；主 orchestrator 应有意保留并提交已经验证的文件集。
 
 ## Verification Complete
 
-Phase 43 的 native object、公开发布、媒体 descriptor race 和大部分分页契约已通过，但两个合法成功裁切反例与 dedicated code 字号漂移仍存在，20-gate aggregate 也被证明可 false-green。最终状态为 `gaps_found`，score 为 `14/15`，共有 4 个开放 gap。
-
----
-*Verified: 2026-07-14T22:38:36+08:00*
-*Verifier: Codex gsd-verifier subagent*
+Phase 43 验证通过，score 为 15/15。最终 Markdown 到 editable PPTX 的 renderer、normalized-budget pagination、native object editability、notes/media 行为、bounded overflow、固定 21-gate aggregate、Phase 41/42 regression 及干净双产物发布边界均已验证；Phase 44 viewer UAT 与 runtime/documentation 工作保持正确后置。

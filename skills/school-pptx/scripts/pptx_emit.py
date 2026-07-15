@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 from importlib import import_module
+from io import BytesIO
 import os
 import posixpath
 from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO, Callable
 from xml.etree import ElementTree as ET
-from zipfile import BadZipFile, ZipFile
+from zipfile import BadZipFile, ZipFile, ZipInfo
 
 from pptx_model import PhysicalDeckPlan
 from pptx_objects import (
@@ -34,6 +35,37 @@ class PptxEmitError(RuntimeError):
         super().__init__(f"{code}: {message}")
         self.code = code
         self.message = message
+
+
+def normalize_package_metadata(target: Path | BinaryIO) -> None:
+    """Rewrite ZIP container metadata so identical OOXML has identical bytes."""
+    if hasattr(target, "read"):
+        target.seek(0)
+        payload = target.read()
+    else:
+        payload = Path(target).read_bytes()
+    source_buffer = BytesIO(payload)
+    normalized_buffer = BytesIO()
+    with ZipFile(source_buffer, "r") as source, ZipFile(normalized_buffer, "w") as normalized:
+        normalized.comment = source.comment
+        for original in source.infolist():
+            info = ZipInfo(original.filename, (1980, 1, 1, 0, 0, 0))
+            info.compress_type = original.compress_type
+            info.comment = original.comment
+            info.external_attr = original.external_attr
+            info.internal_attr = original.internal_attr
+            info.create_system = original.create_system
+            normalized.writestr(info, source.read(original.filename))
+    normalized_payload = normalized_buffer.getvalue()
+    if hasattr(target, "write"):
+        target.seek(0)
+        target.truncate(0)
+        target.write(normalized_payload)
+        target.flush()
+        os.fsync(target.fileno())
+        target.seek(0)
+    else:
+        Path(target).write_bytes(normalized_payload)
 
 
 MAX_PACKAGE_ENTRIES = 512
@@ -71,6 +103,10 @@ def _frozen_body_typography(physical: Any, slot_id: str) -> dict[str, float]:
         raise PptxEmitError("PPTX_PLAN_TYPOGRAPHY_MISSING", "冻结物理计划缺少正文槽排版参数。") from exc
     typography["font_size"] = float(fonts[slot_id])
     return typography
+
+
+def _frozen_code_typography(physical: Any) -> dict[str, float]:
+    return _frozen_body_typography(physical, "code")
 
 
 def require_dependencies(importer: Callable[[str], Any] = import_module) -> dict[str, Any]:
@@ -123,8 +159,20 @@ def bootstrap_template(template_path: Path, manifest: dict[str, Any]) -> tuple[A
     layouts = resolve_layouts(presentation, manifest)
     seed_count = len(presentation.slides)
     removed, notes_relationships = remove_seed_slides(presentation)
-    if seed_count != 5 or removed != 5 or notes_relationships != 2:
-        raise PptxEmitError("PPTX_TEMPLATE_SEED_INVALID", "受控模板必须包含 5 张 seed 与 2 个 notes relationships。")
+    template_contract = manifest.get("template", {})
+    expected_seed_count = template_contract.get("seed_slides")
+    expected_notes_relationships = template_contract.get("seed_notes_relationships")
+    if (
+        not isinstance(expected_seed_count, int)
+        or not isinstance(expected_notes_relationships, int)
+        or seed_count != expected_seed_count
+        or removed != expected_seed_count
+        or notes_relationships != expected_notes_relationships
+    ):
+        raise PptxEmitError(
+            "PPTX_TEMPLATE_SEED_INVALID",
+            "受控模板的 seed 或 notes relationship 数量与 manifest 不一致。",
+        )
     return presentation, layouts, {
         "seed_slides": seed_count,
         "removed_seed_slides": removed,
@@ -162,6 +210,10 @@ def emit_deck(
                     add_rich_text(
                         slide, slot["geometry"], value,
                         font_size=slot["text_budget"]["font_size_max"], highlight_scheme=highlight,
+                        font_name=slot.get("font_family"),
+                        font_theme_color=slot.get("font_theme_color"),
+                        paragraph_alignment=slot.get("paragraph_alignment"),
+                        vertical_anchor=slot.get("vertical_anchor"),
                         name=f"school-pptx:cover-{slot_id}",
                     )
                 set_notes(slide, physical.notes_intent)
@@ -171,6 +223,10 @@ def emit_deck(
                 add_rich_text(
                     slide, slots["title"]["geometry"], physical.title,
                     font_size=title_budget["font_size_max"], highlight_scheme=highlight,
+                    font_name=slots["title"].get("font_family"),
+                    font_theme_color=slots["title"].get("font_theme_color"),
+                    paragraph_alignment=slots["title"].get("paragraph_alignment"),
+                    vertical_anchor=slots["title"].get("vertical_anchor"),
                     name="school-pptx:slide-title",
                 )
             if physical.layout == "closing":
@@ -182,23 +238,40 @@ def emit_deck(
                 code_text = "\n".join(item.text or "" for item in code_fragments)
                 code_slot = slots["code"]
                 code_geometry = dict(code_slot["geometry"])
-                budget = code_slot["text_budget"]
+                typography = _frozen_code_typography(physical)
                 if fragment.heading:
-                    heading_height = min(
-                        code_geometry["height"],
-                        int(float(budget["font_size_max"]) * 1.5 * 12700),
-                    )
+                    try:
+                        heading_height = int(dict(physical.slot_values)["geometry.code.heading_height_emu"])
+                    except (KeyError, TypeError, ValueError) as exc:
+                        raise PptxEmitError(
+                            "PPTX_PLAN_TYPOGRAPHY_MISSING",
+                            "冻结物理计划缺少代码标题几何。",
+                        ) from exc
+                    if heading_height <= 0 or heading_height >= code_geometry["height"]:
+                        raise PptxEmitError("PPTX_PLAN_TYPOGRAPHY_MISSING", "冻结代码标题几何无效。")
                     heading_geometry = {**code_geometry, "height": heading_height}
                     add_rich_text(
                         slide, heading_geometry, fragment.heading,
-                        font_size=budget["font_size_max"], highlight_scheme=highlight,
+                        font_size=typography["font_size"], highlight_scheme=highlight,
+                        margin_left_points=typography["margin_left_points"],
+                        margin_right_points=typography["margin_right_points"],
+                        margin_top_points=typography["margin_top_points"],
+                        margin_bottom_points=typography["margin_bottom_points"],
+                        line_spacing=typography["line_spacing"],
+                        paragraph_spacing_points=typography["paragraph_spacing_points"],
                         name="school-pptx:code-heading",
                     )
                     code_geometry["y"] += heading_height
                     code_geometry["height"] -= heading_height
                 add_literal_text(
                     slide, code_geometry, code_text,
-                    font_size=dict(physical.selected_font_sizes).get("code", budget["font_size_min"]),
+                    font_size=typography["font_size"],
+                    margin_left_points=typography["margin_left_points"],
+                    margin_right_points=typography["margin_right_points"],
+                    margin_top_points=typography["margin_top_points"],
+                    margin_bottom_points=typography["margin_bottom_points"],
+                    line_spacing=typography["line_spacing"],
+                    paragraph_spacing_points=typography["paragraph_spacing_points"],
                     name="school-pptx:code",
                 )
             elif physical.layout == "table" and physical.fragments:
@@ -220,6 +293,7 @@ def emit_deck(
                     _, missing, _ = add_gallery_card(
                         slide, preset, reference, metadata.get("caption", ""), index=index,
                         highlight_scheme=highlight, font_size=slots["caption"]["text_budget"]["font_size_min"],
+                        paragraph_alignment=slots["caption"].get("paragraph_alignment"),
                     )
                     if missing:
                         record_missing(physical)
@@ -248,6 +322,8 @@ def emit_deck(
                         margin_bottom_points=typography["margin_bottom_points"],
                         line_spacing=typography["line_spacing"],
                         paragraph_spacing_points=typography["paragraph_spacing_points"],
+                        paragraph_alignment=body_slot.get("paragraph_alignment"),
+                        vertical_anchor=body_slot.get("vertical_anchor"),
                         highlight_scheme=highlight, name=f"school-pptx:{body_slot_id}",
                     )
                 image_fragment = next((fragment for fragment in physical.fragments if fragment.kind == "image"), None)
@@ -273,6 +349,7 @@ def emit_deck(
             output.seek(0)
         else:
             presentation.save(str(output))
+        normalize_package_metadata(output)
     except (OSError, ValueError) as exc:
         raise PptxEmitError("PPTX_PACKAGE_INVALID", "无法保存 staged PPTX。") from exc
     package = validate_staged_package(output, expected_slides=len(plan.slides))
