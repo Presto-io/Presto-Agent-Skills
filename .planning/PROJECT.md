@@ -6,9 +6,9 @@
 
 **Shipped:** 2026-07-16
 
-**Active milestone:** None — awaiting `/gsd:new-milestone`
+**Active milestone:** v1.18 全技能干净交付目录标准化改造
 
-**Status:** v1.17 is shipped and archived after 44/44 requirements, 10/10 integration checks, 4/4 E2E flows, and hash-bound WPS human UAT passed.
+**Status:** v1.18 requirements and roadmap are being defined after v1.17 shipped and was archived.
 
 **Delivered in v1.17:**
 - Added `school-pptx`, a Markdown-first editable PowerPoint workflow skill.
@@ -33,7 +33,19 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-Plan the next milestone while preserving the shipped v1.17 `school-pptx` contracts.
+Standardize clean delivery directories across all current file-writing skills while preserving shipped behavior and six-runtime compatibility.
+
+## Current Milestone: v1.18 全技能干净交付目录标准化改造
+
+**Goal:** Apply the repository clean-delivery contract to every current file-writing skill so successful delivery roots stay reviewable, revisions are archived as complete sets, and failed runs never pollute the current successful version.
+
+**Target features:**
+- Define a root allowlist and explicit `sources/`, `assets/`, `history/`, and `.work/` boundaries for all six current skills.
+- Generate and minimally verify complete candidate versions under `.work/<run-id>/` before publishing them as the current stable files.
+- Archive replaced Markdown and all associated final artifacts together under zero-padded `history/<sequence>/` directories without creating duplicate history for unchanged output.
+- Preserve the current successful delivery on failure and remove incomplete candidates, temporary evidence, and empty work directories.
+- Update shared scripts, skill entries, artifact contracts, contributor documentation, directory guidance, and the six-runtime compatibility matrix.
+- Provide a reusable, confirmation-gated workflow for organizing historical agent-created clutter without automatically moving or deleting unknown user files.
 
 ## Latest Milestone: v1.17 school-pptx
 
@@ -164,7 +176,11 @@ Plan the next milestone while preserving the shipped v1.17 `school-pptx` contrac
 
 ### Active
 
-None. The next milestone will define fresh active requirements.
+- [ ] Standardize clean delivery-root contracts across all six current file-writing skills.
+- [ ] Implement candidate staging, minimal verification, atomic publication, complete-set history archival, and failure cleanup.
+- [ ] Preserve existing public commands, accepted source formats, and final artifact behavior while changing delivery-directory management.
+- [ ] Document and verify the standardized contract across all six supported runtimes.
+- [ ] Provide a confirmation-gated reusable workflow for organizing historical agent-created output clutter.
 
 ### Out of Scope
 
@@ -332,4 +348,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-07-16 after v1.17 milestone shipped*
+*Last updated: 2026-07-16 after starting milestone v1.18*
