@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
-status: ready_for_milestone_audit
-stopped_at: Completed Phase 44 including hash-bound human viewer UAT
-last_updated: "2026-07-16T04:10:28+08:00"
-last_activity: 2026-07-16 -- WPS Presentation UAT passed 10/10 checks for the hash-bound eighth canonical PPTX
+status: ready_for_milestone_completion
+stopped_at: v1.17 milestone audit passed after closing GAP-44-V01
+last_updated: "2026-07-16T04:55:00+08:00"
+last_activity: 2026-07-16 -- Closed the foundation stale-PASS self-test gap; Phase 44 verification and v1.17 milestone audit now pass
 progress:
-  total_phases: 5
+  total_phases: 4
   completed_phases: 4
   total_plans: 19
   completed_plans: 19
-  percent: 80
+  percent: 100
 ---
 
 # State: Presto Agent Skills
@@ -21,7 +21,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-15)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** v1.17 milestone audit
+**Current focus:** Complete and archive the audited v1.17 milestone
 
 ## Current Position
 
@@ -29,6 +29,10 @@ Phase: 44 (verification-gate-runtime-notes-and-uat) — COMPLETE
 Plan: 4 of 4
 Status: Plan 44-04 complete; hash-bound WPS viewer UAT accepted
 Last activity: 2026-07-16 -- Mrered confirmed UAT-V01..V06 and UAT-I01..I04 all passed in WPS Presentation 12.1.26035 on macOS 26.5.2
+
+Phase verification: `passed` — 12/12 requirements, 7/7 self-tests, fresh public 8/6/21 and hash-bound UAT all pass; see `.planning/phases/44-verification-gate-runtime-notes-and-uat/44-VERIFICATION.md`.
+
+Milestone audit: `passed` — requirements 44/44, phases 4/4, integration 10/10, user flows 4/4. See `.planning/v1.17-MILESTONE-AUDIT.md`.
 
 Progress: [██████████] 100%
 
@@ -110,7 +114,7 @@ None yet.
 
 ### Blockers/Concerns
 
-None. v1.17 remains unshipped until the milestone audit and archive/release workflow run.
+None. v1.17 is audited and ready for milestone completion/archive.
 
 ## Performance Metrics
 
@@ -141,6 +145,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-07-16T04:10:28+08:00
-Stopped at: Phase 44 complete; v1.17 ready for milestone audit
+Last session: 2026-07-16T04:55:00+08:00
+Stopped at: Phase 44 verification and v1.17 milestone audit passed; complete milestone next
 Resume file: None
