@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
-status: ready_for_milestone_completion
-stopped_at: v1.17 milestone audit passed after closing GAP-44-V01
-last_updated: "2026-07-16T04:55:00+08:00"
-last_activity: 2026-07-16 -- Closed the foundation stale-PASS self-test gap; Phase 44 verification and v1.17 milestone audit now pass
+status: Awaiting next milestone
+stopped_at: v1.17 shipped and archived; awaiting next milestone
+last_updated: "2026-07-16T05:30:00+08:00"
+last_activity: 2026-07-16 — Milestone v1.17 completed, archived, and prepared for tagging
 progress:
   total_phases: 4
   completed_phases: 4
@@ -18,23 +18,17 @@ progress:
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-07-15)
+See: `.planning/PROJECT.md` (updated 2026-07-16)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Complete and archive the audited v1.17 milestone
+**Current focus:** Promote backlog Phase 999.1 into the next milestone
 
 ## Current Position
 
-Phase: 44 (verification-gate-runtime-notes-and-uat) — COMPLETE
-Plan: 4 of 4
-Status: Plan 44-04 complete; hash-bound WPS viewer UAT accepted
-Last activity: 2026-07-16 -- Mrered confirmed UAT-V01..V06 and UAT-I01..I04 all passed in WPS Presentation 12.1.26035 on macOS 26.5.2
-
-Phase verification: `passed` — 12/12 requirements, 7/7 self-tests, fresh public 8/6/21 and hash-bound UAT all pass; see `.planning/phases/44-verification-gate-runtime-notes-and-uat/44-VERIFICATION.md`.
-
-Milestone audit: `passed` — requirements 44/44, phases 4/4, integration 10/10, user flows 4/4. See `.planning/v1.17-MILESTONE-AUDIT.md`.
-
-Progress: [██████████] 100%
+Phase: Milestone v1.17 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-16 — Milestone v1.17 completed and archived
 
 ## Workflow Preferences
 
@@ -46,9 +40,9 @@ Progress: [██████████] 100%
 - Verifier: Yes
 - UI phase hints: Yes
 
-## Active Milestone Summary
+## Latest Shipped Milestone
 
-v1.17 builds `school-pptx`, a Markdown-first skill that turns structured logical slides into editable, template-consistent `.pptx` output.
+v1.17 shipped `school-pptx`, a Markdown-first skill that turns structured logical slides into editable, template-consistent `.pptx` output with automated verification and human UAT.
 
 Phase order:
 
@@ -114,7 +108,7 @@ None yet.
 
 ### Blockers/Concerns
 
-None. v1.17 is audited and ready for milestone completion/archive.
+None. v1.17 is shipped; Phase 999.1 is the next milestone candidate.
 
 ## Performance Metrics
 
@@ -145,6 +139,11 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-07-16T04:55:00+08:00
-Stopped at: Phase 44 verification and v1.17 milestone audit passed; complete milestone next
+Last session: 2026-07-16T05:30:00+08:00
+Stopped at: v1.17 shipped and archived; awaiting next milestone
 Resume file: None
+
+## Operator Next Steps
+
+- Promote Phase 999.1 with `$gsd-review-backlog`.
+- Start the resulting milestone with `/gsd:new-milestone`.
