@@ -1,5 +1,29 @@
 # Milestones
 
+## v1.17 school-pptx (Shipped: 2026-07-16)
+
+**Delivered:** A Markdown-first `school-pptx` skill that renders controlled, editable school-template PPTX files with deterministic pagination, structural verification, and hash-bound human UAT.
+
+**Phases completed:** 4 phases, 19 plans, 51 tasks
+
+**Key accomplishments:**
+
+- Added a controlled `standard-school` template, 11-layout manifest, and repeatable template validation.
+- Defined a teacher-reviewable YAML plus slide-block Markdown contract with deterministic fixture generation and bounded diagnostics.
+- Rendered native editable text, tables, pictures, groups, code, and speaker notes with logical-to-physical pagination.
+- Added the fixed public 8-gate, 6-negative, and Phase 43 21-gate verification chain with six-runtime documentation.
+- Passed 44/44 requirements, 10/10 integration checks, 4/4 E2E flows, and hash-bound WPS human UAT 10/10.
+
+**Archives:**
+
+- Roadmap: `.planning/milestones/v1.17-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.17-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.17-MILESTONE-AUDIT.md`
+
+**What's next:** Promote backlog Phase 999.1「全技能干净交付目录标准化改造」into the next milestone.
+
+---
+
 ## v1.16 调课单 Skill (Shipped: 2026-06-21)
 
 **Phases completed:** 4 phases, 4 plans, 22 tasks

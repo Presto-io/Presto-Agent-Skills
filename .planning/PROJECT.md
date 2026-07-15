@@ -2,25 +2,24 @@
 
 ## Current State
 
-**Latest shipped milestone:** v1.16 调课单 Skill
+**Latest shipped milestone:** v1.17 school-pptx
 
-**Shipped:** 2026-06-21
+**Shipped:** 2026-07-16
 
-**Active milestone:** v1.17 school-pptx
+**Active milestone:** None — awaiting `/gsd:new-milestone`
 
-**Status:** Phases 41-44 complete — the editable PPTX renderer, fixed verification registries, runtime guidance, and hash-bound WPS human UAT are complete; v1.17 is ready for milestone audit.
+**Status:** v1.17 is shipped and archived after 44/44 requirements, 10/10 integration checks, 4/4 E2E flows, and hash-bound WPS human UAT passed.
 
-**Delivered in v1.16:**
-- Added `tiaokedan`, a Markdown-first `调课单` document workflow skill.
-- Established hand-authored Typst and Markdown baselines before automation.
-- Added a skill-local Markdown-to-Typst renderer with byte-for-byte reference verification and no sibling skill runtime dependency.
-- Added a strict Typst/PDF final gate, clean public output boundary, missing-information questions, and six-runtime adapter coverage.
+**Delivered in v1.17:**
+- Added `school-pptx`, a Markdown-first editable PowerPoint workflow skill.
+- Added a controlled template, 11-layout manifest, deterministic pagination, and native editable PPTX objects.
+- Added fixed automated verification registries, six-runtime guidance, and hash-bound real-viewer acceptance.
 
 ## Milestone History
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets. v1.11 added the integrated `teaching-design-package` orchestration path while preserving the original teaching skills and keeping package outputs honest through manifest evidence. v1.12 repaired two post-close teaching-design regressions: package date backfill into practical lesson-plan Markdown and official-style activity-table width alignment. v1.13 shipped the committed full-package Markdown template as the teacher-facing source of truth for package rendering, with real split/combined PDF outputs and legacy standalone comparison evidence. v1.14 completed the package boundary correction: the package is now self-contained, teacher-first, script-finalized, clean in public output, and strict about hidden diagnostics and derived scheduling validation. v1.15 turned that package-owned boundary into a modular renderer with hidden module intermediates, migrated formal jiaoan output rules, one scheduling model, strict cross-module validation, and course-name-prefixed public delivery. v1.16 added `tiaokedan`, a standalone `调课单` workflow built from hand-authored Typst/Markdown baselines through skill-local rendering, PDF generation, clean output, and clarification guidance.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets. v1.11 added the integrated `teaching-design-package` orchestration path while preserving the original teaching skills and keeping package outputs honest through manifest evidence. v1.12 repaired two post-close teaching-design regressions: package date backfill into practical lesson-plan Markdown and official-style activity-table width alignment. v1.13 shipped the committed full-package Markdown template as the teacher-facing source of truth for package rendering, with real split/combined PDF outputs and legacy standalone comparison evidence. v1.14 completed the package boundary correction: the package is now self-contained, teacher-first, script-finalized, clean in public output, and strict about hidden diagnostics and derived scheduling validation. v1.15 turned that package-owned boundary into a modular renderer with hidden module intermediates, migrated formal jiaoan output rules, one scheduling model, strict cross-module validation, and course-name-prefixed public delivery. v1.16 added `tiaokedan`, a standalone `调课单` workflow built from hand-authored Typst/Markdown baselines through skill-local rendering, PDF generation, clean output, and clarification guidance. v1.17 added `school-pptx`, a controlled-template Markdown-to-PPTX workflow with editable native objects, deterministic pagination, fixed automated gates, six-runtime guidance, and hash-bound WPS UAT.
 
 ## What This Is
 
@@ -34,9 +33,9 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-Audit v1.17 `school-pptx` against its milestone requirements before archive/release.
+Plan the next milestone while preserving the shipped v1.17 `school-pptx` contracts.
 
-## Current Milestone: v1.17 school-pptx
+## Latest Milestone: v1.17 school-pptx
 
 **Goal:** Build a school-template PPTX skill that converts structured Markdown logical slides into editable, layout-stable, template-consistent `.pptx` files.
 
@@ -165,8 +164,7 @@ Audit v1.17 `school-pptx` against its milestone requirements before archive/rele
 
 ### Active
 
-- [ ] Create the `school-pptx` skill as a Markdown-first school PPTX workflow with a canonical `SKILL.md`, references, templates, scripts, and fixtures.
-- [ ] Verify the generated `.pptx` through repeatable artifact checks covering slide count, layout mapping, notes, media, tables, code text, pagination, and non-empty output.
+None. The next milestone will define fresh active requirements.
 
 ### Out of Scope
 
@@ -224,7 +222,7 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 
 ## Next Milestone Goals
 
-The next milestone has not been defined yet. Start it with `/gsd:new-milestone`.
+下一里程碑优先承接 backlog Phase 999.1「全技能干净交付目录标准化改造」：先用 `$gsd-review-backlog` 晋升该事项，再通过 `/gsd:new-milestone` 定义正式需求、范围与阶段编号。
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -334,4 +332,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-07-15 after Phase 43 editable renderer and pagination verification passed*
+*Last updated: 2026-07-16 after v1.17 milestone shipped*

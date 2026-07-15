@@ -429,6 +429,49 @@
 
 ---
 
+## Milestone: v1.17 - school-pptx
+
+**Shipped:** 2026-07-16
+**Phases:** 4 | **Plans:** 19 | **Tasks:** 51
+
+### What Was Built
+
+- A controlled `standard-school` template and exact 11-layout manifest.
+- A constrained, teacher-reviewable Markdown contract with deterministic fixtures and validation.
+- Native editable PPTX rendering for text, tables, pictures, groups, code, and notes with deterministic pagination.
+- A fixed 8/6/21 verification chain, six-runtime guidance, and hash-bound WPS human UAT.
+
+### What Worked
+
+- Freezing template geometry and the logical-to-physical plan before emission made renderer behavior auditable.
+- Treating automated structure checks and human viewer acceptance as separate gates prevented false visual confidence.
+- Descriptor-bound writes and isolated verification workdirs preserved clean delivery and prior successful artifacts.
+
+### What Was Inefficient
+
+- Human visual refinement required eight canonical PPTX iterations before the accepted template and pagination balance stabilized.
+- The default Python runtime lacked the complete dependency set; final verification needed an explicitly selected local runtime.
+- `audit-open` still classified a passed UAT with zero pending scenarios as open, and `milestone.complete` counted backlog Phase 999.1 in milestone totals.
+
+### Patterns Established
+
+- Controlled PPTX themes need a committed manifest; Markdown must not own geometry or styling.
+- PPTX acceptance requires both deterministic OOXML inspection and hash-bound testing in a real desktop viewer.
+- Milestone closeout statistics and dates require manual review when backlog phases or UTC timestamps are present.
+
+### Key Lessons
+
+1. Normalize and accept the template before building the renderer.
+2. Freeze pagination decisions before native object emission and verify the reopened PPTX package.
+3. Keep human UAT evidence tied to exact Markdown and PPTX hashes.
+
+### Cost Observations
+
+- Model mix: balanced profile.
+- Notable: Most iteration cost came from visual template fidelity and false-green prevention rather than basic PPTX generation.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -445,6 +488,7 @@
 | v1.14 | 3+ | 3 | Corrected `teaching-design-package` into a standalone teacher-first package with clean 1+1+3 delivery and hidden diagnostics. |
 | v1.15 | 4+ | 4 | Converted `teaching-design-package` into a modular all-in-one renderer with migrated formal outputs and strict PDF merge semantics. |
 | v1.16 | 4+ | 4 | Added a standalone `tiaokedan` document workflow from hand-authored baselines through skill-local Typst/PDF rendering and clarification guidance. |
+| v1.17 | 8+ | 4 | Added controlled-template editable PPTX rendering with deterministic pagination, fixed verification registries, and hash-bound viewer UAT. |
 
 ### Cumulative Quality
 
@@ -460,6 +504,7 @@
 | v1.14 | Standalone-copy execution, exact public root assertions, hidden diagnostics checks, derived scheduling/failure gates, milestone audit | 15/15 TDPKG requirements shipped | No new runtime dependencies added |
 | v1.15 | Fresh package render, module PDF/status checks, forced failure semantics, public leakage scan, standalone-copy regression, milestone audit | 31/31 TDPKG requirements shipped | No new runtime dependencies added |
 | v1.16 | Typst/PDF compile, invalid input failure, clean output scan, standalone-copy regression, milestone audit | 15/15 TKD requirements shipped | No new runtime dependencies added |
+| v1.17 | Public 8-gate verification, 6 negative cases, Phase 43 21-gate regression, structural PPTX inspection, milestone audit, WPS UAT | 44/44 requirements shipped | Added documented Python PPTX dependencies |
 
 ### Top Lessons (Verified Across Milestones)
 
