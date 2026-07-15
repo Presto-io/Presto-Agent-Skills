@@ -33,7 +33,7 @@
 **Goal:** 在 v1.17 结束后，依据 `docs/clean-delivery-directory-contract.md` 完整改造当前全部技能，统一交付一级目录、支持资料分组、多轮修改成套归档、最小验证和失败清理行为，并为历史 agent 散乱产物整理提供可复用流程。
 **Requirements:** CLEAN-01, CLEAN-02, CLEAN-03, REV-01, REV-02, REV-03, REV-04, SAFE-01, SAFE-02, VERIFY-01, DOCS-01, RUNTIME-01
 **Depends on:** Phase 44
-**Plans:** 0 plans
+**Plans:** 9 plans
 
 **Success Criteria** (what must be TRUE):
   1. 用户在六个写文件技能的成功交付根目录中只看到各技能声明的当前 Markdown、当前最终产物和按需存在的 `sources/`、`assets/`、`history/`、`.work/`，既有交付能力不回退。
@@ -45,12 +45,29 @@
   7. 用户可以从 README、目录规范、artifact contract、相关模板、六个 canonical `SKILL.md` 和兼容性矩阵读到一致规则，且 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes Agent 的 adapter notes 明确相同的写入安全边界与 fallback。
 
 Plans:
-- [ ] 盘点全部技能的输入、Markdown、最终产物、历史版本、中间文件和失败输出边界
-- [ ] 为每个技能补齐根目录白名单、`sources/`、`assets/`、`history/`、`.work/` 和版本发布规则
-- [ ] 改造公共脚本，使候选版本先进入 `.work/`，成功后成套归档旧版本并原子发布新版本
-- [ ] 删除非必要持久验证产物，并验证失败运行不会污染当前成功交付
-- [ ] 更新 README、目录规范、兼容性矩阵、技能入口和 artifact contract
-- [ ] 补齐六技能成功、变更、相同内容、失败和未知文件确认门的端到端回归
+
+**Wave 1 — 协议与验证基础**
+- [ ] 45-01-PLAN.md — 冻结真实原子性边界、确认式历史整理契约与中央 gate/fault 骨架
+
+**Wave 2 — 六技能并行适配** *(blocked on Wave 1 completion)*
+- [ ] 45-02-PLAN.md — 改造 end-of-term-teaching-materials 固定四件套 transaction
+- [ ] 45-03-PLAN.md — 改造 tiaokedan 可选 PDF 两/三件套 transaction
+- [ ] 45-04-PLAN.md — 扩展 school-pptx held-descriptor pair history/rollback 并隔离 best-effort
+- [ ] 45-05-PLAN.md — 改造 school-presentation Markdown+HTML 与 assets/evidence 边界
+- [ ] 45-06-PLAN.md — 保持 Bash-only 的 gongwen candidate/history/rollback 适配
+- [ ] 45-07-PLAN.md — 移除 teaching-design-package destructive cleanup 并发布 dynamic 1+1+N bundle
+
+**Wave 3 — 仓库级文档与 runtime 契约** *(blocked on all Wave 2 plans)*
+- [ ] 45-08-PLAN.md — 同步 README、目录规范、兼容矩阵与新技能模板
+
+**Wave 4 — 质量收口** *(blocked on Wave 3 completion)*
+- [ ] 45-09-PLAN.md — 完成六技能 strict aggregate、代码审查与 12/12 最终验证
+
+Cross-cutting constraints:
+- 所有 production helper 必须留在各自 skill folder 内并可独立安装运行，不得 import/call sibling skill 或仓库根 test helper。
+- 完整 candidate 与最小格式验证必须先于 current mutation；mutation 只消费显式受管相对名，unknown、legacy、symlink 与越界路径在 mutation 前失败关闭。
+- identical candidate 不创建 history 且不触碰 current；changed 归档完整旧 bundle；handled failure/INT/TERM 恢复旧版本，但不得声称 SIGKILL、断电或多文件跨路径原子。
+- `sources/` 不由普通发布变更，只有持续引用的 managed `assets/` 随版本归档；manifest/status/model/log/diff/staging/失败产物只存在于 owned `.work` 或显式 verification workdir。
 
 ---
 *Roadmap updated: 2026-07-16 after defining v1.18 requirements and Phase 45 acceptance*
