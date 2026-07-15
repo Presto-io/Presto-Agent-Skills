@@ -2,35 +2,35 @@
 gsd_state_version: 1.0
 milestone: v1.17
 milestone_name: school-pptx
-status: executing
-stopped_at: Phase 43 gap closure planned as 43-11
-last_updated: "2026-07-14T15:52:15.859Z"
-last_activity: 2026-07-14 -- Phase 43 planning complete
+status: ready_for_milestone_audit
+stopped_at: Completed Phase 44 including hash-bound human viewer UAT
+last_updated: "2026-07-16T04:10:28+08:00"
+last_activity: 2026-07-16 -- WPS Presentation UAT passed 10/10 checks for the hash-bound eighth canonical PPTX
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 15
-  completed_plans: 14
-  percent: 93
+  completed_phases: 4
+  total_plans: 19
+  completed_plans: 19
+  percent: 80
 ---
 
 # State: Presto Agent Skills
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-07-14)
+See: `.planning/PROJECT.md` (updated 2026-07-15)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 43 — editable-pptx-renderer-and-pagination
+**Current focus:** v1.17 milestone audit
 
 ## Current Position
 
-Phase: 43 (Editable PPTX Renderer and Pagination) — PLANNED
-Plan: 10 of 11
-Status: Ready to execute
-Last activity: 2026-07-14 -- Phase 43 planning complete
+Phase: 44 (verification-gate-runtime-notes-and-uat) — COMPLETE
+Plan: 4 of 4
+Status: Plan 44-04 complete; hash-bound WPS viewer UAT accepted
+Last activity: 2026-07-16 -- Mrered confirmed UAT-V01..V06 and UAT-I01..I04 all passed in WPS Presentation 12.1.26035 on macOS 26.5.2
 
-Progress: [█████████░] 93%
+Progress: [██████████] 100%
 
 ## Workflow Preferences
 
@@ -87,9 +87,22 @@ Phase order:
 - [Phase 43]: Every non-code body slot uses one mixed-fragment textbox; code fragments are direct monospace runs while ordinary fragments retain native rich-text styles.
 - [Phase 43]: Header-only tables are valid one-page native tables with exactly one frozen row and positive row height.
 - [Phase 43]: Pillow bomb and format/decode failures cross the public boundary only through precise allowlisted codes and bounded generic diagnostics.
-- [Phase 43]: Phase 43 aggregate currently has a fixed 20-gate order with exact required/called equality and zero dynamic skips, but coverage breadth and producer-derived evidence remain necessary to prevent false-green results.
+- [Phase 43]: Phase 43 aggregate has a fixed 21-gate order with exact required/called equality, zero dynamic skips, raw-evidence recomputation, and AST mutation guards against false-green producer constants.
 - [Phase 43]: Mixed body pagination and native emission share frozen 24pt/22pt target-slot typography and controlled spacing. — This prevents successful PPTX output from silently clipping code measured at a smaller size.
-- [Phase 43]: Media validation and `add_picture` consume one bounded descriptor-read payload, closing the media TOCTOU window; the 20-gate aggregate still requires broader capacity vectors and source-derived producer evidence.
+- [Phase 43]: Media validation and `add_picture` consume one bounded descriptor-read payload, closing the media TOCTOU window; the 21-gate aggregate verifies capacity vectors and source-derived producer evidence.
+- [Phase 43]: Paginator and emitter consume one frozen paragraph sequence, so headings, paragraphs, list items, code runs, line spacing, and paragraph spacing share one full-frame capacity contract.
+- [Phase 43]: Contents freeze 26pt typography and dedicated code freezes 14pt typography; both public render and reopened PPTX evidence block successful clipping or font drift.
+- [Phase 43]: The fixed 21-gate aggregate recomputes equality from raw text/media/projection/target hashes and rejects constant producer evidence through AST mutation guards.
+- [Phase 44]: Public verification owns one fixed eight-gate authority and publishes current JSON/Markdown evidence from the same bounded observed projection.
+- [Phase 44]: Plan 44-01 reserves later gates as explicit `NOT_IMPLEMENTED` failures; foundation completion cannot produce a false public PASS.
+- [Phase 44]: Required Python imports are observed fresh while Pandoc remains optional and never changes gate readiness while unused.
+- [Phase 44]: Public verify executes exact fixed registries of 8 top-level gates, 6 negative cases, and the reused 21-gate Phase 43 authority with required/called equality and zero dynamic skips.
+- [Phase 44]: Fresh canonical evidence is SHA-256-bound to the reopened 13-logical/32-physical delivery; structural claims are recomputed from OOXML and native editable objects.
+- [Phase 44]: Negative mutations remain inside per-case copied trees and must fail non-zero with exact stable codes, bounded output, unchanged canonical hashes, and no false-success evidence.
+- [Phase 44]: One concise canonical `school-pptx/SKILL.md` owns the runtime-neutral workflow; renderer, verification, and UAT detail remains in progressive references.
+- [Phase 44]: Documentation integrity is part of the public evidence-integrity gate and checks the canonical entry, fixed 8/6/21 contracts, six runtime rows, and repository discovery links.
+- [Phase 44]: OpenClaw and Hermes Agent support remains installation-time verified with explicit script fallback; no untested automatic discovery path is claimed.
+- [Phase 44]: The final human acceptance is bound to canonical PPTX SHA-256 `ed99daa1b7a187a2adb57f9769c1ecf282bc48ad950309cfbef3805a8f9af963` and verification run `76d62c9155092a76`; Mrered passed all 10 checks in WPS Presentation 12.1.26035 on macOS 26.5.2.
 
 ### Pending Todos
 
@@ -97,7 +110,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 44 requires manual visual UAT evidence in at least one compatible PPTX viewer before milestone acceptance.
+None. v1.17 remains unshipped until the milestone audit and archive/release workflow run.
 
 ## Performance Metrics
 
@@ -116,6 +129,11 @@ None yet.
 | Phase 43 P08 | 18 min | 2 tasks | 3 files |
 | Phase 43 P09 | 27 min | 3 tasks | 4 files |
 | Phase 43 P10 | 25 min | 3 tasks | 5 files |
+| Phase 43 P11 | 55 min | 3 tasks | 5 files |
+| Phase 44 P01 | 47 min | 3 tasks | 5 files |
+| Phase 44 P02 | 37 min | 3 tasks | 6 files |
+| Phase 44 P03 | 17 min | 3 tasks | 9 files |
+| Phase 44 P04 | human UAT | 10 checks | 4 planning files |
 
 ## Deferred Items
 
@@ -123,6 +141,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-07-14T13:28:13.213Z
-Stopped at: Phase 43 gap closure planned as 43-11
+Last session: 2026-07-16T04:10:28+08:00
+Stopped at: Phase 44 complete; v1.17 ready for milestone audit
 Resume file: None
