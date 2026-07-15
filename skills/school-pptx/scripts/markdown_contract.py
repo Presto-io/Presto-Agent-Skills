@@ -34,6 +34,7 @@ YAML_STRING_TAG = "tag:yaml.org,2002:str"
 RAW_HTML_RE = re.compile(r"<!--|</?[A-Za-z][^>]*>")
 GENERIC_ATTR_RE = re.compile(r"\{[^}\n]*(?:#|\.|\b(?:id|style|x|y|width|height|crop|footer|font|color|background|coordinate|dimension)\s*=)[^}]*\}", re.I)
 STYLE_RE = re.compile(r"\b(?:style|coordinates?|dimensions?|crop|footer|font(?:-size)?|colou?r|background|width|height|x|y)\s*=", re.I)
+REVIEW_MARKER_RE = re.compile(r"\{\{(?:待补充|AI草稿):\s*[^}\n]+\}\}")
 EXAMPLE_OWNED_PATHS = (
     Path("school-pptx-full.md"),
     Path("media/equipment-cell.png"),
@@ -217,6 +218,17 @@ def media_block(line: str, line_no: int, input_path: Path, heading: str | None, 
 
 
 def scan_forbidden(text: str, line_no: int, collector: DiagnosticCollector, slide: str | None, layout: str | None) -> None:
+    marker = REVIEW_MARKER_RE.search(text)
+    if marker:
+        collector.add(
+            "REVIEW_MARKER_UNRESOLVED",
+            "文稿仍包含未解决的审阅标记。",
+            line_no,
+            marker.start() + 1,
+            slide=slide,
+            layout=layout,
+            fix="将 {{待补充: ...}} 或 {{AI草稿: ...}} 替换为已确认正文后重新校验。",
+        )
     if RAW_HTML_RE.search(text):
         collector.add("RAW_HTML", "不支持原始 HTML。请改用契约允许的 Markdown 块；fenced code 内的代码文本除外。", line_no, slide=slide, layout=layout,
                       fix="改用契约支持的普通 Markdown；若内容本身是代码，请放入 fenced code。")
@@ -555,7 +567,11 @@ def parse_document(input_path: Path, manifest: dict[str, Any]) -> dict[str, Any]
     if not document["document_title"]:
         collector.add("DOCUMENT_TITLE_MISSING", "缺少文档标题。", 1, fix="提供 YAML title 或唯一文档级 # 标题。")
     document["logical_slides"] = slides
-    document["contents_entries"] = [slide["title"] for slide in slides if slide["title"]]
+    # The agenda is a chapter overview, not an index of every detail slide.
+    document["contents_entries"] = [
+        slide["title"] for slide in slides
+        if slide.get("layout") == "section" and slide.get("title")
+    ]
     closing_layouts = [key for key, value in layouts.items() if value.get("fixed_template_page") is True and value.get("markdown_controllable") is False]
     document["implicit_slides"] = [{"layout": layout, "position": layouts[layout].get("default_insertion", "end_of_deck"),
                                      "fixed_template_page": True} for layout in closing_layouts]
