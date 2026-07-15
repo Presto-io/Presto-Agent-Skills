@@ -4,8 +4,10 @@ available_themes:
 template:
   path: standard-school.pptx
   format: pptx
-  source_evidence: test/学院PPT模板.potx
-  mapping_strategy: native-slide-layout-xml
+  source_evidence: test/canonical-待UAT-第七版.pptx
+  mapping_strategy: renderer-owned-native-shapes
+  seed_slides: 26
+  seed_notes_relationships: 26
   geometry_units: emu
   geometry_tolerance_emu: 2000
 ownership:
@@ -26,7 +28,7 @@ ownership:
     - bounded text behavior
 inline_styles:
   highlight:
-    scheme_color: accent6
+    scheme_color: accent1
 required_layouts:
   - cover
   - contents
@@ -54,8 +56,10 @@ layouts:
           shape_id: 2
           name: 标题 1
           type: ctrTitle
-        geometry: {x: 1524000, y: 1122363, width: 9144000, height: 2387600}
-        text_budget: {max_chars: 24, max_lines: 2, font_size_min: 28, font_size_max: 44, overflow: shrink}
+        geometry: {x: 1524000, y: 2074545, width: 9144000, height: 1654810}
+        text_budget: {max_chars: 24, max_lines: 2, font_size_min: 40, font_size_max: 60, overflow: shrink}
+        font_family: 黑体
+        font_theme_color: background1
         empty_slot: fail
         continuation: none
       - id: subtitle
@@ -67,56 +71,50 @@ layouts:
           name: 副标题 2
           type: subTitle
           idx: 1
-        geometry: {x: 1524000, y: 3602038, width: 9144000, height: 1655762}
-        text_budget: {max_chars: 72, max_lines: 2, font_size_min: 18, font_size_max: 28, overflow: shrink}
+        geometry: {x: 1524000, y: 4100195, width: 9144000, height: 1654175}
+        text_budget: {max_chars: 96, max_lines: 3, font_size_min: 16, font_size_max: 20, overflow: shrink}
+        font_theme_color: background1
+        paragraph_alignment: center
+        vertical_anchor: middle
         empty_slot: hide
         continuation: none
   contents:
     label: 目录
-    purpose: Agenda generated from reviewed section headings in a later phase.
-    pptx_layout: ppt/slideLayouts/slideLayout3.xml
-    required_slots: [title, body]
+    purpose: Unnumbered agenda generated only from reviewed section headings.
+    pptx_layout: ppt/slideLayouts/slideLayout2.xml
+    required_slots: [body]
     slots:
-      - id: title
-        purpose: Contents slide title.
-        kind: text
-        placeholder:
-          file: ppt/slideLayouts/slideLayout3.xml
-          shape_id: 2
-          name: 标题 1
-          type: title
-        geometry: {x: 831850, y: 1709738, width: 10515600, height: 2852737}
-        text_budget: {max_chars: 18, max_lines: 1, font_size_min: 24, font_size_max: 36, overflow: shrink}
-        empty_slot: preserve
-        continuation: none
       - id: body
-        purpose: Ordered contents entries.
+        purpose: Unnumbered second-level section entries.
         kind: text
         placeholder:
-          file: ppt/slideLayouts/slideLayout3.xml
-          shape_id: 3
-          name: 文本占位符 2
-          type: body
-          idx: 1
-        geometry: {x: 831850, y: 4589463, width: 10515600, height: 1500187}
-        text_budget: {max_chars: 180, max_lines: 5, font_size_min: 18, font_size_max: 26, overflow: paginate}
+          file: ppt/slideLayouts/slideLayout2.xml
+          shape_id: 30
+          name: school-pptx:contents-anchor
+        geometry: {x: 4181475, y: 1573530, width: 7466330, height: 3874770}
+        text_budget: {max_chars: 240, max_lines: 6, font_size_min: 22, font_size_max: 32, overflow: paginate}
+        paragraph_alignment: justify
+        vertical_anchor: middle
         empty_slot: fail
         continuation: paginate
   section:
     label: 章节页
     purpose: Visual divider between major sections.
-    pptx_layout: ppt/slideLayouts/slideLayout7.xml
+    pptx_layout: ppt/slideLayouts/slideLayout4.xml
     required_slots: [title]
     slots:
       - id: title
         purpose: Section title anchored to the template divider band.
         kind: text
         placeholder:
-          file: ppt/slideLayouts/slideLayout7.xml
-          shape_id: 5
-          name: 矩形 4
-        geometry: {x: 0, y: 5596128, width: 12192000, height: 1261872}
-        text_budget: {max_chars: 24, max_lines: 1, font_size_min: 24, font_size_max: 36, overflow: shrink}
+          file: ppt/slideLayouts/slideLayout4.xml
+          shape_id: 2
+          name: 标题 1
+          type: title
+        geometry: {x: 831850, y: 1710690, width: 10514965, height: 2851785}
+        text_budget: {max_chars: 24, max_lines: 2, font_size_min: 42, font_size_max: 66, overflow: shrink}
+        paragraph_alignment: left
+        vertical_anchor: bottom
         empty_slot: fail
         continuation: none
   title-content:
@@ -133,8 +131,10 @@ layouts:
           shape_id: 2
           name: 标题 1
           type: title
-        geometry: {x: 831850, y: 1709738, width: 10515600, height: 2852737}
-        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 22, font_size_max: 34, overflow: shrink}
+        geometry: {x: 838200, y: 365125, width: 10508615, height: 1325880}
+        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        paragraph_alignment: justify
+        vertical_anchor: middle
         empty_slot: fail
         continuation: none
       - id: body
@@ -143,11 +143,12 @@ layouts:
         placeholder:
           file: ppt/slideLayouts/slideLayout3.xml
           shape_id: 3
-          name: 文本占位符 2
+          name: 内容占位符 2
           type: body
           idx: 1
-        geometry: {x: 831850, y: 4589463, width: 10515600, height: 1500187}
-        text_budget: {max_chars: 220, max_lines: 6, font_size_min: 16, font_size_max: 24, overflow: paginate}
+        geometry: {x: 838200, y: 1825625, width: 10515600, height: 3658870}
+        text_budget: {max_chars: 260, max_lines: 7, font_size_min: 20, font_size_max: 28, overflow: paginate}
+        paragraph_alignment: justify
         empty_slot: preserve
         continuation: paginate
   two-column:
@@ -165,7 +166,9 @@ layouts:
           name: 标题 1
           type: title
         geometry: {x: 839788, y: 365125, width: 10515600, height: 1325563}
-        text_budget: {max_chars: 28, max_lines: 1, font_size_min: 20, font_size_max: 30, overflow: shrink}
+        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        paragraph_alignment: justify
+        vertical_anchor: middle
         empty_slot: fail
         continuation: none
       - id: left_body
@@ -176,8 +179,9 @@ layouts:
           shape_id: 4
           name: 内容占位符 3
           idx: 2
-        geometry: {x: 839788, y: 2505075, width: 5157787, height: 3684588}
+        geometry: {x: 839788, y: 2505075, width: 5157787, height: 2980055}
         text_budget: {max_chars: 180, max_lines: 8, font_size_min: 15, font_size_max: 22, overflow: paginate}
+        paragraph_alignment: justify
         empty_slot: preserve
         continuation: paginate
       - id: right_body
@@ -188,38 +192,41 @@ layouts:
           shape_id: 6
           name: 内容占位符 5
           idx: 4
-        geometry: {x: 6172200, y: 2505075, width: 5183188, height: 3684588}
+        geometry: {x: 6172200, y: 2505075, width: 5183188, height: 2979420}
         text_budget: {max_chars: 180, max_lines: 8, font_size_min: 15, font_size_max: 22, overflow: paginate}
+        paragraph_alignment: justify
         empty_slot: preserve
         continuation: paginate
   image-text:
     label: 图文
     purpose: Text narrative paired with a contained image or icon.
-    pptx_layout: ppt/slideLayouts/slideLayout9.xml
+    pptx_layout: ppt/slideLayouts/slideLayout6.xml
     required_slots: [title, media, body]
     slots:
       - id: title
         purpose: Slide title.
         kind: text
         placeholder:
-          file: ppt/slideLayouts/slideLayout9.xml
+          file: ppt/slideLayouts/slideLayout6.xml
           shape_id: 2
           name: 标题 1
           type: title
-        geometry: {x: 839788, y: 457200, width: 3932237, height: 1600200}
-        text_budget: {max_chars: 22, max_lines: 2, font_size_min: 20, font_size_max: 30, overflow: shrink}
+        geometry: {x: 839470, y: 457200, width: 10516235, height: 1233805}
+        text_budget: {max_chars: 32, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        paragraph_alignment: justify
+        vertical_anchor: middle
         empty_slot: fail
         continuation: none
       - id: media
         purpose: Contained image area.
         kind: media
         placeholder:
-          file: ppt/slideLayouts/slideLayout9.xml
+          file: ppt/slideLayouts/slideLayout6.xml
           shape_id: 3
           name: 图片占位符 2
           type: pic
           idx: 1
-        geometry: {x: 5183188, y: 987425, width: 6172200, height: 4873625}
+        geometry: {x: 5565140, y: 2227580, width: 5790565, height: 3256915}
         text_budget: {max_chars: 0, max_lines: 0, font_size_min: 0, font_size_max: 0, overflow: fail}
         empty_slot: hide
         continuation: none
@@ -227,88 +234,107 @@ layouts:
         purpose: Supporting text.
         kind: text
         placeholder:
-          file: ppt/slideLayouts/slideLayout9.xml
+          file: ppt/slideLayouts/slideLayout6.xml
           shape_id: 4
           name: 文本占位符 3
           type: body
           idx: 2
-        geometry: {x: 839788, y: 2057400, width: 3932237, height: 3811588}
+        geometry: {x: 839788, y: 2057400, width: 3932237, height: 3427095}
         text_budget: {max_chars: 180, max_lines: 8, font_size_min: 15, font_size_max: 22, overflow: paginate}
+        paragraph_alignment: justify
         empty_slot: preserve
         continuation: paginate
   table:
     label: 表格
     purpose: Editable table region with a title.
-    pptx_layout: ppt/slideLayouts/slideLayout8.xml
+    pptx_layout: ppt/slideLayouts/slideLayout3.xml
     required_slots: [title, table]
     slots:
       - id: title
         purpose: Table slide title.
         kind: text
         placeholder:
-          file: ppt/slideLayouts/slideLayout8.xml
+          file: ppt/slideLayouts/slideLayout3.xml
           shape_id: 2
           name: 标题 1
           type: title
-        geometry: {x: 839788, y: 457200, width: 3932237, height: 1600200}
-        text_budget: {max_chars: 22, max_lines: 2, font_size_min: 20, font_size_max: 30, overflow: shrink}
+        geometry: {x: 838200, y: 365125, width: 10508615, height: 1325880}
+        text_budget: {max_chars: 32, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        paragraph_alignment: justify
+        vertical_anchor: middle
         empty_slot: fail
         continuation: none
       - id: table
         purpose: Editable table area in a later rendering phase.
         kind: table
         placeholder:
-          file: ppt/slideLayouts/slideLayout8.xml
+          file: ppt/slideLayouts/slideLayout3.xml
           shape_id: 3
           name: 内容占位符 2
           idx: 1
-        geometry: {x: 5183188, y: 987425, width: 6172200, height: 4873625}
+        geometry: {x: 838200, y: 1825625, width: 10515600, height: 3658870}
         text_budget: {max_chars: 420, max_lines: 12, font_size_min: 12, font_size_max: 18, overflow: paginate}
+        table_style:
+          header_fill: 4472C4
+          body_fill: D9EAF7
+          header_text: FFFFFF
+          body_text: 1F4E79
         empty_slot: fail
         continuation: repeat_header
         subregions:
           table_name:
             purpose: Optional editable table name retained even when empty.
-            geometry: {x: 5183188, y: 987425, width: 6172200, height: 548000}
+            geometry: {x: 838200, y: 1825625, width: 10515600, height: 548000}
             text_budget: {max_chars: 48, max_lines: 1, font_size_min: 13, font_size_max: 18, overflow: shrink}
             empty_slot: preserve
+          table_body:
+            purpose: Reviewed editable table body area below the table-name band.
+            geometry: {x: 838200, y: 2373625, width: 10515600, height: 3110870}
   timeline:
     label: 时间线
     purpose: Horizontal timeline content with split behavior deferred to rendering.
-    pptx_layout: ppt/slideLayouts/slideLayout4.xml
+    pptx_layout: ppt/slideLayouts/slideLayout3.xml
     required_slots: [title, timeline_items]
     slots:
       - id: title
-        purpose: Timeline title using the left content anchor.
+        purpose: Full-width timeline title.
         kind: text
         placeholder:
-          file: ppt/slideLayouts/slideLayout4.xml
-          shape_id: 3
-          name: 内容占位符 2
-          idx: 1
-        geometry: {x: 838200, y: 1825625, width: 5181600, height: 4351338}
-        text_budget: {max_chars: 24, max_lines: 2, font_size_min: 20, font_size_max: 30, overflow: shrink}
+          file: ppt/slideLayouts/slideLayout3.xml
+          shape_id: 2
+          name: 标题 1
+          type: title
+        geometry: {x: 838200, y: 365125, width: 10508615, height: 1325880}
+        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        paragraph_alignment: center
+        vertical_anchor: middle
         empty_slot: fail
         continuation: none
       - id: timeline_items
         purpose: Timeline item collection.
         kind: timeline
         placeholder:
-          file: ppt/slideLayouts/slideLayout4.xml
-          shape_id: 4
-          name: 内容占位符 3
-          idx: 2
-        geometry: {x: 6172200, y: 1825625, width: 5181600, height: 4351338}
-        text_budget: {max_chars: 240, max_lines: 6, font_size_min: 13, font_size_max: 18, overflow: paginate}
+          file: ppt/slideLayouts/slideLayout3.xml
+          shape_id: 30
+          name: school-pptx:timeline-anchor
+        geometry: {x: 696000, y: 1695435, width: 11140440, height: 4803155}
+        text_budget: {max_chars: 360, max_lines: 8, font_size_min: 13, font_size_max: 18, overflow: paginate}
         empty_slot: preserve
         continuation: paginate
+        max_items_per_page: 6
+        node_width_emu: 1342505
         subregions:
           axis:
             purpose: Template-owned horizontal timeline axis.
-            geometry: {x: 6400000, y: 3830000, width: 4720000, height: 50000}
+            geometry: {x: 696000, y: 3471225, width: 10800000, height: 50000}
+            gradient:
+              start_scheme: accent6
+              start_rgb: 70AD47
+              end_scheme: accent1
+              end_rgb: 4472C4
           node_band:
             purpose: Bounds used to distribute editable timeline node groups.
-            geometry: {x: 6172200, y: 2050000, width: 5181600, height: 3700000}
+            geometry: {x: 782263, y: 1695435, width: 10626205, height: 4803155}
             text_budget: {max_chars: 240, max_lines: 6, font_size_min: 13, font_size_max: 18, overflow: paginate}
         node_template:
           geometry: {x: 0, y: 0, width: 1200000, height: 3600000}
@@ -317,114 +343,122 @@ layouts:
               geometry: {x: 500000, y: 1700000, width: 200000, height: 200000}
             time:
               geometry: {x: 50000, y: 1150000, width: 1100000, height: 450000}
-              text_budget: {max_chars: 18, max_lines: 1, font_size_min: 13, font_size_max: 18, overflow: shrink}
+              text_budget: {max_chars: 18, max_lines: 1, font_size_min: 20, font_size_max: 20, overflow: shrink}
+              paragraph_alignment: center
+              vertical_anchor: middle
             title:
               geometry: {x: 50000, y: 1950000, width: 1100000, height: 550000}
-              text_budget: {max_chars: 28, max_lines: 2, font_size_min: 13, font_size_max: 18, overflow: shrink}
+              text_budget: {max_chars: 28, max_lines: 2, font_size_min: 20, font_size_max: 20, overflow: shrink}
+              paragraph_alignment: center
+              vertical_anchor: middle
             description:
               geometry: {x: 50000, y: 2500000, width: 1100000, height: 1000000}
-              text_budget: {max_chars: 80, max_lines: 3, font_size_min: 11, font_size_max: 16, overflow: shrink}
+              text_budget: {max_chars: 80, max_lines: 4, font_size_min: 16, font_size_max: 16, overflow: shrink}
+              paragraph_alignment: left
+              vertical_anchor: middle
   gallery:
     label: 图集
     purpose: Up to four media items with captions per physical slide in a later phase.
-    pptx_layout: ppt/slideLayouts/slideLayout5.xml
+    pptx_layout: ppt/slideLayouts/slideLayout3.xml
     required_slots: [title, gallery_items, caption]
     slots:
       - id: title
         purpose: Gallery title.
         kind: text
         placeholder:
-          file: ppt/slideLayouts/slideLayout5.xml
+          file: ppt/slideLayouts/slideLayout3.xml
           shape_id: 2
           name: 标题 1
           type: title
-        geometry: {x: 839788, y: 365125, width: 10515600, height: 1325563}
-        text_budget: {max_chars: 28, max_lines: 1, font_size_min: 20, font_size_max: 30, overflow: shrink}
+        geometry: {x: 838200, y: 365125, width: 10508615, height: 1325880}
+        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        paragraph_alignment: justify
+        vertical_anchor: middle
         empty_slot: fail
         continuation: none
       - id: gallery_items
         purpose: Primary gallery media area.
         kind: gallery
         placeholder:
-          file: ppt/slideLayouts/slideLayout5.xml
-          shape_id: 4
-          name: 内容占位符 3
-          idx: 2
-        geometry: {x: 839788, y: 2505075, width: 5157787, height: 3684588}
+          file: ppt/slideLayouts/slideLayout3.xml
+          shape_id: 31
+          name: school-pptx:gallery-anchor
+        geometry: {x: 838200, y: 1825625, width: 10515600, height: 4351338}
         text_budget: {max_chars: 0, max_lines: 0, font_size_min: 0, font_size_max: 0, overflow: paginate}
         empty_slot: hide
         continuation: paginate
         item_presets:
           1:
-            - card: {x: 839788, y: 2505075, width: 5157787, height: 3684588}
-              picture: {x: 959788, y: 2625075, width: 4917787, height: 2850000}
-              caption: {x: 959788, y: 5575075, width: 4917787, height: 500000}
+            - card: {x: 4836652, y: 3586162, width: 2258695, height: 1529715}
+              picture: {x: 5032666, y: 3586162, width: 1866666, height: 1050000}
+              caption: {x: 4836652, y: 4735877, width: 2258695, height: 380000}
           2:
-            - card: {x: 839788, y: 2505075, width: 2498893, height: 3684588}
-              picture: {x: 959788, y: 2625075, width: 2258893, height: 2850000}
-              caption: {x: 959788, y: 5575075, width: 2258893, height: 500000}
-            - card: {x: 3498682, y: 2505075, width: 2498893, height: 3684588}
-              picture: {x: 3618682, y: 2625075, width: 2258893, height: 2850000}
-              caption: {x: 3618682, y: 5575075, width: 2258893, height: 500000}
+            - card: {x: 2308225, y: 3586162, width: 2258695, height: 1529715}
+              picture: {x: 2504239, y: 3586162, width: 1866666, height: 1050000}
+              caption: {x: 2308225, y: 4735877, width: 2258695, height: 380000}
+            - card: {x: 7625715, y: 3586162, width: 2258695, height: 1529715}
+              picture: {x: 7821729, y: 3586162, width: 1866666, height: 1050000}
+              caption: {x: 7625715, y: 4735877, width: 2258695, height: 380000}
           3:
-            - card: {x: 839788, y: 2505075, width: 2498893, height: 1762294}
-              picture: {x: 959788, y: 2625075, width: 2258893, height: 1050000}
-              caption: {x: 959788, y: 3775075, width: 2258893, height: 380000}
-            - card: {x: 3498682, y: 2505075, width: 2498893, height: 1762294}
-              picture: {x: 3618682, y: 2625075, width: 2258893, height: 1050000}
-              caption: {x: 3618682, y: 3775075, width: 2258893, height: 380000}
-            - card: {x: 839788, y: 4427369, width: 5157787, height: 1762294}
-              picture: {x: 959788, y: 4547369, width: 4917787, height: 1050000}
-              caption: {x: 959788, y: 5697369, width: 4917787, height: 380000}
+            - card: {x: 2308225, y: 2200000, width: 2258695, height: 1529715}
+              picture: {x: 2504239, y: 2200000, width: 1866666, height: 1050000}
+              caption: {x: 2308225, y: 3349715, width: 2258695, height: 380000}
+            - card: {x: 7625715, y: 2200000, width: 2258695, height: 1529715}
+              picture: {x: 7821729, y: 2200000, width: 1866666, height: 1050000}
+              caption: {x: 7625715, y: 3349715, width: 2258695, height: 380000}
+            - card: {x: 4836652, y: 4050000, width: 2258695, height: 1529715}
+              picture: {x: 5032666, y: 4050000, width: 1866666, height: 1050000}
+              caption: {x: 4836652, y: 5199715, width: 2258695, height: 380000}
           4:
-            - card: {x: 839788, y: 2505075, width: 2498893, height: 1762294}
-              picture: {x: 959788, y: 2625075, width: 2258893, height: 1050000}
-              caption: {x: 959788, y: 3775075, width: 2258893, height: 380000}
-            - card: {x: 3498682, y: 2505075, width: 2498893, height: 1762294}
-              picture: {x: 3618682, y: 2625075, width: 2258893, height: 1050000}
-              caption: {x: 3618682, y: 3775075, width: 2258893, height: 380000}
-            - card: {x: 839788, y: 4427369, width: 2498893, height: 1762294}
-              picture: {x: 959788, y: 4547369, width: 2258893, height: 1050000}
-              caption: {x: 959788, y: 5697369, width: 2258893, height: 380000}
-            - card: {x: 3498682, y: 4427369, width: 2498893, height: 1762294}
-              picture: {x: 3618682, y: 4547369, width: 2258893, height: 1050000}
-              caption: {x: 3618682, y: 5697369, width: 2258893, height: 380000}
+            - card: {x: 2308225, y: 2200000, width: 2258695, height: 1529715}
+              picture: {x: 2504239, y: 2200000, width: 1866666, height: 1050000}
+              caption: {x: 2308225, y: 3349715, width: 2258695, height: 380000}
+            - card: {x: 7625715, y: 2200000, width: 2258695, height: 1529715}
+              picture: {x: 7821729, y: 2200000, width: 1866666, height: 1050000}
+              caption: {x: 7625715, y: 3349715, width: 2258695, height: 380000}
+            - card: {x: 2308225, y: 4050000, width: 2258695, height: 1529715}
+              picture: {x: 2504239, y: 4050000, width: 1866666, height: 1050000}
+              caption: {x: 2308225, y: 5199715, width: 2258695, height: 380000}
+            - card: {x: 7625715, y: 4050000, width: 2258695, height: 1529715}
+              picture: {x: 7821729, y: 4050000, width: 1866666, height: 1050000}
+              caption: {x: 7625715, y: 5199715, width: 2258695, height: 380000}
       - id: caption
         purpose: Gallery caption or short description.
         kind: text
         placeholder:
-          file: ppt/slideLayouts/slideLayout5.xml
-          shape_id: 3
-          name: 文本占位符 2
-          type: body
-          idx: 1
-        geometry: {x: 839788, y: 1681163, width: 5157787, height: 823912}
+          file: ppt/slideLayouts/slideLayout3.xml
+          shape_id: 31
+          name: school-pptx:gallery-anchor
+        geometry: {x: 838200, y: 1825625, width: 10515600, height: 4351338}
         text_budget: {max_chars: 80, max_lines: 2, font_size_min: 13, font_size_max: 18, overflow: shrink}
+        paragraph_alignment: justify
         empty_slot: preserve
         continuation: none
   code:
     label: 代码
     purpose: Editable monospace code text area with title.
-    pptx_layout: ppt/slideLayouts/slideLayout11.xml
+    pptx_layout: ppt/slideLayouts/slideLayout7.xml
     required_slots: [title, code]
     slots:
       - id: title
         purpose: Code slide title.
         kind: text
         placeholder:
-          file: ppt/slideLayouts/slideLayout11.xml
+          file: ppt/slideLayouts/slideLayout7.xml
           shape_id: 2
           name: 竖排标题 1
           type: title
         geometry: {x: 8724900, y: 365125, width: 2628900, height: 5811838}
-        text_budget: {max_chars: 18, max_lines: 2, font_size_min: 18, font_size_max: 28, overflow: shrink}
+        text_budget: {max_chars: 18, max_lines: 4, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        paragraph_alignment: left
+        vertical_anchor: middle
         empty_slot: fail
         continuation: none
       - id: code
         purpose: Plain editable code block.
         kind: code
         placeholder:
-          file: ppt/slideLayouts/slideLayout11.xml
+          file: ppt/slideLayouts/slideLayout7.xml
           shape_id: 3
           name: 竖排文字占位符 2
           type: body
@@ -436,7 +470,7 @@ layouts:
   closing:
     label: 结束页
     purpose: Fixed template-owned closing page automatically appended at the end of every deck.
-    pptx_layout: ppt/slideLayouts/slideLayout7.xml
+    pptx_layout: ppt/slideLayouts/slideLayout8.xml
     fixed_template_page: true
     default_insertion: end_of_deck
     markdown_controllable: false

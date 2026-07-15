@@ -6,6 +6,51 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from markdown_contract import inline_spans
+
+
+@dataclass(frozen=True, slots=True)
+class ParagraphProjection:
+    role: str
+    authored_text: str
+    visible_text: str
+
+
+def _visible_rich_text(authored: str) -> str:
+    spans = inline_spans(authored)
+    parts: list[str] = []
+    cursor = 0
+    for span in spans:
+        start, end = int(span["start"]), int(span["end"])
+        if start < cursor:
+            raise ValueError("overlapping inline spans")
+        parts.append(authored[cursor:start])
+        parts.append(str(span["text"]))
+        cursor = end
+    parts.append(authored[cursor:])
+    return "".join(parts)
+
+
+def fragment_paragraph_sequence(fragment: "BlockFragment") -> tuple[ParagraphProjection, ...]:
+    """Return authored and visible text for every emitted paragraph."""
+    sequence: list[ParagraphProjection] = []
+
+    def append(role: str, authored: str) -> None:
+        visible = authored if role == "code" else _visible_rich_text(authored)
+        sequence.append(ParagraphProjection(role, authored, visible))
+
+    if fragment.heading:
+        append("heading", fragment.heading)
+    if fragment.kind == "code":
+        if fragment.text is not None:
+            append("code", fragment.text)
+    elif fragment.items:
+        for item in fragment.items:
+            append("list", item)
+    elif fragment.text:
+        append("paragraph", fragment.text)
+    return tuple(sequence)
+
 
 @dataclass(frozen=True, slots=True)
 class RenderDiagnostic:
