@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.18
 milestone_name: 全技能干净交付目录标准化改造
 status: executing
-stopped_at: Completed 45-07-PLAN.md
-last_updated: "2026-07-16T13:51:23.172Z"
-last_activity: 2026-07-16 — Completed Phase 45 Plan 07 teaching package dynamic bundle transaction
+stopped_at: Completed 45-08-PLAN.md
+last_updated: "2026-07-16T14:45:39.661Z"
+last_activity: 2026-07-16 — Completed Phase 45 Plan 08 shared clean-delivery documentation and runtime contract
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 9
-  completed_plans: 7
-  percent: 78
+  completed_plans: 8
+  percent: 89
 ---
 
 # State: Presto Agent Skills
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-16)
 ## Current Position
 
 Phase: 45 of 45 (全技能干净交付目录标准化改造)
-Plan: 7 of 9
+Plan: 8 of 9
 Status: Ready to execute
-Last activity: 2026-07-16 — Completed 45-07 model-driven candidate/history/rollback adapter
+Last activity: 2026-07-16 — Completed 45-08 repository discovery, runtime matrix, and safe skill template
 
 ## Workflow Preferences
 
@@ -123,6 +123,9 @@ Phase order:
 - [Phase 45]: School Presentation current is exactly reviewed Markdown plus offline HTML and explicitly referenced assets; manifests and verify evidence remain outside the delivery root.
 - [Phase 45]: A same-root reviewed Markdown may seed first HTML publication, but handled failure restores its original bytes and creates no false history.
 - [Phase 45]: School Presentation legacy media requires confirmed migration to assets; missing required assets and unsafe evidence paths fail before current mutation.
+- [Phase 45]: Repository discovery names exactly six implemented writing skills; no unlisted skill inherits clean-delivery status implicitly.
+- [Phase 45]: Verification workdirs are caller-owned evidence roots rather than delivery roots, and normal publication never promotes diagnostic evidence to current.
+- [Phase 45]: OpenClaw and Hermes Agent support remains installation-time verified with explicit public-script fallback and no automatic-discovery claim.
 
 ### Pending Todos
 
@@ -161,13 +164,14 @@ None. v1.17 is shipped; Phase 45 is promoted and ready for next-milestone initia
 | Phase 45 P05 | 19 min | 3 tasks | 6 files |
 | Phase 45 P06 | 21 min | 2 tasks | 7 files |
 | Phase 45 P07 | 10h 41m | 3 tasks | 6 files |
+| Phase 45 P08 | 20 min | 2 tasks | 5 files |
 
 ## Session Continuity
 
-Last session: 2026-07-16T13:51:23.165Z
-Stopped at: Completed 45-07-PLAN.md
+Last session: 2026-07-16T14:45:39.618Z
+Stopped at: Completed 45-08-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Execute Wave 3 plan 45-08 to synchronize repository documentation, compatibility matrix, and new-skill templates.
+- Execute Wave 4 plan 45-09 for the strict six-skill aggregate, code review, and final 12/12 verification.
