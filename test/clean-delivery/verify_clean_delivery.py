@@ -38,6 +38,15 @@ REQUIRED_GATE_NAMES = (
     "existing_renderer_regression_gate",
 )
 
+REQUIRED_SKILL_NAMES = (
+    "end-of-term-teaching-materials",
+    "gongwen",
+    "school-pptx",
+    "school-presentation",
+    "teaching-design-package",
+    "tiaokedan",
+)
+
 FAULT_NAMES = (
     "after_candidate_validation",
     "after_history_reservation",
@@ -333,6 +342,13 @@ def run_self_test(name: str) -> None:
             cleanup_contract_gate(root)
         elif name == "registry":
             run_registry_self_test()
+        elif name == "adapter-contract":
+            aggregate = parse_args(("--all", "--strict"))
+            require(aggregate.all and aggregate.strict, "strict aggregate CLI contract missing")
+            skill = parse_args(("--skill", REQUIRED_SKILL_NAMES[0], "--strict"))
+            require(skill.skill == REQUIRED_SKILL_NAMES[0], "public skill adapter CLI contract missing")
+            gate = parse_args(("--gate", "report_validation_gate", "--scope", "README.md"))
+            require(gate.gate == "report_validation_gate", "public gate CLI contract missing")
         elif name == "all":
             protocol_gate(root)
             cleanup_contract_gate(root)
@@ -347,7 +363,11 @@ def run_self_test(name: str) -> None:
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="verify_clean_delivery.py")
-    parser.add_argument("--self-test", required=True, choices=("protocol", "cleanup-contract", "registry", "all"))
+    parser.add_argument(
+        "--self-test",
+        required=True,
+        choices=("protocol", "cleanup-contract", "registry", "adapter-contract", "all"),
+    )
     return parser.parse_args(argv)
 
 
