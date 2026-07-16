@@ -18,11 +18,15 @@ const FAULTS = [
   'before_work_cleanup',
 ];
 
-function model(prefix) {
-  const modulePdfs = [
-    { module_id: 'teaching-plan', public_pdf_suffix: '授课进度计划表', public_pdf_filename: `${prefix}授课进度计划表.pdf` },
-    { module_id: 'teaching-design', public_pdf_suffix: '教学设计方案', public_pdf_filename: `${prefix}教学设计方案.pdf` },
-  ];
+function model(prefix, modules = [
+  ['teaching-plan', '授课进度计划表'],
+  ['teaching-design', '教学设计方案'],
+]) {
+  const modulePdfs = modules.map(([moduleId, suffix]) => ({
+    module_id: moduleId,
+    public_pdf_suffix: suffix,
+    public_pdf_filename: `${prefix}${suffix}.pdf`,
+  }));
   return {
     modules: { items: modulePdfs },
     public_delivery: {
@@ -118,6 +122,22 @@ function testFirstSameChangeAndGap() {
   });
 }
 
+function testDynamicRegistryAuthority() {
+  withRoot((root) => {
+    const dynamicModel = model('动态课程', [
+      ['teaching-plan', '授课进度计划表'],
+      ['teaching-design', '教学设计方案'],
+      ['assessment', '考核方案'],
+    ]);
+    const result = publish(root, 'dynamic-n3', dynamicModel, 'v1');
+    assert.strictEqual(result.expectedNames.length, 5);
+    assert.deepStrictEqual(
+      Object.keys(snapshot(root)).sort(),
+      dynamicModel.public_delivery.expected_public_filenames.sort(),
+    );
+  });
+}
+
 function testFaultRollbackMatrix() {
   for (const fault of FAULTS) {
     withRoot((root) => {
@@ -178,6 +198,13 @@ function testLockAndUnrelatedWorkPreserved() {
     assert.throws(() => publish(root, 'locked', model('课程'), 'new'), /lock/i);
     const after = snapshot(path.join(root, '.work'), new Set());
     assert.strictEqual(after['stale-run/evidence.txt'], before['stale-run/evidence.txt']);
+  });
+  withRoot((root) => {
+    fs.mkdirSync(path.join(root, '.work', 'stale-run'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.work', 'stale-run', 'evidence.txt'), 'keep');
+    const before = snapshot(path.join(root, '.work'), new Set());
+    assert.throws(() => publish(root, 'new-run', model('课程'), 'new'), /stale work/i);
+    assert.deepStrictEqual(snapshot(path.join(root, '.work'), new Set()), before);
   });
 }
 
@@ -278,6 +305,7 @@ function testRealRenderPackageCandidateIsolation() {
 
 const tests = [
   testFirstSameChangeAndGap,
+  testDynamicRegistryAuthority,
   testFaultRollbackMatrix,
   testUnknownAmbiguousPartialSymlinkAndTraversal,
   testLockAndUnrelatedWorkPreserved,
