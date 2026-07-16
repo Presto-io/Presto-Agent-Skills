@@ -124,17 +124,73 @@ function testFirstSameChangeAndGap() {
 
 function testDynamicRegistryAuthority() {
   withRoot((root) => {
+    const n2Model = model('动态课程');
+    publish(root, 'dynamic-n2', n2Model, 'v1');
     const dynamicModel = model('动态课程', [
       ['teaching-plan', '授课进度计划表'],
       ['teaching-design', '教学设计方案'],
       ['assessment', '考核方案'],
     ]);
-    const result = publish(root, 'dynamic-n3', dynamicModel, 'v1');
+    const result = publish(root, 'dynamic-n3', dynamicModel, 'v2');
     assert.strictEqual(result.expectedNames.length, 5);
+    assert.strictEqual(fs.existsSync(path.join(root, 'history', '001')), true);
+    const backToN2 = publish(root, 'dynamic-back-n2', n2Model, 'v3');
+    assert.strictEqual(backToN2.historySequence, '002');
     assert.deepStrictEqual(
-      Object.keys(snapshot(root)).sort(),
-      dynamicModel.public_delivery.expected_public_filenames.sort(),
+      Object.keys(snapshot(root)).filter((name) => !name.startsWith('history/')).sort(),
+      n2Model.public_delivery.expected_public_filenames.sort(),
     );
+    const overlapping = model('重叠课程', [
+      ['short', '方案'],
+      ['long', '教学方案'],
+    ]);
+    const before = snapshot(root);
+    assert.throws(() => publish(root, 'overlap', overlapping, 'v4'), /overlap/i);
+    assert.deepStrictEqual(snapshot(root), before);
+  });
+}
+
+function testCleanupAndCandidateExchangeFailClosed() {
+  withRoot((root, base) => {
+    const outside = path.join(base, 'outside');
+    fs.mkdirSync(path.join(outside, 'victim'), { recursive: true });
+    fs.writeFileSync(path.join(outside, 'victim', 'sentinel'), 'keep');
+    fs.symlinkSync(outside, path.join(root, '.work'));
+    const result = childProcess.spawnSync(
+      process.execPath,
+      [require.resolve('./delivery-transaction.js'), 'cleanup', root, 'victim'],
+      { encoding: 'utf8' },
+    );
+    assert.notStrictEqual(result.status, 0);
+    assert.strictEqual(fs.readFileSync(path.join(outside, 'victim', 'sentinel'), 'utf8'), 'keep');
+  });
+  withRoot((root, base) => {
+    const packageModel = model('交换课程');
+    const runId = 'candidate-exchange';
+    const candidateRoot = makeCandidate(root, runId, packageModel, 'candidate');
+    const outside = path.join(base, 'outside-candidate');
+    fs.mkdirSync(outside);
+    for (const name of packageModel.public_delivery.expected_public_filenames) {
+      fs.writeFileSync(path.join(outside, name), bytesFor(name, 'outside'));
+    }
+    const outsideBefore = snapshot(outside, new Set());
+    const originalExec = childProcess.execFileSync;
+    let exchanged = false;
+    childProcess.execFileSync = function patched(command, args, options) {
+      if (!exchanged && args[1] === 'move') {
+        exchanged = true;
+        fs.renameSync(candidateRoot, `${candidateRoot}-original`);
+        fs.symlinkSync(outside, candidateRoot);
+      }
+      return originalExec.call(this, command, args, options);
+    };
+    try {
+      assert.throws(() => publishBundle({ root, runId, candidateRoot, packageModel }), /safe.fs|symlink/i);
+    } finally {
+      childProcess.execFileSync = originalExec;
+    }
+    assert.deepStrictEqual(snapshot(outside, new Set()), outsideBefore);
+    assert.deepStrictEqual(snapshot(root), {});
   });
 }
 
@@ -306,6 +362,7 @@ function testRealRenderPackageCandidateIsolation() {
 const tests = [
   testFirstSameChangeAndGap,
   testDynamicRegistryAuthority,
+  testCleanupAndCandidateExchangeFailClosed,
   testFaultRollbackMatrix,
   testUnknownAmbiguousPartialSymlinkAndTraversal,
   testLockAndUnrelatedWorkPreserved,
