@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import signal
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -187,6 +188,129 @@ class DeliverySessionTests(unittest.TestCase):
         with self.assertRaises(DeliveryError):
             DeliverySession(self.spec()).__enter__()
         self.assertEqual(snapshot(self.root), before)
+
+
+class PublicCliTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.temp = Path(self.temporary.name)
+        self.root = self.temp / "delivery"
+        self.input_path = self.temp / "input.md"
+        self.script = Path(__file__).resolve().with_name("tiaokedan.sh")
+        template = Path(__file__).resolve().parents[1] / "templates" / "tiaokedan.md"
+        self.input_path.write_bytes(template.read_bytes())
+        self.bin_dir = self.temp / "bin"
+        self.bin_dir.mkdir()
+        self.typst = self.bin_dir / "typst"
+        self.write_typst("success")
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def write_typst(self, mode: str) -> None:
+        if mode == "success":
+            body = '#!/bin/sh\nprintf "%%PDF-1.7\\n" > "$3"\ncat "$2" >> "$3"\nprintf "%%%%EOF\\n" >> "$3"\n'
+        elif mode == "invalid":
+            body = '#!/bin/sh\nprintf "not-a-pdf\\n" > "$3"\n'
+        else:
+            body = '#!/bin/sh\nprintf "forced compile failure\\n" >&2\nexit 7\n'
+        self.typst.write_text(body, encoding="utf-8")
+        self.typst.chmod(0o755)
+
+    def run_cli(self, *, pdf: bool = True, expected: Path | None = None, fault: str | None = None) -> subprocess.CompletedProcess[str]:
+        command = [str(self.script), "render", "--input", str(self.input_path), "--typ", str(self.root / "tiaokedan.typ")]
+        if pdf:
+            command.extend(("--pdf", str(self.root / "tiaokedan.pdf")))
+        if expected is not None:
+            command.extend(("--expected-typ", str(expected)))
+        environment = os.environ.copy()
+        environment["PATH"] = f"{self.bin_dir}{os.pathsep}{environment.get('PATH', '')}"
+        if fault is not None:
+            environment[FAULT_ENV] = fault
+        return subprocess.run(command, capture_output=True, text=True, check=False, env=environment)
+
+    def change_input(self, old: str = "2026-06-21", new: str = "2026-06-22") -> None:
+        self.input_path.write_text(self.input_path.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+
+    def test_real_cli_first_identical_changed_and_fault_matrix(self) -> None:
+        first = self.run_cli()
+        self.assertEqual(first.returncode, 0, first.stderr)
+        before_stats = {name: (self.root / name).stat() for name in ("tiaokedan.md", "tiaokedan.typ", "tiaokedan.pdf")}
+        identical = self.run_cli()
+        self.assertEqual(identical.returncode, 0, identical.stderr)
+        self.assertFalse((self.root / "history").exists())
+        for name, metadata in before_stats.items():
+            observed = (self.root / name).stat()
+            self.assertEqual((metadata.st_ino, metadata.st_mtime_ns), (observed.st_ino, observed.st_mtime_ns))
+
+        self.change_input()
+        changed = self.run_cli()
+        self.assertEqual(changed.returncode, 0, changed.stderr)
+        self.assertEqual({path.name for path in (self.root / "history" / "001").iterdir()}, {"tiaokedan.md", "tiaokedan.typ", "tiaokedan.pdf"})
+        baseline = snapshot(self.root)
+        self.change_input("2026-06-22", "2026-06-23")
+        for fault in FAULT_NAMES:
+            with self.subTest(fault=fault):
+                result = self.run_cli(fault=fault)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertLess(len((result.stdout + result.stderr).encode()), 4096)
+                self.assertEqual(snapshot(self.root), baseline)
+
+    def test_generation_expected_and_pdf_validation_failures_do_not_mutate(self) -> None:
+        self.assertEqual(self.run_cli().returncode, 0)
+        baseline = snapshot(self.root)
+        self.change_input()
+
+        expected = self.temp / "expected.typ"
+        expected.write_text("different\n", encoding="utf-8")
+        mismatch = self.run_cli(expected=expected)
+        self.assertNotEqual(mismatch.returncode, 0)
+        self.assertLess(len((mismatch.stdout + mismatch.stderr).encode()), 4096)
+        self.assertEqual(snapshot(self.root), baseline)
+
+        self.write_typst("failure")
+        compile_failure = self.run_cli()
+        self.assertNotEqual(compile_failure.returncode, 0)
+        self.assertEqual(snapshot(self.root), baseline)
+
+        self.write_typst("invalid")
+        invalid_pdf = self.run_cli()
+        self.assertNotEqual(invalid_pdf.returncode, 0)
+        self.assertEqual(snapshot(self.root), baseline)
+
+        self.input_path.write_text(self.input_path.read_text(encoding="utf-8").replace("电气工程系", "{{待补充: 系部}}"), encoding="utf-8")
+        unresolved = self.run_cli()
+        self.assertNotEqual(unresolved.returncode, 0)
+        self.assertEqual(snapshot(self.root), baseline)
+
+    def test_real_cli_history_gap_unknown_symlink_and_path_mismatch(self) -> None:
+        self.assertEqual(self.run_cli().returncode, 0)
+        history = self.root / "history"
+        for sequence in ("001", "003"):
+            directory = history / sequence
+            directory.mkdir(parents=True)
+            for name in ("tiaokedan.md", "tiaokedan.typ", "tiaokedan.pdf"):
+                (directory / name).write_bytes(f"historic-{sequence}-{name}".encode())
+        self.change_input()
+        self.assertEqual(self.run_cli().returncode, 0)
+        self.assertTrue((history / "004").is_dir())
+
+        for name, symlink in (("unknown.txt", False), ("bad-link", True)):
+            path = self.root / name
+            path.symlink_to("outside") if symlink else path.write_text("unknown", encoding="utf-8")
+            before = snapshot(self.root)
+            result = self.run_cli()
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(snapshot(self.root), before)
+            path.unlink()
+
+        mismatch = subprocess.run(
+            [str(self.script), "render", "--input", str(self.input_path), "--typ", str(self.root / "tiaokedan.typ"), "--pdf", str(self.temp / "tiaokedan.pdf")],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(mismatch.returncode, 0)
 
 
 if __name__ == "__main__":
