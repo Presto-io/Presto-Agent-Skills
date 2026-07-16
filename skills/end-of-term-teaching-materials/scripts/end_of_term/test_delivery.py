@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import signal
 import sys
 import tempfile
 import unittest
@@ -104,6 +105,25 @@ class DeliverySessionTests(unittest.TestCase):
                 with self.assertRaises(DeliveryError):
                     self.publish(f"failed-{fault}")
                 os.environ.pop(FAULT_ENV, None)
+                self.assertEqual(snapshot(self.root), before)
+
+    def test_int_and_term_restore_after_first_replacement(self) -> None:
+        self.assertEqual(self.publish("v1"), "first")
+        before = snapshot(self.root)
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            with self.subTest(signum=signum):
+                with DeliverySession(self.spec) as session:
+                    self.candidate(f"signal-{signum}", session=session)
+                    original_fault = session._fault
+
+                    def interrupt(name: str) -> None:
+                        if name == "after_publish_file_1":
+                            os.kill(os.getpid(), signum)
+                        original_fault(name)
+
+                    session._fault = interrupt
+                    with self.assertRaises(DeliveryError):
+                        session.publish()
                 self.assertEqual(snapshot(self.root), before)
 
     def test_unknown_symlink_partial_and_lock_fail_before_mutation(self) -> None:
