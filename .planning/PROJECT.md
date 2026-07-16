@@ -2,24 +2,24 @@
 
 ## Current State
 
-**Latest shipped milestone:** v1.17 school-pptx
+**Latest shipped milestone:** v1.18 全技能干净交付目录标准化改造
 
-**Shipped:** 2026-07-16
+**Shipped:** 2026-07-17
 
-**Active milestone:** v1.18 全技能干净交付目录标准化改造
+**Active milestone:** None — planning next milestone
 
-**Status:** v1.18 requirements and roadmap are being defined after v1.17 shipped and was archived.
+**Status:** v1.18 shipped, audited, and archived; awaiting the next milestone definition.
 
-**Delivered in v1.17:**
-- Added `school-pptx`, a Markdown-first editable PowerPoint workflow skill.
-- Added a controlled template, 11-layout manifest, deterministic pagination, and native editable PPTX objects.
-- Added fixed automated verification registries, six-runtime guidance, and hash-bound real-viewer acceptance.
+**Delivered in v1.18:**
+- Standardized candidate-first clean delivery for all six current file-writing skills.
+- Added byte-exact no-op detection, whole-bundle `history/`, handled rollback, managed assets, and fail-closed unknown/symlink boundaries.
+- Added a strict six-skill 14-gate/7-fault aggregate, executable cleanup approval fixture, three-round code review closure, and 12/12 requirement evidence.
 
 ## Milestone History
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured teaching data, a reviewable Markdown checkpoint, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict final-export gates. v1.8 resumed the `school-presentation` line by implementing deferred presenter markup, classroom interaction extensions, structured layout helpers, print/export review behavior, and one-click final PDF export without reopening PPTX/Keynote output. v1.9 turned the accumulated skill system back toward progressive disclosure by slimming entries, splitting large scripts, and updating contributor guidance while preserving public behavior. v1.10 added strict, skill-local Markdown-to-Typst fixture conversion for the two jiaoan skills, with byte-for-byte verification against the committed `test/1.10/` targets. v1.11 added the integrated `teaching-design-package` orchestration path while preserving the original teaching skills and keeping package outputs honest through manifest evidence. v1.12 repaired two post-close teaching-design regressions: package date backfill into practical lesson-plan Markdown and official-style activity-table width alignment. v1.13 shipped the committed full-package Markdown template as the teacher-facing source of truth for package rendering, with real split/combined PDF outputs and legacy standalone comparison evidence. v1.14 completed the package boundary correction: the package is now self-contained, teacher-first, script-finalized, clean in public output, and strict about hidden diagnostics and derived scheduling validation. v1.15 turned that package-owned boundary into a modular renderer with hidden module intermediates, migrated formal jiaoan output rules, one scheduling model, strict cross-module validation, and course-name-prefixed public delivery. v1.16 added `tiaokedan`, a standalone `调课单` workflow built from hand-authored Typst/Markdown baselines through skill-local rendering, PDF generation, clean output, and clarification guidance. v1.17 added `school-pptx`, a controlled-template Markdown-to-PPTX workflow with editable native objects, deterministic pagination, fixed automated gates, six-runtime guidance, and hash-bound WPS UAT.
+v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured data, reviewable Markdown, fixed-template outputs, and strict final gates. v1.8-v1.16 expanded the teaching and presentation skill family while preserving Markdown-first, skill-local execution. v1.17 added `school-pptx`, a controlled-template editable PPTX workflow with deterministic pagination and hash-bound viewer UAT. v1.18 standardized clean delivery across all six writing skills with candidate-first publication, exact no-op detection, whole-bundle history, handled rollback, confirmation-gated cleanup, and evidence-bound central verification.
 
 ## What This Is
 
@@ -33,9 +33,9 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-Standardize clean delivery directories across all current file-writing skills while preserving shipped behavior and six-runtime compatibility.
+Plan the next milestone while preserving the v1.18 clean-delivery contract and six-runtime compatibility.
 
-## Current Milestone: v1.18 全技能干净交付目录标准化改造
+## Latest Milestone: v1.18 全技能干净交付目录标准化改造
 
 **Goal:** Apply the repository clean-delivery contract to every current file-writing skill so successful delivery roots stay reviewable, revisions are archived as complete sets, and failed runs never pollute the current successful version.
 
@@ -47,7 +47,7 @@ Standardize clean delivery directories across all current file-writing skills wh
 - Update shared scripts, skill entries, artifact contracts, contributor documentation, directory guidance, and the six-runtime compatibility matrix.
 - Provide a reusable, confirmation-gated workflow for organizing historical agent-created clutter without automatically moving or deleting unknown user files.
 
-## Latest Milestone: v1.17 school-pptx
+## Previous Milestone: v1.17 school-pptx
 
 **Goal:** Build a school-template PPTX skill that converts structured Markdown logical slides into editable, layout-stable, template-consistent `.pptx` files.
 
@@ -174,13 +174,17 @@ Standardize clean delivery directories across all current file-writing skills wh
 - [x] Implement Markdown-to-PPTX generation with editable native objects, deterministic logical-slide pagination, speaker notes, and strict template-slot behavior. - v1.17 Phase 43
 - [x] Verify fixed 8/6/21 registries, six-runtime documentation, and hash-bound WPS viewer UAT with 10/10 human checks passed. - v1.17 Phase 44
 
+### Validated in v1.18 (Phase 45)
+
+- [x] Standardize clean delivery-root contracts across all six current file-writing skills. - v1.18 Phase 45
+- [x] Implement candidate staging, minimal verification, complete-set history archival, and handled failure cleanup without claiming multi-file hard atomicity. - v1.18 Phase 45
+- [x] Preserve existing public commands, accepted source formats, and final artifact behavior while changing delivery-directory management. - v1.18 Phase 45
+- [x] Document and verify the standardized contract across all six supported runtimes. - v1.18 Phase 45
+- [x] Provide a confirmation-gated reusable workflow for organizing historical agent-created output clutter. - v1.18 Phase 45
+
 ### Active
 
-- [ ] Standardize clean delivery-root contracts across all six current file-writing skills.
-- [ ] Implement candidate staging, minimal verification, atomic publication, complete-set history archival, and failure cleanup.
-- [ ] Preserve existing public commands, accepted source formats, and final artifact behavior while changing delivery-directory management.
-- [ ] Document and verify the standardized contract across all six supported runtimes.
-- [ ] Provide a confirmation-gated reusable workflow for organizing historical agent-created output clutter.
+None — define the next milestone before adding active requirements.
 
 ### Out of Scope
 
@@ -238,7 +242,7 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 
 ## Next Milestone Goals
 
-下一里程碑承接已从 backlog Phase 999.1 晋升的 Phase 45「全技能干净交付目录标准化改造」；下一步通过 `/gsd:new-milestone` 定义正式需求、验收范围与后续阶段拆分。
+下一里程碑尚未定义。通过 `/gsd:new-milestone` 重新收集需求、确定验收范围，并从 Phase 46 继续阶段编号。
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -278,6 +282,9 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 - **v1.17 template-first discipline**: The `school-pptx` milestone must establish the standardized PPTX template before treating Markdown parsing or script output as final.
 - **v1.17 Markdown contract discipline**: The accepted Markdown fixture must define YAML metadata, automatic `##`-based contents, explicit slide blocks, and logical-slide pagination behavior before renderer implementation.
 - **v1.17 editability discipline**: Generated PPTX output must favor editable PowerPoint objects and must not use whole-slide images as a shortcut for template fidelity.
+- **v1.18 clean-delivery discipline**: File-writing skills must generate and minimally verify complete candidates before current mutation, compare exact path-set+bytes for no-op, archive replaced bundles together, and fail closed on unknown or symlink states.
+- **v1.18 rollback boundary**: Portable guarantees cover tested handled failure, INT, and TERM rollback; they do not claim SIGKILL, power-loss, filesystem-corruption, or multi-file hard atomicity.
+- **v1.18 evidence discipline**: Central milestone gates must derive counts from parsed skill-local regression evidence; a successful no-op command or missing gate marker must fail strict verification.
 
 ## Key Decisions
 
@@ -329,6 +336,9 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 | Start v1.17 as `school-pptx` with template-first build order | User requested a school-template Markdown-to-PPTX skill and explicitly set the build order as standard template, standard Markdown, then script | Good - Phases 41-42 established the controlled template and accepted Markdown boundary |
 | Treat `theme` as a controlled standard-template identifier | Future `.potx` templates may exist, but Markdown must not control styling or layout details directly | Good - `standard-school` is manifest-controlled and arbitrary styling is rejected |
 | Keep `school-pptx` output editable instead of screenshot-based | The value of the skill is template-consistent PPTX that can still be edited in PowerPoint | Good - Phase 43 emits native editable text, tables, pictures, groups, and notes |
+| Standardize all writing skills on explicit managed bundles | Root cleanliness, revision history, and failure safety need one semantic contract without creating cross-skill runtime dependencies | Good - v1.18 shipped skill-local candidate/no-op/history/rollback implementations for all six skills |
+| Bind central verification to real regression evidence | Required/called counts are meaningful only when stable output markers and fault registries prove the underlying public CLI tests ran | Good - v1.18 audit gap closure rejects no-op replacement and deleted gate evidence |
+| Keep historical cleanup confirmation-gated | Unknown files and user materials cannot be classified safely by normal render commands | Good - v1.18 provides snapshot-bound audit/approval semantics and a test-only executable protocol fixture |
 
 ## Evolution
 
@@ -348,4 +358,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-07-16 after starting milestone v1.18*
+*Last updated: 2026-07-17 after shipping milestone v1.18*

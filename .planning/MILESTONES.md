@@ -1,5 +1,29 @@
 # Milestones
 
+## v1.18 全技能干净交付目录标准化改造 (Shipped: 2026-07-17)
+
+**Delivered:** Six file-writing skills now share candidate-first clean delivery, exact no-op detection, whole-bundle history, handled rollback, and six-runtime boundaries.
+
+**Phases completed:** 1 phases, 9 plans, 24 tasks
+
+**Key accomplishments:**
+
+- 显式 DeliverySpec、snapshot-bound 整理确认门与固定 14-gate/7-fault harness 为六技能适配提供同一可复验目标
+- 期末教学材料四件套现已在 skill-local candidate 中完整生成和验门，并以 no-op、整包 history 与可验证回滚安全发布
+- 调课单现以同 root/stem 的 Markdown+Typst 二件套或 optional PDF 三件套完成 candidate 验门、整包 history 与 handled failure 回滚
+- School PPTX 现以 reviewed Markdown、validated PPTX 和按需 managed referenced assets 组成完整事务，并在 no-op、history、handled failure 与 best-effort 路径上保持整套一致。
+- School Presentation 现以 reviewed Markdown、offline HTML 与明确 referenced assets 完成 candidate 验门、整包 history 和 handled rollback，并将 manifest/verify/PDF evidence 完全隔离于 normal current。
+- Gongwen 现以纯 Bash 将 reviewed Markdown、candidate Typst 和 optional PDF 作为 exact pair/triple 安全发布，并覆盖 no-op、whole-bundle history 与 handled rollback。
+- Teaching Design Package 现以 model-derived exact `1+1+N` candidate 完成模块/merge 验门、课程前缀整组 history、no-op 与 handled rollback，并彻底移除生成前和失败时 public-root 清空。
+- 仓库入口、目录规范、六 runtime 矩阵与新技能模板现已共同表达六技能 explicit managed clean-delivery 契约
+- 六技能真实 public CLI 固定矩阵、三轮独立代码审查修复闭环与 12/12 goal-backward 证据共同完成 Phase 45 最终质量门。
+
+**Archives:** `.planning/milestones/v1.18-ROADMAP.md`, `.planning/milestones/v1.18-REQUIREMENTS.md`, `.planning/milestones/v1.18-MILESTONE-AUDIT.md`
+
+**Audit:** 12/12 requirements, Integration 98/100, Flows 97/100, no blockers.
+
+---
+
 ## v1.17 school-pptx (Shipped: 2026-07-16)
 
 **Delivered:** A Markdown-first `school-pptx` skill that renders controlled, editable school-template PPTX files with deterministic pagination, structural verification, and hash-bound human UAT.
