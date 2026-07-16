@@ -108,6 +108,7 @@ function buildPublicDelivery(metadata) {
     public_markdown_filename: `${prefix}教学资料.md`,
     public_package_pdf_filename: `${prefix}教学资料.pdf`,
     module_pdfs: modulePdfs,
+    supported_module_pdf_suffix_sets: [modulePdfs.map((item) => item.public_pdf_suffix)],
     expected_public_filenames: [
       `${prefix}教学资料.md`,
       `${prefix}教学资料.pdf`,
