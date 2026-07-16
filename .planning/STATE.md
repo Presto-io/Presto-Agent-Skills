@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.18
 milestone_name: 全技能干净交付目录标准化改造
 status: executing
-stopped_at: Completed 45-06-PLAN.md
-last_updated: "2026-07-16T02:57:28.859Z"
-last_activity: 2026-07-16 — Completed Phase 45 Plan 06 gongwen Bash pair/triple transaction
+stopped_at: Completed 45-07-PLAN.md
+last_updated: "2026-07-16T13:51:23.172Z"
+last_activity: 2026-07-16 — Completed Phase 45 Plan 07 teaching package dynamic bundle transaction
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 9
-  completed_plans: 6
-  percent: 67
+  completed_plans: 7
+  percent: 78
 ---
 
 # State: Presto Agent Skills
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-16)
 ## Current Position
 
 Phase: 45 of 45 (全技能干净交付目录标准化改造)
-Plan: 6 of 9
+Plan: 7 of 9
 Status: Ready to execute
-Last activity: 2026-07-16 — Completed 45-06 gongwen candidate/history/rollback adapter
+Last activity: 2026-07-16 — Completed 45-07 model-driven candidate/history/rollback adapter
 
 ## Workflow Preferences
 
@@ -55,6 +55,9 @@ Phase order:
 
 ### Decisions
 
+- [Phase 45]: Teaching Design Package expected_public_filenames is the sole dynamic mutation authority; current discovery accepts zero or one complete old prefix group and fails closed on ambiguity.
+- [Phase 45]: Teaching Design Package model, status, module, merge, and debug outputs are evidence in an owned .work run or explicit diagnostic workdir, never current.
+- [Phase 45]: Teaching Design Package portable guarantees cover exact candidate isolation and handled error/INT/TERM rollback, not SIGKILL, power loss, or multi-path hard atomicity.
 - [Phase 45]: Gongwen --typ real parent/stem owns the exact Markdown+Typst pair; optional same-root/stem PDF changes it to a triple and archives the prior whole bundle.
 - [Phase 45]: Gongwen PDF compilation consumes candidate Typst bytes through stdin while the reviewed Markdown parent remains the Typst root for existing assets references.
 - [Phase 45]: Gongwen cleanup mutates only validated fixed names owned by the current Bash run; unknown, legacy, symlink, partial, and stale-work states fail before current mutation.
@@ -157,13 +160,14 @@ None. v1.17 is shipped; Phase 45 is promoted and ready for next-milestone initia
 | Phase 45 P04 | 38 min | 2 tasks | 8 files |
 | Phase 45 P05 | 19 min | 3 tasks | 6 files |
 | Phase 45 P06 | 21 min | 2 tasks | 7 files |
+| Phase 45 P07 | 10h 41m | 3 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-07-16T02:57:28.851Z
-Stopped at: Completed 45-06-PLAN.md
+Last session: 2026-07-16T13:51:23.165Z
+Stopped at: Completed 45-07-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Execute remaining Wave 2 plan 45-07 against the fixed 14-gate/7-fault authority.
+- Execute Wave 3 plan 45-08 to synchronize repository documentation, compatibility matrix, and new-skill templates.
