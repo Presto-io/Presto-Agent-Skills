@@ -114,6 +114,12 @@ AI 起草但需要教师确认的可编辑文字可以使用：
 
 `tiaokedan.md` 不得包含 raw Typst、CSS-like layout knobs、字体 fallback 列表、页面尺寸、表格宽度配置、PDF 命令或调试诊断字段。
 
+## Delivery Relationship
+
+finalized 输入先通过本契约解析，再以原始 UTF-8 bytes 复制为 candidate `<stem>.md`；同一 candidate 生成 `<stem>.typ`，可选 PDF 只从该 candidate Typst 编译。未解决复核标记、非 UTF-8、空文件或解析失败均发生在 current mutation 前。
+
+交付 root/stem 由 `--typ` 决定，`--pdf` 必须同 root/stem。普通 render 只发布 exact 2/3 件套，不把 renderer defaults、diff、日志或 legacy `.tiaokedan/` 写成长期 current；完整 history、identical no-op、rollback 与 unknown fail-closed 规则见 `references/pdf-workflow.md`。
+
 ## Phase 38 non-goals
 
 Phase 38 明确不做：
