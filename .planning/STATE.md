@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.18
 milestone_name: 全技能干净交付目录标准化改造
 status: executing
-stopped_at: Completed 45-04-PLAN.md
-last_updated: "2026-07-16T01:55:54.300Z"
-last_activity: 2026-07-16 — Completed Phase 45 Plan 04 school-pptx whole-bundle transaction
+stopped_at: Completed 45-05-PLAN.md
+last_updated: "2026-07-16T02:28:00.000Z"
+last_activity: 2026-07-16 — Completed Phase 45 Plan 05 school-presentation Markdown+HTML transaction
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 9
-  completed_plans: 4
-  percent: 44
+  completed_plans: 5
+  percent: 56
 ---
 
 # State: Presto Agent Skills
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-16)
 ## Current Position
 
 Phase: 45 of 45 (全技能干净交付目录标准化改造)
-Plan: 4 of 9
+Plan: 5 of 9
 Status: Ready to execute
-Last activity: 2026-07-16 — Completed 45-04 school-pptx held-descriptor whole-bundle adapter
+Last activity: 2026-07-16 — Completed 45-05 school-presentation pair/assets/evidence adapter
 
 ## Workflow Preferences
 
@@ -114,6 +114,9 @@ Phase order:
 - [Phase 45]: School PPTX current delivery is the exact reviewed Markdown, validated PPTX, and confirmed assets/... paths that remain referenced by the bundle.
 - [Phase 45]: School PPTX archives old pair and managed assets under one sequence so archived Markdown references resolve without mutating sources/.
 - [Phase 45]: Parser, planner, runtime, or validation failures keep editable best-effort output in owned work evidence and never publish it as current.
+- [Phase 45]: School Presentation current is exactly reviewed Markdown plus offline HTML and explicitly referenced assets; manifests and verify evidence remain outside the delivery root.
+- [Phase 45]: A same-root reviewed Markdown may seed first HTML publication, but handled failure restores its original bytes and creates no false history.
+- [Phase 45]: School Presentation legacy media requires confirmed migration to assets; missing required assets and unsafe evidence paths fail before current mutation.
 
 ### Pending Todos
 
@@ -149,13 +152,14 @@ None. v1.17 is shipped; Phase 45 is promoted and ready for next-milestone initia
 | Phase 45 P02 | 21 min | 3 tasks | 5 files |
 | Phase 45 P03 | 12 min | 3 tasks | 6 files |
 | Phase 45 P04 | 38 min | 2 tasks | 8 files |
+| Phase 45 P05 | 19 min | 3 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-07-16T01:55:54.300Z
-Stopped at: Completed 45-04-PLAN.md
+Last session: 2026-07-16T02:28:00.000Z
+Stopped at: Completed 45-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Execute remaining Wave 2 plans 45-05 through 45-07 against the fixed 14-gate/7-fault authority.
+- Execute remaining Wave 2 plans 45-06 through 45-07 against the fixed 14-gate/7-fault authority.
