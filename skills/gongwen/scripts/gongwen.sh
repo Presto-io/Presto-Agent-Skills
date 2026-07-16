@@ -9,6 +9,7 @@ SKILL_DIR="${SCRIPT_DIR}/.."
 TEMPLATE_MD="${SKILL_DIR}/templates/gongwen.md"
 
 source "$SCRIPT_DIR/gongwen_lib/common.sh"
+source "$SCRIPT_DIR/gongwen_lib/delivery.sh"
 source "$SCRIPT_DIR/gongwen_lib/inline.sh"
 source "$SCRIPT_DIR/gongwen_lib/frontmatter.sh"
 source "$SCRIPT_DIR/gongwen_lib/typst_head.sh"
