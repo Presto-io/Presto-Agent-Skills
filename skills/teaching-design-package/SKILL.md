@@ -81,18 +81,20 @@ scripts/teaching-design-package.sh manifest \
 
 如果课程使用专属文件名，把 `--input teaching-design-package-full.md` 换成对应的 `某某某课教学资料.md` 路径。
 
-`render-package --pdf` 是最终交付命令。它只有在所有注册模块 PDF 都真实生成且非空，并且整包 PDF 由这些模块 PDF 按 registry 顺序合并成功后才返回成功；否则命令非零退出，并把 status、stderr log、model JSON、模块 Markdown/Typst、staging 文件和失败诊断保存在输出目录内的隐藏 `.teaching-design-package/` 下。
+`render-package --pdf` 是最终交付命令。它先在交付根的 `.work/<run-id>/` 内生成 model、模块 Markdown/Typst、模块 PDF、merge plan/status 和完整 public candidate；所有 registry/order、PDF header、non-empty、merge 和 final-ready gate 通过后，才由 `public_delivery.expected_public_filenames` 驱动的 publisher 一次发布 dynamic `1 + 1 + N`。失败只返回有界诊断并清理本次 owned run，旧 current、history 和 `sources/` 保持不变。
+
+`model --out-dir`、`manifest --out-dir`、不带 `--pdf` 的 `render-package`、`plan-split` 和 `render-split` 是诊断/中间命令；其 `--out-dir` 是调用方显式 diagnostic workdir，不是成功交付根，也不产生 current 版本。
 
 ## Runtime Adapter Notes
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | 先读取本入口、reference 和 template，按教师源材料完成澄清、统一 Markdown、教师审阅/编辑；仅在 Markdown 定稿后运行包内脚本。PDF 成功必须由课程名前缀公开文件、隐藏 status JSON 和 registry-order merge 证据证明。 |
-| Claude Code | 可把本 skill folder 安装到 `.claude/skills/teaching-design-package/`；frontmatter `description` 触发后渐进读取 reference/template/script；先执行教师 workflow，再执行 finalized Markdown validation/rendering。 |
-| Gemini CLI | 在 `GEMINI.md` 或项目上下文中指向本 `SKILL.md`；自动技能加载不可用时用普通文本完成澄清和教师确认；脚本命令只作为定稿后的交付步骤。 |
-| OpenCode | 使用 OpenCode 可发现的 skill path；保持 `references/`、`templates/`、`scripts/` 同步复制；先确认教师可编辑 Markdown，再运行脚本验证。 |
-| OpenClaw | 作为 AgentSkills-compatible skill folder 使用；安装时复制整个 `teaching-design-package` folder，验证 frontmatter、support files、脚本权限、Typst/Python merge fallback、sandbox/allowlist 和隐藏 `.teaching-design-package/` 可写性；教师确认 Markdown 前不要触发渲染交付。 |
-| Hermes Agent | 使用 Hermes Agent 可发现的 `SKILL.md` skill folder；验证 reference/template/script 可读性、执行权限、PDF merge 工具 fallback 和隐藏诊断目录可写性；遇到材料冲突时走文本澄清，定稿后再运行包内脚本。 |
+| Codex | 复制并读取整个 skill folder；自动发现不可用时显式执行 `scripts/teaching-design-package.sh`。允许 Bash/Node/Typst 以及 `pdfunite`、`qpdf` 或 Python PyMuPDF fallback，授予 template/reference/input 读权限和 delivery root/`.work` 写权限，并把这些命令加入 sandbox/allowlist。 |
+| Claude Code | 安装整个 folder 到可发现 skill path；自动加载失败时显式 shell fallback。允许 Bash/Node/Typst/PDF merge，授予 finalized Markdown 读取与 delivery root、history、`.work` 写入权限；禁止把 model/status/debug/merge evidence 当作 current。 |
+| Gemini CLI | 在 `GEMINI.md` 或项目上下文指向整个 folder；不能自动发现 support files 时显式调用脚本。sandbox 必须允许 Bash/Node/Typst/PDF merge、读取 reference/template/input，并写授权 delivery root 与 owned `.work`。 |
+| OpenCode | 保持 `references/`、`templates/`、`scripts/` 整体安装；发现失败时使用显式 shell fallback。allowlist 覆盖 Bash/Node/Typst/PDF merge 和授权根读写，unknown/legacy/ambiguous root 仍失败关闭。 |
+| OpenClaw | 仅声明 installation-time verified：安装时验证 whole-folder discovery、support-file 可读、脚本可执行、Bash/Node/Typst/PDF merge 可用、sandbox/allowlist 以及 delivery root/`.work` 写权限；验证失败时只使用显式脚本 fallback。 |
+| Hermes Agent | 仅声明 installation-time verified：核对实际 local/global skill path、whole-folder support discovery、execute/read/write 权限、Bash/Node/Typst/PDF merge 和 delivery root/`.work` allowlist；自动发现不确定时显式调用脚本。 |
 
 ## Outputs
 
@@ -107,16 +109,11 @@ scripts/teaching-design-package.sh manifest \
 - `课程名授课进度计划表.pdf`：`teaching-plan` 注册模块的正式 PDF。
 - `课程名教学设计方案.pdf`：`teaching-design` 注册模块的正式 PDF。
 
-隐藏诊断目录：
+交付根按需允许 `sources/`、`assets/`、`history/`、`.work/`。当前实现不自动修改 `sources/`，也不自动治理 legacy hidden、`media/` 或 unknown 用户文件。`.work/<run-id>/candidate/` 只保存完整 public candidate，`evidence/` 保存 model/status/debug/module/merge 证据，publisher 按需创建 `rollback/`；成功、no-op 和 handled failure 后清理本次 run 与空 `.work/`。
 
-- `.teaching-design-package/model.json`：派生模型和调度证据。
-- `.teaching-design-package/status.json`：输出状态、PDF readiness 和 final_ready。
-- `.teaching-design-package/work/`：模块 Markdown、模块 Typst 和 debug-only unified Typst 等内部中间文件。
-- `.teaching-design-package/staging/`：模块 PDF 与整包合并 PDF 的发布前 staging 产物。
-- `.teaching-design-package/debug/`：stderr log、merge status、merge stderr 等调试证据。
-- `.teaching-design-package/failure-diagnostics/`：失败时保留的诊断快照。
+`expected_public_filenames` 是唯一 dynamic mutation authority。相同 prefix 或 course-name 变化都按 exact path-set+bytes 比较：identical 不创建 history、不触碰 current；changed 把唯一完整旧 `1+1+N` group 放入下一个 `history/<max+1>/` 后发布新组。多个旧 prefix、partial group、unknown、legacy hidden、symlink 或 traversal 均在 mutation 前失败关闭。
 
-`.typ`、status、manifest、stderr log、model JSON、diagnostics JSON、calendar JSON、模块 Markdown/Typst、staging 文件、旧英文成功文件名和 failure diagnostics 不属于成功交付根目录的公开文件。
+`.typ`、status、manifest、stderr log、model JSON、diagnostics JSON、calendar JSON、模块 Markdown/Typst、merge plan/status、staging 文件、旧英文成功文件名和 failure diagnostics 都不是成功 current。
 
 ## Verification
 
@@ -125,7 +122,8 @@ scripts/teaching-design-package.sh manifest \
 - [ ] `references/format-and-orchestration.md` 说明 teacher-editable Markdown、YAML/frontmatter 边界、正文/body 提取、派生事实、复核标记和 script boundary。
 - [ ] `scripts/teaching-design-package.sh model --input <finalized-markdown>` 输出 package-owned data model。
 - [ ] `scripts/teaching-design-package.sh render-package --pdf --input <finalized-markdown> --out-dir <dir>` 成功后，公开根目录只有 `课程名教学资料.md`、`课程名教学资料.pdf`、`课程名授课进度计划表.pdf`、`课程名教学设计方案.pdf`。
-- [ ] `.teaching-design-package/model.json` 和 `.teaching-design-package/status.json` 存在，且公开根目录没有 `.typ`、status、manifest、stderr log、model JSON、diagnostics JSON、calendar JSON、模块中间产物、staging 文件或旧英文成功文件名。
+- [ ] 成功、identical 与 handled failure 后不保留 legacy `.teaching-design-package/` 或本次 `.work/<run-id>`；公开根没有 `.typ`、status、manifest、stderr log、model JSON、diagnostics JSON、calendar JSON、模块/merge 中间产物或旧英文成功文件名。
+- [ ] changed 发布把完整旧 dynamic group 放入同一 next history；已有 `001/003` 时 next 为 `004`，course prefix 多组或 partial group 非零失败且零 mutation。
 
 ## Safety
 
@@ -135,3 +133,5 @@ scripts/teaching-design-package.sh manifest \
 - 不要把总课时、学年、学期、起止日期、输出 readiness、诊断状态等派生事实放进教师必须维护的 YAML。
 - 不要从 unified Markdown 一跳声称 PDF 最终通过；`课程名教学资料.pdf` 必须由注册模块 PDF 真实合并得到。
 - 不要把脚本诊断文件混入教师默认交付说明；成功交付根目录只允许课程名前缀 `1 + 1 + N` 公开文件。
+- 不要在 candidate 完整验证前删除、覆盖、移动 current，也不要用 glob、find-delete、broad cleanup 或逐文件 final copy 绕过 publisher。
+- 不要宣称 SIGKILL、断电或多文件跨路径硬原子；保证范围是 candidate isolation、逐路径 replace 与 handled error/INT/TERM rollback。
