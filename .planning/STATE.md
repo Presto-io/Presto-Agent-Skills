@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.18
 milestone_name: 全技能干净交付目录标准化改造
 status: executing
-stopped_at: Completed 45-05-PLAN.md
-last_updated: "2026-07-16T02:28:00.000Z"
-last_activity: 2026-07-16 — Completed Phase 45 Plan 05 school-presentation Markdown+HTML transaction
+stopped_at: Completed 45-06-PLAN.md
+last_updated: "2026-07-16T02:57:28.859Z"
+last_activity: 2026-07-16 — Completed Phase 45 Plan 06 gongwen Bash pair/triple transaction
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 9
-  completed_plans: 5
-  percent: 56
+  completed_plans: 6
+  percent: 67
 ---
 
 # State: Presto Agent Skills
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-16)
 ## Current Position
 
 Phase: 45 of 45 (全技能干净交付目录标准化改造)
-Plan: 5 of 9
+Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-07-16 — Completed 45-05 school-presentation pair/assets/evidence adapter
+Last activity: 2026-07-16 — Completed 45-06 gongwen candidate/history/rollback adapter
 
 ## Workflow Preferences
 
@@ -55,6 +55,9 @@ Phase order:
 
 ### Decisions
 
+- [Phase 45]: Gongwen --typ real parent/stem owns the exact Markdown+Typst pair; optional same-root/stem PDF changes it to a triple and archives the prior whole bundle.
+- [Phase 45]: Gongwen PDF compilation consumes candidate Typst bytes through stdin while the reviewed Markdown parent remains the Typst root for existing assets references.
+- [Phase 45]: Gongwen cleanup mutates only validated fixed names owned by the current Bash run; unknown, legacy, symlink, partial, and stale-work states fail before current mutation.
 - [Phase 45]: End-of-term delivery uses one exact fixed four-file managed set; unknown, partial, symlink, legacy, and stale-work states fail before mutation.
 - [Phase 45]: Typst compilation defaults `SOURCE_DATE_EPOCH` to zero so byte-identical reviewed input can produce a true no-op without changing output content.
 - [Phase 45]: End-of-term runtime support uses whole-folder installation, explicit shell fallback, and installation-time verification for OpenClaw and Hermes Agent.
@@ -153,13 +156,14 @@ None. v1.17 is shipped; Phase 45 is promoted and ready for next-milestone initia
 | Phase 45 P03 | 12 min | 3 tasks | 6 files |
 | Phase 45 P04 | 38 min | 2 tasks | 8 files |
 | Phase 45 P05 | 19 min | 3 tasks | 6 files |
+| Phase 45 P06 | 21 min | 2 tasks | 7 files |
 
 ## Session Continuity
 
-Last session: 2026-07-16T02:28:00.000Z
-Stopped at: Completed 45-05-PLAN.md
+Last session: 2026-07-16T02:57:28.851Z
+Stopped at: Completed 45-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Execute remaining Wave 2 plans 45-06 through 45-07 against the fixed 14-gate/7-fault authority.
+- Execute remaining Wave 2 plan 45-07 against the fixed 14-gate/7-fault authority.
