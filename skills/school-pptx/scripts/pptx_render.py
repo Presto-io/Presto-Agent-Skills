@@ -397,8 +397,16 @@ class DeliverySession:
 
     def close(self) -> None:
         for root in (self.candidate_root, self.rollback_root, self.evidence_root):
-            if root.exists():
-                files = tuple(path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file())
+            try:
+                status = os.stat(root, follow_symlinks=False)
+            except OSError:
+                continue
+            if stat.S_ISDIR(status.st_mode):
+                files = tuple(
+                    path.relative_to(root).as_posix()
+                    for path in root.rglob("*")
+                    if path.is_file() and not path.is_symlink()
+                )
                 self._remove_names(root, files)
                 try:
                     root.rmdir()

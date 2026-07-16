@@ -712,6 +712,21 @@ theme: standard-school
     require(result.returncode == 0 and model["document_title"] == "YAML 标题" and model["contents_entries"] == [], "YAML title precedence failed")
 
 
+def confirmed_asset_fixture_gate(work: Path) -> None:
+    fixture = SKILL_DIR / "fixtures" / "clean-delivery" / "confirmed-assets.md"
+    controlled = fixture.parent / "assets" / "robot-arm.png"
+    canonical = SKILL_DIR / "fixtures" / "media" / "robot-arm.png"
+    require(fixture.is_file() and controlled.is_file(), "confirmed-assets fixture is incomplete")
+    require(controlled.read_bytes() == canonical.read_bytes(), "confirmed managed asset bytes changed")
+    result, model = validate(fixture, work / "confirmed-assets-logical.json")
+    require(result.returncode == 0 and not model["errors"], "confirmed-assets fixture did not validate")
+    media = [block for slide in model["logical_slides"] for block in slide["blocks"] if block["kind"] == "image"]
+    require(len(media) == 1 and media[0]["authored_path"] == "assets/robot-arm.png" and media[0]["exists"],
+            "confirmed-assets fixture does not own exactly one resolving asset reference")
+    require(not any(path.name == "unreferenced-input.png" for path in fixture.parent.rglob("*")),
+            "canonical confirmed-assets fixture contains an unreferenced input")
+
+
 def assert_example_failure(output: Path, *protected_roots: Path) -> None:
     before = [tree_snapshot(root) for root in protected_roots]
     result = run("example", "--out-dir", str(output))
@@ -787,12 +802,13 @@ def fixture_example_command() -> int:
         secure_io_capability_gate(gap_work)
         full_fixture_gate(work)
         metadata_and_media_variants_gate(work)
+        confirmed_asset_fixture_gate(work)
         example_safety_gate(work)
         regression_gate(work)
     require(FIXTURE.is_file(), "canonical fixture missing")
     print("PASS school-pptx fixture-example: YAML types, fence opacity, table structure, manifest failures, "
           "descriptor capability fail-closed, output-root exchange, media-parent exchange, full coverage, "
-          "determinism, ownership, variants, collisions, Phase 41 regression")
+          "determinism, ownership, variants, confirmed assets, collisions, Phase 41 regression")
     return 0
 
 

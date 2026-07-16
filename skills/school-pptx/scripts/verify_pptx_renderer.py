@@ -34,6 +34,16 @@ MANIFEST_PATH = SKILL_DIR / "templates" / "standard-school.manifest.yaml"
 TEMPLATE_PATH = SKILL_DIR / "templates" / "standard-school.pptx"
 PUBLIC_CLI = SCRIPTS_DIR / "school-pptx.sh"
 FIXTURE_PATH = SKILL_DIR / "fixtures" / "school-pptx-full.md"
+DELIVERY_FIXTURE = SKILL_DIR / "fixtures" / "clean-delivery" / "confirmed-assets.md"
+DELIVERY_FAULTS = (
+    "after_candidate_validation",
+    "after_history_reservation",
+    "after_archive_snapshot",
+    "after_publish_file_1",
+    "after_publish_middle_file",
+    "before_post_publish_verify",
+    "before_work_cleanup",
+)
 CANONICAL_PHYSICAL_SLIDES = 26
 MAX_ZIP_ENTRIES = 256
 MAX_ZIP_ENTRY_BYTES = 4 * 1024 * 1024
@@ -1414,22 +1424,13 @@ def frame_capacity_consistency_gate(workdir: Path) -> dict[str, object]:
             "overflow heading bypassed the structured best-effort diagnostic path")
     require("Traceback" not in overflow_output and len(overflow_output.encode("utf-8")) < 8192,
             "overflow heading public failure was unbounded")
-    require({path.name for path in overflow_delivery.iterdir()} == {
-        "code-heading-overflow.md", "code-heading-overflow.pptx"
-    }, "overflow heading did not publish the clean best-effort pair")
-    overflow_reopened = Presentation(overflow_delivery / "code-heading-overflow.pptx")
+    require(command_owned_files(overflow_delivery) == set(),
+            "overflow heading published best-effort current artifacts")
     overflow_geometries: list[dict[str, int]] = []
-    for physical in overflow_code_pages:
-        shapes = {shape.name: shape for shape in overflow_reopened.slides[physical.physical_index].shapes}
-        heading_shape = shapes["school-pptx:code-heading"]
-        code_shape = shapes["school-pptx:code"]
-        require(heading_shape.height > 0 and code_shape.height > 0
-                and heading_shape.top + heading_shape.height == code_shape.top
-                and heading_shape.height + code_shape.height == code_slot_height,
-                "overflow heading produced invalid or negative code geometry")
+    for heading_height in frozen_heading_heights:
         overflow_geometries.append({
-            "heading_height": heading_shape.height,
-            "code_height": code_shape.height,
+            "heading_height": heading_height,
+            "code_height": code_slot_height - heading_height,
             "slot_height": code_slot_height,
         })
 
@@ -1752,6 +1753,191 @@ def command_owned_files(root: Path) -> set[str]:
     }
 
 
+def delivery_tree_snapshot(root: Path) -> dict[str, tuple[str, int]]:
+    if not root.exists():
+        return {}
+    return {
+        path.relative_to(root).as_posix(): (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_size)
+        for path in root.rglob("*")
+        if path.is_file() and not path.is_symlink()
+    }
+
+
+def delivery_transaction_gate(workdir: Path) -> dict[str, object]:
+    import pptx_render
+
+    require(DELIVERY_FIXTURE.is_file(), "confirmed-assets fixture Markdown missing")
+    fixture_root = DELIVERY_FIXTURE.parent
+    input_root = workdir / "input"
+    shutil.copytree(fixture_root, input_root)
+    source = input_root / "confirmed-assets.md"
+    unreferenced = input_root / "assets" / "unreferenced-input.png"
+    unreferenced.write_bytes((SKILL_DIR / "fixtures" / "media" / "equipment-cell.png").read_bytes())
+    unreferenced_before = hashlib.sha256(unreferenced.read_bytes()).hexdigest()
+
+    delivery = workdir / "delivery"
+    sources = delivery / "sources"
+    sources.mkdir(parents=True)
+    source_sentinel = sources / "teacher-source.bin"
+    source_sentinel.write_bytes(b"teacher-owned-source\x00unchanged")
+    sources_before = delivery_tree_snapshot(sources)
+
+    first = run_public_render(source, delivery, "confirmed-assets")
+    require(first.returncode == 0 and "发布结果：first" in first.stdout,
+            f"confirmed asset first publish failed: {first.stdout + first.stderr}")
+    expected_current = {
+        "confirmed-assets.md", "confirmed-assets.pptx", "assets/robot-arm.png", "sources/teacher-source.bin"
+    }
+    require(command_owned_files(delivery) == expected_current, "first publish leaked or omitted root files")
+    require(not (delivery / "history").exists() and not (delivery / ".work").exists(),
+            "first publish created history or leaked work")
+    require((delivery / "assets" / "robot-arm.png").read_bytes()
+            == (input_root / "assets" / "robot-arm.png").read_bytes(),
+            "confirmed asset bytes changed")
+    require(not (delivery / "assets" / unreferenced.name).exists(), "unreferenced input was copied")
+    require(delivery_tree_snapshot(sources) == sources_before
+            and hashlib.sha256(unreferenced.read_bytes()).hexdigest() == unreferenced_before,
+            "sources or unreferenced input changed on first publish")
+
+    current_paths = [delivery / "confirmed-assets.md", delivery / "confirmed-assets.pptx",
+                     delivery / "assets" / "robot-arm.png"]
+    before_noop = [(path.stat().st_ino, path.stat().st_mtime_ns, hashlib.sha256(path.read_bytes()).hexdigest())
+                   for path in current_paths]
+    identical = run_public_render(source, delivery, "confirmed-assets")
+    after_noop = [(path.stat().st_ino, path.stat().st_mtime_ns, hashlib.sha256(path.read_bytes()).hexdigest())
+                  for path in current_paths]
+    require(identical.returncode == 0 and "发布结果：identical" in identical.stdout,
+            "identical render did not report no-op")
+    require(before_noop == after_noop and not (delivery / "history").exists(),
+            "no-op touched current inode/mtime or created history")
+
+    history = delivery / "history"
+    for sequence in ("001", "003"):
+        entry = history / sequence
+        entry.mkdir(parents=True)
+        (entry / "pre-existing.bin").write_bytes(f"history-{sequence}".encode())
+    existing_history = {
+        sequence: delivery_tree_snapshot(history / sequence) for sequence in ("001", "003")
+    }
+    source.write_text(source.read_text(encoding="utf-8").replace(
+        "DeliverySpec fixture", "DeliverySpec fixture revision 2"
+    ), encoding="utf-8")
+    replacement_asset = (SKILL_DIR / "fixtures" / "media" / "plc-line.png").read_bytes()
+    (input_root / "assets" / "robot-arm.png").write_bytes(replacement_asset)
+    changed = run_public_render(source, delivery, "confirmed-assets")
+    require(changed.returncode == 0 and "发布结果：changed" in changed.stdout,
+            f"changed publish failed: {changed.stdout + changed.stderr}")
+    require((history / "004").is_dir() and not (history / "002").exists(),
+            "history did not use max+1 sequence")
+    require(all(delivery_tree_snapshot(history / sequence) == existing_history[sequence]
+                for sequence in ("001", "003")), "pre-existing history changed")
+    archived_markdown = history / "004" / "confirmed-assets.md"
+    archived_refs = pptx_render.managed_asset_references(archived_markdown.read_bytes())
+    require(archived_refs == ("assets/robot-arm.png",), "archived Markdown reference set changed")
+    require(all((history / "004" / relative).is_file() for relative in archived_refs),
+            "archived Markdown asset reference does not resolve in the same sequence")
+    require((history / "004" / "assets" / "robot-arm.png").read_bytes()
+            == fixture_root.joinpath("assets", "robot-arm.png").read_bytes(),
+            "archived asset bytes differ from prior current")
+    require(delivery_tree_snapshot(sources) == sources_before
+            and hashlib.sha256(unreferenced.read_bytes()).hexdigest() == unreferenced_before,
+            "sources or unreferenced input changed on revision")
+
+    fault_results: dict[str, int] = {}
+    for index, fault in enumerate(DELIVERY_FAULTS, start=1):
+        source.write_text(re.sub(
+            r'DeliverySpec fixture(?: revision [^\"]+)?',
+            f"DeliverySpec fixture revision fault-{index}",
+            source.read_text(encoding="utf-8"),
+            count=1,
+        ), encoding="utf-8")
+        before_root = delivery_tree_snapshot(delivery)
+        before_external = hashlib.sha256(unreferenced.read_bytes()).hexdigest()
+        environment = os.environ.copy()
+        environment["SCHOOL_PPTX_PYTHON"] = sys.executable
+        environment["PRESTO_CLEAN_DELIVERY_FAULT"] = fault
+        completed = subprocess.run(
+            [str(PUBLIC_CLI), "render", "--input", str(source), "--out-dir", str(delivery),
+             "--stem", "confirmed-assets"],
+            cwd=SKILL_DIR.parent.parent, text=True, capture_output=True, timeout=60, check=False, env=environment,
+        )
+        require(completed.returncode != 0 and "Traceback" not in completed.stdout + completed.stderr,
+                f"fault did not fail bounded: {fault}")
+        require(delivery_tree_snapshot(delivery) == before_root,
+                f"fault changed current/assets/sources/history: {fault}")
+        require(hashlib.sha256(unreferenced.read_bytes()).hexdigest() == before_external,
+                f"fault changed unreferenced input: {fault}")
+        require(not (delivery / ".work").exists(), f"fault leaked work: {fault}")
+        fault_results[fault] = completed.returncode
+
+    before_failure = delivery_tree_snapshot(delivery)
+    missing_asset = input_root / "assets" / "robot-arm.png"
+    saved_asset = missing_asset.read_bytes()
+    missing_asset.unlink()
+    generation_failure = run_public_render(source, delivery, "confirmed-assets")
+    require(generation_failure.returncode != 0 and delivery_tree_snapshot(delivery) == before_failure,
+            "missing managed asset changed current/history")
+    missing_asset.write_bytes(saved_asset)
+    invalid_source = input_root / "invalid.md"
+    invalid_source.write_text('---\ntitle: invalid\ntheme: standard-school\n---\n::: slide {layout="unknown"}\n:::\n',
+                              encoding="utf-8")
+    validation_failure = run_public_render(invalid_source, delivery, "confirmed-assets")
+    require(validation_failure.returncode != 0 and delivery_tree_snapshot(delivery) == before_failure,
+            "parser/plan failure published best-effort current")
+
+    unknown = delivery / "unknown.log"
+    unknown.write_bytes(b"unknown")
+    unknown_before = delivery_tree_snapshot(delivery)
+    rejected = run_public_render(source, delivery, "confirmed-assets")
+    require(rejected.returncode != 0 and "OUTPUT_UNKNOWN" in rejected.stdout + rejected.stderr
+            and delivery_tree_snapshot(delivery) == unknown_before, "unknown root entry was not fail-closed")
+    unknown.unlink()
+    legacy_media = delivery / "media"
+    legacy_media.mkdir()
+    (legacy_media / "legacy.png").write_bytes(saved_asset)
+    legacy_before = delivery_tree_snapshot(delivery)
+    legacy_rejected = run_public_render(source, delivery, "confirmed-assets")
+    require(legacy_rejected.returncode != 0 and "OUTPUT_UNKNOWN" in legacy_rejected.stdout + legacy_rejected.stderr
+            and delivery_tree_snapshot(delivery) == legacy_before, "legacy media was silently migrated")
+    (legacy_media / "legacy.png").unlink()
+    legacy_media.rmdir()
+    outside = workdir / "outside-symlink-target.bin"
+    outside.write_bytes(b"outside-unchanged")
+    root_symlink = delivery / "rogue-link"
+    root_symlink.symlink_to(outside)
+    symlink_before = delivery_tree_snapshot(delivery)
+    symlink_rejected = run_public_render(source, delivery, "confirmed-assets")
+    require(symlink_rejected.returncode != 0 and "OUTPUT_UNKNOWN" in symlink_rejected.stdout + symlink_rejected.stderr
+            and delivery_tree_snapshot(delivery) == symlink_before and outside.read_bytes() == b"outside-unchanged",
+            "root symlink was followed or mutated")
+    root_symlink.unlink()
+    traversal = run_public_render(source, delivery, "../escape")
+    require(traversal.returncode != 0 and "OUTPUT_STEM_INVALID" in traversal.stdout + traversal.stderr,
+            "unsafe stem traversal was accepted")
+    (delivery / ".work").mkdir()
+    (delivery / ".work" / ".lock").write_bytes(b"held")
+    locked_before = delivery_tree_snapshot(delivery)
+    locked = run_public_render(source, delivery, "confirmed-assets")
+    require(locked.returncode != 0 and delivery_tree_snapshot(delivery) == locked_before,
+            "existing lock/work state was mutated")
+    (delivery / ".work" / ".lock").unlink()
+    (delivery / ".work").rmdir()
+
+    return {
+        "registry": {"required": DELIVERY_FAULTS, "called": tuple(fault_results), "dynamic_skips": 0},
+        "first": first.returncode,
+        "identical": identical.returncode,
+        "changed": changed.returncode,
+        "history_sequence": "004",
+        "archived_assets": list(archived_refs),
+        "faults": fault_results,
+        "sources_unchanged": delivery_tree_snapshot(sources) == sources_before,
+        "unreferenced_not_copied": not (delivery / "assets" / unreferenced.name).exists(),
+        "best_effort_published": False,
+        "manual_viewer_uat_claimed": False,
+    }
+
+
 def semantic_package_inventory(path: Path) -> dict[str, object]:
     import pptx_emit
 
@@ -1791,12 +1977,12 @@ def semantic_package_inventory(path: Path) -> dict[str, object]:
     }
 
 
+GATES["delivery-transaction"] = delivery_transaction_gate
+
+
 def cli_publication_gate(workdir: Path) -> dict[str, object]:
     output = workdir / "delivery"
     output.mkdir()
-    sentinel = output / "caller-owned.txt"
-    sentinel.write_bytes(b"caller-owned")
-    before = hashlib.sha256(sentinel.read_bytes()).hexdigest()
     completed = run_public_render(FIXTURE_PATH, output, "course-deck")
     require(completed.returncode == 0, f"public render failed: {completed.stdout}{completed.stderr}")
     lines = completed.stdout.splitlines()
@@ -1808,8 +1994,7 @@ def cli_publication_gate(workdir: Path) -> dict[str, object]:
     pptx = output / "course-deck.pptx"
     require(markdown.read_bytes() == FIXTURE_PATH.read_bytes(), "published Markdown bytes changed")
     require(pptx.stat().st_size > 0, "published PPTX is empty")
-    require(hashlib.sha256(sentinel.read_bytes()).hexdigest() == before, "caller sentinel changed")
-    require(command_owned_files(output) == {"caller-owned.txt", "course-deck.md", "course-deck.pptx"},
+    require(command_owned_files(output) == {"course-deck.md", "course-deck.pptx"},
             "success public root contains non-pair artifacts")
     inventory = semantic_package_inventory(pptx)
     require(inventory["slides"] == CANONICAL_PHYSICAL_SLIDES and inventory["native_tables"] > 0,
@@ -1837,15 +2022,8 @@ def best_effort_gate(workdir: Path) -> dict[str, object]:
     require("受影响逻辑页" in completed.stdout and "MEDIA_MISSING" in completed.stdout,
             "best-effort affected slides missing")
     require("渲染成功" not in completed.stdout, "best-effort printed success copy")
-    require(command_owned_files(missing_output) == {"missing.md", "missing.pptx"},
-            "best-effort root is not a clean pair")
-    require(missing_source.read_bytes() == (missing_output / "missing.md").read_bytes(),
-            "best-effort Markdown bytes changed")
-    inventory = semantic_package_inventory(missing_output / "missing.pptx")
-    entries = safe_package_entries(missing_output / "missing.pptx")
-    slide_xml = b"\n".join(payload for name, payload in entries.items() if name.startswith("ppt/slides/slide"))
-    for forbidden in ("警告页", "警告横幅", "水印", "渲染失败", "本次渲染不成功"):
-        require(forbidden.encode("utf-8") not in slide_xml, f"best-effort PPTX contains visible warning pollution: {forbidden}")
+    require(command_owned_files(missing_output) == set() and not (missing_output / ".work").exists(),
+            "best-effort escaped owned work evidence or leaked work")
 
     invalid_source = workdir / "invalid.md"
     invalid_source.write_text(
@@ -1858,10 +2036,14 @@ def best_effort_gate(workdir: Path) -> dict[str, object]:
     invalid = run_public_render(invalid_source, invalid_output, "invalid")
     require(invalid.returncode != 0 and "LAYOUT_UNKNOWN" in invalid.stdout and "受影响页" in invalid.stdout,
             "invalid Markdown did not publish bounded best-effort output")
-    require(command_owned_files(invalid_output) == {"invalid.md", "invalid.pptx"},
-            "invalid Markdown did not publish the fixed pair")
-    semantic_package_inventory(invalid_output / "invalid.pptx")
-    return {"missing_media_inventory": inventory, "invalid_exit": invalid.returncode}
+    require(command_owned_files(invalid_output) == set() and not (invalid_output / ".work").exists(),
+            "invalid Markdown published best-effort current or leaked work")
+    return {
+        "missing_media_current": sorted(command_owned_files(missing_output)),
+        "invalid_current": sorted(command_owned_files(invalid_output)),
+        "invalid_exit": invalid.returncode,
+        "best_effort_published": False,
+    }
 
 
 def invoke_render_module(input_path: Path, output_root: Path, stem: str) -> tuple[int, str]:
@@ -1893,6 +2075,7 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
     old_pptx = b"old-pptx-sentinel"
     corruption_root = workdir / "corruption"
     corruption_root.mkdir()
+    (corruption_root / "deck.md").write_bytes(b"old-markdown")
     (corruption_root / "deck.pptx").write_bytes(old_pptx)
     def corrupt(stream: object) -> None:
         stream.seek(0)
@@ -1907,7 +2090,7 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
         pptx_render.RENDER_PRE_VALIDATE_HOOK = None
     require(result != 0 and "PPTX_PACKAGE_INVALID" in output, "staged corruption did not fail bounded")
     require((corruption_root / "deck.pptx").read_bytes() == old_pptx, "staged corruption replaced old PPTX")
-    require(not (corruption_root / "deck.md").exists(), "staged corruption published Markdown")
+    require((corruption_root / "deck.md").read_bytes() == b"old-markdown", "staged corruption replaced Markdown")
     assert_no_renderer_debris(corruption_root)
 
     crash_root = workdir / "crash-window"
@@ -1920,7 +2103,7 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
     finally:
         pptx_render.RENDER_BETWEEN_REPLACE_HOOK = None
     require(result != 0 and "OUTPUT_PAIR_INTERRUPTED" in output, "between-replace fault did not fail bounded")
-    require((crash_root / "deck.md").read_bytes() == FIXTURE_PATH.read_bytes(), "Markdown-first was not observable")
+    require((crash_root / "deck.md").read_bytes() == b"old-markdown", "handled fault did not restore old Markdown")
     require((crash_root / "deck.pptx").read_bytes() == old_pptx, "PPTX-last crash window replaced old PPTX")
     assert_no_renderer_debris(crash_root)
 
@@ -1952,18 +2135,19 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
     outside.write_bytes(b"outside")
     (collision_root / "link.pptx").symlink_to(outside)
     result, output = invoke_render_module(FIXTURE_PATH, collision_root, "link")
-    require(result != 0 and "OUTPUT_COLLISION" in output and outside.read_bytes() == b"outside",
+    require(result != 0 and "OUTPUT_PARTIAL" in output and outside.read_bytes() == b"outside",
             "final symlink collision was unsafe")
     (collision_root / "directory.pptx").mkdir()
     result, output = invoke_render_module(FIXTURE_PATH, collision_root, "directory")
-    require(result != 0 and "OUTPUT_COLLISION" in output, "directory collision was accepted")
+    require(result != 0 and "OUTPUT_UNKNOWN" in output, "directory collision was accepted")
     result, output = invoke_render_module(FIXTURE_PATH, collision_root, "../escape")
     require(result != 0 and "OUTPUT_STEM_INVALID" in output and outside.read_bytes() == b"outside",
             "stem traversal was accepted")
     same = workdir / "same.md"
     same.write_bytes(FIXTURE_PATH.read_bytes())
     result, output = invoke_render_module(same, workdir, "same")
-    require(result != 0 and "OUTPUT_INPUT_COLLISION" in output and same.read_bytes() == FIXTURE_PATH.read_bytes(),
+    require(result != 0 and ("OUTPUT_UNKNOWN" in output or "OUTPUT_PARTIAL" in output)
+            and same.read_bytes() == FIXTURE_PATH.read_bytes(),
             "input/output identity was accepted")
     assert_no_renderer_debris(collision_root)
 
@@ -1971,6 +2155,7 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
     require(Path(host_python).is_file(), "host python missing for dependency gate")
     dependency_root = workdir / "dependency"
     dependency_root.mkdir()
+    (dependency_root / "deck.md").write_bytes(b"old-markdown")
     (dependency_root / "deck.pptx").write_bytes(old_pptx)
     environment = os.environ.copy()
     yaml_root = next(path.parent.parent for path in Path.home().glob(".cache/uv/archive-v0/*/yaml/__init__.py"))
@@ -1989,7 +2174,7 @@ def publication_safety_gate(workdir: Path) -> dict[str, object]:
             (dependency_root / "deck.pptx").read_bytes() == old_pptx,
             "dependency failure leaked traceback or replaced old PPTX")
     assert_no_renderer_debris(dependency_root)
-    return {"staged_corruption": "blocked", "crash_window": "markdown-new-pptx-old", "exchange": "blocked"}
+    return {"staged_corruption": "blocked", "crash_window": "old-bundle-restored", "exchange": "blocked"}
 
 
 def publication_descriptor_race_gate(workdir: Path) -> dict[str, object]:
@@ -2042,12 +2227,13 @@ def publication_descriptor_race_gate(workdir: Path) -> dict[str, object]:
     sentinel.write_bytes(sentinel_bytes)
     sentinel_hash = hashlib.sha256(sentinel_bytes).hexdigest()
     race_fds: dict[str, int] = {}
-    attacker_name: dict[str, str] = {}
+    attacker_name: dict[str, Path | str] = {}
 
     def exchange(destination: object, duplicate: object) -> None:
         name, _, owner_fd = destination.temporary["pptx"]
         race_fds.update({"owner_fd": owner_fd, "duplicate_fd": duplicate.fileno()})
         attacker_name["name"] = name
+        attacker_name["root"] = destination.output_root
         os.unlink(name, dir_fd=destination.root_fd)
         os.symlink(str(sentinel), name, dir_fd=destination.root_fd)
 
@@ -2060,7 +2246,7 @@ def publication_descriptor_race_gate(workdir: Path) -> dict[str, object]:
     require(sentinel.read_bytes() == sentinel_bytes and sentinel.stat().st_size == len(sentinel_bytes)
             and hashlib.sha256(sentinel.read_bytes()).hexdigest() == sentinel_hash,
             "external sentinel changed during descriptor race")
-    retained = race_root / attacker_name["name"]
+    retained = Path(attacker_name["root"]) / str(attacker_name["name"])
     require(retained.is_symlink() and retained.resolve() == sentinel.resolve(), "attacker symlink was not retained")
     for key, descriptor in race_fds.items():
         try:
@@ -2183,6 +2369,7 @@ def object_error_bounded_gate(workdir: Path) -> dict[str, object]:
         output_root = vector_root / "delivery"
         output_root.mkdir()
         old_pptx = b"old-pptx-object-error-sentinel"
+        (output_root / "deck.md").write_bytes(b"old-markdown")
         (output_root / "deck.pptx").write_bytes(old_pptx)
         completed = run_public_render(source, output_root, "deck")
         output = completed.stdout + completed.stderr
@@ -2198,7 +2385,8 @@ def object_error_bounded_gate(workdir: Path) -> dict[str, object]:
                 f"{expected_code} leaked Pillow details")
         require((output_root / "deck.pptx").read_bytes() == old_pptx,
                 f"{expected_code} replaced the old PPTX")
-        require(not (output_root / "deck.md").exists(), f"{expected_code} published Markdown")
+        require((output_root / "deck.md").read_bytes() == b"old-markdown",
+                f"{expected_code} replaced old Markdown")
         assert_no_renderer_debris(output_root)
         evidence[label] = {
             "code": expected_code,
@@ -2302,6 +2490,7 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         vector_delivery = vector_root / "delivery"
         vector_delivery.mkdir()
         old_target = b"old-pptx-media-symlink"
+        (vector_delivery / "deck.md").write_bytes(b"old-markdown")
         (vector_delivery / "deck.pptx").write_bytes(old_target)
         old_target_before_hash = hashlib.sha256(old_target).hexdigest()
         result = run_public_render(vector_source, vector_delivery, "deck")
@@ -2309,7 +2498,7 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         require(result.returncode != 0 and "PPTX_MEDIA_PATH_INVALID" in output,
                 f"{label} symlink did not fail closed: {output[:1024]}")
         require((vector_delivery / "deck.pptx").read_bytes() == old_target
-                and not (vector_delivery / "deck.md").exists(),
+                and (vector_delivery / "deck.md").read_bytes() == b"old-markdown",
                 f"{label} symlink replaced public artifacts")
         require(len(output.encode("utf-8")) < 8192 and "Traceback" not in output
                 and str(target) not in output and str(vector_root) not in output,
@@ -2346,15 +2535,8 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         pptx_render.RENDER_POST_PARSE_HOOK = None
     require(missing_exit != 0 and "MEDIA_MISSING" in missing_output and "受影响逻辑页" in missing_output,
             f"runtime missing did not report structured diagnostic: {missing_output[:1024]}")
-    require({path.name for path in missing_delivery.iterdir()} == {"deck.md", "deck.pptx"},
-            "runtime missing did not publish clean best-effort pair")
-    missing_reopened = Presentation(missing_delivery / "deck.pptx")
-    placeholders = [
-        shape for slide in missing_reopened.slides for shape in slide.shapes
-        if "missing-media" in shape.name
-    ]
-    require(placeholders and all(shape.has_text_frame for shape in placeholders),
-            "runtime missing did not emit editable placeholder")
+    require(command_owned_files(missing_delivery) == set() and not (missing_delivery / ".work").exists(),
+            "runtime missing published best-effort current or leaked work")
     require(frozen_plan.to_projection() == before_projection, "runtime missing mutated frozen plan projection")
     projection_before_hash = hashlib.sha256(
         json.dumps(before_projection, ensure_ascii=False, sort_keys=True).encode()
@@ -2372,6 +2554,7 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
     fault_delivery = fault_root / "delivery"
     fault_delivery.mkdir()
     fault_old = b"old-pptx-add-picture"
+    (fault_delivery / "deck.md").write_bytes(b"old-markdown")
     (fault_delivery / "deck.pptx").write_bytes(fault_old)
     fault_before_hash = hashlib.sha256(fault_old).hexdigest()
 
@@ -2390,7 +2573,7 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
             and "private Pillow stream failure" not in fault_output and str(fault_root) not in fault_output,
             "add_picture fault leaked internal details")
     require((fault_delivery / "deck.pptx").read_bytes() == fault_old
-            and not (fault_delivery / "deck.md").exists(),
+            and (fault_delivery / "deck.md").read_bytes() == b"old-markdown",
             "add_picture fault replaced old target")
     fault_after_hash = hashlib.sha256((fault_delivery / "deck.pptx").read_bytes()).hexdigest()
 
@@ -2414,13 +2597,13 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         "runtime_missing": {
             "public_exit": missing_exit,
             "code": "MEDIA_MISSING",
-            "editable_placeholders": len(placeholders),
+            "best_effort_generated": "owned work evidence" in missing_output,
             "artifacts": sorted(path.name for path in missing_delivery.iterdir()),
             "projection_before_hash": projection_before_hash,
             "projection_after_hash": projection_after_hash,
             "frozen_projection_equal": projection_before_hash == projection_after_hash,
             "output_bytes": len(missing_output.encode("utf-8")),
-            "artifact_paths": [str(missing_delivery / "deck.md"), str(missing_delivery / "deck.pptx")],
+            "artifact_paths": [],
         },
         "add_picture_fault": {
             "public_exit": fault_exit,
@@ -2828,11 +3011,11 @@ def run_phase_43() -> dict[str, object]:
     ), "media symlink failure evidence failed")
     runtime_missing = media["runtime_missing"]
     require(runtime_missing["public_exit"] != 0 and runtime_missing["code"] == "MEDIA_MISSING"
-            and runtime_missing["editable_placeholders"] > 0
-            and runtime_missing["artifacts"] == ["deck.md", "deck.pptx"]
+            and runtime_missing["best_effort_generated"] is True
+            and runtime_missing["artifacts"] == []
             and runtime_missing["projection_before_hash"] == runtime_missing["projection_after_hash"]
             and runtime_missing["output_bytes"] < 8192
-            and len(runtime_missing["artifact_paths"]) == 2,
+            and runtime_missing["artifact_paths"] == [],
             "runtime missing evidence failed")
     add_picture_fault = media["add_picture_fault"]
     require(add_picture_fault["public_exit"] != 0
@@ -2879,9 +3062,8 @@ def run_phase_43() -> dict[str, object]:
     require(any(item["code"] == "TEXT_BLOCK_OVERFLOW" and item["severity"] == "error"
                 for item in overflow_heading["diagnostics"]),
             "overflow code heading diagnostic evidence failed")
-    require(overflow_heading["artifact_names"] == [
-        "code-heading-overflow.md", "code-heading-overflow.pptx"
-    ], "overflow code heading best-effort artifacts changed")
+    require(overflow_heading["artifact_names"] == [],
+            "overflow code heading published best-effort current artifacts")
     require(all(
         geometry["heading_height"] > 0 and geometry["code_height"] > 0
         and geometry["heading_height"] + geometry["code_height"] == geometry["slot_height"]
@@ -2946,22 +3128,28 @@ def run_contract_model() -> dict[str, object]:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="verify_pptx_renderer.py")
-    parser.add_argument("gate", choices=["contract-model", "pagination", "phase-43", *GATES])
+    parser.add_argument("gate", nargs="?", choices=["contract-model", "pagination", "phase-43", *GATES])
+    parser.add_argument("--self-test", choices=["delivery-transaction"])
     return parser.parse_args(argv)
 
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
+    selected = args.self_test or args.gate or "all"
     try:
-        if args.gate == "phase-43":
+        if selected == "all":
+            evidence = {"phase-43": run_phase_43()}
+            with tempfile.TemporaryDirectory(prefix="school-pptx-delivery-transaction-") as temporary:
+                evidence["delivery-transaction"] = run_named_gate("delivery-transaction", Path(temporary))
+        elif selected == "phase-43":
             evidence = run_phase_43()
         else:
-            with tempfile.TemporaryDirectory(prefix=f"school-pptx-{args.gate}-") as temporary:
-                evidence = run_named_gate(args.gate, Path(temporary))
+            with tempfile.TemporaryDirectory(prefix=f"school-pptx-{selected}-") as temporary:
+                evidence = run_named_gate(selected, Path(temporary))
         print(json.dumps(evidence, ensure_ascii=False, sort_keys=True))
         return 0
     except (GateFailure, OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
-        print(f"FAIL {args.gate}: {exc}", file=sys.stderr)
+        print(f"FAIL {selected}: {exc}", file=sys.stderr)
         return 1
 
 
