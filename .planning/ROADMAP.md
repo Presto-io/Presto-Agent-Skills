@@ -33,7 +33,7 @@
 **Goal:** 在 v1.17 结束后，依据 `docs/clean-delivery-directory-contract.md` 完整改造当前全部技能，统一交付一级目录、支持资料分组、多轮修改成套归档、最小验证和失败清理行为，并为历史 agent 散乱产物整理提供可复用流程。
 **Requirements:** CLEAN-01, CLEAN-02, CLEAN-03, REV-01, REV-02, REV-03, REV-04, SAFE-01, SAFE-02, VERIFY-01, DOCS-01, RUNTIME-01
 **Depends on:** Phase 44
-**Plans:** 1/9 plans executed
+**Plans:** 2/9 plans executed
 
 **Success Criteria** (what must be TRUE):
   1. 用户在六个写文件技能的成功交付根目录中只看到各技能声明的当前 Markdown、当前最终产物和按需存在的 `sources/`、`assets/`、`history/`、`.work/`，既有交付能力不回退。
@@ -50,7 +50,7 @@ Plans:
 - [x] 45-01-PLAN.md — 冻结真实原子性边界、确认式历史整理契约与中央 gate/fault 骨架
 
 **Wave 2 — 六技能并行适配** *(blocked on Wave 1 completion)*
-- [ ] 45-02-PLAN.md — 改造 end-of-term-teaching-materials 固定四件套 transaction
+- [x] 45-02-PLAN.md — 改造 end-of-term-teaching-materials 固定四件套 transaction
 - [ ] 45-03-PLAN.md — 改造 tiaokedan 可选 PDF 两/三件套 transaction
 - [ ] 45-04-PLAN.md — 扩展 school-pptx held-descriptor pair history/rollback 并隔离 best-effort
 - [ ] 45-05-PLAN.md — 改造 school-presentation Markdown+HTML 与 assets/evidence 边界
