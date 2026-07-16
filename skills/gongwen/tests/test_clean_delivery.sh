@@ -176,8 +176,8 @@ before="$(snapshot "$symlink_root")"
 if run_render "$symlink_root" "$input_v1" no_pdf >"$TMP_DIR/symlink.out" 2>&1; then fail 'symlink current accepted'; fi
 [[ "$(snapshot "$symlink_root")" == "$before" && "$(cat "$outside/sentinel")" == sentinel ]] || fail 'symlink target was touched'
 
-if run_render "$TMP_DIR/path-root" "$input_v1" pdf --pdf "$TMP_DIR/other/notice.pdf" >"$TMP_DIR/cross-root.out" 2>&1; then fail 'cross-root PDF accepted'; fi
-mkdir -p "$TMP_DIR/path-root"
+mkdir -p "$TMP_DIR/path-root" "$TMP_DIR/other"
+if PATH="$BIN_DIR:$PATH" "$RENDERER" render --input "$input_v1" --typ "$TMP_DIR/path-root/notice.typ" --pdf "$TMP_DIR/other/notice.pdf" >"$TMP_DIR/cross-root.out" 2>&1; then fail 'cross-root PDF accepted'; fi
 if PATH="$BIN_DIR:$PATH" "$RENDERER" render --input "$input_v1" --typ "$TMP_DIR/path-root/notice.typ" --pdf "$TMP_DIR/path-root/other.pdf" >"$TMP_DIR/stem.out" 2>&1; then fail 'different-stem PDF accepted'; fi
 if PATH="$BIN_DIR:$PATH" "$RENDERER" render --input "$input_v1" --typ "$TMP_DIR/path-root/../escape.typ" >"$TMP_DIR/traversal.out" 2>&1; then fail 'path traversal accepted'; fi
 

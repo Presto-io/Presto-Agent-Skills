@@ -45,19 +45,22 @@ cmd_render() {
   [[ -n "$input" ]] || die "render requires --input"
   need_file "$input"
   [[ -n "$typ" ]] || typ="${input%.*}.typ"
-  render_markdown_to_typst "$input" "$typ"
-  printf 'wrote %s\n' "$typ"
+  delivery_begin "$typ" "$pdf"
+  cp -- "$input" "$DELIVERY_CANDIDATE/$DELIVERY_STEM.md"
+  render_markdown_to_typst "$input" "$DELIVERY_CANDIDATE/$DELIVERY_STEM.typ"
   if [[ -n "$expected_typ" ]]; then
     need_file "$expected_typ"
-    same_file_shell "$expected_typ" "$typ" || die "Typst differs from expected file: $expected_typ"
+    delivery_same_file "$expected_typ" "$DELIVERY_CANDIDATE/$DELIVERY_STEM.typ" || die "Typst differs from expected file: $expected_typ"
     printf 'verified Typst matches %s\n' "$expected_typ"
   fi
   if [[ -n "$pdf" ]]; then
     command -v typst >/dev/null 2>&1 || die "typst CLI not found; install typst or omit --pdf"
-    ensure_parent_dir "$pdf"
-    typst compile "$typ" "$pdf"
-    printf 'wrote %s\n' "$pdf"
+    typst compile "$DELIVERY_CANDIDATE/$DELIVERY_STEM.typ" "$DELIVERY_CANDIDATE/$DELIVERY_STEM.pdf"
+    delivery_is_regular_nonempty "$DELIVERY_CANDIDATE/$DELIVERY_STEM.pdf" || die "typst did not produce a readable non-empty candidate PDF"
+    [[ "$(head -c 5 "$DELIVERY_CANDIDATE/$DELIVERY_STEM.pdf")" == "%PDF-" ]] || die "typst produced a candidate with an invalid PDF header"
   fi
+  delivery_publish
+  printf '%s delivery: %s\n' "$DELIVERY_RESULT" "$DELIVERY_ROOT"
 }
 
 cmd_info() {
