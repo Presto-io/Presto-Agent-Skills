@@ -33,7 +33,7 @@
 **Goal:** 在 v1.17 结束后，依据 `docs/clean-delivery-directory-contract.md` 完整改造当前全部技能，统一交付一级目录、支持资料分组、多轮修改成套归档、最小验证和失败清理行为，并为历史 agent 散乱产物整理提供可复用流程。
 **Requirements:** CLEAN-01, CLEAN-02, CLEAN-03, REV-01, REV-02, REV-03, REV-04, SAFE-01, SAFE-02, VERIFY-01, DOCS-01, RUNTIME-01
 **Depends on:** Phase 44
-**Plans:** 5/9 plans executed
+**Plans:** 6/9 plans executed
 
 **Success Criteria** (what must be TRUE):
   1. 用户在六个写文件技能的成功交付根目录中只看到各技能声明的当前 Markdown、当前最终产物和按需存在的 `sources/`、`assets/`、`history/`、`.work/`，既有交付能力不回退。
@@ -54,7 +54,7 @@ Plans:
 - [x] 45-03-PLAN.md — 改造 tiaokedan 可选 PDF 两/三件套 transaction
 - [x] 45-04-PLAN.md — 扩展 school-pptx held-descriptor pair history/rollback 并隔离 best-effort
 - [x] 45-05-PLAN.md — 改造 school-presentation Markdown+HTML 与 assets/evidence 边界
-- [ ] 45-06-PLAN.md — 保持 Bash-only 的 gongwen candidate/history/rollback 适配
+- [x] 45-06-PLAN.md — 保持 Bash-only 的 gongwen candidate/history/rollback 适配
 - [ ] 45-07-PLAN.md — 移除 teaching-design-package destructive cleanup 并发布 dynamic 1+1+N bundle
 
 **Wave 3 — 仓库级文档与 runtime 契约** *(blocked on all Wave 2 plans)*
