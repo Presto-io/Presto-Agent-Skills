@@ -283,6 +283,16 @@ class PublicCliTests(unittest.TestCase):
         self.assertNotEqual(unresolved.returncode, 0)
         self.assertEqual(snapshot(self.root), baseline)
 
+    def test_real_cli_optional_pdf_removal_archives_the_complete_triple(self) -> None:
+        self.assertEqual(self.run_cli(pdf=True).returncode, 0)
+        old = {name: (self.root / name).read_bytes() for name in ("tiaokedan.md", "tiaokedan.typ", "tiaokedan.pdf")}
+
+        removed = self.run_cli(pdf=False)
+
+        self.assertEqual(removed.returncode, 0, removed.stderr)
+        self.assertEqual({path.name for path in self.root.iterdir()}, {"tiaokedan.md", "tiaokedan.typ", "history"})
+        self.assertEqual({name: (self.root / "history" / "001" / name).read_bytes() for name in old}, old)
+
     def test_real_cli_history_gap_unknown_symlink_and_path_mismatch(self) -> None:
         self.assertEqual(self.run_cli().returncode, 0)
         history = self.root / "history"
