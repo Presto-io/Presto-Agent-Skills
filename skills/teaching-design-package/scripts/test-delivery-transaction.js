@@ -177,7 +177,7 @@ function testCleanupAndCandidateExchangeFailClosed() {
     const originalExec = childProcess.execFileSync;
     let exchanged = false;
     childProcess.execFileSync = function patched(command, args, options) {
-      if (!exchanged && args[1] === 'move') {
+      if (!exchanged && args[1] === 'held' && args[2] === 'move') {
         exchanged = true;
         fs.renameSync(candidateRoot, `${candidateRoot}-original`);
         fs.symlinkSync(outside, candidateRoot);
@@ -191,6 +191,40 @@ function testCleanupAndCandidateExchangeFailClosed() {
     }
     assert.deepStrictEqual(snapshot(outside, new Set()), outsideBefore);
     assert.deepStrictEqual(snapshot(root), {});
+  });
+  testRealRootReplacementLeavesReplacementUntouched();
+}
+
+function testRealRootReplacementLeavesReplacementUntouched() {
+  withRoot((root, base) => {
+    const oldModel = model('原课程');
+    publish(root, 'root-swap-seed', oldModel, 'old');
+    const originalBefore = snapshot(root);
+    const replacement = path.join(base, 'replacement');
+    fs.mkdirSync(replacement);
+    for (const name of [...oldModel.public_delivery.expected_public_filenames, ...model('新课程').public_delivery.expected_public_filenames]) {
+      fs.writeFileSync(path.join(replacement, name), bytesFor(name, 'replacement-user'));
+    }
+    fs.mkdirSync(path.join(replacement, 'history', '777'), { recursive: true });
+    fs.writeFileSync(path.join(replacement, 'history', '777', 'sentinel'), 'replacement-history');
+    const replacementBefore = snapshot(replacement, new Set());
+    const originalExec = childProcess.execFileSync;
+    let exchanged = false;
+    childProcess.execFileSync = function patched(command, args, options) {
+      if (!exchanged && args[1] === 'held' && args[2] === 'move') {
+        exchanged = true;
+        fs.renameSync(root, `${root}-held`);
+        fs.renameSync(replacement, root);
+      }
+      return originalExec.call(this, command, args, options);
+    };
+    try {
+      assert.throws(() => publish(root, 'root-swap', model('新课程'), 'new'), /identity|safe.fs/i);
+    } finally {
+      childProcess.execFileSync = originalExec;
+    }
+    assert.deepStrictEqual(snapshot(root, new Set()), replacementBefore);
+    assert.deepStrictEqual(snapshot(`${root}-held`), originalBefore);
   });
 }
 
