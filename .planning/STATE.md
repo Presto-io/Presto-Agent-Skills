@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.18
 milestone_name: 全技能干净交付目录标准化改造
 status: executing
-stopped_at: Completed 45-03-PLAN.md
-last_updated: "2026-07-16T00:51:29.931Z"
-last_activity: 2026-07-16 — Completed Phase 45 Plan 03 tiaokedan optional bundle transaction
+stopped_at: Completed 45-04-PLAN.md
+last_updated: "2026-07-16T01:55:54.300Z"
+last_activity: 2026-07-16 — Completed Phase 45 Plan 04 school-pptx whole-bundle transaction
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 9
-  completed_plans: 3
-  percent: 33
+  completed_plans: 4
+  percent: 44
 ---
 
 # State: Presto Agent Skills
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-16)
 ## Current Position
 
 Phase: 45 of 45 (全技能干净交付目录标准化改造)
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
-Last activity: 2026-07-16 — Completed 45-03 tiaokedan candidate-first optional bundle adapter
+Last activity: 2026-07-16 — Completed 45-04 school-pptx held-descriptor whole-bundle adapter
 
 ## Workflow Preferences
 
@@ -111,6 +111,9 @@ Phase order:
 - [Phase 45]: Tiaokedan --typ owns the delivery root and stable stem; optional --pdf must use the same root and stem and changes the exact managed set.
 - [Phase 45]: Tiaokedan expected comparison and PDF compilation consume only owned candidates before current mutation.
 - [Phase 45]: Tiaokedan legacy .tiaokedan, media, unknown, symlink, partial, and stale-work states require audit rather than automatic cleanup.
+- [Phase 45]: School PPTX current delivery is the exact reviewed Markdown, validated PPTX, and confirmed assets/... paths that remain referenced by the bundle.
+- [Phase 45]: School PPTX archives old pair and managed assets under one sequence so archived Markdown references resolve without mutating sources/.
+- [Phase 45]: Parser, planner, runtime, or validation failures keep editable best-effort output in owned work evidence and never publish it as current.
 
 ### Pending Todos
 
@@ -145,13 +148,14 @@ None. v1.17 is shipped; Phase 45 is promoted and ready for next-milestone initia
 | Phase 45 P01 | 9 min | 3 tasks | 4 files |
 | Phase 45 P02 | 21 min | 3 tasks | 5 files |
 | Phase 45 P03 | 12 min | 3 tasks | 6 files |
+| Phase 45 P04 | 38 min | 2 tasks | 8 files |
 
 ## Session Continuity
 
-Last session: 2026-07-16T00:51:29.925Z
-Stopped at: Completed 45-03-PLAN.md
+Last session: 2026-07-16T01:55:54.300Z
+Stopped at: Completed 45-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Execute Wave 2 plans 45-02 through 45-07 against the fixed 14-gate/7-fault authority.
+- Execute remaining Wave 2 plans 45-05 through 45-07 against the fixed 14-gate/7-fault authority.
