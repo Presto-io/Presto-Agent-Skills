@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import argparse
+import contextlib
+import io
 import os
 import signal
 import sys
@@ -18,6 +21,13 @@ from school_presentation.delivery import (
     DeliverySpec,
     validate_html_candidate,
 )
+_original_argv = sys.argv
+sys.argv = ["test-delivery", str(Path(__file__).resolve().parents[2]), "info"]
+try:
+    with contextlib.redirect_stdout(io.StringIO()):
+        from school_presentation import _engine
+finally:
+    sys.argv = _original_argv
 
 
 def snapshot(root: Path) -> dict[str, str]:
@@ -221,6 +231,111 @@ class DeliverySessionTests(unittest.TestCase):
                 session.publish(lambda bundle: validate_html_candidate(bundle, 1))
         self.assertEqual(snapshot(self.root), before)
 
+
+class RenderIntegrationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.base = Path(self.temporary.name)
+        self.skill_dir = Path(__file__).resolve().parents[2]
+        _engine.SKILL_DIR = self.skill_dir
+        _engine.TEMPLATE_MD = self.skill_dir / "templates" / "school-presentation-full.md"
+        _engine.IDENTITY_DIR = self.skill_dir / "references" / "identity"
+        _engine.IMAGE_DIR = _engine.IDENTITY_DIR / "images"
+        self.input_path = self.base / "source.md"
+        self.delivery = self.base / "delivery"
+        self.html_path = self.delivery / "deck.html"
+        self.manifest_path = self.base / "evidence" / "manifest.json"
+        self.input_path.write_text(self.markdown("v1"), encoding="utf-8")
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    @staticmethod
+    def markdown(marker: str, body: str = "正文内容。") -> str:
+        return f'''---
+template: "school-presentation"
+title: "{marker}"
+page_ratio: "16:9"
+max_output_mb: 50
+---
+
+## Slide: {marker}
+
+<!-- slide
+layout: content
+split: auto
+-->
+
+{body}
+'''
+
+    def render(self, *, max_size_mb: str = "50", manifest: Path | None = None) -> dict[str, object]:
+        return _engine.cmd_render(argparse.Namespace(
+            input=str(self.input_path),
+            html=str(self.html_path),
+            manifest=str(manifest) if manifest is not None else None,
+            max_size_mb=max_size_mb,
+        ))
+
+    def test_render_publishes_only_pair_and_keeps_manifest_external(self) -> None:
+        first = self.render(manifest=self.manifest_path)
+        self.assertEqual(first["publication"], "first")
+        self.assertEqual({path.name for path in self.delivery.iterdir()}, {"deck.md", "deck.html"})
+        before = {name: (self.delivery / name).stat() for name in ("deck.md", "deck.html")}
+
+        second = self.render(manifest=self.manifest_path)
+        self.assertEqual(second["publication"], "identical")
+        after = {name: (self.delivery / name).stat() for name in ("deck.md", "deck.html")}
+        self.assertFalse((self.delivery / "history").exists())
+        for name in before:
+            self.assertEqual((before[name].st_ino, before[name].st_mtime_ns),
+                             (after[name].st_ino, after[name].st_mtime_ns))
+
+        self.input_path.write_text(self.markdown("v2"), encoding="utf-8")
+        changed = self.render(manifest=self.manifest_path)
+        self.assertEqual(changed["publication"], "changed")
+        self.assertTrue((self.delivery / "history" / "001" / "deck.md").is_file())
+        self.assertTrue((self.delivery / "history" / "001" / "deck.html").is_file())
+        self.assertFalse(any("manifest" in path.name for path in self.delivery.rglob("*")))
+
+    def test_oversize_and_manifest_write_failure_preserve_prior_delivery(self) -> None:
+        self.render(manifest=self.manifest_path)
+        before = snapshot(self.delivery)
+        self.input_path.write_text(self.markdown("v2"), encoding="utf-8")
+        with self.assertRaises(DeliveryError):
+            self.render(max_size_mb="0")
+        self.assertEqual(snapshot(self.delivery), before)
+
+        invalid_manifest = self.base / "manifest-target"
+        invalid_manifest.mkdir()
+        with self.assertRaises(DeliveryError):
+            self.render(manifest=invalid_manifest)
+        self.assertEqual(snapshot(self.delivery), before)
+
+    def test_manifest_in_delivery_and_required_or_legacy_media_fail_closed(self) -> None:
+        self.render(manifest=self.manifest_path)
+        before = snapshot(self.delivery)
+        self.input_path.write_text(self.markdown("v2"), encoding="utf-8")
+        with self.assertRaises(DeliveryError):
+            self.render(manifest=self.delivery / "manifest.json")
+        self.assertEqual(snapshot(self.delivery), before)
+
+        self.input_path.write_text(
+            self.markdown("missing", "![required](assets/missing.png)"), encoding="utf-8"
+        )
+        with self.assertRaises(DeliveryError):
+            self.render()
+        self.assertEqual(snapshot(self.delivery), before)
+
+        media = self.base / "media"
+        media.mkdir()
+        (media / "legacy.png").write_bytes(b"legacy")
+        self.input_path.write_text(
+            self.markdown("legacy", "![legacy](media/legacy.png)"), encoding="utf-8"
+        )
+        with self.assertRaises(DeliveryError):
+            self.render()
+        self.assertEqual(snapshot(self.delivery), before)
 
 if __name__ == "__main__":
     unittest.main()
