@@ -311,19 +311,14 @@ class DeliverySession:
     def _rollback(self) -> None:
         if self.root_fd is None or self.rollback_fd is None:
             return
+        for name in CURRENT_NAMES:
+            try:
+                os.unlink(name, dir_fd=self.root_fd)
+            except FileNotFoundError:
+                pass
         if self._old_bytes:
             for name in CURRENT_NAMES:
-                try:
-                    os.unlink(name, dir_fd=self.root_fd)
-                except FileNotFoundError:
-                    pass
                 os.replace(name, name, src_dir_fd=self.rollback_fd, dst_dir_fd=self.root_fd)
-        else:
-            for name in self._published:
-                try:
-                    os.unlink(name, dir_fd=self.root_fd)
-                except FileNotFoundError:
-                    pass
         self._remove_history_sequence()
         os.fsync(self.root_fd)
         restored = self._current_bytes(bool(self._old_bytes))

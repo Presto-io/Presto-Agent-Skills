@@ -384,7 +384,7 @@ class DeliverySession:
             self._remove_empty_parents(path, root)
 
     def _restore(self, old_names: tuple[str, ...]) -> None:
-        mutation_names = tuple(sorted(set(self._published) | set(old_names)))
+        mutation_names = tuple(sorted(set(self.spec.current_names) | set(old_names)))
         self._remove_names(self.root, mutation_names)
         for name in old_names:
             target = self.root / name
