@@ -7,9 +7,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from end_of_term import _engine
 from end_of_term.delivery import (
     CURRENT_NAMES,
     FAULT_ENV,
@@ -164,6 +166,60 @@ class DeliverySessionTests(unittest.TestCase):
         with self.assertRaises(DeliveryError):
             DeliverySession(self.spec).__enter__()
         self.assertEqual(snapshot(self.root), before)
+
+
+class DeliverIntegrationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        temporary_root = Path(self.temporary.name)
+        self.out_dir = temporary_root / "delivery"
+        self.skill_dir = Path(__file__).resolve().parents[2]
+        source = self.skill_dir / "templates" / "end-of-term-full.md"
+        self.input_path = temporary_root / "input.md"
+        self.input_path.write_bytes(source.read_bytes())
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    @staticmethod
+    def compile_success(_typst: Path, pdf: Path) -> tuple[str, str]:
+        pdf.write_bytes(b"%PDF-1.7\nfixture\n%%EOF\n")
+        return "compiled", str(pdf)
+
+    def publish_v1(self) -> None:
+        with mock.patch.object(_engine, "compile_pdf", side_effect=self.compile_success):
+            result = _engine.deliver(self.input_path, self.out_dir, self.skill_dir)
+        self.assertEqual(result["publication"], "first")
+
+    def test_compile_failure_never_mutates_current_or_history(self) -> None:
+        self.publish_v1()
+        before = snapshot(self.out_dir)
+        self.input_path.write_text(self.input_path.read_text(encoding="utf-8").replace(
+            "date: 2026-06-05", "date: 2026-06-06"), encoding="utf-8")
+
+        with mock.patch.object(_engine, "compile_pdf", return_value=("failed", "forced failure")):
+            with self.assertRaises(_engine.RenderError):
+                _engine.deliver(self.input_path, self.out_dir, self.skill_dir)
+
+        self.assertEqual(snapshot(self.out_dir), before)
+
+    def test_malformed_xlsx_is_rejected_before_publish(self) -> None:
+        self.publish_v1()
+        before = snapshot(self.out_dir)
+
+        def malformed(path: Path, *_args: object, **_kwargs: object) -> None:
+            path.write_bytes(b"not-an-xlsx")
+
+        with mock.patch.object(_engine, "compile_pdf", side_effect=self.compile_success), \
+                mock.patch.object(_engine, "write_single_sheet_xlsx", side_effect=malformed):
+            with self.assertRaises(_engine.RenderError):
+                _engine.deliver(self.input_path, self.out_dir, self.skill_dir)
+
+        self.assertEqual(snapshot(self.out_dir), before)
+
+    def test_real_candidate_validators_cover_all_four_formats(self) -> None:
+        self.publish_v1()
+        _engine.validate_delivery_bundle({name: (self.out_dir / name).read_bytes() for name in CURRENT_NAMES})
 
 
 if __name__ == "__main__":
