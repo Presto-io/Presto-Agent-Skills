@@ -51,6 +51,21 @@ REQUIRED_SKILL_NAMES = (
     "tiaokedan",
 )
 
+REQUIRED_REQUIREMENT_IDS = (
+    "CLEAN-01",
+    "CLEAN-02",
+    "CLEAN-03",
+    "REV-01",
+    "REV-02",
+    "REV-03",
+    "REV-04",
+    "SAFE-01",
+    "SAFE-02",
+    "VERIFY-01",
+    "DOCS-01",
+    "RUNTIME-01",
+)
+
 FAULT_NAMES = (
     "after_candidate_validation",
     "after_history_reservation",
@@ -129,6 +144,17 @@ class ReviewReport:
     warning: int
     info: int
     total: int
+
+
+@dataclass(frozen=True)
+class VerificationReport:
+    status: str
+    requirements: tuple[str, ...]
+    strict_aggregate_exit_status: int
+    review_status: str
+    review_critical_or_blocker_count: int
+    review_warning_count: int
+    review_info_count: int
 
 
 def require(condition: bool, message: str) -> None:
@@ -473,6 +499,70 @@ def parse_review_report(path: Path, expected_scope: Iterable[str]) -> ReviewRepo
     )
 
 
+def parse_verification_report(path: Path, review: ReviewReport) -> VerificationReport:
+    data, body = _parse_frontmatter(read_text(path))
+    expected_keys = {
+        "verification_schema_version", "phase", "status", "requirements_total", "requirements_passed",
+        "strict_aggregate_exit_status", "review_status", "review_critical_or_blocker_count",
+        "review_warning_count", "review_info_count",
+    }
+    require(set(data) == expected_keys, f"verification frontmatter keys mismatch: {sorted(data)}")
+    require(data["verification_schema_version"] == "1", "unknown verification schema version")
+    require(data["phase"] == "45", "verification phase mismatch")
+    require(data["status"] == "passed", "verification status must be passed")
+    integer_fields = (
+        "requirements_total", "requirements_passed", "strict_aggregate_exit_status",
+        "review_critical_or_blocker_count", "review_warning_count", "review_info_count",
+    )
+    values: dict[str, int] = {}
+    for field in integer_fields:
+        raw = str(data[field])
+        require(re.fullmatch(r"[0-9]+", raw) is not None, f"verification {field} must be a non-negative integer")
+        values[field] = int(raw)
+    require(values["requirements_total"] == len(REQUIRED_REQUIREMENT_IDS), "verification requirement total mismatch")
+    require(values["requirements_passed"] == len(REQUIRED_REQUIREMENT_IDS), "verification requirement passed count mismatch")
+    require(values["strict_aggregate_exit_status"] == 0, "strict aggregate exit status must be zero")
+    require(data["review_status"] in ("clean", "issues_found"), "unknown verification review status")
+    require(data["review_status"] == review.status, "verification/review status mismatch")
+    require(values["review_critical_or_blocker_count"] == review.critical,
+            "verification/review Critical-or-Blocker count mismatch")
+    require(values["review_warning_count"] == review.warning, "verification/review Warning count mismatch")
+    require(values["review_info_count"] == review.info, "verification/review Info count mismatch")
+    require(review.critical == 0 and review.warning == 0, "verification requires zero Critical/Blocker and Warning findings")
+
+    header = "| requirement | command | exit_status | evidence | assertion |"
+    require(body.count(header) == 1, "verification must contain exactly one requirement table")
+    lines = body.splitlines()
+    header_index = lines.index(header)
+    require(header_index + 1 < len(lines), "verification requirement table separator missing")
+    require(re.fullmatch(r"\|(?:\s*:?-+:?\s*\|){5}", lines[header_index + 1]) is not None,
+            "verification requirement table separator invalid")
+    rows: list[tuple[str, str, str, str, str]] = []
+    for line in lines[header_index + 2:]:
+        if not line.startswith("|"):
+            if rows:
+                break
+            continue
+        cells = tuple(cell.strip() for cell in line.strip().strip("|").split("|"))
+        require(len(cells) == 5, "verification requirement row must contain exactly five columns")
+        rows.append(cells)
+    require(len(rows) == len(REQUIRED_REQUIREMENT_IDS), "verification requirement row count mismatch")
+    ids = tuple(row[0] for row in rows)
+    require(len(ids) == len(set(ids)), "duplicate verification requirement ID")
+    require(ids == REQUIRED_REQUIREMENT_IDS, f"verification requirement IDs mismatch: {ids}")
+    for requirement, command, exit_status, evidence, assertion in rows:
+        require(bool(command), f"verification command is empty: {requirement}")
+        require(exit_status == "0", f"verification exit_status must be integer zero: {requirement}")
+        require(bool(evidence), f"verification evidence is empty: {requirement}")
+        require(bool(assertion), f"verification assertion is empty: {requirement}")
+    for boundary in ("SIGKILL", "断电", "多文件", "PowerPoint", "WPS", "人工"):
+        require(boundary in body, f"verification boundary statement missing: {boundary}")
+    return VerificationReport(
+        str(data["status"]), ids, values["strict_aggregate_exit_status"], str(data["review_status"]),
+        values["review_critical_or_blocker_count"], values["review_warning_count"], values["review_info_count"],
+    )
+
+
 def expected_review_scope_from_summaries(phase_dir: Path) -> tuple[str, ...]:
     files: set[str] = {"test/clean-delivery/verify_clean_delivery.py"}
     for summary in sorted(phase_dir.glob("45-0[2-8]-SUMMARY.md")):
@@ -590,6 +680,63 @@ One blocker was found.
         raise GateFailure(f"negative review fixture {index} was accepted")
 
 
+def verification_parser_self_test(work: Path) -> None:
+    review = ReviewReport(
+        "45-clean-delivery-standardization", "clean", "standard", ("skills/example.py",), 0, 0, 0, 0,
+    )
+    rows = "\n".join(
+        f"| {requirement} | command {requirement} | 0 | evidence {requirement} | assertion {requirement} |"
+        for requirement in REQUIRED_REQUIREMENT_IDS
+    )
+    valid = f"""---
+verification_schema_version: 1
+phase: 45
+status: passed
+requirements_total: 12
+requirements_passed: 12
+strict_aggregate_exit_status: 0
+review_status: clean
+review_critical_or_blocker_count: 0
+review_warning_count: 0
+review_info_count: 0
+---
+# Phase 45 Verification
+
+| requirement | command | exit_status | evidence | assertion |
+|---|---|---|---|---|
+{rows}
+
+## Boundaries
+
+Handled failure、INT 与 TERM 已证明；SIGKILL、断电和多文件硬原子未承诺。PowerPoint/WPS 视觉检查仍由人工完成。
+"""
+    verification = work / "verification.md"
+    verification.write_text(valid, encoding="utf-8")
+    parse_verification_report(verification, review)
+    first_row = f"| {REQUIRED_REQUIREMENT_IDS[0]} | command {REQUIRED_REQUIREMENT_IDS[0]} | 0 | evidence {REQUIRED_REQUIREMENT_IDS[0]} | assertion {REQUIRED_REQUIREMENT_IDS[0]} |"
+    mutations = (
+        valid.replace(f"{first_row}\n", "", 1),
+        valid.replace(first_row, f"{first_row}\n{first_row}", 1),
+        valid.replace("| CLEAN-01 |", "| UNKNOWN-01 |", 1),
+        valid.replace("status: passed", "status: failed", 1),
+        valid.replace("strict_aggregate_exit_status: 0", "strict_aggregate_exit_status: 1", 1),
+        valid.replace("| CLEAN-01 | command CLEAN-01 | 0 |", "| CLEAN-01 | command CLEAN-01 | 1 |", 1),
+        valid.replace("| CLEAN-01 | command CLEAN-01 | 0 |", "| CLEAN-01 | command CLEAN-01 | nonzero |", 1),
+        valid.replace("| CLEAN-01 | command CLEAN-01 | 0 | evidence CLEAN-01 |", "| CLEAN-01 | command CLEAN-01 | 0 |  |", 1),
+        valid.replace("| CLEAN-01 | command CLEAN-01 | 0 |", "| CLEAN-01 |  | 0 |", 1),
+        valid.replace("| evidence CLEAN-01 | assertion CLEAN-01 |", "| evidence CLEAN-01 |  |", 1),
+        valid.replace("review_status: clean", "review_status: unknown", 1),
+        valid.replace("review_info_count: 0", "review_info_count: 1", 1),
+    )
+    for index, mutation in enumerate(mutations):
+        verification.write_text(mutation, encoding="utf-8")
+        try:
+            parse_verification_report(verification, review)
+        except GateFailure:
+            continue
+        raise GateFailure(f"negative verification fixture {index} was accepted")
+
+
 REQUIRED_MUTATION_GUARDS = (
     "unknown_gate",
     "exact_path_set_and_bytes",
@@ -646,6 +793,7 @@ def run_strict_aggregate(skill_names: Sequence[str]) -> None:
             evidence.append(item)
             print(f"PASS skill={skill_name} gates=14/14 faults=7/7 skipped=0")
         review_parser_self_test(work)
+        verification_parser_self_test(work)
     mutation_guard_self_test()
     require(tuple(item.name for item in evidence) == tuple(skill_names), "required/called skills mismatch")
     print(
@@ -814,6 +962,7 @@ def run_self_test(name: str) -> None:
             production_isolation_gate(root)
             run_registry_self_test()
             review_parser_self_test(root)
+            verification_parser_self_test(root)
             mutation_guard_self_test()
         else:
             raise GateFailure(f"unknown self-test: {name}")
@@ -856,7 +1005,8 @@ def main(argv: Sequence[str]) -> int:
             expected_scope = (
                 expected_review_scope_from_summaries(args.expected_review_scope_from_summaries)
                 if args.expected_review_scope_from_summaries is not None
-                else tuple(args.scope)
+                else tuple(args.scope) if args.scope
+                else expected_review_scope_from_summaries(args.review.parent)
             )
             require(bool(expected_scope), "report_validation_gate requires an expected scope")
             report = parse_review_report(args.review, expected_scope)
@@ -864,9 +1014,11 @@ def main(argv: Sequence[str]) -> int:
                 require(report.critical <= args.max_critical_or_blocker, "Critical/Blocker findings exceed gate")
             if args.max_warning is not None:
                 require(report.warning <= args.max_warning, "Warning findings exceed gate")
+            verification = parse_verification_report(args.verification, report) if args.verification is not None else None
             print(
                 f"PASS report_validation_gate status={report.status} files={len(report.files)} "
                 f"critical_or_blocker={report.critical} warning={report.warning} info={report.info}"
+                + (f" requirements={len(verification.requirements)}/{len(REQUIRED_REQUIREMENT_IDS)}" if verification else "")
             )
         elif args.gate == "documentation_runtime_contract_gate":
             documentation_runtime_scope_gate(args.scope)
