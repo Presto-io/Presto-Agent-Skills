@@ -48,7 +48,7 @@ This reference holds detailed authoring and renderer rules for the `gongwen` ski
 ## Renderer Notes
 
 - `skills/gongwen/scripts/gongwen.sh render` converts the final Markdown file to same-title Typst through built-in shell logic.
-- Rendering must not depend on an external template binary, Pandoc, Python, Node, or another Markdown converter.
+- Markdown→Typst rendering must not depend on an external template binary, Pandoc, Python, Node, or another Markdown converter. The publication transaction uses the bundled Python 3 helper for descriptor-relative filesystem mutation.
 - Final PDF export through `render --pdf <output.pdf>` only calls the installed `typst` CLI on the generated `.typ`; successful gongwen tasks must keep that `.typ` as the only Typst artifact.
 - `--expected-typ` performs black-box comparison against a reference Typst file.
 - The renderer requires `author`, `date`, `signature`, and `template: "gongwen"` in YAML frontmatter.

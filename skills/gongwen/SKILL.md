@@ -62,12 +62,12 @@ skills/gongwen/scripts/gongwen.sh render \
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | 整目录安装并读取本文件与 `references/`；自动发现不可用时显式执行 `scripts/gongwen.sh`。允许 Bash 执行、技能目录读取和交付根/`.work` 写入；PDF 模式额外 allowlist `typst`，sandbox 不得把 `.work` 映射到不同设备。 |
-| Claude Code | 将完整 skill folder 安装到技能路径；显式 fallback 仍是 `scripts/gongwen.sh`。授权 Bash、读取模板/reference、写交付根与 `.work`；PDF 模式需可执行 `typst`，不得只复制 `SKILL.md`。 |
-| Gemini CLI | 通过项目上下文发现完整目录；支持文件发现失败时显式调用脚本。需要 Bash、文件读写和可选 `typst`；allowlist/sandbox 必须同时覆盖 delivery root 与同根 `.work`。 |
-| OpenCode | 使用完整 canonical skill folder，Claude-compatible discovery 不可靠时走同一显式脚本。允许 Bash、模板/reference 读取、delivery/`.work` 写入与可选 `typst`，保持 whole-folder 安装。 |
-| OpenClaw | 安装时验证 whole-folder、frontmatter、reference/template/script 发现、Bash/`cmp`、可选 `typst`、execute/read/write allowlist 及同根 delivery/`.work` sandbox；自动发现失败时使用显式 `gongwen.sh` fallback。 |
-| Hermes Agent | 安装时验证项目级/全局 whole-folder 路径、support-file discovery、Bash/`cmp`、可选 `typst`、工具权限及 delivery/`.work` 可写同设备；发现不确定时显式调用 `gongwen.sh`。 |
+| Codex | 整目录安装并读取本文件与 `references/`；自动发现不可用时显式执行 `scripts/gongwen.sh`。允许 Bash 与 Python 3 执行、技能目录读取和交付根/`.work` 写入；PDF 模式额外 allowlist `typst`，sandbox 不得把 `.work` 映射到不同设备。 |
+| Claude Code | 将完整 skill folder 安装到技能路径；显式 fallback 仍是 `scripts/gongwen.sh`。授权 Bash、Python 3、读取模板/reference、写交付根与 `.work`；PDF 模式需可执行 `typst`，不得只复制 `SKILL.md`。 |
+| Gemini CLI | 通过项目上下文发现完整目录；支持文件发现失败时显式调用脚本。需要 Bash、Python 3、文件读写和可选 `typst`；allowlist/sandbox 必须同时覆盖 delivery root 与同根 `.work`。 |
+| OpenCode | 使用完整 canonical skill folder，Claude-compatible discovery 不可靠时走同一显式脚本。允许 Bash、Python 3、模板/reference 读取、delivery/`.work` 写入与可选 `typst`，保持 whole-folder 安装。 |
+| OpenClaw | 安装时验证 whole-folder、frontmatter、reference/template/script 发现、Bash/Python 3/`cmp`、可选 `typst`、execute/read/write allowlist 及同根 delivery/`.work` sandbox；自动发现失败时使用显式 `gongwen.sh` fallback。 |
+| Hermes Agent | 安装时验证项目级/全局 whole-folder 路径、support-file discovery、Bash/Python 3/`cmp`、可选 `typst`、工具权限及 delivery/`.work` 可写同设备；发现不确定时显式调用 `gongwen.sh`。 |
 
 ## Outputs
 
