@@ -298,10 +298,14 @@ function removeDirectoryIfEmpty(target) {
 function makeFaultHook(fault) {
   let fired = false;
   return (point) => {
-    if (process.env.TDPKG_DELIVERY_SELF_SIGNAL_AT === point) {
-      const signal = process.env.TDPKG_DELIVERY_SELF_SIGNAL || 'SIGTERM';
-      process.kill(process.pid, signal);
-      fail('handled_signal', `${signal} at ${point}`);
+    const abortFile = process.env.TDPKG_DELIVERY_ABORT_FILE || '';
+    if (abortFile && fs.existsSync(abortFile)) fail('handled_signal', `publication cancelled at ${point}`);
+    if (process.env.TDPKG_DELIVERY_PAUSE_AT === point) {
+      const readyFile = process.env.TDPKG_DELIVERY_READY_FILE || '';
+      if (readyFile) fs.writeFileSync(readyFile, point);
+      const delay = Number(process.env.TDPKG_DELIVERY_PAUSE_MS || '500');
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delay);
+      if (abortFile && fs.existsSync(abortFile)) fail('handled_signal', `publication cancelled at ${point}`);
     }
     if (!fired && fault === point) {
       fired = true;
@@ -431,6 +435,44 @@ function publishBundle({ root, runId, candidateRoot, packageModel, fault = '' })
   }
 }
 
+function runInternal(root, runId, candidateRoot, modelPath) {
+  const packageModel = JSON.parse(fs.readFileSync(modelPath, 'utf8'));
+  try {
+    const result = publishBundle({ root, runId, candidateRoot, packageModel, fault: process.env.TDPKG_DELIVERY_FAULT || '' });
+    process.stdout.write(`${JSON.stringify(result)}\n`);
+  } catch (error) {
+    console.error(`teaching-design-package delivery: ${error.message}`);
+    process.exitCode = 1;
+  }
+}
+
+function supervisePublish(root, runId, candidateRoot, modelPath) {
+  const abortFile = path.join(path.resolve(root), '.work', runId, '.delivery-abort');
+  const child = childProcess.spawn(
+    process.execPath,
+    [__filename, 'publish-internal', root, runId, candidateRoot, modelPath],
+    { stdio: 'inherit', env: { ...process.env, TDPKG_DELIVERY_ABORT_FILE: abortFile } },
+  );
+  let interrupted = '';
+  const cancel = (signal) => {
+    interrupted = interrupted || signal;
+    try {
+      fs.writeFileSync(abortFile, signal, { flag: 'wx' });
+    } catch (error) {
+      if (error.code !== 'EEXIST') child.kill(signal);
+    }
+  };
+  process.on('SIGINT', () => cancel('SIGINT'));
+  process.on('SIGTERM', () => cancel('SIGTERM'));
+  child.on('error', (error) => {
+    console.error(`teaching-design-package delivery: cannot start transaction worker: ${error.message}`);
+    process.exitCode = 1;
+  });
+  child.on('close', (code) => {
+    process.exitCode = interrupted === 'SIGINT' ? 130 : interrupted === 'SIGTERM' ? 143 : (code || 0);
+  });
+}
+
 function main() {
   const [command, root, runId, candidateRoot, modelPath] = process.argv.slice(2);
   if (command === 'cleanup' && root && runId) {
@@ -438,21 +480,12 @@ function main() {
     safeFs('cleanup', path.resolve(root), runId);
     return;
   }
-  if (command !== 'publish' || !root || !runId || !candidateRoot || !modelPath) {
+  if (!['publish', 'publish-internal'].includes(command) || !root || !runId || !candidateRoot || !modelPath) {
     console.error('Usage: delivery-transaction.js publish <root> <run-id> <candidate-root> <model.json> | cleanup <root> <run-id>');
     process.exit(2);
   }
-  const packageModel = JSON.parse(fs.readFileSync(modelPath, 'utf8'));
-  const handledSignal = () => {};
-  process.on('SIGINT', handledSignal);
-  process.on('SIGTERM', handledSignal);
-  try {
-    const result = publishBundle({ root, runId, candidateRoot, packageModel, fault: process.env.TDPKG_DELIVERY_FAULT || '' });
-    process.stdout.write(`${JSON.stringify(result)}\n`);
-  } catch (error) {
-    console.error(`teaching-design-package delivery: ${error.message}`);
-    process.exit(1);
-  }
+  if (command === 'publish-internal') runInternal(root, runId, candidateRoot, modelPath);
+  else supervisePublish(root, runId, candidateRoot, modelPath);
 }
 
 module.exports = {
