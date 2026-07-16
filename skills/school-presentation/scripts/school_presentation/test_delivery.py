@@ -129,6 +129,27 @@ class DeliverySessionTests(unittest.TestCase):
         self.assertIn("assets/diagram.png", markdown)
         self.assertTrue((archived / "assets" / "diagram.png").is_file())
 
+    def test_asset_parent_symlink_is_rejected_without_reading_outside(self) -> None:
+        outside = self.base / "outside"
+        outside.mkdir()
+        secret = outside / "secret.png"
+        secret.write_bytes(b"outside-secret")
+        assets = self.input_root / "assets"
+        assets.mkdir()
+        (assets / "link").symlink_to(outside, target_is_directory=True)
+        spec = DeliverySpec(self.root, "deck", ("assets/link/secret.png",))
+
+        with self.assertRaises(DeliveryError):
+            with DeliverySession(spec) as session:
+                session.stage_candidate(
+                    b"# unsafe\n\n![secret](assets/link/secret.png)\n",
+                    html("unsafe"),
+                    asset_root=self.input_root,
+                )
+
+        self.assertEqual(secret.read_bytes(), b"outside-secret")
+        self.assertFalse((self.root / "assets" / "link" / "secret.png").exists())
+
     def test_all_faults_and_signals_restore_pair_history_and_sources(self) -> None:
         self.assertEqual(self.publish("v1"), "first")
         sources = self.root / "sources"

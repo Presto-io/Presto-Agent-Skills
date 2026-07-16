@@ -204,6 +204,35 @@ class DeliverySession:
             os.close(descriptor)
 
     @staticmethod
+    def _read_relative_regular(root: Path, relative: str) -> bytes:
+        descriptors: list[int] = []
+        try:
+            descriptors.append(os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW))
+            parts = Path(relative).parts
+            for component in parts[:-1]:
+                descriptors.append(os.open(
+                    component,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=descriptors[-1],
+                ))
+            descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=descriptors[-1])
+            descriptors.append(descriptor)
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_size <= 0:
+                raise OSError("asset is not a non-empty regular file")
+            chunks: list[bytes] = []
+            while True:
+                chunk = os.read(descriptor, 1024 * 1024)
+                if not chunk:
+                    return b"".join(chunks)
+                chunks.append(chunk)
+        except OSError as exc:
+            raise DeliveryError(f"required managed asset is unsafe or unreadable: {relative}") from exc
+        finally:
+            for descriptor in reversed(descriptors):
+                os.close(descriptor)
+
+    @staticmethod
     def _write_exclusive(path: Path, payload: bytes) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
@@ -334,10 +363,7 @@ class DeliverySession:
         self._write_exclusive(self.candidate_root / markdown_name, markdown)
         self._write_exclusive(self.candidate_root / html_name, html)
         for name in self.spec.managed_assets:
-            try:
-                payload = self._read_regular(asset_root / name)
-            except OSError as exc:
-                raise DeliveryError(f"required managed asset is missing or unreadable: {name}") from exc
+            payload = self._read_relative_regular(asset_root, name)
             self._write_exclusive(self.candidate_root / name, payload)
 
     def _bundle_bytes(self, root: Path, names: tuple[str, ...]) -> dict[str, bytes]:
