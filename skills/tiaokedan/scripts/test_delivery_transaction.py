@@ -167,7 +167,7 @@ class DeliverySessionTests(unittest.TestCase):
                 path.unlink() if path.is_symlink() or path.is_file() else path.rmdir()
                 self.assertEqual(snapshot(self.root), baseline)
 
-        (self.root / "tiaokedan.pdf").unlink()
+        (self.root / "tiaokedan.typ").unlink()
         partial = snapshot(self.root)
         with self.assertRaises(DeliveryError):
             self.publish("v2")
