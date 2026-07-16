@@ -242,6 +242,31 @@ class DeliverySession:
         for entry in history.iterdir():
             if not re.fullmatch(r"[0-9]{3,}", entry.name) or entry.is_symlink() or not entry.is_dir():
                 raise RenderError("OUTPUT_HISTORY_INVALID", f"history 条目无效：{entry.name}", "先审计 history。")
+            markdown_name = f"{self.spec.stem}.md"
+            pptx_name = f"{self.spec.stem}.pptx"
+            try:
+                markdown = self._read_regular(entry / markdown_name)
+                self._read_regular(entry / pptx_name)
+                assets = managed_asset_references(markdown)
+                expected = tuple(sorted((markdown_name, pptx_name, *assets)))
+                actual: list[str] = []
+                for path in entry.rglob("*"):
+                    metadata = os.stat(path, follow_symlinks=False)
+                    if stat.S_ISDIR(metadata.st_mode):
+                        continue
+                    if not stat.S_ISREG(metadata.st_mode):
+                        raise OSError("history contains a symlink or special path")
+                    relative = path.relative_to(entry).as_posix()
+                    self._read_relative_regular(entry, relative)
+                    actual.append(relative)
+                if tuple(sorted(actual)) != expected:
+                    raise OSError("history path set does not match its Markdown references")
+            except (OSError, RenderError) as exc:
+                raise RenderError(
+                    "OUTPUT_HISTORY_INVALID",
+                    f"history bundle 不完整或不安全：{entry.name}",
+                    "先审计并恢复完整历史 bundle。",
+                ) from exc
 
     def _inspect_root(self, *, allow_owned_work: bool) -> bool:
         assert self.root_fd is not None
