@@ -49,12 +49,12 @@ Use this table for concise compatibility notes. Do not duplicate the skill proce
 
 | Runtime | Notes |
 |---------|-------|
-| Codex | <How Codex should discover, invoke, or approximate this skill; map unavailable tools to Codex equivalents; verify references/templates/scripts paths and write boundaries> |
-| Claude Code | <Claude Code skill folder, frontmatter, tool allowlist, progressive disclosure, and subagent notes> |
-| Gemini CLI | <GEMINI.md or project-context bridge notes that tell Gemini how to find and follow this SKILL.md and support folders> |
-| OpenCode | <OpenCode skill path/loading notes, support-folder preservation, and any Claude-compatible fallback path> |
-| OpenClaw | <OpenClaw path, conservative frontmatter, allowlist, sandbox, reference/template/script discovery, and security-review notes to verify> |
-| Hermes Agent | <Hermes path/loading/reference-template-script discovery behavior to verify in the installed runtime> |
+| Codex | <Whole-folder discovery or project bridge; explicit public script fallback; external commands; support/input read and authorized delivery root/.work/verify-workdir write permissions; sandbox/allowlist> |
+| Claude Code | <Whole-folder skill path and frontmatter; explicit fallback; external commands; progressive support-file read and authorized write boundaries> |
+| Gemini CLI | <GEMINI.md/project bridge for the whole folder; explicit fallback; unavailable tool mappings; sandbox/allowlist and read/write boundaries> |
+| OpenCode | <Verified native path or install note; whole-folder preservation; explicit fallback; tool permissions and authorized write boundaries> |
+| OpenClaw | <Installation-time verification of exact path, conservative frontmatter, whole-folder/support/script discovery, external commands, allowlist/sandbox and read/write boundaries; explicit script fallback when uncertain> |
+| Hermes Agent | <Installation-time verification of exact local/global path, project/global behavior, whole-folder/support/script discovery, execute/read/write and allowlist; explicit script fallback when uncertain> |
 
 ## Outputs
 
@@ -77,16 +77,22 @@ Follow `docs/clean-delivery-directory-contract.md` for every workflow that write
 └── .work/
 ```
 
-- Root allowlist: <List the exact current Markdown and final deliverable filenames.>
-- Revision behavior: <Generate in `.work/`, archive the previous successful set together, then publish with stable filenames.>
-- Failure cleanup: <Keep the current successful root files unchanged and remove incomplete candidates.>
-- Persistent verification artifacts: <Normally none; justify any exception in the skill-local artifact contract.>
+- Stable managed set: <List exact current Markdown and final deliverable relative names. State how every optional artifact changes the exact path set; never discover mutation targets by glob or extension.>
+- Support ownership: <State that normal publication does not modify `sources/`; list only explicitly managed, persistently referenced `assets/` that participate in equality and same-version history.>
+- Candidate and minimal gate: <Generate one complete bundle in `.work/<run-id>/candidate/`; verify explicit presence, regular/non-symlink type, non-empty/readable format, required references, and skill-specific minimum before current mutation.>
+- No-op and revision behavior: <Compare exact relative path-set+bytes. Byte-identical candidate is a no-op that creates no history and does not touch current; changed content archives the whole old bundle under `history/<max+1>/` before publishing stable names. Never auto-delete history.>
+- Failure cleanup: <On handled failure/INT/TERM, restore the exact old bundle, remove only this run's owned candidate/rollback/evidence and uncommitted history sequence, and verify current/history remain usable. Do not promise SIGKILL, power-loss, or multi-file cross-path atomicity.>
+- Unknown confirmation: <Reject unknown, legacy, partial, ambiguous, traversal, special-file, and symlink states before mutation. Route historical cleanup through snapshot-bound audit → confirm → execute; do not silently migrate, quarantine, rename, archive, or delete user files.>
+- Persistent verification artifacts: <Normally none in delivery root. Manifest/status/model/log/diff/screenshot/staging/cache/failure artifacts stay in owned `.work` until cleanup or an explicit caller-owned verification workdir, which is not the delivery root.>
 
 ## Verification
 
 - [ ] <Checkable success criterion for the output>
 - [ ] <Checkable success criterion for runtime compatibility notes>
 - [ ] <Checkable success criterion for safety boundaries>
+- [ ] Whole-folder copy can read required `references/`, `scripts/`, `templates/`, and fixtures without sibling-skill or repository-root runtime imports.
+- [ ] First publish, changed whole-bundle history, byte-identical no-op, handled rollback, unknown/symlink refusal, and `.work` cleanup are exercised through the public command.
+- [ ] Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent notes each name whole-folder discovery, explicit fallback, real dependencies, execute/read/write, sandbox/allowlist, delivery root/`.work`, and verify workdir boundaries; OpenClaw/Hermes claims are installation-time verified only.
 - [ ] <If detailed verification is long, this entry links to the skill-local reference that owns it>
 
 ## Success Criteria
@@ -99,3 +105,6 @@ Follow `docs/clean-delivery-directory-contract.md` for every workflow that write
 - <What the agent must avoid>
 - <Any permission, credential, network, external command, or filesystem boundary>
 - <How to verify before writing files, running commands, or using credentials>
+- Treat the delivery root as an explicit authorized capability. Validate names and no-follow directory/file types before mutation; never broaden cleanup from the managed set or follow a symlink to satisfy a write.
+- State every external command, network, credential, package, input-read, support-read, delivery-write, `.work`-write, and verification-workdir permission. Installation or permission changes require user authorization and a post-install public-command check.
+- Portable publication guarantees stop at candidate isolation, single-path replace, and tested handled rollback. Do not advertise automatic history deletion, inferred cleanup, unverified runtime discovery, or multi-file hard atomicity.
