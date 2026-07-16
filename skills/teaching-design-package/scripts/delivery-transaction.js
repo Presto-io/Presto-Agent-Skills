@@ -243,6 +243,23 @@ function safeFs(command, root, runId, name = '') {
   }
 }
 
+function safeFsHeld(command, rootHeld, workHeld, runId, args = [], historyHeld = null) {
+  const helperArgs = [SAFE_FS_HELPER, 'held', command, runId];
+  const stdio = ['ignore', 'pipe', 'pipe', rootHeld.descriptor, workHeld.descriptor];
+  if (historyHeld) {
+    helperArgs.push('with-history');
+    stdio.push(historyHeld.descriptor);
+  } else {
+    stdio.push('ignore');
+  }
+  helperArgs.push(...args);
+  try {
+    childProcess.execFileSync('python3', helperArgs, { stdio });
+  } catch (error) {
+    fail('safe_fs_error', `${command} failed: ${(error.stderr || error.message).toString().trim()}`);
+  }
+}
+
 function inspectWorkDirectory(workRoot, ownRunId) {
   for (const entry of fs.readdirSync(workRoot).sort()) {
     const target = path.join(workRoot, entry);
@@ -330,6 +347,8 @@ function publishBundle({ root, runId, candidateRoot, packageModel, fault = '' })
   const hook = makeFaultHook(fault);
   let candidateBytes;
   let lockHeld = false;
+  let workHeld = null;
+  let historyHeld = null;
   let historyRoot = '';
   let historySequence = '';
   let oldNames = [];
@@ -338,30 +357,24 @@ function publishBundle({ root, runId, candidateRoot, packageModel, fault = '' })
 
   const rollback = () => {
     if (!publicationStarted) return;
-    for (const name of expectedNames) {
-      const target = path.join(absoluteRoot, name);
-      if (fs.existsSync(target)) {
-        const stat = fs.lstatSync(target);
-        if (stat.isSymbolicLink() || !stat.isFile()) fail('rollback_collision', `cannot remove unsafe published path: ${name}`);
-        fs.unlinkSync(target);
-      }
-    }
-    for (const name of oldNames) {
-      const target = path.join(absoluteRoot, name);
-      if (fs.existsSync(target)) fs.unlinkSync(target);
-      copyRegular(path.join(rollbackRoot, name), target);
-    }
-    if (historyRoot && fs.existsSync(historyRoot)) removeOwnedTree(historyRoot, path.dirname(historyRoot));
-    fsyncDirectory(absoluteRoot);
+    safeFsHeld(
+      'rollback',
+      rootHeld,
+      workHeld,
+      runId,
+      [JSON.stringify(expectedNames), JSON.stringify(oldNames), historySequence],
+      historyHeld,
+    );
   };
 
   try {
     validateCandidate(absoluteCandidate, expectedNames);
     candidateBytes = new Map(expectedNames.map((name) => [name, fs.readFileSync(path.join(absoluteCandidate, name))]));
-    hook('after_candidate_validation');
     fs.mkdirSync(workRoot, { recursive: true });
+    workHeld = openHeldDirectory(workRoot, 'delivery work root');
+    hook('after_candidate_validation');
     try {
-      fs.mkdirSync(lockRoot);
+      safeFsHeld('acquire-lock', rootHeld, workHeld, runId);
       lockHeld = true;
     } catch (error) {
       if (error.code === 'EEXIST') fail('lock_conflict', 'another delivery transaction owns the same-root lock');
@@ -376,19 +389,18 @@ function publishBundle({ root, runId, candidateRoot, packageModel, fault = '' })
       return { status: 'identical', historySequence: null, expectedNames };
     }
 
-    fs.mkdirSync(rollbackRoot);
-    for (const name of oldNames) copyRegular(path.join(absoluteRoot, name), path.join(rollbackRoot, name));
-    fsyncDirectory(rollbackRoot);
+    safeFsHeld('prepare-rollback', rootHeld, workHeld, runId);
+    for (const name of oldNames) safeFsHeld('snapshot', rootHeld, workHeld, runId, [name]);
     publicationStarted = true;
     if (oldNames.length) {
       historySequence = nextHistorySequence(absoluteRoot);
+      safeFsHeld('ensure-history', rootHeld, workHeld, runId);
       const parent = path.join(absoluteRoot, 'history');
-      if (!fs.existsSync(parent)) fs.mkdirSync(parent);
+      historyHeld = openHeldDirectory(parent, 'delivery history root');
       historyRoot = path.join(parent, historySequence);
-      fs.mkdirSync(historyRoot);
+      safeFsHeld('reserve-history', rootHeld, workHeld, runId, [historySequence], historyHeld);
       hook('after_history_reservation');
-      for (const name of oldNames) copyRegular(path.join(rollbackRoot, name), path.join(historyRoot, name));
-      fsyncDirectory(historyRoot);
+      for (const name of oldNames) safeFsHeld('archive', rootHeld, workHeld, runId, [historySequence, name], historyHeld);
       hook('after_archive_snapshot');
     }
 
@@ -398,14 +410,13 @@ function publishBundle({ root, runId, candidateRoot, packageModel, fault = '' })
       assertHeldDirectory(rootHeld);
       const source = path.join(absoluteCandidate, name);
       const target = path.join(absoluteRoot, name);
-      safeFs('move', absoluteRoot, runId, name);
-      fsyncFile(target);
+      safeFsHeld('move', rootHeld, workHeld, runId, [name], historyHeld);
       publishedCount += 1;
       if (publishedCount === 1) hook('after_publish_file_1');
       if (publishedCount === middleIndex) hook('after_publish_middle_file');
     }
     for (const name of oldNames) {
-      if (!expectedNames.includes(name) && fs.existsSync(path.join(absoluteRoot, name))) fs.unlinkSync(path.join(absoluteRoot, name));
+      if (!expectedNames.includes(name)) safeFsHeld('unlink-root', rootHeld, workHeld, runId, [name], historyHeld);
     }
     fsyncDirectory(absoluteRoot);
     hook('before_post_publish_verify');
@@ -426,10 +437,10 @@ function publishBundle({ root, runId, candidateRoot, packageModel, fault = '' })
     throw error;
   } finally {
     try {
-      safeFs('cleanup', absoluteRoot, runId);
-      if (lockHeld && fs.existsSync(lockRoot)) fs.rmdirSync(lockRoot);
-      removeDirectoryIfEmpty(workRoot);
+      if (workHeld) safeFsHeld('cleanup', rootHeld, workHeld, runId, [], historyHeld);
     } finally {
+      if (historyHeld) fs.closeSync(historyHeld.descriptor);
+      if (workHeld) fs.closeSync(workHeld.descriptor);
       fs.closeSync(rootHeld.descriptor);
     }
   }
