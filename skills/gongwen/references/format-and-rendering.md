@@ -52,15 +52,19 @@ This reference holds detailed authoring and renderer rules for the `gongwen` ski
 - Final PDF export through `render --pdf <output.pdf>` only calls the installed `typst` CLI on the generated `.typ`; successful gongwen tasks must keep that `.typ` as the only Typst artifact.
 - `--expected-typ` performs black-box comparison against a reference Typst file.
 - The renderer requires `author`, `date`, `signature`, and `template: "gongwen"` in YAML frontmatter.
+- `--typ` is authoritative for the delivery root and stable stem. Optional `--pdf` must resolve to that same real parent directory and stem.
+- Reviewed Markdown, rendered Typst, and optional PDF are generated in one owned candidate. Expected comparison happens before publication; PDF compilation reads candidate Typst from standard input with the reviewed Markdown parent as the Typst root so existing relative `assets/...` references retain their meaning. The result must be regular, non-empty, and begin with `%PDF-`.
 
 ## Artifact Contract
 
-- The working document path is `documents/YYYYMMDD 事项名称/标题.md`; this file is the reviewable source of truth and final Markdown deliverable.
-- The final Typst path must be `documents/YYYYMMDD 事项名称/标题.typ`; keep it as the only Typst artifact in the delivery directory.
-- When PDF is requested, write `documents/YYYYMMDD 事项名称/标题.pdf`.
-- A successful delivery directory contains only `标题.md`, `标题.typ`, and `标题.pdf`.
-- Do not leave `source/`, `output/`, `manifest.json`, `render-log*.txt`, `typst-compile*.log`, verification files, temporary directories, cache directories, or intermediate files under the documents working directory.
-- If debugging needs logs, write them to the system temporary directory or a hidden internal cache and clean them before task completion; never leave them under `documents/YYYYMMDD 事项名称/`.
+- The working document path is `documents/YYYYMMDD 事项名称/标题.md`; it remains the reviewable source of truth and is copied byte-for-byte into the candidate.
+- Without `--pdf`, current is exactly `标题.md + 标题.typ`; with `--pdf`, current is exactly `标题.md + 标题.typ + 标题.pdf`. Adding or removing PDF changes the managed path set and archives the previous whole bundle.
+- Candidate validation precedes current mutation. Exact path-set+bytes equality is a no-op that preserves current inode/mtime and creates no history.
+- A changed current pair/triple is copied as one verified bundle into the next `history/<sequence>/`; sequence is numeric `max + 1`, at least three digits, so existing `001/003` yields `004`.
+- `sources/` is retained user material and never mutated by normal render; `assets/` is reserved for persistent referenced resources; `history/` owns old successful bundles; `.work/<run-id>/{candidate,rollback,evidence}` is run-owned and removed on success or handled failure.
+- Root-level unknown files, legacy `media/` or hidden diagnostic directories, symlinks, partial bundles, stale `.work`, path traversal, different-stem or cross-root outputs fail before mutation and require the confirmation-based cleanup workflow.
+- Do not publish `source/`, `output/`, manifests, logs, diffs, verification files, cache, staging, or failed artifacts. Diagnostics remain bounded on stderr or in owned evidence until cleanup.
+- Publication uses fixed validated names under one same-root lock. Handled error, `INT`, and `TERM` restore prior current and remove only this run/history reservation; SIGKILL, power loss, and multi-file atomicity are outside the portable guarantee.
 
 ## Verification Detail
 
@@ -69,4 +73,5 @@ This reference holds detailed authoring and renderer rules for the `gongwen` ski
 - `skills/gongwen/scripts/gongwen.sh render --input <md> --typ <typ> --pdf <pdf>` must export PDF when `typst` is installed and preserve `**bold**` semantics.
 - `--expected-typ` must match the generated Typst against a fixture when provided.
 - `skills/gongwen/tests/test_heading_normalization.sh` must confirm numbered and unnumbered heading fixtures render identically and font fallback lists do not cross font types.
-- Contract tests must confirm `signature: true` rejects handwritten body author/date lines and that a rendered delivery directory contains exactly `标题.md`, `标题.typ`, and `标题.pdf`.
+- `skills/gongwen/tests/test_clean_delivery.sh` must cover pair/triple first-change-no-op, optional PDF set changes, history gap, seven standard faults, `INT`/`TERM`, lock conflict, expected/compile/PDF failures, unsafe paths/symlinks/unknowns and owned cleanup through the public CLI.
+- Contract tests must also confirm `signature: true` rejects handwritten body author/date lines and that current contains the exact requested pair/triple with no evidence sidecars.

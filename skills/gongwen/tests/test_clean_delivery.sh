@@ -21,15 +21,17 @@ write_fake_typst() {
     success)
       cat > "$BIN_DIR/typst" <<'SH'
 #!/bin/sh
-printf '%%PDF-1.7\n' > "$3"
-cat "$2" >> "$3"
-printf '%%%%EOF\n' >> "$3"
+for argument do output="$argument"; done
+printf '%%PDF-1.7\n' > "$output"
+cat >> "$output"
+printf '%%%%EOF\n' >> "$output"
 SH
       ;;
     invalid)
       cat > "$BIN_DIR/typst" <<'SH'
 #!/bin/sh
-printf 'not-a-pdf\n' > "$3"
+for argument do output="$argument"; done
+printf 'not-a-pdf\n' > "$output"
 SH
       ;;
     failure)
