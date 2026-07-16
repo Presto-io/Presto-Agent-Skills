@@ -204,11 +204,34 @@ before="$(snapshot "$stale_root")"
 if run_render "$stale_root" "$input_v1" no_pdf >"$TMP_DIR/stale.out" 2>&1; then fail 'unrelated stale work accepted'; fi
 [[ "$(snapshot "$stale_root")" == "$before" ]] || fail 'unrelated stale work was cleaned'
 
+race_root="$TMP_DIR/race-root"
+race_original="$TMP_DIR/race-original"
+race_outside="$TMP_DIR/race-outside"
+race_ready="$TMP_DIR/race.ready"
+mkdir "$race_root" "$race_outside"
+printf 'outside-sentinel\n' > "$race_outside/sentinel"
+GONGWEN_DELIVERY_READY_FILE="$race_ready" GONGWEN_DELIVERY_PAUSE_SECONDS=1 \
+  run_render "$race_root" "$input_v1" no_pdf >"$TMP_DIR/race.out" 2>&1 &
+race_pid=$!
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+  [[ -f "$race_ready" ]] && break
+  sleep 0.05
+done
+[[ -f "$race_ready" ]] || fail 'root race did not reach candidate validation window'
+mv "$race_root" "$race_original"
+ln -s "$race_outside" "$race_root"
+wait "$race_pid"
+[[ "$(cat "$race_outside/sentinel")" == outside-sentinel ]] || fail 'root race mutated outside sentinel'
+[[ ! -e "$race_outside/notice.md" && ! -e "$race_outside/notice.typ" ]] || fail 'root race published outside held root'
+[[ -f "$race_original/notice.md" && -f "$race_original/notice.typ" ]] || fail 'held root did not receive the transaction'
+[[ ! -e "$race_original/.work" ]] || fail 'held root work was not cleaned after path exchange'
+
 if rg -n 'rm[[:space:]]+(-[^[:space:]]+[[:space:]]+)*"?\$[^[:space:]]*"?/\*|find[^\n]*-delete' "$SKILL_DIR/scripts/gongwen_lib/delivery.sh"; then
   fail 'broad root cleanup found in delivery.sh'
 fi
-if rg -n 'python|node|test/clean-delivery|skills/[^g]' "$SKILL_DIR/scripts/gongwen_lib/delivery.sh"; then
-  fail 'delivery.sh has a forbidden runtime or cross-skill dependency'
+if rg -n 'node|test/clean-delivery|skills/[^g]' "$SKILL_DIR/scripts/gongwen_lib/delivery.sh"; then
+  fail 'delivery.sh has a forbidden cross-skill dependency'
 fi
+[[ -f "$SKILL_DIR/scripts/gongwen_safe_delivery.py" ]] || fail 'skill-local safe delivery helper missing'
 
 printf 'gongwen clean-delivery transaction tests passed.\n'

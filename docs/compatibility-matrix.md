@@ -41,7 +41,7 @@
 | Skill | External command/package boundary | Current and evidence boundary |
 |-------|-----------------------------------|-------------------------------|
 | `end-of-term-teaching-materials` | Bash、Python、Typst；XLSX 由 skill-local Python writer 生成。 | 固定 Markdown/Typst/PDF/XLSX current；model、manifest、score evidence 仅在 owned work/evidence。 |
-| `gongwen` | Bash、skill-local shell renderer、Typst。 | Markdown/Typst/PDF 同 stem current；expected diff、logs 和 failure candidate 不发布。 |
+| `gongwen` | Bash、Python 3 skill-local 安全发布 helper、Typst。 | Markdown/Typst/PDF 同 stem current；expected diff、logs 和 failure candidate 不发布。 |
 | `school-presentation` | Bash、Python；public verify 可使用安装环境提供的 browser。 | Markdown+offline HTML+显式引用 assets；manifest 和 caller `verify --workdir` evidence 不属于 delivery。 |
 | `school-pptx` | Bash、Python、python-pptx、Pillow、lxml、PyYAML；Pandoc optional。 | reviewed Markdown+validated PPTX+confirmed referenced assets；best-effort 与 verify evidence 不发布，PowerPoint/WPS UAT 由人类完成。 |
 | `teaching-design-package` | Bash、Node、Typst，以及 `pdfunite`、`qpdf` 或 Python PyMuPDF merge fallback。 | model-derived dynamic `1+1+N` current；model/status/module/merge/staging 只在 owned `.work` 或 caller diagnostic workdir。 |

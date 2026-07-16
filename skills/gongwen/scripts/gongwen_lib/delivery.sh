@@ -14,6 +14,7 @@ DELIVERY_CURRENT_NAMES=()
 DELIVERY_CANDIDATE_NAMES=()
 DELIVERY_OLD_NAMES=()
 DELIVERY_POSSIBLE_NAMES=()
+DELIVERY_SAFE_HELPER="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/gongwen_safe_delivery.py"
 
 delivery_device() {
   stat -f '%d' "$1" 2>/dev/null || stat -c '%d' "$1"
@@ -193,24 +194,9 @@ delivery_cleanup_lock() {
 }
 
 delivery_abort() {
-  local name
   [[ "$DELIVERY_ACTIVE" == true ]] || return 0
   set +e
-  if [[ "$DELIVERY_MUTATION_STARTED" == true ]]; then
-    for name in "${DELIVERY_POSSIBLE_NAMES[@]}"; do
-      rm -f -- "$DELIVERY_ROOT/$name"
-    done
-    if (( ${#DELIVERY_OLD_NAMES[@]} > 0 )); then
-      for name in "${DELIVERY_OLD_NAMES[@]}"; do
-        if [[ -f "$DELIVERY_ROLLBACK/$name" && ! -L "$DELIVERY_ROLLBACK/$name" ]]; then
-          mv -- "$DELIVERY_ROLLBACK/$name" "$DELIVERY_ROOT/$name"
-        fi
-      done
-    fi
-  fi
-  delivery_remove_owned_history
-  delivery_remove_owned_run
-  delivery_cleanup_lock
+  python3 "$DELIVERY_SAFE_HELPER" cleanup "$DELIVERY_ROOT" "${DELIVERY_RUN##*/}" >/dev/null 2>&1
   DELIVERY_ACTIVE=false
   set -e
 }
@@ -317,62 +303,13 @@ delivery_finish_success() {
 }
 
 delivery_publish() {
-  local name index=0 current_count sequence history_dir result
+  local result
   delivery_validate_candidate
-  delivery_fault after_candidate_validation
   if [[ -n "${PRESTO_CLEAN_DELIVERY_LOCK_HOLD_SECONDS:-}" ]]; then
     sleep "$PRESTO_CLEAN_DELIVERY_LOCK_HOLD_SECONDS"
   fi
-  delivery_inspect_root true
-  if delivery_sets_identical; then
-    result="identical"
-    delivery_fault before_work_cleanup
-    DELIVERY_RESULT="$result"
-    delivery_finish_success
-    return 0
-  fi
-  DELIVERY_OLD_NAMES=()
-  if (( ${#DELIVERY_CURRENT_NAMES[@]} > 0 )); then
-    DELIVERY_OLD_NAMES=("${DELIVERY_CURRENT_NAMES[@]}")
-  fi
-  current_count="${#DELIVERY_OLD_NAMES[@]}"
-  if (( current_count > 0 )); then
-    for name in "${DELIVERY_OLD_NAMES[@]}"; do
-      cp -p -- "$DELIVERY_ROOT/$name" "$DELIVERY_ROLLBACK/$name"
-      delivery_same_file "$DELIVERY_ROOT/$name" "$DELIVERY_ROLLBACK/$name" || die "rollback snapshot differs: $name"
-    done
-  fi
-  if (( current_count >= 2 )); then
-    mkdir -m 700 -p "$DELIVERY_ROOT/history"
-    [[ "$(delivery_device "$DELIVERY_ROOT")" == "$(delivery_device "$DELIVERY_ROOT/history")" ]] || die "delivery root and history must use the same device"
-    sequence="$(delivery_next_history_sequence)"
-    history_dir="$DELIVERY_ROOT/history/$sequence"
-    mkdir -m 700 "$history_dir"
-    DELIVERY_HISTORY_SEQUENCE="$sequence"
-    delivery_fault after_history_reservation
-    for name in "${DELIVERY_OLD_NAMES[@]}"; do
-      cp -p -- "$DELIVERY_ROLLBACK/$name" "$history_dir/$name"
-      delivery_same_file "$DELIVERY_ROLLBACK/$name" "$history_dir/$name" || die "history snapshot differs: $name"
-    done
-    delivery_fault after_archive_snapshot
-    result="changed"
-  else
-    result="first"
-  fi
-  DELIVERY_MUTATION_STARTED=true
-  for name in "${DELIVERY_CANDIDATE_NAMES[@]}"; do
-    index=$((index + 1))
-    mv -f -- "$DELIVERY_CANDIDATE/$name" "$DELIVERY_ROOT/$name"
-    if (( index == 1 )); then delivery_fault after_publish_file_1; fi
-    if (( ${#DELIVERY_CANDIDATE_NAMES[@]} >= 3 && index == 2 )); then delivery_fault after_publish_middle_file; fi
-  done
-  if (( current_count == 3 && ${#DELIVERY_CANDIDATE_NAMES[@]} == 2 )); then
-    rm -f -- "$DELIVERY_ROOT/$DELIVERY_STEM.pdf"
-  fi
-  delivery_fault before_post_publish_verify
-  delivery_verify_published
-  delivery_fault before_work_cleanup
-  DELIVERY_MUTATION_STARTED=false
+  result="$(python3 "$DELIVERY_SAFE_HELPER" publish "$DELIVERY_ROOT" "${DELIVERY_RUN##*/}" "$DELIVERY_STEM" "${#DELIVERY_CANDIDATE_NAMES[@]}")"
   DELIVERY_RESULT="$result"
-  delivery_finish_success
+  DELIVERY_ACTIVE=false
+  trap - INT TERM EXIT
 }
