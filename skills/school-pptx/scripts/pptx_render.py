@@ -309,7 +309,7 @@ class DeliverySession:
         self._remove_empty_asset_dirs(root)
 
     def _restore(self, old_names: tuple[str, ...]) -> None:
-        all_names = tuple(sorted(set(self._published) | set(old_names)))
+        all_names = tuple(sorted(set(self.spec.current_names) | set(old_names)))
         self._remove_names(self.root, all_names)
         for name in old_names:
             target = self.root / name
