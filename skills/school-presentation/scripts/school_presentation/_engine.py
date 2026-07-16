@@ -6,10 +6,21 @@ import hashlib
 import html
 import json
 import mimetypes
+import os
 import re
+import secrets
 import shutil
+import stat
 import sys
 from pathlib import Path
+
+from .delivery import (
+    DeliveryError,
+    DeliverySession,
+    DeliverySpec,
+    managed_asset_references,
+    validate_html_candidate,
+)
 
 SKILL_DIR = Path(sys.argv[1]).resolve()
 TEMPLATE_MD = SKILL_DIR / "templates" / "school-presentation-full.md"
@@ -59,7 +70,7 @@ def resolve_asset(raw: str, input_dir: Path) -> Path | None:
     if ".." in raw_path.parts:
         return None
     allowed_roots = [
-        (input_dir / "media").resolve(),
+        (input_dir / "assets").resolve(),
         IMAGE_DIR.resolve(),
     ]
     candidates = []
@@ -4236,8 +4247,11 @@ def cmd_example(args: argparse.Namespace) -> None:
 
 def cmd_render(args: argparse.Namespace) -> dict[str, object]:
     input_path = Path(args.input).resolve()
-    output = Path(args.html or input_path.with_suffix(".html"))
-    meta, _ = parse_frontmatter(read_text(input_path))
+    output = Path(args.html or input_path.with_suffix(".html")).expanduser().resolve()
+    markdown_text = read_text(input_path)
+    if re.search(r"(?:\(|[\"'])media/", markdown_text):
+        raise DeliveryError("legacy media/ references require confirmed migration to assets/")
+    meta, _ = parse_frontmatter(markdown_text)
     if args.max_size_mb is not None:
         max_size_mb = int(args.max_size_mb)
         max_size_source = "cli"
@@ -4245,8 +4259,8 @@ def cmd_render(args: argparse.Namespace) -> dict[str, object]:
         max_size_mb = int(meta.get("max_output_mb") or DEFAULT_MAX_MB)
         max_size_source = "frontmatter" if meta.get("max_output_mb") else "default"
     html_doc, manifest = render_deck(input_path, max_size_mb)
-    write_text(output, html_doc)
-    size = output.stat().st_size
+    html_payload = html_doc.encode("utf-8")
+    size = len(html_payload)
     manifest.update({
         "html": str(output),
         "size_bytes": size,
@@ -4254,14 +4268,66 @@ def cmd_render(args: argparse.Namespace) -> dict[str, object]:
         "max_size_source": max_size_source,
         "under_size_cap": size <= max_size_mb * 1024 * 1024,
     })
-    if args.manifest:
-        write_text(Path(args.manifest), json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
-    if size > max_size_mb * 1024 * 1024:
-        fail(f"HTML output exceeds {max_size_mb} MB: {output}")
+    assets = managed_asset_references(markdown_text.encode("utf-8"), html_payload)
+    seed_markdown = input_path if input_path == output.with_suffix(".md") else None
+    spec = DeliverySpec(output.parent, output.stem, assets, seed_markdown=seed_markdown)
+    manifest_payload = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    with DeliverySession(spec) as session:
+        session.stage_candidate(markdown_text.encode("utf-8"), html_payload, asset_root=input_path.parent)
+        candidate_bundle = {
+            name: session.candidate_path(name).read_bytes()
+            for name in spec.current_names
+        }
+        validate_html_candidate(candidate_bundle, max_size_mb)
+        write_text(session.evidence_path("render-manifest.json"), manifest_payload)
+        if args.manifest:
+            _write_external_manifest(Path(args.manifest), manifest_payload, output.parent)
+        publication = session.publish(lambda bundle: validate_html_candidate(bundle, max_size_mb))
+    manifest["publication"] = publication
     print(f"wrote {output}")
     if args.manifest:
         print(f"wrote {args.manifest}")
     return manifest
+
+
+def _write_external_manifest(path: Path, payload: str, delivery_root: Path) -> None:
+    target = path.expanduser().resolve(strict=False)
+    root = delivery_root.resolve(strict=False)
+    if is_relative_to(target, root):
+        raise DeliveryError("--manifest must be outside the normal delivery root")
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        parent_status = os.stat(target.parent, follow_symlinks=False)
+        if not stat.S_ISDIR(parent_status.st_mode):
+            raise DeliveryError("manifest parent must be a real directory")
+        try:
+            target_status = os.stat(target, follow_symlinks=False)
+        except FileNotFoundError:
+            target_status = None
+        if target_status is not None and not stat.S_ISREG(target_status.st_mode):
+            raise DeliveryError("manifest target must be absent or a regular file")
+        temporary = target.with_name(f".{target.name}.tmp-{secrets.token_hex(8)}")
+        descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        try:
+            data = payload.encode("utf-8")
+            view = memoryview(data)
+            while view:
+                written = os.write(descriptor, view)
+                if written <= 0:
+                    raise OSError("short write")
+                view = view[written:]
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        os.replace(temporary, target)
+    except DeliveryError:
+        raise
+    except OSError as exc:
+        try:
+            temporary.unlink()
+        except (NameError, OSError):
+            pass
+        raise DeliveryError("unable to write explicit manifest evidence path") from exc
 
 
 def cmd_verify(args: argparse.Namespace) -> None:
@@ -4269,8 +4335,8 @@ def cmd_verify(args: argparse.Namespace) -> None:
     workdir.mkdir(parents=True, exist_ok=True)
     sample = workdir / "school-presentation-full.md"
     cmd_example(argparse.Namespace(output=str(sample)))
-    media_dir = workdir / "media"
-    media_dir.mkdir(parents=True, exist_ok=True)
+    assets_dir = workdir / "assets"
+    assets_dir.mkdir(parents=True, exist_ok=True)
     repo_root = SKILL_DIR.parent.parent
     demo_media = {
         "风景.webp": [
@@ -4289,9 +4355,14 @@ def cmd_verify(args: argparse.Namespace) -> None:
     for name, candidates in demo_media.items():
         source = next((candidate for candidate in candidates if candidate.is_file()), None)
         if source:
-            shutil.copyfile(source, media_dir / name)
-    first = workdir / "school-presentation-first.html"
-    second = workdir / "school-presentation-second.html"
+            shutil.copyfile(source, assets_dir / name)
+    migrated_sample = sample.read_text(encoding="utf-8")
+    for name in demo_media:
+        migrated_sample = migrated_sample.replace(f"media/{name}", f"assets/{name}")
+    migrated_sample = migrated_sample.replace("media/", "optional-media/")
+    sample.write_text(migrated_sample, encoding="utf-8")
+    first = workdir / "render-first" / "school-presentation.html"
+    second = workdir / "render-second" / "school-presentation.html"
     first_manifest = workdir / "school-presentation-first.manifest.json"
     second_manifest = workdir / "school-presentation-second.manifest.json"
     m1 = cmd_render(argparse.Namespace(input=str(sample), html=str(first), manifest=str(first_manifest), max_size_mb=args.max_size_mb))
@@ -4585,7 +4656,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
     )
 
     flat_sample = workdir / "flat-compat.md"
-    flat_html = workdir / "flat-compat.html"
+    flat_html = workdir / "render-flat" / "flat-compat.html"
     flat_manifest_path = workdir / "flat-compat.manifest.json"
     write_text(flat_sample, """---
 template: "school-presentation"
@@ -4626,7 +4697,7 @@ split: auto
     )
 
     ratio43_sample = workdir / "school-presentation-4x3.md"
-    ratio43_html = workdir / "school-presentation-4x3.html"
+    ratio43_html = workdir / "render-ratio43" / "school-presentation-4x3.html"
     ratio43_manifest_path = workdir / "school-presentation-4x3.manifest.json"
     write_text(ratio43_sample, sample_text.replace('page_ratio: "16:9"', 'page_ratio: "4:3"', 1))
     ratio43_manifest = cmd_render(argparse.Namespace(input=str(ratio43_sample), html=str(ratio43_html), manifest=str(ratio43_manifest_path), max_size_mb=args.max_size_mb))
@@ -4639,6 +4710,16 @@ split: auto
         and bool(ratio43_manifest.get("under_size_cap"))
     )
 
+    delivery_roots = (first.parent, second.parent, flat_html.parent, ratio43_html.parent)
+    delivery_roots_clean = all(
+        not (root / ".work").exists()
+        and not any(
+            token in path.name.lower()
+            for path in root.rglob("*")
+            for token in ("manifest", "verification", "screenshot", "diff", "log", "failed")
+        )
+        for root in delivery_roots
+    )
     passed = (
         stable
         and bool(m1.get("under_size_cap"))
@@ -4655,6 +4736,7 @@ split: auto
         and offline_single_file_verified
         and thumbnail_ratio_verified
         and flat_slide_compat_verified
+        and delivery_roots_clean
     )
     verification = {
         "status": "passed" if passed else "failed",
@@ -4671,6 +4753,7 @@ split: auto
         "offline_single_file_verified": offline_single_file_verified,
         "thumbnail_ratio_verified": thumbnail_ratio_verified,
         "flat_slide_compat_verified": flat_slide_compat_verified,
+        "delivery_roots_clean": delivery_roots_clean,
         "first_sha256": m1.get("html_sha256"),
         "second_sha256": m2.get("html_sha256"),
         "logical_slides": m1.get("logical_slides"),
@@ -4872,16 +4955,20 @@ def main(argv: list[str]) -> None:
     p_bookmark_pdf.add_argument("--output")
     sub.add_parser("info")
     args = parser.parse_args(argv)
-    if args.command == "example":
-        cmd_example(args)
-    elif args.command == "render":
-        cmd_render(args)
-    elif args.command == "verify":
-        cmd_verify(args)
-    elif args.command == "bookmark-pdf":
-        cmd_bookmark_pdf(args)
-    elif args.command == "info":
-        cmd_info(args)
+    try:
+        if args.command == "example":
+            cmd_example(args)
+        elif args.command == "render":
+            cmd_render(args)
+        elif args.command == "verify":
+            cmd_verify(args)
+        elif args.command == "bookmark-pdf":
+            cmd_bookmark_pdf(args)
+        elif args.command == "info":
+            cmd_info(args)
+    except DeliveryError as exc:
+        fail(str(exc))
 
 
-main(sys.argv[2:])
+if __name__ == "__main__":
+    main(sys.argv[2:])
