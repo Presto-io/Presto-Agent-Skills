@@ -220,6 +220,43 @@ function testMutationGuards() {
   assert.doesNotMatch(source, /find\s+-delete|rmSync\(root\s*,\s*\{\s*recursive:\s*true/);
 }
 
+function testRealRenderPackageCandidateIsolation() {
+  withRoot((root, base) => {
+    const bin = path.join(base, 'bin');
+    fs.mkdirSync(bin);
+    const typst = path.join(bin, 'typst');
+    fs.writeFileSync(typst, `#!/usr/bin/env bash\nset -euo pipefail\ninput="$2"\noutput="$3"\nprintf '%%PDF-1.4\\n' >"$output"\nshasum -a 256 "$input" >>"$output"\nprintf '%%%%EOF\\n' >>"$output"\n`);
+    fs.chmodSync(typst, 0o755);
+    const pdfunite = path.join(bin, 'pdfunite');
+    fs.writeFileSync(pdfunite, `#!/usr/bin/env bash\nset -euo pipefail\noutput="${'${!#}'}"\nprintf '%%PDF-1.4\\nmerged\\n%%%%EOF\\n' >"$output"\n`);
+    fs.chmodSync(pdfunite, 0o755);
+    const input = path.join(base, 'package.md');
+    fs.copyFileSync(path.join(__dirname, '..', 'templates', 'teaching-design-package-full.md'), input);
+    const cli = path.join(__dirname, 'teaching-design-package.sh');
+    const env = { ...process.env, PATH: `${bin}:${process.env.PATH}` };
+    const run = (extraEnv = {}) => childProcess.spawnSync('bash', [cli, 'render-package', '--pdf', '--input', input, '--out-dir', root], {
+      encoding: 'utf8', env: { ...env, ...extraEnv },
+    });
+    const first = run();
+    assert.strictEqual(first.status, 0, first.stderr);
+    assert.strictEqual(fs.existsSync(path.join(root, '.teaching-design-package')), false);
+    assert.strictEqual(fs.existsSync(path.join(root, '.work')), false);
+    const before = snapshot(root);
+    fs.appendFileSync(input, '\n<!-- candidate change -->\n');
+    for (const failureEnv of [
+      { TDPKG_FORCE_MODULE_PDF_MISSING: 'teaching-plan' },
+      { TDPKG_FORCE_MODULE_PDF_EMPTY: 'teaching-design' },
+      { TDPKG_FORCE_MERGE_FAILURE: 'failed' },
+    ]) {
+      const failed = run(failureEnv);
+      assert.notStrictEqual(failed.status, 0);
+      assert.deepStrictEqual(snapshot(root), before);
+      assert.strictEqual(fs.existsSync(path.join(root, '.teaching-design-package')), false);
+      assert.strictEqual(fs.existsSync(path.join(root, '.work')), false);
+    }
+  });
+}
+
 const tests = [
   testFirstSameChangeAndGap,
   testFaultRollbackMatrix,
@@ -227,6 +264,7 @@ const tests = [
   testLockAndUnrelatedWorkPreserved,
   testHandledSignalsRestoreCurrent,
   testMutationGuards,
+  testRealRenderPackageCandidateIsolation,
 ];
 
 let passed = 0;
