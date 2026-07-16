@@ -229,4 +229,4 @@ if __name__ == "__main__":
         main()
     except BaseException as exc:
         print(f"gongwen delivery: {exc}", file=sys.stderr)
-        raise
+        raise SystemExit(1)
