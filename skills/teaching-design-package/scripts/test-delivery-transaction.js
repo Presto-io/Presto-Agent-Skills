@@ -21,7 +21,7 @@ const FAULTS = [
 function model(prefix, modules = [
   ['teaching-plan', '授课进度计划表'],
   ['teaching-design', '教学设计方案'],
-]) {
+], supportedModuleSets = [modules]) {
   const modulePdfs = modules.map(([moduleId, suffix]) => ({
     module_id: moduleId,
     public_pdf_suffix: suffix,
@@ -34,6 +34,7 @@ function model(prefix, modules = [
       public_markdown_filename: `${prefix}教学资料.md`,
       public_package_pdf_filename: `${prefix}教学资料.pdf`,
       module_pdfs: modulePdfs,
+      supported_module_pdf_suffix_sets: supportedModuleSets.map((suffixSet) => suffixSet.map(([, suffix]) => suffix)),
       expected_public_filenames: [
         `${prefix}教学资料.md`,
         `${prefix}教学资料.pdf`,
@@ -124,13 +125,15 @@ function testFirstSameChangeAndGap() {
 
 function testDynamicRegistryAuthority() {
   withRoot((root) => {
-    const n2Model = model('动态课程');
-    publish(root, 'dynamic-n2', n2Model, 'v1');
-    const dynamicModel = model('动态课程', [
+    const n2Modules = [
       ['teaching-plan', '授课进度计划表'],
       ['teaching-design', '教学设计方案'],
-      ['assessment', '考核方案'],
-    ]);
+    ];
+    const n3Modules = [...n2Modules, ['assessment', '考核方案']];
+    const supportedModuleSets = [n2Modules, n3Modules];
+    const n2Model = model('动态课程', n2Modules, supportedModuleSets);
+    publish(root, 'dynamic-n2', n2Model, 'v1');
+    const dynamicModel = model('动态课程', n3Modules, supportedModuleSets);
     const result = publish(root, 'dynamic-n3', dynamicModel, 'v2');
     assert.strictEqual(result.expectedNames.length, 5);
     assert.strictEqual(fs.existsSync(path.join(root, 'history', '001')), true);
@@ -147,6 +150,14 @@ function testDynamicRegistryAuthority() {
     const before = snapshot(root);
     assert.throws(() => publish(root, 'overlap', overlapping, 'v4'), /overlap/i);
     assert.deepStrictEqual(snapshot(root), before);
+
+    for (const [index, attachment] of ['动态课程私人附件.pdf', '动态课程教学设计方案补充.pdf'].entries()) {
+      fs.writeFileSync(path.join(root, attachment), bytesFor(attachment, 'private'));
+      const attachmentBefore = snapshot(root);
+      assert.throws(() => publish(root, `unknown-${index}`, dynamicModel, 'v4'), /fail.closed|incomplete|registry/i);
+      assert.deepStrictEqual(snapshot(root), attachmentBefore);
+      fs.unlinkSync(path.join(root, attachment));
+    }
   });
 }
 

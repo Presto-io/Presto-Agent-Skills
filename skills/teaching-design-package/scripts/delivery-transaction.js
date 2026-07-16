@@ -180,29 +180,56 @@ function validateCandidate(candidateRoot, expectedNames) {
   }
 }
 
-function discoverySuffixes(packageModel) {
+function discoveryContract(packageModel) {
   const delivery = packageModel.public_delivery;
   const prefix = validateComponent(delivery.filename_prefix, 'filename prefix');
-  const suffixes = validateExpectedNames(packageModel).map((name) => {
+  const expectedNames = validateExpectedNames(packageModel);
+  const fixedSuffixes = [delivery.public_markdown_filename, delivery.public_package_pdf_filename].map((name) => {
     if (!name.startsWith(prefix) || name.length === prefix.length) {
       fail('invalid_expected_public_filenames', `model filename does not start with filename_prefix: ${name}`);
     }
     return name.slice(prefix.length);
   });
+  const currentModuleSuffixes = (delivery.module_pdfs || []).map((item, index) => {
+    const suffix = validateComponent(item.public_pdf_suffix, `module_pdfs[${index}].public_pdf_suffix`);
+    if (item.public_pdf_filename !== `${prefix}${suffix}.pdf` || !expectedNames.includes(item.public_pdf_filename)) {
+      fail('invalid_module_registry', `module registry filename does not match its formal suffix: ${suffix}`);
+    }
+    return suffix;
+  });
+  const configuredSets = delivery.supported_module_pdf_suffix_sets || [currentModuleSuffixes];
+  if (!Array.isArray(configuredSets) || !configuredSets.length) {
+    fail('invalid_module_registry', 'supported_module_pdf_suffix_sets must contain at least one registry set');
+  }
+  const moduleSuffixSets = configuredSets.map((suffixSet, setIndex) => {
+    if (!Array.isArray(suffixSet) || !suffixSet.length) {
+      fail('invalid_module_registry', `supported module registry set ${setIndex} must not be empty`);
+    }
+    const validated = suffixSet.map((suffix, suffixIndex) => (
+      validateComponent(suffix, `supported_module_pdf_suffix_sets[${setIndex}][${suffixIndex}]`)
+    ));
+    if (new Set(validated).size !== validated.length) {
+      fail('invalid_module_registry', `supported module registry set ${setIndex} contains duplicates`);
+    }
+    return validated.sort();
+  });
+  if (!moduleSuffixSets.some((suffixSet) => pathSetEqual(suffixSet, currentModuleSuffixes))) {
+    fail('invalid_module_registry', 'supported module registry migrations must include the current module set');
+  }
+  const suffixes = [...fixedSuffixes, ...new Set(moduleSuffixSets.flat().map((suffix) => `${suffix}.pdf`))];
   for (const suffix of suffixes) {
     if (suffixes.some((other) => other !== suffix && (suffix.endsWith(other) || other.endsWith(suffix)))) {
-      fail('invalid_expected_public_filenames', `registry suffixes overlap: ${suffix}`);
+      fail('invalid_module_registry', `registry suffixes overlap: ${suffix}`);
     }
   }
-  return suffixes;
+  return { fixedSuffixes, moduleSuffixSets };
 }
 
 function discoverCurrent(root, packageModel, ownRunId) {
-  const suffixes = discoverySuffixes(packageModel);
+  const { fixedSuffixes, moduleSuffixSets } = discoveryContract(packageModel);
   const delivery = packageModel.public_delivery;
   const modelPrefix = delivery.filename_prefix;
-  const markdownSuffix = delivery.public_markdown_filename.slice(modelPrefix.length);
-  const packageSuffix = delivery.public_package_pdf_filename.slice(modelPrefix.length);
+  const [markdownSuffix, packageSuffix] = fixedSuffixes;
   const publicFiles = [];
   for (const entry of fs.readdirSync(root).sort()) {
     const target = path.join(root, entry);
@@ -222,15 +249,16 @@ function discoverCurrent(root, packageModel, ownRunId) {
   if (markdownNames.length !== 1) fail('ambiguous_current_group', 'current must contain exactly one package Markdown anchor');
   const prefix = markdownNames[0].slice(0, -markdownSuffix.length);
   if (!prefix) fail('partial_group_fail_closed', 'public filename lacks a course prefix');
-  const names = publicFiles.filter((name) => name.startsWith(prefix));
-  if (names.length !== publicFiles.length) fail('ambiguous_current_group', 'multiple course-prefix groups found');
+  if (publicFiles.some((name) => !name.startsWith(prefix))) fail('ambiguous_current_group', 'multiple course-prefix groups found');
   const packageName = `${prefix}${packageSuffix}`;
-  const moduleNames = names.filter((name) => name !== markdownNames[0] && name !== packageName);
-  if (!names.includes(packageName) || moduleNames.length < 1 || moduleNames.some((name) => !name.endsWith('.pdf'))) {
+  const moduleNames = publicFiles.filter((name) => name !== markdownNames[0] && name !== packageName);
+  const moduleSuffixes = moduleNames.map((name) => name.slice(prefix.length, -'.pdf'.length)).sort();
+  if (!publicFiles.includes(packageName) || moduleNames.some((name) => !name.endsWith('.pdf'))
+    || !moduleSuffixSets.some((suffixSet) => pathSetEqual(suffixSet, moduleSuffixes))) {
     fail('partial_group_fail_closed', `current group for ${prefix} is incomplete`);
   }
-  for (const name of names) assertRegular(path.join(root, name), `current ${name}`);
-  return names.sort();
+  for (const name of publicFiles) assertRegular(path.join(root, name), `current ${name}`);
+  return publicFiles.sort();
 }
 
 function safeFs(command, root, runId, name = '') {
