@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.18
 milestone_name: 全技能干净交付目录标准化改造
-status: in_progress
-stopped_at: Completed 45-01-PLAN.md
-last_updated: "2026-07-16T00:01:07.773Z"
-last_activity: 2026-07-16 — Completed Phase 45 Plan 01 clean-delivery protocol foundation
+status: executing
+stopped_at: Completed 45-02-PLAN.md
+last_updated: "2026-07-16T00:28:39.122Z"
+last_activity: 2026-07-16 — Completed Phase 45 Plan 02 end-of-term fixed bundle transaction
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 9
-  completed_plans: 1
-  percent: 11
+  completed_plans: 2
+  percent: 22
 ---
 
 # State: Presto Agent Skills
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-16)
 ## Current Position
 
 Phase: 45 of 45 (全技能干净交付目录标准化改造)
-Plan: 1 of 9
+Plan: 2 of 9
 Status: In progress
-Last activity: 2026-07-16 — Completed 45-01 protocol, cleanup contract, and gate registry
+Last activity: 2026-07-16 — Completed 45-02 end-of-term candidate-first delivery adapter
 
 ## Workflow Preferences
 
@@ -55,6 +55,9 @@ Phase order:
 
 ### Decisions
 
+- [Phase 45]: End-of-term delivery uses one exact fixed four-file managed set; unknown, partial, symlink, legacy, and stale-work states fail before mutation.
+- [Phase 45]: Typst compilation defaults `SOURCE_DATE_EPOCH` to zero so byte-identical reviewed input can produce a true no-op without changing output content.
+- [Phase 45]: End-of-term runtime support uses whole-folder installation, explicit shell fallback, and installation-time verification for OpenClaw and Hermes Agent.
 - [Phase 45]: Delivery equality requires the exact managed relative path set and byte equality, including explicitly managed assets.
 - [Phase 45]: Portable guarantees cover per-path replace and handled failure/INT/TERM rollback, not SIGKILL, power loss, or cross-file atomicity.
 - [Phase 45]: Historical cleanup execution requires exact approved operations bound to an unchanged no-follow snapshot.
@@ -137,11 +140,12 @@ None. v1.17 is shipped; Phase 45 is promoted and ready for next-milestone initia
 | Phase 44 P03 | 17 min | 3 tasks | 9 files |
 | Phase 44 P04 | human UAT | 10 checks | 4 planning files |
 | Phase 45 P01 | 9 min | 3 tasks | 4 files |
+| Phase 45 P02 | 21 min | 3 tasks | 5 files |
 
 ## Session Continuity
 
-Last session: 2026-07-16T00:01:07.763Z
-Stopped at: Completed 45-01-PLAN.md
+Last session: 2026-07-16T00:28:39.116Z
+Stopped at: Completed 45-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

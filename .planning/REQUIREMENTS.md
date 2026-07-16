@@ -7,7 +7,7 @@
 
 ### Skill Coverage And Directory Contract
 
-- [ ] **CLEAN-01**: `end-of-term-teaching-materials`、`gongwen`、`school-pptx`、`school-presentation`、`teaching-design-package` 和 `tiaokedan` 六个当前写文件技能都遵守 `docs/clean-delivery-directory-contract.md`，且既有成功交付能力不回退。
+- [x] **CLEAN-01**: `end-of-term-teaching-materials`、`gongwen`、`school-pptx`、`school-presentation`、`teaching-design-package` 和 `tiaokedan` 六个当前写文件技能都遵守 `docs/clean-delivery-directory-contract.md`，且既有成功交付能力不回退。
 - [x] **CLEAN-02**: 每个技能都为交付根目录声明可核对的一级白名单，仅允许当前 Markdown、当前最终产物以及按需存在的 `sources/`、`assets/`、`history/`、`.work/`。
 - [x] **CLEAN-03**: 每个技能都明确 `sources/`、`assets/`、`history/`、`.work/` 的所有权和生命周期；manifest、status、model、日志、diff、截图、缓存、验证证据、staging 和失败产物不得作为未声明文件平铺在成功交付根目录。
 
@@ -26,8 +26,8 @@
 ### Verification, Documentation And Runtime Portability
 
 - [x] **VERIFY-01**: 自动化回归覆盖六个技能的成功发布、变更后成套归档、内容相同不归档、失败不污染和工作目录收尾，并证明成功交付根目录符合各自白名单。
-- [ ] **DOCS-01**: `SKILL.md`、artifact contract、相关模板和公共脚本对稳定文件名、目录用途、候选发布、成套归档、失败清理和最小验证的描述与行为一致；README 与目录规范同步反映统一契约和六技能覆盖范围。
-- [ ] **RUNTIME-01**: Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 和 Hermes Agent 的兼容性矩阵及六个技能 adapter notes 一致说明支持文件发现、外部命令、读写权限、sandbox/allowlist、显式调用 fallback 和干净交付边界。
+- [x] **DOCS-01**: `SKILL.md`、artifact contract、相关模板和公共脚本对稳定文件名、目录用途、候选发布、成套归档、失败清理和最小验证的描述与行为一致；README 与目录规范同步反映统一契约和六技能覆盖范围。
+- [x] **RUNTIME-01**: Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 和 Hermes Agent 的兼容性矩阵及六个技能 adapter notes 一致说明支持文件发现、外部命令、读写权限、sandbox/allowlist、显式调用 fallback 和干净交付边界。
 
 ## Out Of Scope
 
@@ -42,7 +42,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CLEAN-01 | Phase 45 | Pending |
+| CLEAN-01 | Phase 45 | Complete |
 | CLEAN-02 | Phase 45 | Complete |
 | CLEAN-03 | Phase 45 | Complete |
 | REV-01 | Phase 45 | Complete |
@@ -52,8 +52,8 @@
 | SAFE-01 | Phase 45 | Complete |
 | SAFE-02 | Phase 45 | Complete |
 | VERIFY-01 | Phase 45 | Complete |
-| DOCS-01 | Phase 45 | Pending |
-| RUNTIME-01 | Phase 45 | Pending |
+| DOCS-01 | Phase 45 | Complete |
+| RUNTIME-01 | Phase 45 | Complete |
 
 **Coverage:**
 - v1.18 requirements: 12 total
