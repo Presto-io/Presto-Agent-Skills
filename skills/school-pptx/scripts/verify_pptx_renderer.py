@@ -1826,10 +1826,17 @@ def delivery_transaction_gate(workdir: Path) -> dict[str, object]:
             "no-op touched current inode/mtime or created history")
 
     history = delivery / "history"
+    current_markdown = delivery / "confirmed-assets.md"
+    current_refs = pptx_render.managed_asset_references(current_markdown.read_bytes())
     for sequence in ("001", "003"):
         entry = history / sequence
         entry.mkdir(parents=True)
-        (entry / "pre-existing.bin").write_bytes(f"history-{sequence}".encode())
+        shutil.copy2(current_markdown, entry / "confirmed-assets.md")
+        shutil.copy2(delivery / "confirmed-assets.pptx", entry / "confirmed-assets.pptx")
+        for relative in current_refs:
+            archived_asset = entry / relative
+            archived_asset.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(delivery / relative, archived_asset)
     existing_history = {
         sequence: delivery_tree_snapshot(history / sequence) for sequence in ("001", "003")
     }
