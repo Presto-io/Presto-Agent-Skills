@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const childProcess = require('child_process');
+
+const SAFE_FS_HELPER = path.join(__dirname, 'delivery-safe-fs.py');
 
 const SUPPORT_DIRECTORIES = new Set(['sources', 'assets', 'history', '.work']);
 const HISTORY_NAME = /^[0-9]{3,}$/;
@@ -180,17 +183,27 @@ function validateCandidate(candidateRoot, expectedNames) {
 function discoverySuffixes(packageModel) {
   const delivery = packageModel.public_delivery;
   const prefix = validateComponent(delivery.filename_prefix, 'filename prefix');
-  return validateExpectedNames(packageModel).map((name) => {
+  const suffixes = validateExpectedNames(packageModel).map((name) => {
     if (!name.startsWith(prefix) || name.length === prefix.length) {
       fail('invalid_expected_public_filenames', `model filename does not start with filename_prefix: ${name}`);
     }
     return name.slice(prefix.length);
   });
+  for (const suffix of suffixes) {
+    if (suffixes.some((other) => other !== suffix && (suffix.endsWith(other) || other.endsWith(suffix)))) {
+      fail('invalid_expected_public_filenames', `registry suffixes overlap: ${suffix}`);
+    }
+  }
+  return suffixes;
 }
 
 function discoverCurrent(root, packageModel, ownRunId) {
   const suffixes = discoverySuffixes(packageModel);
-  const matched = [];
+  const delivery = packageModel.public_delivery;
+  const modelPrefix = delivery.filename_prefix;
+  const markdownSuffix = delivery.public_markdown_filename.slice(modelPrefix.length);
+  const packageSuffix = delivery.public_package_pdf_filename.slice(modelPrefix.length);
+  const publicFiles = [];
   for (const entry of fs.readdirSync(root).sort()) {
     const target = path.join(root, entry);
     const stat = fs.lstatSync(target);
@@ -202,22 +215,32 @@ function discoverCurrent(root, packageModel, ownRunId) {
       continue;
     }
     if (!stat.isFile()) fail('unknown_entry_fail_closed', `unknown non-file root entry: ${entry}`);
-    const matchingSuffixes = suffixes.filter((suffix) => entry.endsWith(suffix));
-    if (matchingSuffixes.length !== 1) fail('unknown_entry_fail_closed', `unknown public root file: ${entry}`);
-    const suffix = matchingSuffixes[0];
-    const prefix = entry.slice(0, -suffix.length);
-    if (!prefix) fail('partial_group_fail_closed', `public filename lacks a course prefix: ${entry}`);
-    matched.push({ entry, prefix, suffix });
+    publicFiles.push(entry);
   }
-  if (!matched.length) return [];
-  const prefixes = [...new Set(matched.map((item) => item.prefix))];
-  if (prefixes.length !== 1) fail('ambiguous_current_group', `multiple course-prefix groups found: ${prefixes.join(', ')}`);
-  const prefix = prefixes[0];
-  const expected = suffixes.map((suffix) => `${prefix}${suffix}`);
-  const names = matched.map((item) => item.entry);
-  if (!pathSetEqual(names, expected)) fail('partial_group_fail_closed', `current group for ${prefix} is incomplete or duplicated`);
+  if (!publicFiles.length) return [];
+  const markdownNames = publicFiles.filter((name) => name.endsWith(markdownSuffix));
+  if (markdownNames.length !== 1) fail('ambiguous_current_group', 'current must contain exactly one package Markdown anchor');
+  const prefix = markdownNames[0].slice(0, -markdownSuffix.length);
+  if (!prefix) fail('partial_group_fail_closed', 'public filename lacks a course prefix');
+  const names = publicFiles.filter((name) => name.startsWith(prefix));
+  if (names.length !== publicFiles.length) fail('ambiguous_current_group', 'multiple course-prefix groups found');
+  const packageName = `${prefix}${packageSuffix}`;
+  const moduleNames = names.filter((name) => name !== markdownNames[0] && name !== packageName);
+  if (!names.includes(packageName) || moduleNames.length < 1 || moduleNames.some((name) => !name.endsWith('.pdf'))) {
+    fail('partial_group_fail_closed', `current group for ${prefix} is incomplete`);
+  }
   for (const name of names) assertRegular(path.join(root, name), `current ${name}`);
   return names.sort();
+}
+
+function safeFs(command, root, runId, name = '') {
+  const args = [SAFE_FS_HELPER, command, root, runId];
+  if (name) args.push(name);
+  try {
+    childProcess.execFileSync('python3', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (error) {
+    fail('safe_fs_error', `${command} failed: ${(error.stderr || error.message).toString().trim()}`);
+  }
 }
 
 function inspectWorkDirectory(workRoot, ownRunId) {
@@ -371,7 +394,7 @@ function publishBundle({ root, runId, candidateRoot, packageModel, fault = '' })
       assertHeldDirectory(rootHeld);
       const source = path.join(absoluteCandidate, name);
       const target = path.join(absoluteRoot, name);
-      fs.renameSync(source, target);
+      safeFs('move', absoluteRoot, runId, name);
       fsyncFile(target);
       publishedCount += 1;
       if (publishedCount === 1) hook('after_publish_file_1');
@@ -399,7 +422,7 @@ function publishBundle({ root, runId, candidateRoot, packageModel, fault = '' })
     throw error;
   } finally {
     try {
-      if (fs.existsSync(runRoot)) removeOwnedTree(runRoot, workRoot);
+      safeFs('cleanup', absoluteRoot, runId);
       if (lockHeld && fs.existsSync(lockRoot)) fs.rmdirSync(lockRoot);
       removeDirectoryIfEmpty(workRoot);
     } finally {
@@ -412,10 +435,7 @@ function main() {
   const [command, root, runId, candidateRoot, modelPath] = process.argv.slice(2);
   if (command === 'cleanup' && root && runId) {
     validateComponent(runId, 'run id');
-    const workRoot = path.join(path.resolve(root), '.work');
-    const runRoot = path.join(workRoot, runId);
-    if (fs.existsSync(runRoot)) removeOwnedTree(runRoot, workRoot);
-    removeDirectoryIfEmpty(workRoot);
+    safeFs('cleanup', path.resolve(root), runId);
     return;
   }
   if (command !== 'publish' || !root || !runId || !candidateRoot || !modelPath) {
