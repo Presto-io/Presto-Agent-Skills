@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const assert = require('assert');
 const crypto = require('crypto');
+const childProcess = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -180,6 +181,36 @@ function testLockAndUnrelatedWorkPreserved() {
   });
 }
 
+function testHandledSignalsRestoreCurrent() {
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    withRoot((root) => {
+      const oldModel = model('信号旧课程');
+      publish(root, `seed-${signal}`, oldModel, 'old');
+      const before = snapshot(root);
+      const nextModel = model('信号新课程');
+      const runId = `signal-${signal.toLowerCase()}`;
+      const candidateRoot = makeCandidate(root, runId, nextModel, 'new');
+      const modelPath = path.join(root, '.work', runId, 'evidence-model.json');
+      fs.writeFileSync(modelPath, JSON.stringify(nextModel));
+      const result = childProcess.spawnSync(
+        process.execPath,
+        [require.resolve('./delivery-transaction.js'), 'publish', root, runId, candidateRoot, modelPath],
+        {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            TDPKG_DELIVERY_SELF_SIGNAL_AT: 'after_publish_file_1',
+            TDPKG_DELIVERY_SELF_SIGNAL: signal,
+          },
+        },
+      );
+      assert.notStrictEqual(result.status, 0, signal);
+      assert.deepStrictEqual(snapshot(root), before, signal);
+      assert.strictEqual(fs.existsSync(path.join(root, '.work', runId)), false);
+    });
+  }
+}
+
 function testMutationGuards() {
   const source = fs.readFileSync(require.resolve('./delivery-transaction.js'), 'utf8');
   assert.match(source, /expected_public_filenames/);
@@ -194,6 +225,7 @@ const tests = [
   testFaultRollbackMatrix,
   testUnknownAmbiguousPartialSymlinkAndTraversal,
   testLockAndUnrelatedWorkPreserved,
+  testHandledSignalsRestoreCurrent,
   testMutationGuards,
 ];
 
