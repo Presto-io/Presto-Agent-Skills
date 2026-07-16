@@ -213,11 +213,20 @@ function testHandledSignalsRestoreCurrent() {
 
 function testMutationGuards() {
   const source = fs.readFileSync(require.resolve('./delivery-transaction.js'), 'utf8');
+  const shell = fs.readFileSync(path.join(__dirname, 'teaching-design-package.sh'), 'utf8');
+  const packageModel = fs.readFileSync(path.join(__dirname, 'package-model.js'), 'utf8');
   assert.match(source, /expected_public_filenames/);
   assert.match(source, /pathSetEqual/);
   assert.match(source, /nextHistorySequence/);
   assert.doesNotMatch(source, /Markdown-only|current group\s*=\s*\[/i);
   assert.doesNotMatch(source, /find\s+-delete|rmSync\(root\s*,\s*\{\s*recursive:\s*true/);
+  assert.match(shell, /delivery-transaction[.]js" publish/);
+  assert.match(shell, /\.work\/\$\{run_id\}/);
+  assert.doesNotMatch(shell, /cleanup_public_root|\.teaching-design-package|find\s+"\$OUT_DIR"[^\n]*-exec\s+rm/);
+  assert.doesNotMatch(shell, /copyFileSync\([^\n]*`\$\{outDir\}/);
+  assert.match(packageModel, /expected_public_filenames/);
+  assert.match(packageModel, /work_layout/);
+  assert.doesNotMatch(packageModel, /hidden_root|\.teaching-design-package/);
 }
 
 function testRealRenderPackageCandidateIsolation() {
@@ -225,10 +234,10 @@ function testRealRenderPackageCandidateIsolation() {
     const bin = path.join(base, 'bin');
     fs.mkdirSync(bin);
     const typst = path.join(bin, 'typst');
-    fs.writeFileSync(typst, `#!/usr/bin/env bash\nset -euo pipefail\ninput="$2"\noutput="$3"\nprintf '%%PDF-1.4\\n' >"$output"\nshasum -a 256 "$input" >>"$output"\nprintf '%%%%EOF\\n' >>"$output"\n`);
+    fs.writeFileSync(typst, `#!/usr/bin/env bash\nset -euo pipefail\ninput="$2"\noutput="$3"\nprintf '%%PDF-1.4\\n' >"$output"\nshasum -a 256 "$input" | awk '{print $1}' >>"$output"\nprintf '%%%%EOF\\n' >>"$output"\n`);
     fs.chmodSync(typst, 0o755);
     const pdfunite = path.join(bin, 'pdfunite');
-    fs.writeFileSync(pdfunite, `#!/usr/bin/env bash\nset -euo pipefail\noutput="${'${!#}'}"\nprintf '%%PDF-1.4\\nmerged\\n%%%%EOF\\n' >"$output"\n`);
+    fs.writeFileSync(pdfunite, `#!/usr/bin/env bash\nset -euo pipefail\n[[ "$1" == *teaching-plan.pdf ]]\n[[ "$2" == *teaching-design.pdf ]]\noutput="${'${!#}'}"\nprintf '%%PDF-1.4\\nmerged\\n%%%%EOF\\n' >"$output"\n`);
     fs.chmodSync(pdfunite, 0o755);
     const input = path.join(base, 'package.md');
     fs.copyFileSync(path.join(__dirname, '..', 'templates', 'teaching-design-package-full.md'), input);
@@ -241,12 +250,22 @@ function testRealRenderPackageCandidateIsolation() {
     assert.strictEqual(first.status, 0, first.stderr);
     assert.strictEqual(fs.existsSync(path.join(root, '.teaching-design-package')), false);
     assert.strictEqual(fs.existsSync(path.join(root, '.work')), false);
-    const before = snapshot(root);
+    const firstSnapshot = snapshot(root);
+    const same = run();
+    assert.strictEqual(same.status, 0, same.stderr);
+    assert.deepStrictEqual(snapshot(root), firstSnapshot);
+    assert.strictEqual(fs.existsSync(path.join(root, 'history')), false);
     fs.appendFileSync(input, '\n<!-- candidate change -->\n');
+    const changed = run();
+    assert.strictEqual(changed.status, 0, changed.stderr);
+    assert.strictEqual(fs.existsSync(path.join(root, 'history', '001')), true);
+    const before = snapshot(root);
+    fs.appendFileSync(input, '\n<!-- failing candidate -->\n');
     for (const failureEnv of [
       { TDPKG_FORCE_MODULE_PDF_MISSING: 'teaching-plan' },
       { TDPKG_FORCE_MODULE_PDF_EMPTY: 'teaching-design' },
       { TDPKG_FORCE_MERGE_FAILURE: 'failed' },
+      { TDPKG_FORCE_PUBLIC_LEAKAGE: 'status' },
     ]) {
       const failed = run(failureEnv);
       assert.notStrictEqual(failed.status, 0);

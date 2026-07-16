@@ -11,8 +11,8 @@ const MODULE_REGISTRY = [
     id: 'teaching-plan',
     display_name: '授课进度计划表',
     order: 1,
-    work_markdown: '.teaching-design-package/work/teaching-plan.md',
-    work_typst: '.teaching-design-package/work/teaching-plan.typ',
+    work_markdown: 'evidence/modules/teaching-plan.md',
+    work_typst: 'evidence/modules/teaching-plan.typ',
     pdf_filename: 'teaching-plan.pdf',
     public_pdf_suffix: '授课进度计划表',
   },
@@ -20,8 +20,8 @@ const MODULE_REGISTRY = [
     id: 'teaching-design',
     display_name: '教学设计方案',
     order: 2,
-    work_markdown: '.teaching-design-package/work/teaching-design.md',
-    work_typst: '.teaching-design-package/work/teaching-design.typ',
+    work_markdown: 'evidence/modules/teaching-design.md',
+    work_typst: 'evidence/modules/teaching-design.typ',
     pdf_filename: 'teaching-design.pdf',
     public_pdf_suffix: '教学设计方案',
   },
@@ -113,7 +113,11 @@ function buildPublicDelivery(metadata) {
       `${prefix}教学资料.pdf`,
       ...modulePdfs.map((item) => item.public_pdf_filename),
     ],
-    hidden_root: '.teaching-design-package',
+    work_layout: {
+      candidate: 'candidate',
+      rollback: 'rollback',
+      evidence: 'evidence',
+    },
   };
 }
 

@@ -25,7 +25,7 @@ Usage:
   teaching-design-package.sh version
 
 The normal path is unified Markdown -> package data model -> course-prefixed 1+1+N delivery.
-Diagnostics, status, stderr logs, split Typst files, and failure evidence stay under .teaching-design-package/.
+Diagnostics, status, stderr logs, split Typst files, and failure evidence stay in an explicit diagnostic workdir or owned .work/<run-id>/evidence/.
 render-package --pdf exits successfully only when all registered module PDFs and the merged package PDF exist and are non-empty.
 USAGE
 }
@@ -110,9 +110,9 @@ cmd_example() {
 write_failure_diagnostics() {
   local input="$1" out_dir="$2" stderr_path="$3"
   local diagnostics_path status_path
-  diagnostics_path="${out_dir}/.teaching-design-package/diagnostics.json"
-  status_path="${out_dir}/.teaching-design-package/${STATUS_NAME}"
-  mkdir -p "${out_dir}/.teaching-design-package/failure-diagnostics"
+  diagnostics_path="${out_dir}/diagnostics.json"
+  status_path="${out_dir}/${STATUS_NAME}"
+  mkdir -p "${out_dir}/failure-diagnostics"
   node - "$input" "$stderr_path" "$diagnostics_path" "$status_path" <<'NODE'
 const fs = require('fs');
 const input = process.argv[2];
@@ -193,42 +193,18 @@ fs.writeFileSync(statusPath, JSON.stringify({
   diagnostics: diagnosticsPath,
   errors: [error],
 }, null, 2));
-fs.copyFileSync(diagnosticsPath, diagnosticsPath.replace('/diagnostics.json', '/failure-diagnostics/diagnostics.json'));
-fs.copyFileSync(statusPath, statusPath.replace('/status.json', '/failure-diagnostics/status.json'));
+fs.copyFileSync(diagnosticsPath, diagnosticsPath.replace(/\/diagnostics.json$/, '/failure-diagnostics/diagnostics.json'));
+fs.copyFileSync(statusPath, statusPath.replace(/\/status.json$/, '/failure-diagnostics/status.json'));
 const safeCode = String(error.code || 'unknown_failure').replace(/[^A-Za-z0-9_.-]/g, '_');
-fs.copyFileSync(diagnosticsPath, diagnosticsPath.replace('/diagnostics.json', `/failure-diagnostics/diagnostics-${safeCode}.json`));
-fs.copyFileSync(statusPath, statusPath.replace('/status.json', `/failure-diagnostics/status-${safeCode}.json`));
+fs.copyFileSync(diagnosticsPath, diagnosticsPath.replace(/\/diagnostics.json$/, `/failure-diagnostics/diagnostics-${safeCode}.json`));
+fs.copyFileSync(statusPath, statusPath.replace(/\/status.json$/, `/failure-diagnostics/status-${safeCode}.json`));
 NODE
-}
-
-cleanup_public_root() {
-  local out_dir="$1"
-  [[ -d "$out_dir" ]] || return 0
-  find "$out_dir" -maxdepth 1 -type f \( \
-    -name 'teaching-design-package-full.md' -o \
-    -name 'teaching-design-package.typ' -o \
-    -name 'teaching-design-package.pdf' -o \
-    -name 'teaching-plan.pdf' -o \
-    -name 'teaching-design.pdf' -o \
-    -name 'status.json' -o \
-    -name 'manifest.json' -o \
-    -name 'model.json' -o \
-    -name 'diagnostics.json' -o \
-    -name 'calendar.json' -o \
-    -name '*.log' -o \
-    -name '*.typ' -o \
-    -name '*教学资料.md' -o \
-    -name '*教学资料.pdf' -o \
-    -name '*授课进度计划表.pdf' -o \
-    -name '*教学设计方案.pdf' \
-  \) -exec rm -f {} +
 }
 
 record_failure() {
   local input="$1" out_dir="$2" code="$3" message="$4" log_path="$5"
   shift 5
-  mkdir -p "${out_dir}/.teaching-design-package/debug"
-  cleanup_public_root "$out_dir"
+  mkdir -p "${out_dir}/debug"
   {
     printf 'TDPKG_DIAGNOSTIC_JSON={"code":"%s","mismatch_class":"%s","message":"%s","source_markdown":"%s"' \
       "$(json_escape "$code")" "$(json_escape "$code")" "$(json_escape "$message")" "$(json_escape "$input")"
@@ -243,11 +219,11 @@ record_failure() {
 
 write_model_file() {
   local input="$1" out_dir="$2" model_path
-  model_path="${out_dir}/.teaching-design-package/model.json"
-  mkdir -p "${out_dir}/.teaching-design-package/work" "${out_dir}/.teaching-design-package/debug" "${out_dir}/.teaching-design-package/failure-diagnostics"
-  if ! package_model_json "$input" > "$model_path" 2>"${out_dir}/.teaching-design-package/debug/model.stderr.log"; then
-    write_failure_diagnostics "$input" "$out_dir" "${out_dir}/.teaching-design-package/debug/model.stderr.log"
-    cat "${out_dir}/.teaching-design-package/debug/model.stderr.log" >&2
+  model_path="${out_dir}/model.json"
+  mkdir -p "$out_dir" "${out_dir}/debug" "${out_dir}/failure-diagnostics"
+  if ! package_model_json "$input" > "$model_path" 2>"${out_dir}/debug/model.stderr.log"; then
+    write_failure_diagnostics "$input" "$out_dir" "${out_dir}/debug/model.stderr.log"
+    cat "${out_dir}/debug/model.stderr.log" >&2
     return 1
   fi
   printf '%s\n' "$model_path"
@@ -403,18 +379,27 @@ compile_pdf() {
 }
 
 write_status() {
-  local model_path="$1" out_dir="$2" pdf_requested="$3" module_status_json="$4" merge_status_json="$5" leakage_status="$6"
-  local status_path="${out_dir}/.teaching-design-package/${STATUS_NAME}"
-  mkdir -p "${out_dir}/.teaching-design-package"
-  node - "$model_path" "$status_path" "$out_dir" "$pdf_requested" "$module_status_json" "$merge_status_json" "$leakage_status" <<'NODE'
+  local model_path="$1" run_root="$2" artifact_dir="$3" pdf_requested="$4" module_status_json="$5" merge_status_json="$6" leakage_status="$7"
+  local evidence_dir status_path
+  if [[ "$model_path" == "${run_root}/model.json" ]]; then
+    evidence_dir="$run_root"
+  else
+    evidence_dir="${run_root}/evidence"
+  fi
+  status_path="${evidence_dir}/${STATUS_NAME}"
+  mkdir -p "$evidence_dir"
+  node - "$model_path" "$status_path" "$run_root" "$evidence_dir" "$artifact_dir" "$pdf_requested" "$module_status_json" "$merge_status_json" "$leakage_status" <<'NODE'
 const fs = require('fs');
-const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const modelPath = process.argv[2];
+const model = JSON.parse(fs.readFileSync(modelPath, 'utf8'));
 const statusPath = process.argv[3];
-const outDir = process.argv[4];
-const pdfRequested = process.argv[5] === 'true';
-const modulePdfStatuses = JSON.parse(process.argv[6]);
-const merge = JSON.parse(process.argv[7]);
-const leakageStatus = process.argv[8];
+const runRoot = process.argv[4];
+const evidenceDir = process.argv[5];
+const outDir = process.argv[6];
+const pdfRequested = process.argv[7] === 'true';
+const modulePdfStatuses = JSON.parse(process.argv[8]);
+const merge = JSON.parse(process.argv[9]);
+const leakageStatus = process.argv[10];
 const delivery = model.public_delivery;
 const publicOutputs = {
   unified_markdown: `${outDir}/${delivery.public_markdown_filename}`,
@@ -432,12 +417,10 @@ const status = {
   phase33_module_registry: true,
   phase36_public_delivery: true,
   source_markdown: model.source_markdown,
-  hidden_model: `${outDir}/.teaching-design-package/model.json`,
-  hidden_status: statusPath,
-  hidden_work_dir: `${outDir}/.teaching-design-package/work`,
-  hidden_staging_dir: `${outDir}/.teaching-design-package/staging`,
-  hidden_debug_dir: `${outDir}/.teaching-design-package/debug`,
-  hidden_failure_diagnostics_dir: `${outDir}/.teaching-design-package/failure-diagnostics`,
+  evidence_model: modelPath,
+  evidence_status: statusPath,
+  evidence_dir: evidenceDir,
+  candidate_dir: `${runRoot}/candidate`,
   derived: model.derived,
   scheduling: {
     calendar: model.scheduling.calendar,
@@ -461,7 +444,7 @@ const status = {
     legacy_surface: 'jiaoan-jihua official five-column table',
     source: 'shared_scheduling_model',
     total_hours_source: model.validation.total_hours_source,
-    hidden_typst: `${outDir}/.teaching-design-package/work/teaching-plan.typ`,
+    evidence_typst: `${runRoot}/${model.modules.items.find((item) => item.id === 'teaching-plan').work_typst}`,
     public_pdf: publicOutputs.module_pdfs['teaching-plan'],
     pdf_compile_status: (modulePdfStatuses.find((item) => item.module_id === 'teaching-plan') || {}).status || 'not_run',
   },
@@ -474,7 +457,7 @@ const status = {
     task_hours_source: 'schedule.tasks[].total_hours',
     activity_hours_source: 'schedule.tasks[].stages[].rows[].hours',
     cross_module_validation: 'passed',
-    hidden_typst: `${outDir}/.teaching-design-package/work/teaching-design.typ`,
+    evidence_typst: `${runRoot}/${model.modules.items.find((item) => item.id === 'teaching-design').work_typst}`,
     public_pdf: publicOutputs.module_pdfs['teaching-design'],
     pdf_compile_status: (modulePdfStatuses.find((item) => item.module_id === 'teaching-design') || {}).status || 'not_run',
   },
@@ -494,7 +477,7 @@ const status = {
   notes: [
     'Default successful delivery root is exactly one course-name-prefixed unified Markdown, one merged package PDF, and one PDF per registered module.',
     'The merged package PDF is created from registered module PDFs in module registry order.',
-    'Diagnostics, status, stderr logs, module Typst, module Markdown, model JSON, staging files, and failure evidence stay under .teaching-design-package/.',
+    'Diagnostics, status, stderr logs, module Typst, module Markdown, model JSON, merge files, and failure evidence stay in the owned run evidence directory.',
   ],
 };
 fs.writeFileSync(statusPath, JSON.stringify(status, null, 2));
@@ -503,8 +486,8 @@ NODE
 
 write_diagnostics() {
   local model_path="$1" out_dir="$2" diagnostics_path
-  diagnostics_path="${out_dir}/.teaching-design-package/diagnostics.json"
-  mkdir -p "${out_dir}/.teaching-design-package"
+  diagnostics_path="${out_dir}/diagnostics.json"
+  mkdir -p "$out_dir"
   node - "$model_path" "$diagnostics_path" <<'NODE'
 const fs = require('fs');
 const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -530,14 +513,14 @@ const diagnosticsPath = process.argv[3];
     renderer: 'package-owned teaching-plan-renderer.js',
     legacy_surface: 'jiaoan-jihua official five-column table',
     scheduling_source: 'shared_scheduling_model',
-    hidden_typst: model.modules.items.find((item) => item.id === 'teaching-plan').work_typst,
+    evidence_typst: model.modules.items.find((item) => item.id === 'teaching-plan').work_typst,
   },
   teaching_design_formal_renderer: {
     status: 'passed',
     renderer: 'package-owned teaching-design-renderer.js',
     legacy_surface: 'jiaoan-shicao formal teaching-design layout',
     scheduling_source: 'shared_scheduling_model',
-    hidden_typst: model.modules.items.find((item) => item.id === 'teaching-design').work_typst,
+    evidence_typst: model.modules.items.find((item) => item.id === 'teaching-design').work_typst,
   },
   cross_module_validation: model.validation.cross_module_evidence,
   module_registry: model.modules.registry,
@@ -591,33 +574,24 @@ fs.writeFileSync(diagnosticsPath, JSON.stringify(diagnostics, null, 2));
 NODE
 }
 
-assert_no_public_leakage() {
-  local out_dir="$1" leak
-  leak="$(find "$out_dir" -maxdepth 1 -type f -print | rg '[.]typ$|status[.]json$|manifest[.]json$|model[.]json$|diagnostics[.]json$|calendar[.]json$|[.]log$|teaching-plan[.]md$|teaching-design[.]md$|teaching-plan[.]typ$|teaching-design[.]typ$|teaching-design-package-full[.]md$|teaching-design-package[.]typ$|teaching-design-package[.]pdf$|teaching-plan[.]pdf$|teaching-design[.]pdf$' || true)"
-  if [[ -n "$leak" ]]; then
-    printf 'teaching-design-package.sh: public_root_leakage: %s\n' "$leak" >&2
-    return 1
-  fi
-}
-
 pdf_nonempty() {
   [[ -s "$1" ]]
 }
 
 module_status_json_not_run() {
-  local model_path="$1" out_dir="$2"
-  node - "$model_path" "$out_dir" <<'NODE'
+  local model_path="$1" run_root="$2"
+  node - "$model_path" "$run_root" <<'NODE'
 const fs = require('fs');
 const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const outDir = process.argv[3];
+const runRoot = process.argv[3];
 const values = model.modules.items.map((item) => ({
   module_id: item.id,
   display_name: item.display_name,
   order: item.order,
   status: 'not_run',
-  hidden_typst: `${outDir}/${item.work_typst}`,
-  staging_path: `${outDir}/.teaching-design-package/staging/${item.pdf_filename}`,
-  public_path: `${outDir}/${item.public_pdf_filename}`,
+  evidence_typst: `${runRoot}/${item.work_typst}`,
+  staging_path: `${runRoot}/evidence/module-pdfs/${item.pdf_filename}`,
+  public_path: `${runRoot}/candidate/${item.public_pdf_filename}`,
   exists: false,
   nonempty: false,
   size: 0,
@@ -627,19 +601,19 @@ NODE
 }
 
 merge_status_not_run() {
-  local model_path="$1" out_dir="$2"
-  node - "$model_path" "$out_dir" <<'NODE'
+  local model_path="$1" run_root="$2"
+  node - "$model_path" "$run_root" <<'NODE'
 const fs = require('fs');
 const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const outDir = process.argv[3];
+const runRoot = process.argv[3];
 process.stdout.write(JSON.stringify({
   status: 'not_run',
   merge_tool: 'not_run',
   tool: 'not_run',
   inputs: [],
   merge_inputs: [],
-  output_staging_path: `${outDir}/.teaching-design-package/staging/${model.public_delivery.public_package_pdf_filename}`,
-  public_output_path: `${outDir}/${model.public_delivery.public_package_pdf_filename}`,
+  output_staging_path: `${runRoot}/evidence/module-pdfs/${model.public_delivery.public_package_pdf_filename}`,
+  public_output_path: `${runRoot}/candidate/${model.public_delivery.public_package_pdf_filename}`,
   exit_code: null,
   output_size: 0,
 }));
@@ -675,7 +649,7 @@ const values = model.modules.items.map((item) => {
     display_name: item.display_name,
     order: item.order,
     status: exists && size > 0 ? 'passed' : exists ? 'module_pdf_empty' : 'module_pdf_missing',
-    hidden_typst: `${outDir}/${item.work_typst}`,
+    evidence_typst: `${outDir}/${item.work_typst}`,
     staging_path: stagingPath,
     public_path: `${outDir}/${item.public_pdf_filename}`,
     exists,
@@ -840,32 +814,49 @@ cmd_render_package() {
   [[ -n "$OUT_DIR" ]] || die "render-package requires --out-dir"
   need_file "$INPUT"
   mkdir -p "$OUT_DIR"
-  cleanup_public_root "$OUT_DIR"
-  local model_path staging_dir module_statuses_json merge_status_json merge_status_path merge_log leakage_status="not_run"
-  model_path="$(write_model_file "$INPUT" "$OUT_DIR")"
-  staging_dir="${OUT_DIR}/.teaching-design-package/staging"
-  mkdir -p "$staging_dir"
-  find "$staging_dir" -mindepth 1 -maxdepth 1 -type f -exec rm -f {} +
-  write_unified_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-design-package.typ"
-  write_module_markdown_files "$model_path" "$OUT_DIR"
-  write_teaching_plan_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-plan.typ"
-  if ! write_teaching_design_typst "$model_path" "${OUT_DIR}/.teaching-design-package/work/teaching-design.typ" 2>"${OUT_DIR}/.teaching-design-package/debug/teaching-design-renderer.stderr.log"; then
-    printf 'TDPKG_DIAGNOSTIC_JSON={"code":"teaching_design_formal_render_failed","mismatch_class":"teaching_design_formal_render_failed","module_id":"teaching-design","message":"package-owned teaching-design renderer failed","source_markdown":"%s"}\n' "$(json_escape "$INPUT")" >>"${OUT_DIR}/.teaching-design-package/debug/teaching-design-renderer.stderr.log"
-    write_failure_diagnostics "$INPUT" "$OUT_DIR" "${OUT_DIR}/.teaching-design-package/debug/teaching-design-renderer.stderr.log"
-    cat "${OUT_DIR}/.teaching-design-package/debug/teaching-design-renderer.stderr.log" >&2
+  if [[ "$RENDER_PDF" != true ]]; then
+    local diagnostic_model
+    mkdir -p "${OUT_DIR}/evidence/modules" "${OUT_DIR}/debug"
+    diagnostic_model="$(write_model_file "$INPUT" "$OUT_DIR")"
+    write_unified_typst "$diagnostic_model" "${OUT_DIR}/evidence/modules/teaching-design-package.typ"
+    write_module_markdown_files "$diagnostic_model" "$OUT_DIR"
+    write_teaching_plan_typst "$diagnostic_model" "${OUT_DIR}/evidence/modules/teaching-plan.typ"
+    write_teaching_design_typst "$diagnostic_model" "${OUT_DIR}/evidence/modules/teaching-design.typ"
+    write_diagnostics "$diagnostic_model" "$OUT_DIR"
+    write_status "$diagnostic_model" "$OUT_DIR" "$OUT_DIR" "false" "$(module_status_json_not_run "$diagnostic_model" "$OUT_DIR")" "$(merge_status_not_run "$diagnostic_model" "$OUT_DIR")" "not_run"
+    printf '%s\n' "${OUT_DIR}/${STATUS_NAME}"
+    return 0
+  fi
+
+  local run_id run_root candidate_dir evidence_dir model_path staging_dir
+  local module_statuses_json merge_status_json merge_status_path merge_log
+  run_id="$(node -e 'const c=require("crypto"); process.stdout.write(`${Date.now()}-${process.pid}-${c.randomBytes(6).toString("hex")}`)')"
+  run_root="${OUT_DIR}/.work/${run_id}"
+  candidate_dir="${run_root}/candidate"
+  evidence_dir="${run_root}/evidence"
+  staging_dir="${evidence_dir}/module-pdfs"
+  mkdir -p "$candidate_dir" "$staging_dir" "${evidence_dir}/modules" "${evidence_dir}/debug" "${evidence_dir}/failure-diagnostics"
+  trap 'node "${SCRIPT_DIR}/delivery-transaction.js" cleanup "$OUT_DIR" "$run_id" >/dev/null 2>&1 || true' EXIT INT TERM
+  model_path="$(write_model_file "$INPUT" "$evidence_dir")"
+  write_unified_typst "$model_path" "${evidence_dir}/modules/teaching-design-package.typ"
+  write_module_markdown_files "$model_path" "$run_root"
+  write_teaching_plan_typst "$model_path" "${evidence_dir}/modules/teaching-plan.typ"
+  if ! write_teaching_design_typst "$model_path" "${evidence_dir}/modules/teaching-design.typ" 2>"${evidence_dir}/debug/teaching-design-renderer.stderr.log"; then
+    printf 'TDPKG_DIAGNOSTIC_JSON={"code":"teaching_design_formal_render_failed","mismatch_class":"teaching_design_formal_render_failed","module_id":"teaching-design","message":"package-owned teaching-design renderer failed","source_markdown":"%s"}\n' "$(json_escape "$INPUT")" >>"${evidence_dir}/debug/teaching-design-renderer.stderr.log"
+    write_failure_diagnostics "$INPUT" "$evidence_dir" "${evidence_dir}/debug/teaching-design-renderer.stderr.log"
+    cat "${evidence_dir}/debug/teaching-design-renderer.stderr.log" >&2
     return 1
   fi
-  module_statuses_json="$(module_status_json_not_run "$model_path" "$OUT_DIR")"
-  merge_status_json="$(merge_status_not_run "$model_path" "$OUT_DIR")"
-  if [[ "$RENDER_PDF" == true ]]; then
-    while IFS=$'\t' read -r module_id display_name order hidden_typst staging_pdf public_pdf; do
-      local compile_log="${OUT_DIR}/.teaching-design-package/debug/${module_id}-pdf.stderr.log"
-      if ! compile_pdf "$hidden_typst" "$staging_pdf" "$compile_log"; then
-        printf 'module %s PDF compile failed\n' "$module_id" >>"$compile_log"
-      fi
-    done < <(compile_registered_module_pdfs "$model_path" "$OUT_DIR" "$staging_dir")
+  module_statuses_json="$(module_status_json_not_run "$model_path" "$run_root")"
+  merge_status_json="$(merge_status_not_run "$model_path" "$run_root")"
+  while IFS=$'\t' read -r module_id display_name order evidence_typst staging_pdf public_pdf; do
+    local compile_log="${evidence_dir}/debug/${module_id}-pdf.stderr.log"
+    if ! compile_pdf "$evidence_typst" "$staging_pdf" "$compile_log"; then
+      printf 'module %s PDF compile failed\n' "$module_id" >>"$compile_log"
+    fi
+  done < <(compile_registered_module_pdfs "$model_path" "$run_root" "$staging_dir")
 
-    if [[ -n "${TDPKG_FORCE_MODULE_PDF_MISSING:-}" ]]; then
+  if [[ -n "${TDPKG_FORCE_MODULE_PDF_MISSING:-}" ]]; then
       node - "$model_path" "$staging_dir" "${TDPKG_FORCE_MODULE_PDF_MISSING}" <<'NODE'
 const fs = require('fs');
 const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -874,8 +865,8 @@ const id = process.argv[4];
 const item = model.modules.items.find((entry) => entry.id === id);
 if (item) fs.rmSync(`${stagingDir}/${item.pdf_filename}`, { force: true });
 NODE
-    fi
-    if [[ -n "${TDPKG_FORCE_MODULE_PDF_EMPTY:-}" ]]; then
+  fi
+  if [[ -n "${TDPKG_FORCE_MODULE_PDF_EMPTY:-}" ]]; then
       node - "$model_path" "$staging_dir" "${TDPKG_FORCE_MODULE_PDF_EMPTY}" <<'NODE'
 const fs = require('fs');
 const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -884,81 +875,59 @@ const id = process.argv[4];
 const item = model.modules.items.find((entry) => entry.id === id);
 if (item) fs.writeFileSync(`${stagingDir}/${item.pdf_filename}`, '');
 NODE
-    fi
+  fi
 
-    module_statuses_json="$(verify_module_pdf_statuses "$model_path" "$OUT_DIR" "$staging_dir")"
-    local failed_module_status
-    failed_module_status="$(node -e 'const s=JSON.parse(process.argv[1]); const bad=s.find(i=>i.status!=="passed"); if (bad) console.log([bad.status,bad.module_id,bad.staging_path,bad.size].join("\t"));' "$module_statuses_json")"
-    if [[ -n "$failed_module_status" ]]; then
-      local fail_code fail_module fail_path fail_size
-      IFS=$'\t' read -r fail_code fail_module fail_path fail_size <<<"$failed_module_status"
-      merge_status_json="$(merge_status_not_run "$model_path" "$OUT_DIR")"
-      write_status "$model_path" "$OUT_DIR" "$RENDER_PDF" "$module_statuses_json" "$merge_status_json" "not_run"
-      record_failure "$INPUT" "$OUT_DIR" "$fail_code" "registered module PDF is not available for merge" "${OUT_DIR}/.teaching-design-package/debug/${fail_module}-pdf.stderr.log" \
+  module_statuses_json="$(verify_module_pdf_statuses "$model_path" "$run_root" "$staging_dir")"
+  local failed_module_status
+  failed_module_status="$(node -e 'const s=JSON.parse(process.argv[1]); const bad=s.find(i=>i.status!=="passed"); if (bad) console.log([bad.status,bad.module_id,bad.staging_path,bad.size].join("\t"));' "$module_statuses_json")"
+  if [[ -n "$failed_module_status" ]]; then
+    local fail_code fail_module fail_path fail_size
+    IFS=$'\t' read -r fail_code fail_module fail_path fail_size <<<"$failed_module_status"
+    merge_status_json="$(merge_status_not_run "$model_path" "$run_root")"
+    write_status "$model_path" "$run_root" "$candidate_dir" "true" "$module_statuses_json" "$merge_status_json" "not_run"
+    record_failure "$INPUT" "$evidence_dir" "$fail_code" "registered module PDF is not available for merge" "${evidence_dir}/debug/${fail_module}-pdf.stderr.log" \
         module_id "$fail_module" staging_path "$fail_path" actual_size "$fail_size" expected "non-empty module PDF"
-      die "render-package --pdf failed before merge because module PDF ${fail_module} was not non-empty"
-    fi
+    die "render-package --pdf failed before merge because module PDF ${fail_module} was not non-empty"
+  fi
 
-    merge_status_path="${OUT_DIR}/.teaching-design-package/debug/merge-status.json"
-    merge_log="${OUT_DIR}/.teaching-design-package/debug/merge.stderr.log"
-    if ! merge_registered_pdfs "$model_path" "$OUT_DIR" "$staging_dir" "$merge_status_path" "$merge_log"; then
-      merge_status_json="$(tr -d '\n' <"$merge_status_path")"
-      write_status "$model_path" "$OUT_DIR" "$RENDER_PDF" "$module_statuses_json" "$merge_status_json" "not_run"
-      local merge_code
-      merge_code="$(node -e 'const fs=require("fs"); const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); console.log(s.status)' "$merge_status_path")"
-      record_failure "$INPUT" "$OUT_DIR" "$merge_code" "registered module PDF merge failed" "$merge_log" merge_status "$merge_code"
-      die "render-package --pdf failed during module PDF merge"
-    fi
+  merge_status_path="${evidence_dir}/debug/merge-status.json"
+  merge_log="${evidence_dir}/debug/merge.stderr.log"
+  if ! merge_registered_pdfs "$model_path" "$run_root" "$staging_dir" "$merge_status_path" "$merge_log"; then
     merge_status_json="$(tr -d '\n' <"$merge_status_path")"
+    write_status "$model_path" "$run_root" "$candidate_dir" "true" "$module_statuses_json" "$merge_status_json" "not_run"
+    local merge_code
+    merge_code="$(node -e 'const fs=require("fs"); const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); console.log(s.status)' "$merge_status_path")"
+    record_failure "$INPUT" "$evidence_dir" "$merge_code" "registered module PDF merge failed" "$merge_log" merge_status "$merge_code"
+    die "render-package --pdf failed during module PDF merge"
+  fi
+  merge_status_json="$(tr -d '\n' <"$merge_status_path")"
 
-    node - "$model_path" "$OUT_DIR" "$staging_dir" "$INPUT" <<'NODE'
+  node - "$model_path" "$candidate_dir" "$staging_dir" "$INPUT" <<'NODE'
 const fs = require('fs');
 const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const outDir = process.argv[3];
+const candidateDir = process.argv[3];
 const stagingDir = process.argv[4];
 const input = process.argv[5];
 const delivery = model.public_delivery;
-fs.copyFileSync(input, `${outDir}/${delivery.public_markdown_filename}`);
+fs.copyFileSync(input, `${candidateDir}/${delivery.public_markdown_filename}`);
 for (const item of model.modules.items) {
-  fs.copyFileSync(`${stagingDir}/${item.pdf_filename}`, `${outDir}/${item.public_pdf_filename}`);
+  fs.copyFileSync(`${stagingDir}/${item.pdf_filename}`, `${candidateDir}/${item.public_pdf_filename}`);
 }
-fs.copyFileSync(`${stagingDir}/${delivery.public_package_pdf_filename}`, `${outDir}/${delivery.public_package_pdf_filename}`);
+fs.copyFileSync(`${stagingDir}/${delivery.public_package_pdf_filename}`, `${candidateDir}/${delivery.public_package_pdf_filename}`);
 NODE
-    if [[ "${TDPKG_FORCE_PUBLIC_LEAKAGE:-}" == "status" ]]; then
-      printf '{}\n' >"${OUT_DIR}/status.json"
-    elif [[ "${TDPKG_FORCE_PUBLIC_LEAKAGE:-}" == "typ" ]]; then
-      printf 'leak\n' >"${OUT_DIR}/leaked.typ"
-    elif [[ "${TDPKG_FORCE_PUBLIC_LEAKAGE:-}" == "calendar" ]]; then
-      printf '{}\n' >"${OUT_DIR}/calendar.json"
-    elif [[ "${TDPKG_FORCE_PUBLIC_LEAKAGE:-}" == "old_english" ]]; then
-      printf 'leak\n' >"${OUT_DIR}/teaching-plan.pdf"
-    fi
-  else
-    node - "$model_path" "$OUT_DIR" "$INPUT" <<'NODE'
-const fs = require('fs');
-const model = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const outDir = process.argv[3];
-const input = process.argv[4];
-fs.copyFileSync(input, `${outDir}/${model.public_delivery.public_markdown_filename}`);
-NODE
+  write_diagnostics "$model_path" "$evidence_dir"
+  if [[ -n "${TDPKG_FORCE_PUBLIC_LEAKAGE:-}" ]]; then
+    record_failure "$INPUT" "$evidence_dir" "public_root_leakage" "forced final candidate validation failure" "${evidence_dir}/debug/public-root-leakage.stderr.log"
+    die "render-package --pdf failed final candidate validation"
   fi
-  write_diagnostics "$model_path" "$OUT_DIR"
-  if ! assert_no_public_leakage "$OUT_DIR"; then
-    write_status "$model_path" "$OUT_DIR" "$RENDER_PDF" "$module_statuses_json" "$merge_status_json" "failed"
-    record_failure "$INPUT" "$OUT_DIR" "public_root_leakage" "public root leaked hidden or obsolete artifacts" "${OUT_DIR}/.teaching-design-package/debug/public-root-leakage.stderr.log"
-    die "public root leaked hidden package artifacts; diagnostics are under ${OUT_DIR}/.teaching-design-package/"
+  write_status "$model_path" "$run_root" "$candidate_dir" "true" "$module_statuses_json" "$merge_status_json" "passed"
+  local final_ready
+  final_ready="$(node -e 'const fs=require("fs"); const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); console.log(s.final_ready ? "true" : "false")' "${evidence_dir}/${STATUS_NAME}")"
+  if [[ "$final_ready" != "true" ]]; then
+    die "render-package --pdf did not produce a final-ready candidate"
   fi
-  leakage_status="passed"
-  write_status "$model_path" "$OUT_DIR" "$RENDER_PDF" "$module_statuses_json" "$merge_status_json" "$leakage_status"
-  if [[ "$RENDER_PDF" == true ]]; then
-    local final_ready
-    final_ready="$(node -e 'const fs=require("fs"); const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); console.log(s.final_ready ? "true" : "false")' "${OUT_DIR}/.teaching-design-package/${STATUS_NAME}")"
-    if [[ "$final_ready" != "true" ]]; then
-      cp "${OUT_DIR}/.teaching-design-package/${STATUS_NAME}" "${OUT_DIR}/.teaching-design-package/failure-diagnostics/${STATUS_NAME}"
-      cleanup_public_root "$OUT_DIR"
-      die "render-package --pdf did not produce a final-ready course-prefixed delivery; diagnostics are under ${OUT_DIR}/.teaching-design-package/"
-    fi
-  fi
+  node "${SCRIPT_DIR}/delivery-transaction.js" publish "$OUT_DIR" "$run_id" "$candidate_dir" "$model_path"
+  trap - EXIT INT TERM
 }
 
 cmd_manifest() {
@@ -968,8 +937,8 @@ cmd_manifest() {
   mkdir -p "$OUT_DIR"
   local model_path
   model_path="$(write_model_file "$INPUT" "$OUT_DIR")"
-  write_status "$model_path" "$OUT_DIR" "false" "$(module_status_json_not_run "$model_path" "$OUT_DIR")" "$(merge_status_not_run "$model_path" "$OUT_DIR")" "not_run"
-  printf '%s/.teaching-design-package/%s\n' "$OUT_DIR" "$STATUS_NAME"
+  write_status "$model_path" "$OUT_DIR" "$OUT_DIR" "false" "$(module_status_json_not_run "$model_path" "$OUT_DIR")" "$(merge_status_not_run "$model_path" "$OUT_DIR")" "not_run"
+  printf '%s/%s\n' "$OUT_DIR" "$STATUS_NAME"
 }
 
 cmd_compat_render() {

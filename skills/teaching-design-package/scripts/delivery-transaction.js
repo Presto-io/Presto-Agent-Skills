@@ -410,8 +410,16 @@ function publishBundle({ root, runId, candidateRoot, packageModel, fault = '' })
 
 function main() {
   const [command, root, runId, candidateRoot, modelPath] = process.argv.slice(2);
+  if (command === 'cleanup' && root && runId) {
+    validateComponent(runId, 'run id');
+    const workRoot = path.join(path.resolve(root), '.work');
+    const runRoot = path.join(workRoot, runId);
+    if (fs.existsSync(runRoot)) removeOwnedTree(runRoot, workRoot);
+    removeDirectoryIfEmpty(workRoot);
+    return;
+  }
   if (command !== 'publish' || !root || !runId || !candidateRoot || !modelPath) {
-    console.error('Usage: delivery-transaction.js publish <root> <run-id> <candidate-root> <model.json>');
+    console.error('Usage: delivery-transaction.js publish <root> <run-id> <candidate-root> <model.json> | cleanup <root> <run-id>');
     process.exit(2);
   }
   const packageModel = JSON.parse(fs.readFileSync(modelPath, 'utf8'));
