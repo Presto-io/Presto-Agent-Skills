@@ -480,6 +480,8 @@ class DeliverySession:
                 else:
                     target.unlink()
                     self._remove_empty_parents(target, self.root)
+                if index == 1 and os.environ.get("PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD"):
+                    os.kill(os.getpid(), getattr(signal, os.environ["PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD"]))
                 self._published.append(name)
                 if index == 1:
                     self._fault("after_publish_file_1")

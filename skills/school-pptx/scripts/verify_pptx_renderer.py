@@ -1775,6 +1775,20 @@ def delivery_transaction_gate(workdir: Path) -> dict[str, object]:
     unreferenced.write_bytes((SKILL_DIR / "fixtures" / "media" / "equipment-cell.png").read_bytes())
     unreferenced_before = hashlib.sha256(unreferenced.read_bytes()).hexdigest()
 
+    signal_delivery = workdir / "first-signal-delivery"
+    for signal_name in ("SIGINT", "SIGTERM"):
+        environment = os.environ.copy()
+        environment["SCHOOL_PPTX_PYTHON"] = sys.executable
+        environment["PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD"] = signal_name
+        interrupted = subprocess.run(
+            [str(PUBLIC_CLI), "render", "--input", str(source), "--out-dir", str(signal_delivery),
+             "--stem", "confirmed-assets"],
+            cwd=SKILL_DIR.parent.parent, text=True, capture_output=True, timeout=60, check=False, env=environment,
+        )
+        require(interrupted.returncode != 0 and not delivery_tree_snapshot(signal_delivery),
+                f"first publish {signal_name} left partial current")
+        require(not (signal_delivery / ".work").exists(), f"first publish {signal_name} leaked work")
+
     delivery = workdir / "delivery"
     sources = delivery / "sources"
     sources.mkdir(parents=True)

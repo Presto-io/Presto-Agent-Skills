@@ -65,6 +65,7 @@ class DeliverySessionTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         os.environ.pop(FAULT_ENV, None)
+        os.environ.pop("PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD", None)
         self.temporary.cleanup()
 
     def publish(self, marker: str, *, assets: tuple[str, ...] = ()) -> str:
@@ -179,6 +180,18 @@ class DeliverySessionTests(unittest.TestCase):
                     with self.assertRaises(DeliveryError):
                         session.publish(lambda bundle: validate_html_candidate(bundle, 1))
                 self.assertEqual(snapshot(self.root), baseline)
+
+    def test_first_publish_signal_between_replace_and_record_leaves_no_current(self) -> None:
+        for signal_name in ("SIGINT", "SIGTERM"):
+            with self.subTest(signal_name=signal_name):
+                os.environ["PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD"] = signal_name
+                with DeliverySession(self.spec) as session:
+                    session.stage_candidate(b"# signal\n", html("signal"), asset_root=self.input_root)
+                    with self.assertRaises(DeliveryError):
+                        session.publish(lambda bundle: validate_html_candidate(bundle, 1))
+                os.environ.pop("PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD", None)
+                self.assertFalse((self.root / "deck.md").exists())
+                self.assertFalse((self.root / "deck.html").exists())
 
     def test_validation_failures_never_change_current(self) -> None:
         self.assertEqual(self.publish("v1"), "first")
