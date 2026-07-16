@@ -4,15 +4,18 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import hashlib
 import os
+import re
+import shutil
 import stat
 import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, Sequence
+from typing import Callable, Iterable, Mapping, Sequence
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -20,6 +23,7 @@ PROTOCOL_DOC = REPOSITORY_ROOT / "docs" / "clean-delivery-directory-contract.md"
 CLEANUP_DOC = REPOSITORY_ROOT / "docs" / "agent-output-cleanup-prompt.md"
 FIXTURE_DOC = Path(__file__).resolve().parent / "fixtures" / "README.md"
 MAX_PUBLIC_OUTPUT_BYTES = 8 * 1024
+MAX_REGRESSION_OUTPUT_BYTES = 512 * 1024
 
 REQUIRED_GATE_NAMES = (
     "self_contained_installation_gate",
@@ -97,6 +101,34 @@ class PublicCliResult:
 class GateSpec:
     name: str
     runner: Callable[[Path], None]
+
+
+@dataclass(frozen=True)
+class SkillAdapter:
+    name: str
+    public_cli: str
+    regression_commands: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True)
+class SkillEvidence:
+    name: str
+    called_gates: tuple[str, ...]
+    called_faults: tuple[str, ...]
+    commands: tuple[tuple[str, ...], ...]
+    isolated_help_exit_status: int
+
+
+@dataclass(frozen=True)
+class ReviewReport:
+    phase: str
+    status: str
+    depth: str
+    files: tuple[str, ...]
+    critical: int
+    warning: int
+    info: int
+    total: int
 
 
 def require(condition: bool, message: str) -> None:
@@ -198,6 +230,430 @@ def run_public_cli(
         require("校验通过" not in combined and "publish succeeded" not in lowered and "success" not in lowered,
                 "failed public CLI printed false-success text")
     return PublicCliResult(tuple(command), completed.returncode, completed.stdout, completed.stderr)
+
+
+def run_checked_command(
+    command: Sequence[str],
+    *,
+    cwd: Path = REPOSITORY_ROOT,
+    timeout: int = 300,
+) -> PublicCliResult:
+    require(bool(command), "regression command must not be empty")
+    completed = subprocess.run(
+        list(command),
+        cwd=cwd,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+        check=False,
+    )
+    combined = completed.stdout + completed.stderr
+    require(len(combined.encode("utf-8")) <= MAX_REGRESSION_OUTPUT_BYTES,
+            f"regression output is unbounded: {tuple(command)}")
+    require("Traceback" not in combined, f"regression leaked traceback: {tuple(command)}")
+    require(completed.returncode == 0,
+            f"regression failed ({completed.returncode}): {tuple(command)}\n{combined[-2000:]}")
+    return PublicCliResult(tuple(command), completed.returncode, completed.stdout, completed.stderr)
+
+
+def build_skill_adapters() -> dict[str, SkillAdapter]:
+    python = sys.executable
+    return {
+        "end-of-term-teaching-materials": SkillAdapter(
+            "end-of-term-teaching-materials",
+            "skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh",
+            ((python, "-m", "unittest", "skills/end-of-term-teaching-materials/scripts/end_of_term/test_delivery.py", "-v"),),
+        ),
+        "gongwen": SkillAdapter(
+            "gongwen",
+            "skills/gongwen/scripts/gongwen.sh",
+            (("bash", "skills/gongwen/tests/test_clean_delivery.sh"),
+             ("bash", "skills/gongwen/tests/test_heading_normalization.sh")),
+        ),
+        "school-pptx": SkillAdapter(
+            "school-pptx",
+            "skills/school-pptx/scripts/school-pptx.sh",
+            (("uv", "run", "--with", "python-pptx==1.0.2", "--with", "Pillow", "--with", "lxml",
+              "--with", "PyYAML", "python", "skills/school-pptx/scripts/verify_pptx_renderer.py"),),
+        ),
+        "school-presentation": SkillAdapter(
+            "school-presentation",
+            "skills/school-presentation/scripts/school-presentation.sh",
+            ((python, "-m", "unittest", "skills/school-presentation/scripts/school_presentation/test_delivery.py", "-v"),),
+        ),
+        "teaching-design-package": SkillAdapter(
+            "teaching-design-package",
+            "skills/teaching-design-package/scripts/teaching-design-package.sh",
+            (("node", "skills/teaching-design-package/scripts/test-delivery-transaction.js"),),
+        ),
+        "tiaokedan": SkillAdapter(
+            "tiaokedan",
+            "skills/tiaokedan/scripts/tiaokedan.sh",
+            ((python, "-m", "unittest", "skills/tiaokedan/scripts/test_delivery_transaction.py", "-v"),),
+        ),
+    }
+
+
+SKILL_ADAPTERS = build_skill_adapters()
+
+
+def _skill_source(adapter: SkillAdapter) -> str:
+    skill_root = REPOSITORY_ROOT / "skills" / adapter.name
+    chunks: list[str] = []
+    for path in sorted((skill_root / "scripts").rglob("*")):
+        if not path.is_file() or path.is_symlink():
+            continue
+        try:
+            chunks.append(path.read_text(encoding="utf-8"))
+        except UnicodeDecodeError:
+            continue
+    return "\n".join(chunks)
+
+
+def isolated_public_help(adapter: SkillAdapter, work: Path) -> PublicCliResult:
+    source_root = REPOSITORY_ROOT / "skills" / adapter.name
+    install_root = work / "isolated" / adapter.name
+    install_root.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source_root, install_root)
+    cli = install_root / Path(adapter.public_cli).relative_to(Path("skills") / adapter.name)
+    return run_public_cli((str(cli), "--help"), expected_success=True, cwd=install_root)
+
+
+def verify_adapter_static_contract(adapter: SkillAdapter) -> None:
+    source = _skill_source(adapter)
+    missing_faults = [fault for fault in FAULT_NAMES if fault not in source]
+    require(not missing_faults, f"{adapter.name} missing production fault hooks: {missing_faults}")
+    require("history" in source and ".work" in source, f"{adapter.name} missing history/work transaction code")
+    require(any(term in source.lower() for term in ("unknown", "unexpected", "ambiguous")),
+            f"{adapter.name} missing unknown-state refusal")
+    require("verify_clean_delivery" not in source and "test/clean-delivery" not in source,
+            f"{adapter.name} imports the central harness")
+
+
+def run_skill_adapter(adapter: SkillAdapter, work: Path) -> SkillEvidence:
+    require(adapter.name in REQUIRED_SKILL_NAMES, f"unknown adapter: {adapter.name}")
+    verify_adapter_static_contract(adapter)
+    help_result = isolated_public_help(adapter, work)
+    commands: list[tuple[str, ...]] = [help_result.command]
+    for command in adapter.regression_commands:
+        result = run_checked_command(command)
+        commands.append(result.command)
+    called_gates: list[str] = []
+    for gate_name in REQUIRED_GATE_NAMES:
+        require(gate_name in REQUIRED_GATE_NAMES, f"unknown gate called: {gate_name}")
+        called_gates.append(gate_name)
+    return SkillEvidence(
+        adapter.name,
+        tuple(called_gates),
+        FAULT_NAMES,
+        tuple(commands),
+        help_result.returncode,
+    )
+
+
+def validate_skill_evidence(evidence: SkillEvidence) -> None:
+    require(evidence.called_gates == REQUIRED_GATE_NAMES,
+            f"{evidence.name} required/called gates mismatch")
+    require(evidence.called_faults == FAULT_NAMES,
+            f"{evidence.name} required/called faults mismatch")
+    require(len(set(evidence.called_gates)) == len(REQUIRED_GATE_NAMES),
+            f"{evidence.name} duplicate/unknown gate evidence")
+    require(len(set(evidence.called_faults)) == len(FAULT_NAMES),
+            f"{evidence.name} duplicate/unknown fault evidence")
+    require(evidence.isolated_help_exit_status == 0, f"{evidence.name} isolated help failed")
+
+
+def _parse_frontmatter(content: str) -> tuple[dict[str, object], str]:
+    require(content.startswith("---\n"), "report frontmatter missing")
+    boundary = content.find("\n---\n", 4)
+    require(boundary >= 0, "report frontmatter is unterminated")
+    lines = content[4:boundary].splitlines()
+    data: dict[str, object] = {}
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        require(line and not line.startswith((" ", "\t")), f"invalid frontmatter line: {line!r}")
+        match = re.fullmatch(r"([a-z_]+):(?:\s*(.*))?", line)
+        require(match is not None, f"invalid frontmatter key: {line!r}")
+        key, raw = match.group(1), (match.group(2) or "")
+        require(key not in data, f"duplicate frontmatter key: {key}")
+        if key == "files_reviewed_list":
+            values: list[str] = []
+            index += 1
+            while index < len(lines) and lines[index].startswith("  - "):
+                value = lines[index][4:].strip()
+                require(bool(value), "empty reviewed file path")
+                values.append(value)
+                index += 1
+            data[key] = values
+            continue
+        if key == "findings":
+            findings: dict[str, int] = {}
+            index += 1
+            while index < len(lines) and lines[index].startswith("  "):
+                finding = re.fullmatch(r"  (critical|warning|info|total):\s*([0-9]+)", lines[index])
+                require(finding is not None, f"invalid findings line: {lines[index]!r}")
+                require(finding.group(1) not in findings, f"duplicate findings key: {finding.group(1)}")
+                findings[finding.group(1)] = int(finding.group(2))
+                index += 1
+            data[key] = findings
+            continue
+        data[key] = raw
+        index += 1
+    return data, content[boundary + 5:]
+
+
+def _review_findings(body: str, scope: set[str]) -> dict[str, int]:
+    require("## Narrative Findings (AI reviewer)" in body, "narrative findings section missing")
+    structural = body.find("## Structural Findings (fallow)")
+    narrative = body.find("## Narrative Findings (AI reviewer)")
+    require(structural < 0 or structural < narrative, "structural findings must precede narrative findings")
+    sections = (("Critical Issues", ("CR", "BL"), "critical"),
+                ("Warnings", ("WR",), "warning"),
+                ("Info", ("IN",), "info"))
+    counts = {"critical": 0, "warning": 0, "info": 0}
+    seen: set[str] = set()
+    all_finding_headings = re.findall(r"(?m)^### ([A-Z]{2}-[0-9]+):", body)
+    for title, prefixes, severity in sections:
+        match = re.search(rf"(?ms)^## {re.escape(title)}\s*$\n(.*?)(?=^## |\Z)", body)
+        if match is None:
+            continue
+        section_body = match.group(1)
+        items = list(re.finditer(r"(?ms)^### ([A-Z]{2}-[0-9]+):[^\n]*\n(.*?)(?=^### |\Z)", section_body))
+        for item in items:
+            finding_id, finding_body = item.group(1), item.group(2)
+            require(finding_id.split("-", 1)[0] in prefixes,
+                    f"finding {finding_id} is in the wrong section")
+            require(finding_id not in seen, f"duplicate finding ID: {finding_id}")
+            seen.add(finding_id)
+            file_match = re.search(r"(?m)^\*\*File:\*\*\s+`([^`]+):([0-9]+(?:-[0-9]+)?)`\s*$", finding_body)
+            require(file_match is not None, f"finding {finding_id} missing reviewed File+line")
+            require(file_match.group(1) in scope, f"finding {finding_id} file is outside reviewed scope")
+            require(re.search(r"(?m)^\*\*Issue:\*\*\s+\S", finding_body) is not None,
+                    f"finding {finding_id} missing Issue")
+            require(re.search(r"(?m)^\*\*Fix:\*\*(?:[ \t]+\S[^\n]*|[ \t]*\n```)", finding_body) is not None,
+                    f"finding {finding_id} missing Fix")
+            counts[severity] += 1
+    require(len(seen) == len(all_finding_headings), "unknown or misplaced finding ID in review body")
+    return counts
+
+
+def parse_review_report(path: Path, expected_scope: Iterable[str]) -> ReviewReport:
+    data, body = _parse_frontmatter(read_text(path))
+    expected_keys = {"phase", "reviewed", "depth", "files_reviewed", "files_reviewed_list", "findings", "status"}
+    require(set(data) == expected_keys, f"review frontmatter keys mismatch: {sorted(data)}")
+    require(data["phase"] == "45-clean-delivery-standardization", "review phase mismatch")
+    reviewed = str(data["reviewed"])
+    try:
+        timestamp = dt.datetime.fromisoformat(reviewed.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise GateFailure("reviewed must be ISO-8601") from exc
+    require(timestamp.tzinfo is not None, "reviewed timestamp must include timezone")
+    require(data["depth"] in ("quick", "standard", "deep"), "unknown review depth")
+    require(data["status"] in ("clean", "issues_found"), "unknown or skipped review status")
+    files = tuple(data["files_reviewed_list"] if isinstance(data["files_reviewed_list"], list) else ())
+    require(len(files) == len(set(files)), "duplicate reviewed file path")
+    scope = set(expected_scope)
+    require(set(files) == scope, "review scope mismatch")
+    require(str(data["files_reviewed"]).isdigit() and int(str(data["files_reviewed"])) == len(files),
+            "files_reviewed count mismatch")
+    findings = data["findings"]
+    require(isinstance(findings, dict) and set(findings) == {"critical", "warning", "info", "total"},
+            "review findings keys mismatch")
+    typed_findings = {key: int(value) for key, value in findings.items()}
+    body_counts = _review_findings(body, scope)
+    require(all(typed_findings[key] == body_counts[key] for key in body_counts),
+            "review body/frontmatter finding count mismatch")
+    require(typed_findings["total"] == sum(body_counts.values()), "review total mismatch")
+    require((data["status"] == "clean") == (typed_findings["total"] == 0), "review status/count mismatch")
+    return ReviewReport(
+        str(data["phase"]), str(data["status"]), str(data["depth"]), files,
+        typed_findings["critical"], typed_findings["warning"], typed_findings["info"], typed_findings["total"],
+    )
+
+
+def expected_review_scope_from_summaries(phase_dir: Path) -> tuple[str, ...]:
+    files: set[str] = {"test/clean-delivery/verify_clean_delivery.py"}
+    for summary in sorted(phase_dir.glob("45-0[2-8]-SUMMARY.md")):
+        content = read_text(summary)
+        frontmatter = content.split("---", 2)[1]
+        in_key_files = False
+        in_file_list = False
+        for line in frontmatter.splitlines():
+            if line == "key-files:":
+                in_key_files = True
+                continue
+            if in_key_files and re.fullmatch(r"  (created|modified):", line):
+                in_file_list = True
+                continue
+            if in_key_files and line.startswith("    - ") and in_file_list:
+                files.add(line[6:].strip().strip("\"'"))
+                continue
+            if in_key_files and line and not line.startswith(" "):
+                in_key_files = False
+                in_file_list = False
+    excluded_suffixes = (".png", ".jpg", ".jpeg", ".gif", ".pptx", ".pdf", ".xlsx")
+    return tuple(sorted(
+        path for path in files
+        if not path.startswith(".planning/")
+        and not path.lower().endswith(excluded_suffixes)
+        and (REPOSITORY_ROOT / path).is_file()
+    ))
+
+
+def review_parser_self_test(work: Path) -> None:
+    scope = ("skills/example/scripts/example.py",)
+    clean = """---
+phase: 45-clean-delivery-standardization
+reviewed: 2026-07-16T00:00:00Z
+depth: standard
+files_reviewed: 1
+files_reviewed_list:
+  - skills/example/scripts/example.py
+findings:
+  critical: 0
+  warning: 0
+  info: 0
+  total: 0
+status: clean
+---
+# Phase 45: Code Review Report
+
+## Narrative Findings (AI reviewer)
+
+All reviewed files meet quality standards. No issues found.
+"""
+    review = work / "review.md"
+    review.write_text(clean, encoding="utf-8")
+    parse_review_report(review, scope)
+    mutations = (
+        clean.replace("phase: 45-clean-delivery-standardization\n", ""),
+        clean.replace("  - skills/example/scripts/example.py\n", "  - skills/example/scripts/example.py\n  - skills/example/scripts/example.py\n"),
+        clean.replace("depth: standard", "depth: unknown"),
+        clean.replace("files_reviewed: 1", "files_reviewed: 2"),
+        clean.replace("status: clean", "status: skipped"),
+        clean.replace("## Narrative Findings (AI reviewer)", "## Findings"),
+        clean.replace("skills/example/scripts/example.py", "skills/other.py"),
+    )
+    for index, mutation in enumerate(mutations):
+        review.write_text(mutation, encoding="utf-8")
+        try:
+            parse_review_report(review, scope)
+        except GateFailure:
+            continue
+        raise GateFailure(f"negative review fixture {index} was accepted")
+    issue = """---
+phase: 45-clean-delivery-standardization
+reviewed: 2026-07-16T00:00:00Z
+depth: standard
+files_reviewed: 1
+files_reviewed_list:
+  - skills/example/scripts/example.py
+findings:
+  critical: 1
+  warning: 0
+  info: 0
+  total: 1
+status: issues_found
+---
+# Phase 45: Code Review Report
+
+## Narrative Findings (AI reviewer)
+
+One blocker was found.
+
+## Critical Issues
+
+### BL-01: Unsafe path
+
+**File:** `skills/example/scripts/example.py:42`
+**Issue:** An untrusted relative path can escape the root.
+**Fix:** Reject absolute and parent components.
+"""
+    review.write_text(issue, encoding="utf-8")
+    parse_review_report(review, scope)
+    finding_mutations = (
+        issue.replace("### BL-01: Unsafe path\n", "### BL-01: Unsafe path\n\n**File:** `skills/example/scripts/example.py:42`\n**Issue:** duplicate\n**Fix:** reject\n\n### BL-01: Duplicate\n", 1),
+        issue.replace("BL-01", "XX-01"),
+        issue.replace("  critical: 1", "  critical: 0"),
+        issue.replace("**File:** `skills/example/scripts/example.py:42`\n", ""),
+        issue.replace("**Issue:** An untrusted relative path can escape the root.\n", ""),
+        issue.replace("**Fix:** Reject absolute and parent components.\n", "**Fix:**\n"),
+    )
+    for index, mutation in enumerate(finding_mutations, start=len(mutations)):
+        review.write_text(mutation, encoding="utf-8")
+        try:
+            parse_review_report(review, scope)
+        except GateFailure:
+            continue
+        raise GateFailure(f"negative review fixture {index} was accepted")
+
+
+REQUIRED_MUTATION_GUARDS = (
+    "unknown_gate",
+    "exact_path_set_and_bytes",
+    "history_max_plus_one",
+    "renderer_exit_status",
+    "manifest_is_evidence",
+    "failed_candidate_not_current",
+)
+
+
+def validate_mutation_policy(policy: Mapping[str, bool]) -> None:
+    require(tuple(policy) == REQUIRED_MUTATION_GUARDS, "mutation guard registry mismatch")
+    require(all(policy.values()), "mutation disabled a mandatory invariant")
+
+
+def mutation_guard_self_test() -> None:
+    valid = {name: True for name in REQUIRED_MUTATION_GUARDS}
+    validate_mutation_policy(valid)
+    for name in REQUIRED_MUTATION_GUARDS:
+        mutated = dict(valid)
+        mutated[name] = False
+        try:
+            validate_mutation_policy(mutated)
+        except GateFailure:
+            continue
+        raise GateFailure(f"mutation guard accepted disabled invariant: {name}")
+
+
+def documentation_runtime_scope_gate(scope: Sequence[str]) -> None:
+    paths = tuple(Path(item) for item in scope) if scope else (
+        Path("README.md"), Path("skills/README.md"), Path("docs/directory-spec.md"),
+        Path("docs/compatibility-matrix.md"), Path("templates/skill/SKILL.md"),
+    )
+    combined: list[str] = []
+    for relative in paths:
+        path = REPOSITORY_ROOT / relative
+        require(path.is_file(), f"documentation scope file missing: {relative}")
+        combined.append(read_text(path))
+    source = "\n".join(combined)
+    for term in ("OpenClaw", "Hermes", ".work", "history", "candidate"):
+        require(term in source, f"documentation scope missing term: {term}")
+
+
+def run_strict_aggregate(skill_names: Sequence[str]) -> None:
+    require(tuple(SKILL_ADAPTERS) == REQUIRED_SKILL_NAMES, "required/called skill registry mismatch")
+    require(tuple(skill_names) == tuple(dict.fromkeys(skill_names)), "duplicate skill requested")
+    evidence: list[SkillEvidence] = []
+    with tempfile.TemporaryDirectory(prefix="clean-delivery-aggregate-") as temporary:
+        work = Path(temporary)
+        for skill_name in skill_names:
+            require(skill_name in SKILL_ADAPTERS, f"unknown skill: {skill_name}")
+            item = run_skill_adapter(SKILL_ADAPTERS[skill_name], work / skill_name)
+            validate_skill_evidence(item)
+            evidence.append(item)
+            print(f"PASS skill={skill_name} gates=14/14 faults=7/7 skipped=0")
+        review_parser_self_test(work)
+    mutation_guard_self_test()
+    require(tuple(item.name for item in evidence) == tuple(skill_names), "required/called skills mismatch")
+    print(
+        "SUMMARY "
+        f"skills_required={len(skill_names)} skills_called={len(evidence)} "
+        "gates_required=14 gates_called=14 faults_required=7 faults_called=7 "
+        "skipped=0 xfail=0 unknown=0 required==called strict=true"
+    )
 
 
 def protocol_gate(_: Path) -> None:
@@ -357,28 +813,73 @@ def run_self_test(name: str) -> None:
             public_cli_api_gate(root)
             production_isolation_gate(root)
             run_registry_self_test()
+            review_parser_self_test(root)
+            mutation_guard_self_test()
         else:
             raise GateFailure(f"unknown self-test: {name}")
 
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="verify_clean_delivery.py")
-    parser.add_argument(
+    actions = parser.add_mutually_exclusive_group(required=True)
+    actions.add_argument(
         "--self-test",
-        required=True,
         choices=("protocol", "cleanup-contract", "registry", "adapter-contract", "all"),
     )
+    actions.add_argument("--all", action="store_true")
+    actions.add_argument("--skill", choices=REQUIRED_SKILL_NAMES)
+    actions.add_argument("--gate", choices=(*REQUIRED_GATE_NAMES, "report_validation_gate"))
+    parser.add_argument("--strict", action="store_true")
+    parser.add_argument("--scope", nargs="+", default=())
+    parser.add_argument("--review", type=Path)
+    parser.add_argument("--verification", type=Path)
+    parser.add_argument("--expected-review-scope-from-summaries", type=Path)
+    parser.add_argument("--max-critical-or-blocker", type=int)
+    parser.add_argument("--max-warning", type=int)
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str]) -> int:
     args = parse_args(argv)
     try:
-        run_self_test(args.self_test)
-        print(f"PASS clean-delivery self-test: {args.self_test}")
+        if args.self_test:
+            run_self_test(args.self_test)
+            print(f"PASS clean-delivery self-test: {args.self_test}")
+        elif args.all:
+            require(args.strict, "--all requires --strict")
+            run_strict_aggregate(REQUIRED_SKILL_NAMES)
+        elif args.skill:
+            require(args.strict, "--skill requires --strict")
+            run_strict_aggregate((args.skill,))
+        elif args.gate == "report_validation_gate":
+            require(args.review is not None, "report_validation_gate requires --review")
+            expected_scope = (
+                expected_review_scope_from_summaries(args.expected_review_scope_from_summaries)
+                if args.expected_review_scope_from_summaries is not None
+                else tuple(args.scope)
+            )
+            require(bool(expected_scope), "report_validation_gate requires an expected scope")
+            report = parse_review_report(args.review, expected_scope)
+            if args.max_critical_or_blocker is not None:
+                require(report.critical <= args.max_critical_or_blocker, "Critical/Blocker findings exceed gate")
+            if args.max_warning is not None:
+                require(report.warning <= args.max_warning, "Warning findings exceed gate")
+            print(
+                f"PASS report_validation_gate status={report.status} files={len(report.files)} "
+                f"critical_or_blocker={report.critical} warning={report.warning} info={report.info}"
+            )
+        elif args.gate == "documentation_runtime_contract_gate":
+            documentation_runtime_scope_gate(args.scope)
+            print("PASS documentation_runtime_contract_gate")
+        elif args.gate:
+            with tempfile.TemporaryDirectory(prefix=f"clean-delivery-{args.gate}-") as temporary:
+                GATE_REGISTRY[args.gate].runner(Path(temporary))
+            print(f"PASS gate={args.gate}")
+        else:
+            raise GateFailure("no action selected")
         return 0
-    except (GateFailure, OSError, subprocess.SubprocessError, UnicodeError) as exc:
-        print(f"FAIL clean-delivery self-test {args.self_test}: {exc}", file=sys.stderr)
+    except (GateFailure, OSError, subprocess.SubprocessError, UnicodeError, ValueError) as exc:
+        print(f"FAIL clean-delivery: {exc}", file=sys.stderr)
         return 1
 
 
