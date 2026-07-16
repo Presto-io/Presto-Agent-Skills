@@ -8,7 +8,7 @@
 skills/school-pptx/scripts/school-pptx.sh verify --workdir <caller-workdir>
 ```
 
-`--workdir` 是唯一 public verification root。命令只在该调用方目录下写入：
+`--workdir` 是唯一 public verification root，必须由调用方显式提供且不得复用普通 render delivery root。命令只在该调用方目录下写入：
 
 ```text
 <caller-workdir>/
@@ -45,7 +45,13 @@ skills/school-pptx/scripts/school-pptx.sh verify --workdir <caller-workdir>
 | `unresolved-review-marker` | `REVIEW_MARKER_UNRESOLVED` |
 | `template-manifest-mismatch` | `TEMPLATE_MANIFEST_MISMATCH` |
 
-六项必须固定顺序全部执行、零 skip。每项在独立 copied tree 内运行真实 public validate/render/template-report 路径，并断言 non-zero exit、exact code、capture 小于 8192 bytes、无 traceback、无 false-success 文案、无 case root 外写入且 protected hashes 不变。best-effort pair 可以留在 case root，但状态仍是 failed-as-expected。
+六项必须固定顺序全部执行、零 skip。每项在独立 copied tree 内运行真实 public validate/render/template-report 路径，并断言 non-zero exit、exact code、capture 小于 8192 bytes、无 traceback、无 false-success 文案、无 case root 外写入且 protected hashes 不变。非零 render 的 best-effort pair 只存在于该运行的 owned work evidence 生命周期，不能留在 case delivery 或伪装 current。
+
+## Clean-delivery Publication Regression
+
+`scripts/verify_pptx_renderer.py --self-test delivery-transaction` 使用真实 public render 覆盖 first/change/same、generation/validation failure、七 fault、history gap、unknown/symlink/traversal、lock/work cleanup、sources 与 managed assets。固定七 fault registry 必须满足 `required == called`、唯一且 `dynamic_skips == 0`。confirmed-assets fixture 只纳管 `assets/robot-arm.png`，另置的未引用输入不得复制；changed case 解析 `history/<sequence>/confirmed-assets.md` 的每个 `assets/...` 引用，并验证同 sequence bytes。
+
+这些 gate 只证明 current DeliverySpec 的 exact set+bytes、handled-failure rollback、归档引用和 OOXML 可读性。它们不证明多路径硬原子、`SIGKILL`/断电恢复，也不将 PowerPoint/WPS 人工视觉、编辑、notes 或导出检查标为 PASS。
 
 ## Phase 43 Nested Authority
 

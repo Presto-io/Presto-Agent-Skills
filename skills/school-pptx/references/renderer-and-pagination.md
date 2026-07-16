@@ -25,8 +25,12 @@
 
 所有槽位、子区域、文字预算、字体范围、颜色、装饰和 footer 行为来自 `templates/standard-school.manifest.yaml` 与 normalized template。Markdown 不得传入坐标、尺寸、字体、颜色、crop、footer 或动画控制。模板人工编辑后的允许/禁止操作见 [template-editing.md](template-editing.md)。
 
-## Best-effort and Clean Output
+## Delivery Transaction and Best-effort Boundary
 
-成功 render 公开目录恰有同 stem `.md` 与 `.pptx`。无效输入或缺失媒体可能产生结构有效、仍可编辑的 best-effort pair，但命令必须非零退出并报告稳定诊断；best-effort PPTX 不添加警告页、水印或错误横幅，也不能被称为成功。
+成功 current 的 exact DeliverySpec 包含同 stem reviewed `.md`、通过 `validate_staged_package()` 的 editable `.pptx`，以及 Markdown/PPTX 持续引用并已确认纳管的 `assets/<safe-relative-path>`。输入中的任意其他媒体、`sources/`、manifest、logical model、日志、诊断与 verification evidence 都不属于 current。legacy `media/` 不会被普通 render 静默迁移；只有确认式整理同时迁移文件、更新 Markdown 引用并重跑 renderer/reference gate 后，资源才可进入 `assets/`。
 
-manifest、logical model、日志、诊断、verification evidence 和临时文件只属于隐藏工作区或调用方 verification workdir。完整 public verification 与证据字段见 [verification-contract.md](verification-contract.md)，真实 viewer 行为见 [visual-uat.md](visual-uat.md)。
+renderer 在 `.work/<run-id>/{candidate,rollback,evidence}` 内完成 pair 和 managed assets 的生成、PPTX package validation 与引用验证。candidate 和 current 的 exact relative path set 及 bytes 都相同才是 no-op，且 current inode/mtime 与 history 不变。changed publication 把旧 Markdown、旧 PPTX 和全部旧 managed assets 写入同一个 `history/<max+1>/`；归档 Markdown 的 `assets/...` 引用在该 sequence 内解析。
+
+七类 handled fault 与 `INT`/`TERM` 在任一 artifact/assets replace 后恢复旧完整 bundle，删除本次 sequence/run，并保持既有 history 不变。单路径 `replace` 是原子的，但 whole bundle 不承诺跨路径硬原子、`SIGKILL` 或断电恢复。
+
+无效输入或缺失媒体仍可在本次 owned work 内生成结构有效、可编辑且无警告页/水印的 best-effort deck，用于 bounded diagnostic；parser、plan 或 runtime diagnostics 非零时它绝不替换 current，并在收尾时清理。完整 public verification 与证据字段见 [verification-contract.md](verification-contract.md)，真实 PowerPoint/WPS 行为见 [visual-uat.md](visual-uat.md)，自动目录验证不得签署人工 UAT。
