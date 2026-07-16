@@ -12,6 +12,13 @@ This reference holds Markdown authoring, page model, layout, and fixed-canvas ru
 - `page_ratio`: 页面比例，只允许 `16:9` 或 `4:3`，默认 `16:9`；渲染器按该比例生成等尺寸物理页。
 - `max_output_mb`: 默认 `50`，用于离线 HTML 产物尺寸门禁。
 
+## Persistent Assets
+
+- 当前版本持续引用的相对资源统一写为 `assets/<safe-relative-path>`，并与 reviewed Markdown + offline HTML 一起进入 candidate gate。
+- 只复制 Markdown/HTML 仍明确引用的 confirmed assets；未引用输入不进入 current 或 history，`sources/` 永不由 normal render 改写或归档。
+- legacy `media/` 不是 normal root 例外。迁移必须先只读审计并获得明确确认，再移动获批资源、同步把文本引用改成 `assets/`，最后重跑 render/reference gate；不得静默移动整个目录。
+- 图片默认 contain、不裁切。缺少 required `assets/...` 会阻断 current 发布；绝对或非持久 optional media 的 fallback 仍须在 evidence 中留有 warning。
+
 ## Deck Structure
 
 - 正文优先用 `## Section: 章节名` 表达章节边界。
