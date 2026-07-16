@@ -32,7 +32,6 @@ TABLE_HEADERS = [
     "备注",
 ]
 REQUIRED_TABLE_HEADERS = TABLE_HEADERS[:-1]
-RAW_TYPST_RE = re.compile(r"#(?:set|let|table|linebreak\s*\(\)|page|align|block|text|h\s*\(|v\s*\()", re.I)
 HTML_TAG_RE = re.compile(r"<\s*/?\s*([A-Za-z][A-Za-z0-9-]*)\b[^>]*>")
 REVIEW_MARKER_RE = re.compile(r"\{\{(待补充|AI草稿)\s*:[^}]*\}\}")
 COMPACT_DATE_RE = re.compile(r"\b(\d{4})(\d{2})(\d{2})\b")
@@ -144,12 +143,6 @@ def validate_supported_syntax(value: str, area: str) -> None:
         tag = match.group(1).lower()
         if tag != "br":
             raise ContractError(f"unsupported inline HTML in {area}: <{tag}>")
-
-    # Remove the sole supported HTML marker before raw-Typst scanning.
-    raw_scan = re.sub(r"<\s*br\s*/?\s*>", "", value, flags=re.I)
-    if RAW_TYPST_RE.search(raw_scan):
-        raise ContractError(f"unsupported raw Typst in {area}")
-
 
 def parse_body(body: str, frontmatter: dict[str, str]) -> TiaokedanDocument:
     lines = body.splitlines()
@@ -305,9 +298,17 @@ def normalize_time_cell(value: str, row_index: int) -> str:
     return f"{match.group('date')}{separator}{match.group('time')}"
 
 
+def typst_content(value: str) -> str:
+    parts = re.split(r"<\s*br\s*/?\s*>", value.strip(), flags=re.I)
+    escaped = [
+        part.replace("\\", "\\\\").replace("#", "\\#").replace("[", "\\[").replace("]", "\\]")
+        for part in parts
+    ]
+    return "#linebreak()".join(escaped)
+
+
 def typst_cell(value: str) -> str:
-    normalized = re.sub(r"<\s*br\s*/?\s*>", "#linebreak()", value.strip(), flags=re.I)
-    return f"  tc[{normalized}],"
+    return f"  tc[{typst_content(value)}],"
 
 
 def render_typst(document: TiaokedanDocument) -> str:
@@ -357,15 +358,15 @@ def render_typst(document: TiaokedanDocument) -> str:
         "]",
         "",
         "#align(center)[",
-        f'  #text(font: FONT_TITLE_SONG, size: 22pt, weight: 700)[{document.title}]',
+        f'  #text(font: FONT_TITLE_SONG, size: 22pt, weight: 700)[{typst_content(document.title)}]',
         "]",
         "",
         "#v(1.2em)",
         "",
-        f"#para(indent: 0pt)[{document.recipient}]",
+        f"#para(indent: 0pt)[{typst_content(document.recipient)}]",
         "",
         "#para[",
-        f"  #h(2em){document.reason}",
+        f"  #h(2em){typst_content(document.reason)}",
         "]",
         "",
         "#v(0.8em)",
@@ -394,9 +395,9 @@ def render_typst(document: TiaokedanDocument) -> str:
             "  #block(width: 12em)[",
             "    #set text(font: FONT_FS, size: 14pt)",
             "    #set par(first-line-indent: 0pt, justify: false, leading: 1.15em)",
-            f"    #align(center)[{document.department}]",
+            f"    #align(center)[{typst_content(document.department)}]",
             "    #v(0.4em)",
-            f"    #align(center)[{document.date}]",
+            f"    #align(center)[{typst_content(document.date)}]",
             "  ]",
             "]",
         ]
