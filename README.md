@@ -56,6 +56,19 @@ cp -R skills/<skill-name> <runtime-skill-root>/<skill-name>
 5. 按技能规定执行验证。自动验证、结构检查、人工 UAT 和最终交付检查是不同层级，不能互相冒充。
 6. 只把当前 Markdown 和最终交付物放在公开交付根目录；历史版本、诊断、日志和临时验证产物按 `docs/clean-delivery-directory-contract.md` 处理。
 
+### 六技能干净交付边界
+
+当前干净交付契约是封闭集合，只覆盖 `end-of-term-teaching-materials`、`gongwen`、`school-presentation`、`school-pptx`、`teaching-design-package` 和 `tiaokedan` 六个写文件技能，不把其他技能误计为已适配。每个技能都以自己声明的稳定 Markdown 名称、最终产物名称和可选产物开关构造 explicit managed set；完整候选先在 `.work/<run-id>/` 生成并通过最小可读性 gate，才允许变更 current。
+
+- 首次发布只写显式受管集合；candidate 与 current 的相对路径集合和 bytes 全部相同时是 no-op，不创建 history，也不触碰 current。
+- 内容变化时，上一版完整受管集合以 `max + 1` 的同一序号进入 `history/<sequence>/`；普通发布不自动删除 history。
+- handled failure、`INT` 或 `TERM` 回滚旧 current，并只清理本次 owned run；不承诺 `SIGKILL`、断电或多文件跨路径原子。
+- `sources/` 不由普通发布修改；只有技能明确声明、被当前 bundle 持续引用的 managed `assets/` 才随同版归档。
+- unknown、legacy、symlink、partial 或 ambiguous 状态在 mutation 前失败关闭。历史散乱产物必须按 [确认式 cleanup contract](docs/agent-output-cleanup-prompt.md) 先只读审计，再绑定 snapshot 明确确认，不能由普通 render 自动整理。
+- 成功交付根不得平铺 manifest、status、model、log、diff、screenshot、staging、验证证据或失败产物；调用方 `verify --workdir` 是独立 evidence root，不是 delivery root。
+
+完整状态机、目录所有权和真实原子性边界以 [canonical clean-delivery contract](docs/clean-delivery-directory-contract.md) 为准；技能的稳定文件名与最小 gate 继续由各自 `SKILL.md` 和 artifact contract 拥有。
+
 ### 安全与验证注意事项
 
 - 把第三方技能和脚本视为未受信任代码，启用前先审阅其命令、网络访问、凭据读取和写入范围。
@@ -160,9 +173,9 @@ cp -R skills/<skill-name> <runtime-skill-root>/<skill-name>
 
 ## 已有技能
 
-- `end-of-term-teaching-materials`：用于整理期末教学提交材料和表格，先输出 `end-of-term-full.md` 结构的可复核 Markdown intermediate，再生成固定模板 Typst/PDF、manifest、确定性表格产物、calculated score evidence 和 workbook。Artifact contract 见 `skills/end-of-term-teaching-materials/references/data-contract.md` 和 `skills/end-of-term-teaching-materials/references/workflow-and-artifacts.md`。
+- `end-of-term-teaching-materials`：用于整理期末教学提交材料和表格，先输出可复核 Markdown intermediate，再以固定四件套事务发布 Markdown、Typst、PDF 和 XLSX；model、manifest 与评分证据不属于 current。Artifact contract 见 `skills/end-of-term-teaching-materials/references/data-contract.md` 和 `skills/end-of-term-teaching-materials/references/workflow-and-artifacts.md`。
 - `gongwen`：用于写作、归一化和验证类公文文体文档，最终交付目录为 `documents/YYYYMMDD 事项名称/`，只保留同级 `标题.md`、`标题.typ`、`标题.pdf`；署名和日期由 YAML frontmatter 自动落款。Artifact contract 见 `skills/gongwen/references/format-and-rendering.md`。
 - `school-presentation`：用于整理学校正式汇报、课程展示、培训课件、招生宣讲或项目答辩材料，先输出 `school-presentation-full.md` 结构的 Markdown logical-slide intermediate，再生成带学校视觉识别的离线 HTML 演示文稿。生成的 deck 内置 preview workspace、overview、playback、presenter markup、课堂 reveal/mask/peek/排序/结构化版式，以及一键最终 PDF 导出；PDF 会展开揭示内容、保留答案/强调/排序最终态、支持目录链接和 reader outline，并按当前章节页预览状态包含或跳过章节分隔页。Authoring、export 和 verification contract 分别见 `skills/school-presentation/references/authoring-and-layout.md`、`skills/school-presentation/references/playback-and-export.md` 和 `skills/school-presentation/references/verification-contract.md`。
 - `school-pptx`：把已审阅的 Markdown logical slides 通过受控 `standard-school` template 生成原生可编辑 PowerPoint；[canonical skill](skills/school-pptx/SKILL.md) 提供 review-before-render 和 public `verify --workdir` 入口，自动结构 PASS 之后仍须在真实 Microsoft PowerPoint 或 WPS Presentation 中完成人工 UAT，不能由代理自动批准。
-- `teaching-design-package`：用于整合授课计划和实操教案，先输出 `teaching-design-package-full.md` 结构的整包 Markdown intermediate，再由 package-owned model、skill-local calendar、授课计划 renderer 和教学设计 renderer 生成课程名前缀公开交付文件；当前公开交付为主 Markdown、合并教学资料 PDF、授课进度计划表 PDF 和教学设计方案 PDF，诊断/model/work/staging 留在隐藏 `.teaching-design-package/`。授课进度计划和教学设计方案的旧版式规则已迁入 package-owned renderer，正常运行不依赖 sibling skill folders。入口见 `skills/teaching-design-package/SKILL.md`，Artifact contract 见 `skills/teaching-design-package/references/format-and-orchestration.md`，模板见 `skills/teaching-design-package/templates/teaching-design-package-full.md`，公开 helper 见 `skills/teaching-design-package/scripts/teaching-design-package.sh`。
+- `teaching-design-package`：用于整合授课计划和实操教案，先输出统一 Markdown intermediate，再由 package-owned model 和 renderer 生成 model-derived dynamic `1 + 1 + N` current bundle；model、status、module、merge 和 staging 证据只存在于 owned `.work` 或调用方 diagnostic workdir。正常运行不依赖 sibling skill folders。入口见 `skills/teaching-design-package/SKILL.md`，Artifact contract 见 `skills/teaching-design-package/references/format-and-orchestration.md`。
 - `tiaokedan`：用于生成 `调课单`/`调课说明`，先输出教师可审阅的 `templates/tiaokedan.md` 结构 Markdown intermediate，再由 skill-local renderer 生成 Typst，并在教师确认后可选生成 PDF。Markdown 可省略标题、收文对象、表格序号列和表格后落款行；renderer 会补默认标题/收文对象、自动序号、frontmatter 落款，并用 `Songti SC` 优先的宋体标题 `weight: 700`。入口见 `skills/tiaokedan/SKILL.md`，Artifact contract 见 `skills/tiaokedan/references/markdown-contract.md` 和 `skills/tiaokedan/references/pdf-workflow.md`，公开 helper 见 `skills/tiaokedan/scripts/tiaokedan.sh`。

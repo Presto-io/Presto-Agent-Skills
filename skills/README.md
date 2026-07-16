@@ -11,6 +11,10 @@ Current skills:
 - `teaching-design-package`: 教学设计整包 Markdown intermediate 到授课进度计划表/教学设计方案/可选期末材料拆分 Typst/PDF status 的编排工作流；旧授课计划和实操教案版式已迁入 package-owned renderer，正常运行不依赖 sibling skill folders。
 - `tiaokedan`: `调课单`/`调课说明` Markdown intermediate 到 skill-local Typst/PDF 的单表单工作流；Markdown 可省略标题、收文对象、表格序号列和表格后落款行，renderer 自动补默认值、序号和宋体加粗标题，教师确认 `tiaokedan.md` 后再运行 final render gate。
 
+以上恰好六个技能构成当前 explicit managed clean-delivery coverage；未列出的技能不能据此声称已适配。六者都遵守同一 [canonical clean-delivery contract](../docs/clean-delivery-directory-contract.md)：完整 candidate 先验门，exact path-set+bytes 相同则 no-op，changed 将完整旧 bundle 放入同一 `history/<max+1>/`，handled failure 回滚，unknown/legacy/symlink/partial 状态在 mutation 前失败关闭。历史散乱产物只能通过 [audit → confirm → execute cleanup contract](../docs/agent-output-cleanup-prompt.md) 整理。
+
+成功 delivery root 只包含技能声明的当前 Markdown、当前最终产物，以及按需存在的 `sources/`、`assets/`、`history/`、`.work/`。`sources/` 不由普通发布修改；只有显式 managed 且持续引用的 assets 随版本归档。manifest、status、model、log、diff、screenshot、staging、验证证据和失败产物不属于 current；调用方 verification workdir 也不等同 delivery root。
+
 Expected layout:
 
 ```text
