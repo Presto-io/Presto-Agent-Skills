@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -13,7 +14,7 @@ import stat
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Callable, Iterable, Mapping, Sequence
 
@@ -22,6 +23,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 PROTOCOL_DOC = REPOSITORY_ROOT / "docs" / "clean-delivery-directory-contract.md"
 CLEANUP_DOC = REPOSITORY_ROOT / "docs" / "agent-output-cleanup-prompt.md"
 FIXTURE_DOC = Path(__file__).resolve().parent / "fixtures" / "README.md"
+CLEANUP_RUNNER = Path(__file__).resolve().parent / "cleanup_protocol_runner.py"
 MAX_PUBLIC_OUTPUT_BYTES = 8 * 1024
 MAX_REGRESSION_OUTPUT_BYTES = 512 * 1024
 
@@ -123,6 +125,14 @@ class SkillAdapter:
     name: str
     public_cli: str
     regression_commands: tuple[tuple[str, ...], ...]
+    regression_contracts: tuple["RegressionContract", ...]
+
+
+@dataclass(frozen=True)
+class RegressionContract:
+    markers: tuple[str, ...]
+    gates: tuple[str, ...]
+    proves_faults: bool = False
 
 
 @dataclass(frozen=True)
@@ -132,6 +142,7 @@ class SkillEvidence:
     called_faults: tuple[str, ...]
     commands: tuple[tuple[str, ...], ...]
     isolated_help_exit_status: int
+    regression_results: tuple[PublicCliResult, ...]
 
 
 @dataclass(frozen=True)
@@ -285,38 +296,84 @@ def run_checked_command(
 
 def build_skill_adapters() -> dict[str, SkillAdapter]:
     python = sys.executable
+    transaction_gates = REQUIRED_GATE_NAMES[1:11]
     return {
         "end-of-term-teaching-materials": SkillAdapter(
             "end-of-term-teaching-materials",
             "skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh",
             ((python, "-m", "unittest", "skills/end-of-term-teaching-materials/scripts/end_of_term/test_delivery.py", "-v"),),
+            (RegressionContract((
+                "test_compile_failure_never_mutates_current_or_history", "test_malformed_xlsx_is_rejected_before_publish",
+                "test_real_candidate_validators_cover_all_four_formats", "test_changed_bundle_uses_max_plus_one_history",
+                "test_concurrent_lock_and_stale_work_are_preserved", "test_every_fault_restores_current_and_existing_history",
+                "test_first_publish_is_exact_and_identical_is_inode_preserving",
+                "test_unknown_symlink_partial_and_lock_fail_before_mutation", "Ran 10 tests", "OK",
+            ), (*transaction_gates, "existing_renderer_regression_gate"), True),),
         ),
         "gongwen": SkillAdapter(
             "gongwen",
             "skills/gongwen/scripts/gongwen.sh",
             (("bash", "skills/gongwen/tests/test_clean_delivery.sh"),
              ("bash", "skills/gongwen/tests/test_heading_normalization.sh")),
+            (
+                RegressionContract(("gongwen clean-delivery transaction tests passed.",), transaction_gates, True),
+                RegressionContract(("gongwen 标题归一化与字体 fallback 测试通过。",),
+                                   ("existing_renderer_regression_gate",)),
+            ),
         ),
         "school-pptx": SkillAdapter(
             "school-pptx",
             "skills/school-pptx/scripts/school-pptx.sh",
             (("uv", "run", "--with", "python-pptx==1.0.2", "--with", "Pillow", "--with", "lxml",
-              "--with", "PyYAML", "python", "skills/school-pptx/scripts/verify_pptx_renderer.py"),),
+              "--with", "PyYAML", "python", "skills/school-pptx/scripts/verify_pptx_renderer.py",
+              "--self-test", "delivery-transaction"),
+             ("uv", "run", "--with", "python-pptx==1.0.2", "--with", "Pillow", "--with", "lxml",
+              "--with", "PyYAML", "python", "skills/school-pptx/scripts/verify_pptx_renderer.py",
+              "phase_41_42_regression")),
+            (
+                RegressionContract(("PASS delivery-transaction", '"history_sequence": "004"',
+                                    '"sources_unchanged": true', '"dynamic_skips": 0', '"identical": 0'),
+                                   transaction_gates, True),
+                RegressionContract(("PASS phase_41_42_regression", "fixture_example"),
+                                   ("existing_renderer_regression_gate",)),
+            ),
         ),
         "school-presentation": SkillAdapter(
             "school-presentation",
             "skills/school-presentation/scripts/school-presentation.sh",
             ((python, "-m", "unittest", "skills/school-presentation/scripts/school_presentation/test_delivery.py", "-v"),),
+            (RegressionContract((
+                "test_all_faults_and_signals_restore_pair_history_and_sources",
+                "test_archived_referenced_assets_resolve_and_unreferenced_stays_out",
+                "test_first_identical_changed_and_gap_history",
+                "test_unknown_legacy_manifest_symlink_partial_and_stale_work_fail_closed",
+                "test_validation_failures_never_change_current", "test_render_publishes_only_pair_and_keeps_manifest_external",
+                "Ran 11 tests", "OK",
+            ), (*transaction_gates, "existing_renderer_regression_gate"), True),),
         ),
         "teaching-design-package": SkillAdapter(
             "teaching-design-package",
             "skills/teaching-design-package/scripts/teaching-design-package.sh",
             (("node", "skills/teaching-design-package/scripts/test-delivery-transaction.js"),),
+            (RegressionContract((
+                "PASS testFirstSameChangeAndGap", "PASS testDynamicRegistryAuthority",
+                "PASS testCleanupAndCandidateExchangeFailClosed", "PASS testFaultRollbackMatrix",
+                "PASS testUnknownAmbiguousPartialSymlinkAndTraversal", "PASS testLockAndUnrelatedWorkPreserved",
+                "PASS testRealRenderPackageCandidateIsolation", "PASS 9/9 delivery transaction groups; faults=7",
+            ), (*transaction_gates, "existing_renderer_regression_gate"), True),),
         ),
         "tiaokedan": SkillAdapter(
             "tiaokedan",
             "skills/tiaokedan/scripts/tiaokedan.sh",
             ((python, "-m", "unittest", "skills/tiaokedan/scripts/test_delivery_transaction.py", "-v"),),
+            (RegressionContract((
+                "test_every_fault_restores_current_history_and_sources", "test_first_identical_and_optional_set_change",
+                "test_full_set_equality_and_history_gap_guard", "test_lock_conflict_and_unrelated_stale_work_are_preserved",
+                "test_unknown_legacy_symlink_partial_lock_and_stale_work_fail_closed",
+                "test_generation_expected_and_pdf_validation_failures_do_not_mutate",
+                "test_real_cli_first_identical_changed_and_fault_matrix",
+                "test_real_cli_optional_pdf_removal_archives_the_complete_triple", "Ran 12 tests", "OK",
+            ), (*transaction_gates, "existing_renderer_regression_gate"), True),),
         ),
     }
 
@@ -357,24 +414,59 @@ def verify_adapter_static_contract(adapter: SkillAdapter) -> None:
             f"{adapter.name} imports the central harness")
 
 
+def parse_regression_evidence(
+    adapter: SkillAdapter, results: Sequence[PublicCliResult]
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    require(len(results) == len(adapter.regression_contracts),
+            f"{adapter.name} regression command/evidence count mismatch")
+    gates: list[str] = []
+    faults: list[str] = []
+    for index, (result, contract) in enumerate(zip(results, adapter.regression_contracts, strict=True)):
+        require(result.returncode == 0, f"{adapter.name} regression {index} exit status is nonzero")
+        combined = result.stdout + result.stderr
+        missing = [marker for marker in contract.markers if marker not in combined]
+        require(not missing, f"{adapter.name} regression {index} missing evidence markers: {missing}")
+        gates.extend(contract.gates)
+        if contract.proves_faults:
+            if adapter.name == "school-pptx":
+                json_lines = [line for line in result.stdout.splitlines() if line.startswith("{")]
+                require(bool(json_lines), "school-pptx regression missing JSON evidence")
+                payload = json.loads(json_lines[-1])["delivery-transaction"]
+                require(set(payload["faults"]) == set(FAULT_NAMES)
+                        and all(payload["faults"][name] == 1 for name in FAULT_NAMES),
+                        "school-pptx fault evidence mismatch")
+                require(tuple(payload["registry"]["called"]) == FAULT_NAMES,
+                        "school-pptx called fault registry mismatch")
+            faults.extend(FAULT_NAMES)
+    require(len(gates) == len(set(gates)), f"{adapter.name} regression duplicated gate evidence")
+    require(len(faults) == len(set(faults)), f"{adapter.name} regression duplicated fault evidence")
+    return tuple(gates), tuple(faults)
+
+
 def run_skill_adapter(adapter: SkillAdapter, work: Path) -> SkillEvidence:
     require(adapter.name in REQUIRED_SKILL_NAMES, f"unknown adapter: {adapter.name}")
     verify_adapter_static_contract(adapter)
     help_result = isolated_public_help(adapter, work)
     commands: list[tuple[str, ...]] = [help_result.command]
+    regression_results: list[PublicCliResult] = []
     for command in adapter.regression_commands:
         result = run_checked_command(command)
+        regression_results.append(result)
         commands.append(result.command)
-    called_gates: list[str] = []
-    for gate_name in REQUIRED_GATE_NAMES:
-        require(gate_name in REQUIRED_GATE_NAMES, f"unknown gate called: {gate_name}")
-        called_gates.append(gate_name)
+    local_gates, called_faults = parse_regression_evidence(adapter, tuple(regression_results))
+    called_gates = ["self_contained_installation_gate", *local_gates]
+    cleanup_contract_gate(work)
+    called_gates.append("cleanup_audit_confirmation_gate")
+    documentation_runtime_scope_gate(())
+    called_gates.append("documentation_runtime_contract_gate")
+    called_gates = [name for name in REQUIRED_GATE_NAMES if name in called_gates]
     return SkillEvidence(
         adapter.name,
         tuple(called_gates),
-        FAULT_NAMES,
+        called_faults,
         tuple(commands),
         help_result.returncode,
+        tuple(regression_results),
     )
 
 
@@ -765,19 +857,100 @@ def mutation_guard_self_test() -> None:
         raise GateFailure(f"mutation guard accepted disabled invariant: {name}")
 
 
-def documentation_runtime_scope_gate(scope: Sequence[str]) -> None:
-    paths = tuple(Path(item) for item in scope) if scope else (
-        Path("README.md"), Path("skills/README.md"), Path("docs/directory-spec.md"),
-        Path("docs/compatibility-matrix.md"), Path("templates/skill/SKILL.md"),
+def regression_evidence_mutation_self_test(evidence: SkillEvidence) -> None:
+    """Prove strict mode rejects tampering with evidence from a command that actually ran."""
+    adapter = SKILL_ADAPTERS[evidence.name]
+    first_contract = adapter.regression_contracts[0]
+    first_result = evidence.regression_results[0]
+    marker = next(
+        (item for item in first_contract.markers if any(term in item.lower() for term in ("identical", "noop", "same"))),
+        first_contract.markers[0] if "identical_noop_gate" in first_contract.gates else None,
     )
-    combined: list[str] = []
+    require(marker is not None, "actual regression contract lacks a no-op mutation target")
+    require(marker in first_result.stdout + first_result.stderr,
+            "actual regression output lacks its no-op mutation target")
+    if marker in first_result.stdout:
+        mutated_result = replace(first_result, stdout=first_result.stdout.replace(marker, "MUTATED"))
+    else:
+        mutated_result = replace(first_result, stderr=first_result.stderr.replace(marker, "MUTATED"))
+    mutated_results = (mutated_result, *evidence.regression_results[1:])
+    try:
+        parse_regression_evidence(adapter, mutated_results)
+    except GateFailure:
+        pass
+    else:
+        raise GateFailure("strict adapter accepted replaced real no-op regression evidence")
+
+    removed_noop = tuple(gate for gate in first_contract.gates if gate != "identical_noop_gate")
+    require(len(removed_noop) < len(first_contract.gates), "mutation target gate is absent")
+    mutated_contracts = (replace(first_contract, gates=removed_noop), *adapter.regression_contracts[1:])
+    mutated_adapter = replace(adapter, regression_contracts=mutated_contracts)
+    gates, faults = parse_regression_evidence(mutated_adapter, evidence.regression_results)
+    called = tuple(name for name in REQUIRED_GATE_NAMES if name in (
+        "self_contained_installation_gate", *gates,
+        "cleanup_audit_confirmation_gate", "documentation_runtime_contract_gate",
+    ))
+    mutated_evidence = replace(evidence, called_gates=called, called_faults=faults)
+    try:
+        validate_skill_evidence(mutated_evidence)
+    except GateFailure:
+        return
+    raise GateFailure("strict adapter accepted deleted identical-noop gate evidence")
+
+
+REQUIRED_DOCUMENTATION_PATHS = (
+    Path("README.md"), Path("skills/README.md"), Path("docs/directory-spec.md"),
+    Path("docs/compatibility-matrix.md"), Path("templates/skill/SKILL.md"),
+    *(Path("skills") / name / "SKILL.md" for name in REQUIRED_SKILL_NAMES),
+)
+
+
+def _validate_local_markdown_links(path: Path, source: str) -> None:
+    for target in re.findall(r"\[[^]]+\]\(([^)]+)\)", source):
+        target = target.strip().strip("<>").split("#", 1)[0]
+        if not target or re.match(r"^[a-z][a-z0-9+.-]*://", target, re.IGNORECASE):
+            continue
+        resolved = (path.parent / target).resolve()
+        require(resolved.is_file(),
+                f"{path.relative_to(REPOSITORY_ROOT)} has broken local link: {target}")
+
+
+def _require_runtime_rows(path: Path, source: str) -> None:
+    for runtime in ("Codex", "Claude Code", "Gemini CLI", "OpenCode", "OpenClaw", "Hermes Agent"):
+        require(re.search(rf"(?m)^\| {re.escape(runtime)} \|", source) is not None,
+                f"{path.relative_to(REPOSITORY_ROOT)} missing runtime row: {runtime}")
+
+
+def documentation_runtime_scope_gate(scope: Sequence[str]) -> None:
+    paths = tuple(Path(item) for item in scope) if scope else REQUIRED_DOCUMENTATION_PATHS
+    require(paths == REQUIRED_DOCUMENTATION_PATHS,
+            "documentation scope must include README, skills index, directory spec, compatibility matrix, "
+            "skill template, and all six canonical SKILL adapters")
+    common_terms = {
+        Path("README.md"): ("candidate", "history", ".work", "unknown", "symlink", "OpenClaw", "Hermes Agent"),
+        Path("skills/README.md"): ("candidate", "path-set+bytes", "history", ".work", "unknown", "audit → confirm → execute"),
+        Path("docs/directory-spec.md"): ("candidate", "path-set+bytes", "history", ".work", "unknown", "symlink"),
+        Path("docs/compatibility-matrix.md"): ("candidate", "history", ".work", "unknown", "symlink", "installation-time"),
+        Path("templates/skill/SKILL.md"): ("candidate", "path-set+bytes", "history", ".work", "unknown", "symlink", "audit → confirm → execute"),
+    }
     for relative in paths:
         path = REPOSITORY_ROOT / relative
         require(path.is_file(), f"documentation scope file missing: {relative}")
-        combined.append(read_text(path))
-    source = "\n".join(combined)
-    for term in ("OpenClaw", "Hermes", ".work", "history", "candidate"):
-        require(term in source, f"documentation scope missing term: {term}")
+        source = read_text(path)
+        required = common_terms.get(relative, ("candidate", "history", ".work", "sources"))
+        missing = [term for term in required if term not in source]
+        require(not missing, f"{relative} missing required clean-delivery semantics: {missing}")
+        if relative.parts[:1] == ("skills",) and relative.name == "SKILL.md":
+            require(any(term in source for term in ("rollback", "回滚", "恢复旧", "恢复当前")),
+                    f"{relative} missing handled rollback semantics")
+            require(any(term in source for term in ("unknown", "未知", "失败关闭", "根目录只允许")),
+                    f"{relative} missing unknown fail-closed semantics")
+        if relative == Path("docs/compatibility-matrix.md") or relative == Path("templates/skill/SKILL.md") \
+                or relative.parts[:1] == ("skills",) and relative.name == "SKILL.md":
+            _require_runtime_rows(path, source)
+        _validate_local_markdown_links(path, source)
+    template = read_text(REPOSITORY_ROOT / "templates/skill/SKILL.md")
+    require("- [ ]" in template, "template verification checklist placeholders are missing")
 
 
 def run_strict_aggregate(skill_names: Sequence[str]) -> None:
@@ -794,6 +967,9 @@ def run_strict_aggregate(skill_names: Sequence[str]) -> None:
             print(f"PASS skill={skill_name} gates=14/14 faults=7/7 skipped=0")
         review_parser_self_test(work)
         verification_parser_self_test(work)
+        require(bool(evidence), "strict aggregate produced no actual regression evidence")
+        regression_evidence_mutation_self_test(evidence[0])
+        print("PASS mutation_guard=real-regression-noop-replaced-and-identical-gate-deleted")
     mutation_guard_self_test()
     require(tuple(item.name for item in evidence) == tuple(skill_names), "required/called skills mismatch")
     print(
@@ -824,6 +1000,9 @@ def cleanup_contract_gate(_: Path) -> None:
         "unknown-user-file", "user-source", "referenced-asset", "symlink-escape", "stale-work",
         "changed-after-audit", "hash、inode", "零 mutation",
     ))
+    result = run_checked_command((sys.executable, str(CLEANUP_RUNNER), "--self-test"), timeout=30)
+    require("PASS cleanup-protocol audit-confirm-execute whole-folder fixture" in result.stdout,
+            "cleanup protocol runner did not prove its executable whole-folder fixture")
 
 
 def registry_shape_gate(_: Path) -> None:

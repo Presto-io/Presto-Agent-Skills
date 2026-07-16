@@ -25,10 +25,10 @@ review_info_count: 0
 | REV-03 | `python3 test/clean-delivery/verify_clean_delivery.py --all --strict` | 0 | 每技能 identical_noop_gate 通过，path-set+bytes mutation guard 生效 | byte-identical 完整受管集合不创建 history，current inode/mtime 在可观察处不变。 |
 | REV-04 | `uv run --with python-pptx==1.0.2 --with Pillow --with lxml --with PyYAML python skills/school-pptx/scripts/verify_pptx_renderer.py --self-test delivery-transaction` | 0 | PASS delivery-transaction，history_sequence=004，archived_assets 包含 assets/robot-arm.png | 变更发布按 max+1 成套归档旧 Markdown、最终产物与引用 assets，既有 history 不变。 |
 | SAFE-01 | `node skills/teaching-design-package/scripts/test-delivery-transaction.js` | 0 | PASS 9/9 groups，faults=7，真实 SIGINT/SIGTERM 与 root 普通目录替换通过 | generation、validation、archive、publish fault 和 handled INT/TERM 均恢复旧 current/history 且保护用户文件。 |
-| SAFE-02 | `python3 test/clean-delivery/verify_clean_delivery.py --self-test cleanup-contract` | 0 | PASS clean-delivery self-test cleanup-contract | 历史整理保持 audit→confirm→execute、snapshot-bound approval 与未知用户资料零 mutation。 |
-| VERIFY-01 | `python3 test/clean-delivery/verify_clean_delivery.py --all --strict` | 0 | 6/6 skills，14/14 gates，7/7 faults，skipped=0 xfail=0 unknown=0 | 固定 aggregate 覆盖 first、change、same、failure、fault、history、unknown、assets、sources、lock 与 work。 |
-| DOCS-01 | `python3 test/clean-delivery/verify_clean_delivery.py --gate documentation_runtime_contract_gate --scope README.md skills/README.md docs/directory-spec.md docs/compatibility-matrix.md templates/skill/SKILL.md` | 0 | PASS documentation_runtime_contract_gate | 仓库入口、目录规范、兼容矩阵与技能模板共同表达 candidate、history、work 和 clean-delivery 契约。 |
-| RUNTIME-01 | `python3 test/clean-delivery/verify_clean_delivery.py --all --strict` | 0 | 六个 whole-folder isolated public help 均为 exit 0，生产脚本无 central harness import | Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes Agent 使用完整 skill folder 与显式 fallback，运行时边界一致。 |
+| SAFE-02 | `python3 test/clean-delivery/cleanup_protocol_runner.py --self-test` | 0 | PASS cleanup-protocol audit-confirm-execute whole-folder fixture；五类拒绝均保持 snapshot 零 mutation | 历史整理真实执行 audit→approval→execute，并拒绝未确认、计划不匹配、陈旧快照、符号链接逃逸与未知删除。 |
+| VERIFY-01 | `python3 test/clean-delivery/verify_clean_delivery.py --all --strict` | 0 | 六个 skill-local 回归输出逐项解析为实际 gate/fault evidence；6/6、14/14、7/7、zero skip；mutation guard 替换真实输出或删除 no-op gate 后均失败 | 固定 aggregate 的 gate/fault 计数来自实际回归证据，不再由命令成功后直接赋值。 |
+| DOCS-01 | `python3 test/clean-delivery/verify_clean_delivery.py --gate documentation_runtime_contract_gate` | 0 | README、skills index、directory spec、compatibility matrix、template 与六个 canonical SKILL 逐文件语义和本地链接全部通过；单 README scope 被拒绝 | 仓库入口、目录规范、兼容矩阵、模板和六技能 adapter 分别表达一致 clean-delivery 契约。 |
+| RUNTIME-01 | `python3 test/clean-delivery/verify_clean_delivery.py --all --strict` | 0 | 六个 whole-folder public help 与真实 skill-local fixture 回归均 exit 0；六 runtime rows 逐文件验证；生产脚本无 central harness import | Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes Agent 使用完整 skill folder 与显式 fallback，运行时自包含证据完整。 |
 
 ## Review Gate
 
@@ -42,6 +42,12 @@ review_info_count: 0
 - requirement 表恰含 12 个唯一且已知的 requirement ID，每行 command、evidence、assertion 非空且 `exit_status` 为整数 0。
 - missing、duplicate、unknown requirement，unknown enum，nonzero 或非整数 exit，空 command/evidence/assertion，非 passed status 与 strict aggregate 非零负向 fixture 均被拒绝。
 - Verification 中的 review status、Critical-or-Blocker、Warning 与 Info 数值已与标准 REVIEW 逐值对照。
+
+## Milestone Audit Gap Closure
+
+- 中央 adapter 逐条解析各 skill-local 回归的稳定测试名、汇总标记和 fault registry；任意真实 marker 被替换或 `identical_noop_gate` evidence 被删除时 strict aggregate 必须失败。
+- 文档 gate 固定要求五个共享 authority 与六个 canonical `SKILL.md` 全部在 scope，逐文件检查 clean-delivery 语义、六 runtime rows 和本地链接；缩减为单文件 scope 必须失败。
+- test-only cleanup runner 只在系统临时目录执行 snapshot-bound audit、approval token 和 exact operation，覆盖未确认、approval mismatch、stale snapshot、symlink escape 与未知删除零 mutation。
 
 ## Proven And Manual Boundaries
 
