@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -13,7 +14,10 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 from xml.sax.saxutils import escape as xml_escape
+
+from .delivery import CURRENT_NAMES, DeliveryError, DeliverySession, DeliverySpec
 
 VERSION = "0.5.4"
 PACKAGE_ARTIFACTS = [
@@ -1358,10 +1362,73 @@ def compile_pdf(typ_path: Path, pdf_path: Path) -> tuple[str, str]:
     typst = shutil.which("typst")
     if not typst:
         return "skipped", "typst CLI not found"
-    result = subprocess.run([typst, "compile", str(typ_path), str(pdf_path)], text=True, capture_output=True)
+    environment = dict(os.environ)
+    environment.setdefault("SOURCE_DATE_EPOCH", "0")
+    result = subprocess.run(
+        [typst, "compile", str(typ_path), str(pdf_path)],
+        text=True,
+        capture_output=True,
+        env=environment,
+    )
     if result.returncode != 0:
         return "failed", (result.stderr or result.stdout).strip()
     return "compiled", str(pdf_path)
+
+
+def _xlsx_rows(payload: bytes) -> list[list[str]]:
+    required_members = {
+        "[Content_Types].xml",
+        "_rels/.rels",
+        "xl/_rels/workbook.xml.rels",
+        "xl/workbook.xml",
+        "xl/worksheets/sheet1.xml",
+    }
+    try:
+        from io import BytesIO
+
+        with zipfile.ZipFile(BytesIO(payload), "r") as archive:
+            if not required_members.issubset(archive.namelist()):
+                raise RenderError("score-list.xlsx is missing required OOXML members")
+            sheet_payload = archive.read("xl/worksheets/sheet1.xml")
+    except (OSError, KeyError, zipfile.BadZipFile) as exc:
+        raise RenderError("score-list.xlsx is not a readable XLSX container") from exc
+    try:
+        root = ElementTree.fromstring(sheet_payload)
+    except ElementTree.ParseError as exc:
+        raise RenderError("score-list.xlsx worksheet XML is malformed") from exc
+    namespace = {"x": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+    rows: list[list[str]] = []
+    for row in root.findall(".//x:sheetData/x:row", namespace):
+        values = []
+        for cell in row.findall("x:c", namespace):
+            values.append("".join(node.text or "" for node in cell.findall(".//x:t", namespace)))
+        rows.append(values)
+    return rows
+
+
+def validate_delivery_bundle(bundle: dict[str, bytes]) -> None:
+    if tuple(bundle) != CURRENT_NAMES:
+        raise RenderError("delivery candidate must contain the fixed four-file set")
+    try:
+        markdown = bundle["end-of-term-full.md"].decode("utf-8")
+        typst = bundle["end-of-term-package.typ"].decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise RenderError("candidate Markdown and Typst must be UTF-8") from exc
+    if not markdown.strip():
+        raise RenderError("candidate Markdown is empty")
+    if not typst.strip():
+        raise RenderError("candidate Typst is empty")
+    pdf = bundle["end-of-term-package.pdf"]
+    if not pdf.startswith(b"%PDF-") or len(pdf) <= len(b"%PDF-"):
+        raise RenderError("candidate PDF is not readable")
+    rows = _xlsx_rows(bundle["score-list.xlsx"])
+    if not rows or rows[0] != SCORE_LIST_COLUMNS:
+        raise RenderError("score-list.xlsx must have the fixed four-column header")
+    if any(len(row) != len(SCORE_LIST_COLUMNS) for row in rows[1:]):
+        raise RenderError("score-list.xlsx contains a non-four-column data row")
+    student_ids = [row[0] for row in rows[1:]]
+    if student_ids != sorted(student_ids, key=student_id_sort_key):
+        raise RenderError("score-list.xlsx is not sorted by ascending student ID")
 
 
 def deliver(markdown_path: Path, out_dir: Path, skill_dir: Path) -> dict[str, Any]:
@@ -1372,20 +1439,6 @@ def deliver(markdown_path: Path, out_dir: Path, skill_dir: Path) -> dict[str, An
     if has_unresolved_review(package):
         raise RenderError("## 复核标记 must be exactly 无 before delivery")
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-    md_out = out_dir / "end-of-term-full.md"
-    typ_out = out_dir / "end-of-term-package.typ"
-    pdf_out = out_dir / "end-of-term-package.pdf"
-    xlsx_out = out_dir / "score-list.xlsx"
-
-    expected_public = {md_out, typ_out, pdf_out, xlsx_out}
-    for path in expected_public:
-        if path.exists() and path.resolve() != markdown_path.resolve():
-            path.unlink()
-
-    if markdown_path.resolve() != md_out.resolve():
-        write_text(md_out, read_text(markdown_path))
-
     typst_text, warnings, _flags = generate_typst(package, skill_dir / "templates/typst/end-of-term-package.typ")
     if warnings:
         raise RenderError("; ".join(warnings))
@@ -1395,21 +1448,31 @@ def deliver(markdown_path: Path, out_dir: Path, skill_dir: Path) -> dict[str, An
     if not verify_score_list_artifacts(artifacts):
         raise RenderError("score list verification failed")
 
-    write_text(typ_out, typst_text)
-    write_single_sheet_xlsx(xlsx_out, "成绩清单", SCORE_LIST_COLUMNS, artifacts["score_list"])
+    try:
+        with DeliverySession(DeliverySpec(out_dir)) as session:
+            md_out = session.candidate_path("end-of-term-full.md")
+            typ_out = session.candidate_path("end-of-term-package.typ")
+            pdf_out = session.candidate_path("end-of-term-package.pdf")
+            xlsx_out = session.candidate_path("score-list.xlsx")
+            write_text(md_out, read_text(markdown_path))
+            write_text(typ_out, typst_text)
+            write_single_sheet_xlsx(xlsx_out, "成绩清单", SCORE_LIST_COLUMNS, artifacts["score_list"])
 
-    pdf_status, pdf_message = compile_pdf(typ_out, pdf_out)
-    if pdf_status != "compiled":
-        if pdf_out.exists():
-            pdf_out.unlink()
-        raise RenderError(f"PDF did not compile: {pdf_message}")
+            pdf_status, pdf_message = compile_pdf(typ_out, pdf_out)
+            if pdf_status != "compiled":
+                bounded_message = pdf_message[:2000]
+                raise RenderError(f"PDF did not compile: {bounded_message}")
+            publication = session.publish(validate_delivery_bundle)
+    except DeliveryError as exc:
+        raise RenderError(str(exc)) from exc
 
     return {
-        "markdown": str(md_out),
-        "typst": str(typ_out),
-        "pdf": str(pdf_out) if pdf_out.exists() else "",
-        "xlsx": str(xlsx_out),
+        "markdown": str(out_dir / "end-of-term-full.md"),
+        "typst": str(out_dir / "end-of-term-package.typ"),
+        "pdf": str(out_dir / "end-of-term-package.pdf"),
+        "xlsx": str(out_dir / "score-list.xlsx"),
         "pdf_status": pdf_status,
+        "publication": publication,
     }
 
 
