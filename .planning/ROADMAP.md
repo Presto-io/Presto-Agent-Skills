@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-07-16 after defining v1.18 requirements and Phase 45 acceptance
+**Last updated:** 2026-07-16 after completing Phase 45 Plan 01 protocol foundation
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -33,7 +33,7 @@
 **Goal:** 在 v1.17 结束后，依据 `docs/clean-delivery-directory-contract.md` 完整改造当前全部技能，统一交付一级目录、支持资料分组、多轮修改成套归档、最小验证和失败清理行为，并为历史 agent 散乱产物整理提供可复用流程。
 **Requirements:** CLEAN-01, CLEAN-02, CLEAN-03, REV-01, REV-02, REV-03, REV-04, SAFE-01, SAFE-02, VERIFY-01, DOCS-01, RUNTIME-01
 **Depends on:** Phase 44
-**Plans:** 9 plans
+**Plans:** 1/9 plans executed
 
 **Success Criteria** (what must be TRUE):
   1. 用户在六个写文件技能的成功交付根目录中只看到各技能声明的当前 Markdown、当前最终产物和按需存在的 `sources/`、`assets/`、`history/`、`.work/`，既有交付能力不回退。
@@ -47,7 +47,7 @@
 Plans:
 
 **Wave 1 — 协议与验证基础**
-- [ ] 45-01-PLAN.md — 冻结真实原子性边界、确认式历史整理契约与中央 gate/fault 骨架
+- [x] 45-01-PLAN.md — 冻结真实原子性边界、确认式历史整理契约与中央 gate/fault 骨架
 
 **Wave 2 — 六技能并行适配** *(blocked on Wave 1 completion)*
 - [ ] 45-02-PLAN.md — 改造 end-of-term-teaching-materials 固定四件套 transaction
@@ -70,4 +70,4 @@ Cross-cutting constraints:
 - `sources/` 不由普通发布变更，只有持续引用的 managed `assets/` 随版本归档；manifest/status/model/log/diff/staging/失败产物只存在于 owned `.work` 或显式 verification workdir。
 
 ---
-*Roadmap updated: 2026-07-16 after defining v1.18 requirements and Phase 45 acceptance*
+*Roadmap updated: 2026-07-16 after completing Phase 45 Plan 01 protocol foundation*

@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.18
 milestone_name: 全技能干净交付目录标准化改造
-status: planning
-last_updated: "2026-07-15T22:29:53.090Z"
-last_activity: 2026-07-15
+status: in_progress
+stopped_at: Completed 45-01-PLAN.md
+last_updated: "2026-07-16T00:01:07.773Z"
+last_activity: 2026-07-16 — Completed Phase 45 Plan 01 clean-delivery protocol foundation
 progress:
-  total_phases: 0
+  total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 9
+  completed_plans: 1
+  percent: 11
 ---
 
 # State: Presto Agent Skills
@@ -20,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-16)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Start the next milestone from promoted Phase 45
+**Current focus:** Adapt six writing skills to the Phase 45 clean-delivery protocol
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-07-15 — Milestone v1.18 started
+Phase: 45 of 45 (全技能干净交付目录标准化改造)
+Plan: 1 of 9
+Status: In progress
+Last activity: 2026-07-16 — Completed 45-01 protocol, cleanup contract, and gate registry
 
 ## Workflow Preferences
 
@@ -53,6 +54,10 @@ Phase order:
 ## Accumulated Context
 
 ### Decisions
+
+- [Phase 45]: Delivery equality requires the exact managed relative path set and byte equality, including explicitly managed assets.
+- [Phase 45]: Portable guarantees cover per-path replace and handled failure/INT/TERM rollback, not SIGKILL, power loss, or cross-file atomicity.
+- [Phase 45]: Historical cleanup execution requires exact approved operations bound to an unchanged no-follow snapshot.
 
 - [v1.17]: Phase numbering continues after v1.16; this milestone starts at Phase 41 and ends at Phase 44.
 - [v1.17]: Requirements coverage is limited to current v1.17 requirements only.
@@ -131,17 +136,14 @@ None. v1.17 is shipped; Phase 45 is promoted and ready for next-milestone initia
 | Phase 44 P02 | 37 min | 3 tasks | 6 files |
 | Phase 44 P03 | 17 min | 3 tasks | 9 files |
 | Phase 44 P04 | human UAT | 10 checks | 4 planning files |
-
-## Deferred Items
-
-None.
+| Phase 45 P01 | 9 min | 3 tasks | 4 files |
 
 ## Session Continuity
 
-Last session: 2026-07-16T05:30:00+08:00
-Stopped at: v1.17 shipped and archived; awaiting next milestone
+Last session: 2026-07-16T00:01:07.763Z
+Stopped at: Completed 45-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the milestone from Phase 45 with `/gsd:new-milestone`.
+- Execute Wave 2 plans 45-02 through 45-07 against the fixed 14-gate/7-fault authority.
