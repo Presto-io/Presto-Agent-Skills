@@ -32,3 +32,9 @@
 ## Bundle Shapes
 
 fixture API 至少能表达二文件 bundle（Markdown + 一个最终产物）和四文件 bundle（Markdown + 三个最终产物），并允许附加 managed `assets/`、不受管 `sources/`、既有 `history/001`/`history/003` 以及 owned/unrelated `.work` 条目。
+
+## REVIEW 与 Verification 负向 Fixtures
+
+中央 `report_validation_gate` 必须从临时文件构造并拒绝以下 REVIEW 变体：frontmatter 缺失或重复字段、未知 `depth/status`、`status: skipped`、重复或越界 `files_reviewed_list`、scope/count/total/status 不一致、缺少 Narrative section、CR-/BL-/WR-/IN- 位于错误 section、重复或未知 finding ID，以及缺少 reviewed-scope `File+line`、`Issue` 或 `Fix` 的正文。零项 severity section 可省略；若存在 structural pre-pass，`## Structural Findings (fallow)` 必须独立且先于 `## Narrative Findings (AI reviewer)`。
+
+最终 Verification 负向 fixture 同样只在临时目录实例化，必须覆盖 requirement 缺失、重复、未知 ID、未知 enum、非整数或非零 exit、空 command/evidence/assertion、非 `passed` status、strict aggregate 非零，以及与 REVIEW status/critical-or-blocker/warning/info 不一致。任何负向 fixture 被接受都使 strict aggregate 非零，不得计作 skip 或 xfail。
