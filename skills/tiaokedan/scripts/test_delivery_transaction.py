@@ -19,6 +19,7 @@ from delivery_transaction import (
     DeliverySpec,
     derive_delivery_spec,
 )
+from tiaokedan_renderer import typst_content
 
 
 def snapshot(root: Path) -> dict[str, str]:
@@ -37,6 +38,15 @@ def snapshot(root: Path) -> dict[str, str]:
 
 
 class DeliverySpecTests(unittest.TestCase):
+    def test_teacher_text_is_escaped_as_typst_content(self) -> None:
+        rendered = typst_content(r'#include "secret.typ" [x] \ #eval("x")<br>#raw("x")')
+        self.assertIn(r'\#include', rendered)
+        self.assertIn(r'\[x\]', rendered)
+        self.assertIn(r'\\', rendered)
+        self.assertIn(r'\#eval', rendered)
+        self.assertIn("#linebreak()", rendered)
+        self.assertTrue(rendered.endswith(r'\#raw("x")'))
+
     def test_optional_pdf_changes_exact_set_and_path_mismatch_is_rejected(self) -> None:
         root = Path("build") / "tiaokedan"
         pair = derive_delivery_spec(root / "notice.typ", None)
