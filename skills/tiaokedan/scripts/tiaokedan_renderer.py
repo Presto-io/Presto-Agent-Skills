@@ -5,12 +5,15 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import os
 import re
 import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+from delivery_transaction import DeliveryError, DeliverySession, derive_delivery_spec
 
 
 FRONTMATTER_DEFAULTS = {
@@ -403,59 +406,85 @@ def render_typst(document: TiaokedanDocument) -> str:
 
 def render_command(args: argparse.Namespace) -> int:
     input_path = Path(args.input)
-    output_path = Path(args.typ)
     pdf_path = Path(args.pdf) if args.pdf else None
     expected_path = Path(args.expected_typ) if args.expected_typ else None
 
     if not input_path.is_file():
         fail(f"input file not found: {input_path}")
-    if output_path.exists() and expected_path and output_path.resolve() == expected_path.resolve():
-        fail("refusing to overwrite expected Typst reference")
-    if pdf_path and pdf_path.exists():
-        try:
-            pdf_path.unlink()
-        except OSError as error:
-            fail(f"cannot remove stale PDF output: {pdf_path}: {error}")
-
     try:
-        frontmatter, body = parse_frontmatter(input_path.read_text(encoding="utf-8"))
+        spec = derive_delivery_spec(Path(args.typ), pdf_path)
+        output_path = spec.delivery_root / f"{spec.stem}.typ"
+        if expected_path and Path(os.path.abspath(expected_path)) == output_path:
+            raise DeliveryError("refusing to overwrite expected Typst reference")
+        markdown_bytes = input_path.read_bytes()
+        markdown_text = markdown_bytes.decode("utf-8")
+        frontmatter, body = parse_frontmatter(markdown_text)
         document = parse_body(body, frontmatter)
         rendered = render_typst(document)
-    except ContractError as error:
+        rendered_bytes = rendered.encode("utf-8")
+    except (ContractError, DeliveryError, OSError, UnicodeError) as error:
         fail(str(error))
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(rendered, encoding="utf-8")
+    try:
+        with DeliverySession(spec) as session:
+            session.candidate_path(f"{spec.stem}.md").write_bytes(markdown_bytes)
+            candidate_typ = session.candidate_path(f"{spec.stem}.typ")
+            candidate_typ.write_bytes(rendered_bytes)
 
-    if expected_path:
-        if not expected_path.is_file():
-            fail(f"expected Typst file not found: {expected_path}")
-        expected = expected_path.read_text(encoding="utf-8")
-        if rendered != expected:
-            diff = "".join(
-                difflib.unified_diff(
-                    expected.splitlines(keepends=True),
-                    rendered.splitlines(keepends=True),
-                    fromfile=str(expected_path),
-                    tofile=str(output_path),
-                )
-            )
-            print(diff, file=sys.stderr, end="")
-            fail(f"generated Typst differs from expected file: {expected_path}")
+            if expected_path:
+                if not expected_path.is_file():
+                    raise DeliveryError(f"expected Typst file not found: {expected_path}")
+                expected = expected_path.read_text(encoding="utf-8")
+                if rendered != expected:
+                    diff = "".join(
+                        difflib.unified_diff(
+                            expected.splitlines(keepends=True),
+                            rendered.splitlines(keepends=True),
+                            fromfile=str(expected_path),
+                            tofile=str(candidate_typ),
+                        )
+                    )
+                    session.evidence_path("expected-typ.diff").write_text(diff[:65536], encoding="utf-8")
+                    public_diff = diff[:1024]
+                    if public_diff:
+                        print(public_diff, file=sys.stderr, end="" if public_diff.endswith("\n") else "\n")
+                    raise DeliveryError(f"generated Typst differs from expected file: {expected_path}")
 
-    if pdf_path:
-        compile_pdf(output_path, pdf_path)
+            if pdf_path:
+                compile_pdf(candidate_typ, session.candidate_path(f"{spec.stem}.pdf"))
 
+            publication = session.publish(validate_delivery_bundle)
+    except (DeliveryError, OSError, UnicodeError) as error:
+        fail(str(error))
+
+    print(f"tiaokedan: publication {publication}")
     return 0
+
+
+def validate_delivery_bundle(bundle: dict[str, bytes]) -> None:
+    markdown_names = [name for name in bundle if name.endswith(".md")]
+    typst_names = [name for name in bundle if name.endswith(".typ")]
+    pdf_names = [name for name in bundle if name.endswith(".pdf")]
+    if len(markdown_names) != 1 or len(typst_names) != 1 or len(pdf_names) not in (0, 1):
+        raise DeliveryError("candidate has an invalid tiaokedan managed set")
+    for name in (*markdown_names, *typst_names):
+        payload = bundle[name]
+        if not payload:
+            raise DeliveryError(f"candidate text artifact is empty: {name}")
+        try:
+            payload.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise DeliveryError(f"candidate text artifact is not UTF-8: {name}") from error
+    for name in pdf_names:
+        if not bundle[name].startswith(b"%PDF-"):
+            raise DeliveryError(f"candidate PDF has an invalid header: {name}")
 
 
 def compile_pdf(typ_path: Path, pdf_path: Path) -> None:
     typst = shutil.which("typst")
     if not typst:
-        remove_if_present(pdf_path)
-        fail("typst CLI not found; install typst before requesting --pdf")
+        raise DeliveryError("typst CLI not found; install typst before requesting --pdf")
 
-    pdf_path.parent.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(
         [typst, "compile", str(typ_path), str(pdf_path)],
         stdout=subprocess.PIPE,
@@ -464,22 +493,18 @@ def compile_pdf(typ_path: Path, pdf_path: Path) -> None:
         check=False,
     )
     if result.returncode != 0:
-        remove_if_present(pdf_path)
         stderr = result.stderr.strip().splitlines()
-        detail = f": {stderr[-1]}" if stderr else ""
-        fail(f"typst compile failed with exit code {result.returncode}{detail}")
+        detail = f": {stderr[-1][-512:]}" if stderr else ""
+        raise DeliveryError(f"typst compile failed with exit code {result.returncode}{detail}")
 
-    if not pdf_path.is_file() or pdf_path.stat().st_size <= 0:
-        remove_if_present(pdf_path)
-        fail(f"typst compile produced empty PDF: {pdf_path}")
-
-
-def remove_if_present(path: Path) -> None:
     try:
-        if path.exists():
-            path.unlink()
-    except OSError:
-        pass
+        payload = pdf_path.read_bytes()
+    except OSError as error:
+        raise DeliveryError(f"typst compile did not create a readable PDF: {pdf_path}") from error
+    if not payload:
+        raise DeliveryError(f"typst compile produced empty PDF: {pdf_path}")
+    if not payload.startswith(b"%PDF-"):
+        raise DeliveryError(f"typst compile produced an invalid PDF header: {pdf_path}")
 
 
 def build_parser() -> argparse.ArgumentParser:
