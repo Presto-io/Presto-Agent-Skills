@@ -62,7 +62,33 @@ Combine those answers with score distribution, pass rate, below-60 cases, blank 
 - `end-of-term-package.pdf`: PDF package when `typst compile` succeeds.
 - `score-list.xlsx`: the only public Excel file. It contains exactly `学号`、`姓名`、`平时成绩`、`期末成绩`, sorted by ascending student ID. Values come from the Markdown-derived score-book calculations.
 
-Successful public delivery directories must not contain `manifest.json`, `tables/`, JSON, CSV, `score-list.md`, `scorebook.xlsx`, source-data sidecars, debug output, or verification output.
+These four stable names are one indivisible current bundle. The delivery root may additionally contain only these optional support directories:
+
+- `sources/`: user-requested retained originals; normal `deliver` never moves, rewrites, versions, or deletes them.
+- `assets/`: persistent referenced resources. This skill currently declares no managed assets, so normal `deliver` does not populate or mutate it.
+- `history/<sequence>/`: one complete prior four-file bundle per version; numbering uses the existing numeric maximum plus one and history is never automatically deleted, compressed, or renumbered.
+- `.work/<run-id>/{candidate,rollback,evidence}`: owned transient generation, recovery, and bounded evidence. The current run and owned empty `.work` are removed on success or handled failure; unrelated stale work is preserved and causes fail-closed refusal.
+
+Successful public delivery roots must not contain `manifest.json`, `tables/`, JSON, CSV, `score-list.md`, `scorebook.xlsx`, status/model/log/report sidecars, staging, debug output, failed output, or verification output.
+
+## Candidate, History, and Rollback Contract
+
+`deliver --input <markdown.md> --out-dir <dir>` keeps its published flags and exit semantics. It acquires an exclusive same-root lock, builds all four files inside the run candidate, and runs every content and format gate before current mutation. `validate` remains read-only.
+
+- First publish installs the exact four-file bundle and creates no history.
+- An exact relative-name and byte-identical candidate is a no-op: current inode/mtime and history remain unchanged.
+- A changed candidate snapshots and verifies the complete old bundle, writes that single bundle to the next `history/<sequence>/`, then replaces the four stable current names.
+- Unknown root entries, partial current sets, symlinks, legacy hidden directories, malformed history, concurrent locks, traversal, and stale unrelated `.work` fail before current/history mutation. Normal delivery never migrates or deletes them.
+- A handled exception, standard fault injection, `INT`, or `TERM` restores the prior four files, removes only paths owned by this run and its uncommitted history sequence, and exits non-zero. This is a sequence of single-path replaces, not a claim of cross-file atomicity; SIGKILL, power loss, kernel/filesystem failure, and automatic hard-crash recovery are outside the guarantee.
+
+## Minimal Format Gates
+
+| Candidate | Automated minimum before publication | Human boundary |
+|-----------|--------------------------------------|----------------|
+| `end-of-term-full.md` | regular, non-symlink, non-empty UTF-8; required metadata/sections, score consistency, and `## 复核标记` exactly `无` | Teacher confirms facts, scores, analysis, and submission readiness. |
+| `end-of-term-package.typ` | regular, non-symlink, non-empty UTF-8 generated from the reviewed Markdown and fixed template | Reviewer checks template fidelity when requirements change. |
+| `end-of-term-package.pdf` | successful candidate Typst compile, non-empty readable bytes beginning with `%PDF-` | Reviewer opens the PDF and checks pagination, fonts, grids, and print appearance. |
+| `score-list.xlsx` | readable ZIP with required OOXML members, exactly four ordered columns, every data row four cells, ascending student ID | Reviewer opens the workbook and confirms practical spreadsheet appearance and data. |
 
 PDF rendering uses the fixed Excel-style grid for the score book body, score summary, and analysis sheet: column proportions, row rhythm, thin borders, merged headers, merged statistic cells, and diagonal header cells are encoded in the skill-local renderer.
 
@@ -72,6 +98,7 @@ PDF rendering uses the fixed Excel-style grid for the score book body, score sum
 - `python3 -m py_compile skills/end-of-term-teaching-materials/scripts/render_package.py`
 - `skills/end-of-term-teaching-materials/scripts/end-of-term-teaching-materials.sh deliver --input <finalized-markdown> --out-dir <delivery-dir>`
 - Successful delivery root contains exactly the public delivery outputs listed above.
+- First/changed/identical and every handled fault are exercised through the public CLI; current/history hashes remain unchanged on failure and `.work` is cleaned only when owned.
 - `score-list.xlsx` has exactly four columns in this order: `学号`、`姓名`、`平时成绩`、`期末成绩`.
 - Score-list rows are sorted by ascending student ID.
 - Uncertain Markdown values such as `87?` and non-empty `## 复核标记` block `deliver`.
