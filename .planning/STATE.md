@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.18
 milestone_name: 全技能干净交付目录标准化改造
 status: executing
-stopped_at: Completed 45-02-PLAN.md
-last_updated: "2026-07-16T00:28:39.122Z"
-last_activity: 2026-07-16 — Completed Phase 45 Plan 02 end-of-term fixed bundle transaction
+stopped_at: Completed 45-03-PLAN.md
+last_updated: "2026-07-16T00:51:29.931Z"
+last_activity: 2026-07-16 — Completed Phase 45 Plan 03 tiaokedan optional bundle transaction
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 9
-  completed_plans: 2
-  percent: 22
+  completed_plans: 3
+  percent: 33
 ---
 
 # State: Presto Agent Skills
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-16)
 ## Current Position
 
 Phase: 45 of 45 (全技能干净交付目录标准化改造)
-Plan: 2 of 9
-Status: In progress
-Last activity: 2026-07-16 — Completed 45-02 end-of-term candidate-first delivery adapter
+Plan: 3 of 9
+Status: Ready to execute
+Last activity: 2026-07-16 — Completed 45-03 tiaokedan candidate-first optional bundle adapter
 
 ## Workflow Preferences
 
@@ -108,6 +108,9 @@ Phase order:
 - [Phase 44]: Documentation integrity is part of the public evidence-integrity gate and checks the canonical entry, fixed 8/6/21 contracts, six runtime rows, and repository discovery links.
 - [Phase 44]: OpenClaw and Hermes Agent support remains installation-time verified with explicit script fallback; no untested automatic discovery path is claimed.
 - [Phase 44]: The final human acceptance is bound to canonical PPTX SHA-256 `ed99daa1b7a187a2adb57f9769c1ecf282bc48ad950309cfbef3805a8f9af963` and verification run `76d62c9155092a76`; Mrered passed all 10 checks in WPS Presentation 12.1.26035 on macOS 26.5.2.
+- [Phase 45]: Tiaokedan --typ owns the delivery root and stable stem; optional --pdf must use the same root and stem and changes the exact managed set.
+- [Phase 45]: Tiaokedan expected comparison and PDF compilation consume only owned candidates before current mutation.
+- [Phase 45]: Tiaokedan legacy .tiaokedan, media, unknown, symlink, partial, and stale-work states require audit rather than automatic cleanup.
 
 ### Pending Todos
 
@@ -141,11 +144,12 @@ None. v1.17 is shipped; Phase 45 is promoted and ready for next-milestone initia
 | Phase 44 P04 | human UAT | 10 checks | 4 planning files |
 | Phase 45 P01 | 9 min | 3 tasks | 4 files |
 | Phase 45 P02 | 21 min | 3 tasks | 5 files |
+| Phase 45 P03 | 12 min | 3 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-07-16T00:28:39.116Z
-Stopped at: Completed 45-02-PLAN.md
+Last session: 2026-07-16T00:51:29.925Z
+Stopped at: Completed 45-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
