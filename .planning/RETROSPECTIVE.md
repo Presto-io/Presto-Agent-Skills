@@ -472,6 +472,94 @@
 
 ---
 
+## Milestone: v1.18 - 全技能干净交付目录标准化改造
+
+**Shipped:** 2026-07-17
+**Phases:** 1 | **Plans:** 9 | **Tasks:** 24
+
+### What Was Built
+
+- Candidate-first clean delivery for six file-writing skills with exact managed sets and minimal validation.
+- Byte-identical no-op behavior, whole-bundle `history/<sequence>/`, and handled failure/INT/TERM rollback.
+- Snapshot-bound audit-confirm cleanup evidence and synchronized six-runtime documentation.
+- A fixed six-skill 14-gate/7-fault aggregate, independent review closure, and 12/12 milestone verification.
+
+### What Worked
+
+- Fixed registries and real public CLI output made cross-skill evidence independently auditable.
+- Skill-local publishers preserved whole-folder installation and avoided central runtime dependencies.
+- Negative mutation tests closed the initial false-green audit gaps before milestone completion.
+
+### What Was Inefficient
+
+- Three review/fix rounds and a later audit-gap pass extended closeout after the first aggregate appeared green.
+- UTC-derived SDK closeout dates and generated counters required manual local-date and plan-count review.
+- The cleanup runner proves the protocol but remains test-only rather than a production cleanup CLI.
+
+### Patterns Established
+
+- Delivery identity is the exact managed relative path set plus bytes, including managed assets.
+- Candidate validation precedes current mutation; changed history is whole-bundle and no-op preserves current metadata.
+- Unknown-file cleanup requires exact approved operations bound to an unchanged no-follow snapshot.
+
+### Key Lessons
+
+1. Bind aggregate claims to parsed real command evidence, not successful process exit alone.
+2. Make documentation gates verify every required authority and runtime row independently.
+3. Add executable negative evidence for safety protocols before milestone audit.
+
+### Cost Observations
+
+- Model mix: balanced profile with parallel specialist review.
+- Notable: Most cost came from false-green prevention, descriptor/path safety, and cross-skill evidence convergence.
+
+---
+
+## Milestone: v1.18 - 全技能干净交付目录标准化改造
+
+**Shipped:** 2026-07-17
+**Phases:** 1 | **Plans:** 9 | **Tasks:** 24
+
+### What Was Built
+
+- Candidate-first, exact managed-bundle publication for all six current file-writing skills.
+- Byte-exact no-op detection, max+1 whole-bundle history, managed assets, and handled rollback without overstating hard atomicity.
+- Confirmation-gated historical cleanup semantics with an executable test-only audit/approval fixture.
+- A six-skill 14-gate/7-fault strict aggregate, three-round code-review repair loop, and 12/12 goal-backward verification.
+
+### What Worked
+
+- Separating the shared semantic protocol from skill-local implementations preserved whole-folder portability and existing command surfaces.
+- Real signal, symlink-parent, directory-swap, unknown-file, and candidate-exchange tests found issues that ordinary fault hooks missed.
+- The milestone audit caught evidence-quality gaps after production behavior was already correct, preventing a false-green close.
+
+### What Was Inefficient
+
+- Phase 45 was planned as one coarse phase, so nine plans and a three-round review loop made orchestration and closeout unusually long.
+- The first central aggregate assigned gate/fault counts after command success; integration audit required a second evidence-binding pass.
+- Several executors referenced central CLI flags before Plan 45-09 owned them, forcing equivalent local evidence notes in intermediate summaries.
+
+### Patterns Established
+
+- A delivery transaction owns an explicit relative path set, not a guessed filename prefix or broad root cleanup rule.
+- Rollback and cleanup must remain bound to held directory identity through every mutation and recovery path.
+- Central aggregates must parse stable evidence from real public regressions and include mutation tests that remove or replace that evidence.
+- Documentation and runtime gates should validate each authority independently; merged keyword scans are not sufficient evidence.
+
+### Key Lessons
+
+1. Treat filesystem identity changes and real asynchronous signals as first-class verification cases, not as theoretical edge cases.
+2. Keep production behavior and verification-evidence trust as separate audit dimensions; both must pass before milestone close.
+3. Use smaller follow-up phases when one cross-cutting change spans multiple languages and six independent public workflows.
+
+### Cost Observations
+
+- Model mix: balanced profile with specialized planner, executor, reviewer, fixer, and integration-checker agents.
+- Sessions: one autonomous milestone run with 9 plan executions, 3 review/fix iterations, and 1 audit-gap closure.
+- Notable: Most rework came from TOCTOU/signal correctness and evidence provenance rather than candidate/history happy paths.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -489,6 +577,8 @@
 | v1.15 | 4+ | 4 | Converted `teaching-design-package` into a modular all-in-one renderer with migrated formal outputs and strict PDF merge semantics. |
 | v1.16 | 4+ | 4 | Added a standalone `tiaokedan` document workflow from hand-authored baselines through skill-local Typst/PDF rendering and clarification guidance. |
 | v1.17 | 8+ | 4 | Added controlled-template editable PPTX rendering with deterministic pagination, fixed verification registries, and hash-bound viewer UAT. |
+| v1.18 | 1 autonomous run | 1 | Standardized six-skill clean delivery and added evidence-bound central verification with executable cleanup approval tests. |
+| v1.18 | 9+ | 1 | Standardized candidate-first clean delivery and evidence-bound rollback/history contracts across six writing skills. |
 
 ### Cumulative Quality
 
@@ -505,6 +595,8 @@
 | v1.15 | Fresh package render, module PDF/status checks, forced failure semantics, public leakage scan, standalone-copy regression, milestone audit | 31/31 TDPKG requirements shipped | No new runtime dependencies added |
 | v1.16 | Typst/PDF compile, invalid input failure, clean output scan, standalone-copy regression, milestone audit | 15/15 TKD requirements shipped | No new runtime dependencies added |
 | v1.17 | Public 8-gate verification, 6 negative cases, Phase 43 21-gate regression, structural PPTX inspection, milestone audit, WPS UAT | 44/44 requirements shipped | Added documented Python PPTX dependencies |
+| v1.18 | Six public adapters, 14 gates, 7 faults, three-round review/fix, audit-gap mutation tests, milestone audit | 12/12 requirements shipped | Added skill-local safe filesystem helpers; no cross-skill runtime dependency |
+| v1.18 | Six public CLI adapters, fixed 14-gate/7-fault aggregate, cleanup self-test, code review, milestone audit | 12/12 requirements shipped | No new runtime dependencies added |
 
 ### Top Lessons (Verified Across Milestones)
 
