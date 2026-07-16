@@ -357,6 +357,8 @@ class DeliverySession:
                 self._fault("after_archive_snapshot")
             for index, name in enumerate(CURRENT_NAMES, start=1):
                 os.replace(name, name, src_dir_fd=self.candidate_fd, dst_dir_fd=self.root_fd)
+                if index == 1 and os.environ.get("PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD"):
+                    os.kill(os.getpid(), getattr(signal, os.environ["PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD"]))
                 self._published.append(name)
                 if index == 1:
                     self._fault("after_publish_file_1")

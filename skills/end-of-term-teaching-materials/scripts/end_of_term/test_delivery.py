@@ -43,6 +43,7 @@ class DeliverySessionTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         os.environ.pop(FAULT_ENV, None)
+        os.environ.pop("PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD", None)
         self.temporary.cleanup()
 
     def candidate(self, marker: str, *, session: DeliverySession) -> None:
@@ -127,6 +128,17 @@ class DeliverySessionTests(unittest.TestCase):
                     with self.assertRaises(DeliveryError):
                         session.publish()
                 self.assertEqual(snapshot(self.root), before)
+
+    def test_first_publish_signal_between_replace_and_record_leaves_no_current(self) -> None:
+        for signal_name in ("SIGINT", "SIGTERM"):
+            with self.subTest(signal_name=signal_name):
+                os.environ["PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD"] = signal_name
+                with DeliverySession(self.spec) as session:
+                    self.candidate(signal_name, session=session)
+                    with self.assertRaises(DeliveryError):
+                        session.publish()
+                os.environ.pop("PRESTO_CLEAN_DELIVERY_SIGNAL_BEFORE_RECORD", None)
+                self.assertFalse(any((self.root / name).exists() for name in CURRENT_NAMES))
 
     def test_unknown_symlink_partial_and_lock_fail_before_mutation(self) -> None:
         self.assertEqual(self.publish("v1"), "first")
