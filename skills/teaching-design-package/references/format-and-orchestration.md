@@ -18,7 +18,7 @@ The skill folder must remain usable when installed by itself. Script commands va
 - `TDPKG-06`: Scripts are finalized-Markdown validation and delivery tools, not the teacher's interactive organizing entry.
 - `TDPKG-07`: A successful public delivery directory contains only course-name-prefixed `1 + 1 + N` files: one unified Markdown, one merged package PDF, and one PDF per registered module.
 - `TDPKG-08`: Successful public delivery directories do not contain `.typ`, status, manifest, stderr log, model JSON, diagnostics JSON, calendar JSON, module Markdown/Typst, staging files, old English success filenames, or temporary state files.
-- `TDPKG-09`: Package-owned diagnostics stay in hidden work/debug/failure paths.
+- `TDPKG-09`: Package-owned diagnostics stay in an explicit diagnostic workdir or the owned `.work/<run-id>/evidence/` lifecycle and never become current.
 - `TDPKG-10`: Total hours are derived from body schedule/activity evidence, not YAML.
 - `TDPKG-11`: Teaching-plan hours and teaching-design activity hours are cross-checked when activity-hour evidence is declared.
 - `TDPKG-12`: `first_teaching_day` derives school year and semester.
@@ -117,7 +117,7 @@ After Markdown finalization, `scripts/teaching-design-package.sh model` parses t
 
 - `metadata`: course, major, attribute, textbook, class, teachers, teacher display name, first teaching day.
 - `schedule.tasks[]`: learning task title, stages, rows, row hours, row date-consumption evidence, task total hours, task date range.
-- `modules.registry[]`: package-owned module metadata for `teaching-plan` and `teaching-design`, including display name, order, hidden Markdown path, hidden Typst path, and future PDF metadata.
+- `modules.registry[]`: package-owned module metadata for `teaching-plan` and `teaching-design`, including display name, order, run-relative evidence Markdown/Typst paths, and PDF metadata.
 - `modules.items[]`: module frontmatter generated from unified YAML and the shared scheduling model.
 - `scheduling`: the single calendar-backed scheduling model consumed by all modules.
 - `teaching_design`: original teaching-design Markdown content plus structured
@@ -137,16 +137,16 @@ Phase 33 introduces a package-owned module registry. Phase 34 migrates the
 `teaching-design` formal renderer into package internals. The current registered
 modules are:
 
-| id | Display name | Order | Hidden Markdown | Hidden Typst |
+| id | Display name | Order | Run-relative Markdown | Run-relative Typst |
 |----|--------------|-------|-----------------|--------------|
-| `teaching-plan` | `授课进度计划表` | 1 | `.teaching-design-package/work/teaching-plan.md` | `.teaching-design-package/work/teaching-plan.typ` |
-| `teaching-design` | `教学设计方案` | 2 | `.teaching-design-package/work/teaching-design.md` | `.teaching-design-package/work/teaching-design.typ` |
+| `teaching-plan` | `授课进度计划表` | 1 | `evidence/modules/teaching-plan.md` | `evidence/modules/teaching-plan.typ` |
+| `teaching-design` | `教学设计方案` | 2 | `evidence/modules/teaching-design.md` | `evidence/modules/teaching-design.typ` |
 
 Registry order is the orchestration order and the future PDF merge order. New modules should be added by extending registry metadata and module generation code rather than by creating a second source-of-truth Markdown workflow.
 
-The hidden module Markdown files are package internals. They are generated from the finalized unified Markdown and shared scheduling model, then stored under `.teaching-design-package/work/`. They are not teacher-maintained source files and must not appear in the successful public output root.
+The module Markdown files are package internals. They are generated from the finalized unified Markdown and shared scheduling model under the current run evidence directory. They are not teacher-maintained source files and must not appear in the successful public output root.
 
-The hidden `teaching-plan.typ` is now a package-owned formal `授课进度计划表`
+The evidence-only `teaching-plan.typ` is a package-owned formal `授课进度计划表`
 renderer output. It uses the migrated official `jiaoan-jihua` five-column table
 surface, including the title block, course information grid, fixed columns
 `(3.15cm, 8.51cm, 1.12cm, 1.29cm, 1.27cm)`, learning-task total rows, stage
@@ -154,7 +154,7 @@ rowspans, row week/weekday/hour cells, and signature grid. The renderer reads th
 shared package model and scheduling evidence; it does not invoke the historical
 standalone `jiaoan-jihua` skill or read sibling skill calendars at runtime.
 
-The hidden `teaching-design.typ` is now a package-owned formal `教学设计方案`
+The evidence-only `teaching-design.typ` is a package-owned formal `教学设计方案`
 renderer output. It uses the migrated `jiaoan-shicao` formal surface, including
 cover metadata, `学习任务分析`, landscape `教学活动设计` tables, `学业评价`, task
 hours, task date ranges, course `use_time`, total hours, teacher, class, and
@@ -168,7 +168,7 @@ Phase 33 and later use a real package-owned teaching calendar:
 
 - The active calendar resource is `skills/teaching-design-package/references/calendar.json`.
 - `calendar.json` must be inside the `teaching-design-package` skill folder so a standalone copy of that folder can still derive schedule facts.
-- The hidden model records `calendar.policy: "skill_local_calendar"` and the SHA-256 hash of the calendar file.
+- The run-relative model records `calendar.policy: "skill_local_calendar"` and the SHA-256 hash of the calendar file.
 - `first_teaching_day` is required and must exist in `calendar.json`.
 - `DEFAULT_DAILY_HOURS=8` unless a later package-owned configuration surface changes it.
 - Each `授课进度计划` row ending in `-N` contributes `N` hours.
@@ -190,7 +190,7 @@ shared scheduling model. It must not recalculate calendar consumption inside the
 renderer.
 
 For `TDPKG-VAL-01`, `# 授课进度计划` row suffixes are the only raw hour source.
-The hidden model records `validation.total_hours_source:
+The package model records `validation.total_hours_source:
 "teaching_plan_rows"` and strict sum evidence for rows, stages, tasks, and the
 course total.
 
@@ -198,7 +198,7 @@ For `TDPKG-VAL-02` through `TDPKG-VAL-04`, `# 授课进度计划` is also the
 authority for the teaching-design module. The mapping key is structural:
 `learning_task + learning_stage + activity_order`. Normalized titles are used
 only to diagnose whether the same structural position drifted; the renderer must
-not reorder or fuzzy-match activities. The hidden model records
+not reorder or fuzzy-match activities. The package model records
 `validation.cross_module_evidence` with per-task, per-stage, and per-activity
 source pointers, expected/actual titles, hours, date ranges, and validation
 status.
@@ -207,11 +207,11 @@ Any mismatch is a hard failure. Covered mismatch classes include task count,
 stage count, activity count, task title, stage title, activity title, task
 `课时：xH`, activity `##### xH`, task date range, missing analysis block, missing
 activity block, missing evaluation block, formal render failure, PDF compile
-failure, and public-root leakage. Failure diagnostics stay hidden under
-`.teaching-design-package/diagnostics.json`, `.teaching-design-package/status.json`,
-and `.teaching-design-package/failure-diagnostics/`, with calendar path/hash,
-model version, source Markdown, plan/design pointers, expected values, actual
-values, and concise messages.
+failure, and final candidate validation failure. Final delivery diagnostics stay
+under the owned `.work/<run-id>/evidence/` lifecycle and are removed after
+handled failure; diagnostic commands write the same bounded evidence only to
+their explicit `--out-dir`, with calendar path/hash, model version, source
+Markdown, plan/design pointers, expected values, actual values, and concise messages.
 
 ## Script Boundary
 
@@ -227,12 +227,11 @@ Scripts do not:
 
 Script validation may reject Markdown or mark it non-final when body evidence is inconsistent, review markers remain blocking, or derived schedule facts cannot be computed safely.
 
-## Public Delivery Directory And Hidden Diagnostics
+## Public Delivery Directory And Owned Work
 
-The output root has two surfaces:
-
-1. **Public delivery directory**: only final teacher-facing files.
-2. **Hidden internal directory**: `.teaching-design-package/`, with stable subdirectories for `work`, `debug`, and `failure-diagnostics`.
+The public delivery root contains only the exact model-derived current group and
+the optional support directories `sources/`, `assets/`, `history/`, and `.work/`.
+There is no persistent hidden diagnostic exception.
 
 Default successful `render-package --pdf` uses course-name-prefixed public filenames. The current public contract is `1 + 1 + N`; N is the number of registered modules. Current N=2:
 
@@ -250,33 +249,32 @@ For the default template, the public root contains exactly:
 
 The old English filenames `teaching-design-package-full.md`, `teaching-design-package.typ`, `teaching-design-package.pdf`, `teaching-plan.pdf`, and `teaching-design.pdf` are no longer successful public output names. English names may remain internal helper names, staging names, or compatibility command names, but they must not appear at the successful public root.
 
-Internal evidence is never a successful public-root file:
-
-- `.teaching-design-package/model.json`
-- `.teaching-design-package/status.json`
-- `.teaching-design-package/work/` for module Markdown, module Typst, debug-only unified Typst, and temporary render files
-- `.teaching-design-package/staging/` for module PDFs and merged package PDF before public publication
-- `.teaching-design-package/debug/` for stderr logs, merge status, merge stderr, and tool evidence
-- `.teaching-design-package/failure-diagnostics/` for non-final status snapshots and failure evidence
+`public_delivery.expected_public_filenames` is the sole dynamic mutation
+authority. The current value is one unified Markdown, one merged PDF, and one
+PDF for each registry item. Model, status, diagnostics, module Markdown/Typst,
+module PDFs before publication, merge plan/status/logs, and failure evidence live
+under `.work/<run-id>/evidence/`; only the complete final set enters
+`.work/<run-id>/candidate/`. The publisher creates `rollback/` only when needed.
 
 Root-level `.typ`, status files, manifests, stderr logs, model JSON, diagnostics JSON, calendar JSON, module intermediates, staging files, old English success filenames, temporary state, and failure diagnostics indicate a bug in the delivery boundary.
 
 ## Rendering Rules
 
-`render-package` performs these steps:
+`render-package --pdf` performs these steps:
 
-1. Clean expected public outputs and obsolete English success filenames so stale files cannot make a failed run look successful.
-2. Write hidden diagnostics under `.teaching-design-package/`.
-3. Generate hidden module Markdown under `.teaching-design-package/work/`.
-4. Generate formal hidden `teaching-plan.typ` from the package model and shared scheduling model.
-5. Generate formal hidden `teaching-design.typ` from the package model and shared scheduling model.
-6. Generate debug-only unified Typst under `.teaching-design-package/work/`.
-7. If `--pdf` is present, compile every registered module Typst into a staging PDF under `.teaching-design-package/staging/`.
-8. Verify every registered module PDF exists, is non-empty, and has passed module status.
-9. Merge the staging module PDFs in module registry order into a staging `课程名教学资料.pdf`.
-10. Verify the merged package PDF exists and is non-empty.
-11. Publish the course-name-prefixed Markdown, merged package PDF, and module PDFs to the public root.
-12. Run public-root leakage checks and write `.teaching-design-package/status.json`.
+1. Create one owned `.work/<run-id>/{candidate,evidence}` without mutating current.
+2. Write model, diagnostics, module Markdown/Typst and debug-only unified Typst to evidence.
+3. Compile each registered module Typst to evidence and verify registry membership, order, regular/non-symlink type, non-empty bytes, and PDF header.
+4. Merge module PDFs in registry order, record merge plan/status/log, and verify the merged PDF.
+5. Copy only the model-derived exact `1 + 1 + N` set into candidate and pass final-ready validation.
+6. Invoke the Node publisher once with `expected_public_filenames`; it holds root identity, acquires a same-root lock, rejects unknown/legacy/symlink/partial/ambiguous states, and compares exact path-set+bytes.
+7. For identical bytes, preserve current inode/mtime and create no history. For changed bytes or course prefix, archive the one complete old group under `history/<max+1>/`, then replace the complete candidate.
+8. Post-verify exact names and bytes, then remove this run, evidence, rollback, lock, and empty `.work`.
+
+If more than one old course-prefix group exists, or a group is partial, the
+publisher fails closed rather than choosing by mtime. Existing `001/003` yields
+`004`; gaps are never reused. `sources/` and unrelated user entries are never
+cleaned, moved, or inferred as current.
 
 Typst-only rendering is the default. PDF status values are honest:
 
@@ -288,7 +286,13 @@ Typst-only rendering is the default. PDF status values are honest:
 - `merged_pdf_empty`: the merge command returned but produced no non-empty output.
 - `passed`: an explicit compile ran and the expected file exists.
 
-`render-package --pdf` cannot report final success or exit 0 as a final delivery unless all registered module PDFs exist and are non-empty, `课程名教学资料.pdf` is created by merging those module PDFs in registry order, the merged output is non-empty, public leakage checks pass, review markers are empty, and model validation has no errors. If any module PDF or merge step fails, the command exits non-zero, writes hidden status/failure diagnostics, and removes expected public outputs so the public root cannot look complete.
+`render-package --pdf` cannot report final success unless all registered module
+PDFs and the merged PDF pass, review markers are empty, model validation has no
+errors, the complete candidate matches `expected_public_filenames`, and the
+publisher post-check passes. Generation, module, merge, final validation,
+publication, handled `INT`, or handled `TERM` failure restores the prior current
+and removes only this run/history reservation. The contract does not claim
+SIGKILL, power-loss, or multi-path hard atomicity.
 
 Allowed merge tools are selected by availability in this order:
 
@@ -326,7 +330,7 @@ scripts/teaching-design-package.sh example --output <tmp>/package.md
 scripts/teaching-design-package.sh render-package --pdf --input <tmp>/package.md --out-dir <tmp>/out
 ```
 
-This verification must succeed without repo sibling paths and without hidden external skill installation. The copied package must use its own `references/calendar.json`, produce exactly the course-name-prefixed public files, keep hidden evidence under `.teaching-design-package/`, and avoid runtime references to sibling `jiaoan-jihua` or `jiaoan-shicao` skills.
+This verification must succeed without repo sibling paths or external skill installation. The copied package must use its own `references/calendar.json`, produce exactly the course-name-prefixed public files, clean its owned `.work/<run-id>`, and avoid runtime references to sibling `jiaoan-jihua` or `jiaoan-shicao` skills.
 
 ## External Compatibility Boundary
 
@@ -343,6 +347,13 @@ Do not add package docs or scripts that instruct users to install, invoke, wrap,
 ## Runtime Portability
 
 Canonical instructions describe files, contracts, command behavior, and verification. Runtime-private details belong in `SKILL.md` adapter notes. OpenClaw and Hermes Agent coverage must explicitly mention skill-folder discovery, support-file availability, script execution permissions, sandbox/allowlist checks, and fallback behavior.
+
+All six runtimes install the whole skill folder and retain an explicit
+`scripts/teaching-design-package.sh` fallback. Final delivery requires Bash,
+Node.js, Typst, and one PDF merge path (`pdfunite`, `qpdf`, or Python PyMuPDF),
+plus read access to finalized Markdown/template/reference files and execute/write
+permission for the authorized delivery root and `.work`. OpenClaw and Hermes
+Agent claims remain installation-time verified rather than assumed automatic discovery.
 
 ## Verification Detail
 
@@ -361,5 +372,6 @@ Expected results:
 
 - the model command emits JSON with package-owned module and strict sum evidence
 - the render command writes the public course-name-prefixed `1 + 1 + N` files when `--pdf` succeeds
-- diagnostics, status, module Markdown/Typst, staging files, merge evidence, and stderr logs stay under `.teaching-design-package/`
+- diagnostics, status, module Markdown/Typst, staging files, merge evidence, and stderr logs stay in the explicit diagnostic workdir or owned run evidence, never current
+- successful, identical, and handled-failure final delivery leaves no legacy `.teaching-design-package/` and no current run under `.work/`
 - no normal-path output contains repo sibling paths
