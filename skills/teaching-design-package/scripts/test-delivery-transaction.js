@@ -275,19 +275,37 @@ function testHandledSignalsRestoreCurrent() {
       const candidateRoot = makeCandidate(root, runId, nextModel, 'new');
       const modelPath = path.join(root, '.work', runId, 'evidence-model.json');
       fs.writeFileSync(modelPath, JSON.stringify(nextModel));
-      const result = childProcess.spawnSync(
-        process.execPath,
-        [require.resolve('./delivery-transaction.js'), 'publish', root, runId, candidateRoot, modelPath],
-        {
-          encoding: 'utf8',
-          env: {
-            ...process.env,
-            TDPKG_DELIVERY_SELF_SIGNAL_AT: 'after_publish_file_1',
-            TDPKG_DELIVERY_SELF_SIGNAL: signal,
-          },
+      const readyFile = path.join(root, `${runId}.ready`);
+      const result = childProcess.spawnSync('bash', ['-c', `
+        set +e
+        "$NODE" "$SCRIPT" publish "$ROOT" "$RUN_ID" "$CANDIDATE" "$MODEL" &
+        pid=$!
+        i=0
+        while [[ ! -f "$READY" && $i -lt 200 ]]; do sleep 0.01; i=$((i + 1)); done
+        [[ -f "$READY" ]] || { kill "$pid" 2>/dev/null; wait "$pid"; exit 99; }
+        kill -s "$SIGNAL" "$pid"
+        wait "$pid"
+        exit $?
+      `], {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          NODE: process.execPath,
+          SCRIPT: require.resolve('./delivery-transaction.js'),
+          ROOT: root,
+          RUN_ID: runId,
+          CANDIDATE: candidateRoot,
+          MODEL: modelPath,
+          READY: readyFile,
+          SIGNAL: signal,
+          TDPKG_DELIVERY_PAUSE_AT: 'after_publish_file_1',
+          TDPKG_DELIVERY_READY_FILE: readyFile,
+          TDPKG_DELIVERY_PAUSE_MS: '1000',
         },
-      );
+      });
       assert.notStrictEqual(result.status, 0, signal);
+      assert.strictEqual(result.status, signal === 'SIGINT' ? 130 : 143, `${signal}: ${result.stderr}`);
+      fs.unlinkSync(readyFile);
       assert.deepStrictEqual(snapshot(root), before, signal);
       assert.strictEqual(fs.existsSync(path.join(root, '.work', runId)), false);
     });
