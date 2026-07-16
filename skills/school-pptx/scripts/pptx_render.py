@@ -166,6 +166,35 @@ class DeliverySession:
             os.close(descriptor)
 
     @staticmethod
+    def _read_relative_regular(root: Path, relative: str) -> bytes:
+        parts = Path(relative).parts
+        descriptors: list[int] = []
+        try:
+            descriptors.append(os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW))
+            for component in parts[:-1]:
+                descriptors.append(os.open(
+                    component,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=descriptors[-1],
+                ))
+            descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=descriptors[-1])
+            descriptors.append(descriptor)
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_size <= 0:
+                raise OSError("asset is not a non-empty regular file")
+            chunks: list[bytes] = []
+            while True:
+                chunk = os.read(descriptor, 1024 * 1024)
+                if not chunk:
+                    return b"".join(chunks)
+                chunks.append(chunk)
+        except OSError as exc:
+            raise RenderError("ASSET_PATH_INVALID", f"无法安全读取资源：{relative}", "移除资源路径中的符号链接后重试。") from exc
+        finally:
+            for descriptor in reversed(descriptors):
+                os.close(descriptor)
+
+    @staticmethod
     def _write_exclusive(path: Path, payload: bytes) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
@@ -265,8 +294,7 @@ class DeliverySession:
 
     def stage_assets(self, input_root: Path) -> None:
         for relative in self.spec.managed_assets:
-            source = input_root / relative
-            payload = self._read_regular(source)
+            payload = self._read_relative_regular(input_root, relative)
             self._write_exclusive(self.candidate_root / relative, payload)
 
     def _bundle_bytes(self, root: Path, names: tuple[str, ...]) -> dict[str, bytes]:
