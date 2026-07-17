@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.19
 milestone_name: 毕业生高级简历生成器
-status: completed
+status: in_progress
 stopped_at: Phase 47 context gathered
-last_updated: "2026-07-17T22:31:57.867Z"
-last_activity: 2026-07-18 — completed Phase 46 schema/CLI/fixture baseline for graduate-resume
+last_updated: "2026-07-18T00:00:00+08:00"
+last_activity: 2026-07-18 — migrated graduate-resume source contract to v2 mixed Markdown/YAML and synchronized Phase 46/47 planning context
 progress:
   total_phases: 4
   completed_phases: 1
@@ -52,6 +52,7 @@ Phase order:
 
 ### Decisions
 
+- [Phase 46]: `graduate-resume/v2` 的唯一事实源使用混合 Markdown/YAML：首页信息栏 `profile`、可选本地 `photo` 路径与派生 `preferences` 在 YAML，教育、技能、证书、项目、实训、经历和目标在 Markdown 正文；缺少 `photo` 即无照片，正文顺序不构成事实语义，布局容器由渲染器派生。
 - [Phase 45]: Teaching Design Package expected_public_filenames is the sole dynamic mutation authority; current discovery accepts zero or one complete old prefix group and fails closed on ambiguity.
 - [Phase 45]: Teaching Design Package model, status, module, merge, and debug outputs are evidence in an owned .work run or explicit diagnostic workdir, never current.
 - [Phase 45]: Teaching Design Package portable guarantees cover exact candidate isolation and handled error/INT/TERM rollback, not SIGKILL, power loss, or multi-path hard atomicity.

@@ -1,7 +1,7 @@
 # Roadmap: Presto Agent Skills
 
 **Created:** 2026-05-30
-**Last updated:** 2026-07-17 for v1.19 毕业生高级简历生成器 roadmap
+**Last updated:** 2026-07-18 for `graduate-resume/v2` source contract
 **Granularity:** Coarse
 **Project Mode:** MVP
 
@@ -46,7 +46,7 @@ v1.19 为电气相关工科大专毕业生交付离线、Markdown-first 的 `gra
 **Depends on**: Phase 45
 **Requirements**: SCHEMA-01, SCHEMA-02, SCHEMA-03, SCHEMA-04
 **Success Criteria** (what must be TRUE):
-  1. 用户可用一份 Markdown/YAML 表达电气、机电、智能制造、发电厂和新能源方向毕业生的已核实资料，并为事实保留稳定 ID。
+  1. 用户可用一份主题无关的混合 Markdown/YAML 资料表达电气、机电、智能制造、发电厂和新能源方向毕业生的已核实资料：信息栏 `profile` 与可选本地 `photo` 路径位于 YAML，其余事实位于 Markdown 正文，并为可复用事实保留稳定 ID。
   2. `validate` 会拒绝未知字段、重复事实、缺失必填资料或待确认事实，并说明为何不能生成最终投递件。
   3. 可选 AI 整理只产生待审阅草稿；`validate`、`target`、`plan`、`render`、`batch`、`verify` 均离线、零 token。
   4. 用户可提供多个单位、岗位及招聘信息；明确不提供后，技能仅询问一次并继续生成通用版。
@@ -62,7 +62,7 @@ Plans:
 **Depends on**: Phase 46
 **Requirements**: THEME-01, THEME-02, THEME-03, THEME-04, THEME-05
 **Success Criteria** (what must be TRUE):
-  1. 用户可用 YAML 主题参数切换技术技能型、项目实践型和稳健通用型，且无需改写资料 schema。
+  1. 用户可用 YAML 主题参数切换保守稳妥、现代简洁和个性设计，且无需改写资料 schema。
   2. 照片版只使用用户明确提供的本地照片；无照片版移除照片区域而不保留空位。
   3. CLI 可自动或按用户强制选择 1 页或 2 页 A4，结果不低于可读性阈值、不截断且不产生第三页。
   4. 两页输出没有孤立标题、无标题续接或拆开的项目、实训、经历、职责及成果；不能满足时失败关闭并说明原因。
@@ -145,4 +145,4 @@ Plans:
 **Coverage:** 19/19 v1.19 requirements mapped exactly once; unmapped 0; duplicate mappings 0.
 
 ---
-*Roadmap updated: 2026-07-17 for v1.19 planning*
+*Roadmap updated: 2026-07-18 for `graduate-resume/v2` source contract*

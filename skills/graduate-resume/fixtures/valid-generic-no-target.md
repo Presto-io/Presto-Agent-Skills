@@ -1,24 +1,21 @@
 ---
-candidate:
-  name: "赵晨"
+schema: graduate-resume/v2
+profile:
+  name: 陈晨
   status: verified
-education:
-  - id: edu-001
-    status: verified
-    school: "某职业学院"
-    major: "电气自动化技术"
-skills:
-  - id: skill-plc
-    status: verified
-    group: "控制"
-    items: ["PLC", "EPLAN", "电气识图"]
-targets: []
-photo:
-  status: provided
-  path: "fixtures/media/student-photo.jpg"
-  confirmed_by_user: true
+photo: fixtures/media/student-photo.jpg
 preferences:
   photo_mode: auto
 ---
 
-正常样例：未提供 target，经一次确认后继续通用版。
+# 经历与资格
+
+## 教育经历
+### 某职业学院
+<!-- resume: id=edu-001 status=verified -->
+- 专业：新能源装备技术
+
+## 专业技能
+### 新能源运维
+<!-- resume: id=skill-energy-001 status=verified -->
+- 技能：光伏系统基础；设备巡检

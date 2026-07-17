@@ -1,35 +1,35 @@
 ---
-candidate:
-  name: "周凯"
+schema: graduate-resume/v2
+profile:
+  name: 周凯
   status: verified
-education:
-  - id: edu-001
-    status: verified
-    school: "某职业学院"
-    major: "智能制造装备技术"
-projects:
-  - id: project-robot-001
-    status: verified
-    title: "机器人工作站联调"
-targets:
-  - id: target-robot-001
-    company: "某机器人公司"
-    role: "调试技术员"
-    source: "校招海报"
-    as_of: "2026-07-17"
-    confirmed: true
-  - id: target-energy-002
-    company: "某储能公司"
-    role: "设备运维"
-    source: "企业招聘页摘录"
-    as_of: "2026-07-17"
-    confirmed: true
-photo:
-  status: provided
-  path: "fixtures/media/student-photo.jpg"
-  confirmed_by_user: true
+photo: fixtures/media/student-photo.jpg
 preferences:
   photo_mode: auto
 ---
 
-正常样例：多目标。
+# 经历与资格
+
+## 教育经历
+### 某职业学院
+<!-- resume: id=edu-001 status=verified -->
+- 专业：智能制造装备技术
+
+## 项目经历
+### 机器人工作站联调
+<!-- resume: id=project-robot-001 status=verified -->
+
+## 求职目标
+### 某机器人公司
+<!-- resume: id=target-robot-001 -->
+- 岗位：调试技术员
+- 来源：校招海报
+- 截至日期：2026-07-17
+- 已确认：是
+
+### 某储能公司
+<!-- resume: id=target-energy-002 -->
+- 岗位：设备运维
+- 来源：企业招聘页摘录
+- 截至日期：2026-07-17
+- 已确认：是

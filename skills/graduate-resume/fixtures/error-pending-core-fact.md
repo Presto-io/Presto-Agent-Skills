@@ -1,17 +1,14 @@
 ---
-candidate:
-  name: "待确认事实样例"
+schema: graduate-resume/v2
+profile:
+  name: 待确认样例
   status: pending
-education:
-  - id: edu-001
-    status: verified
-    school: "某职业学院"
-    major: "机电一体化技术"
-targets: []
-photo:
-  status: declined
-  path: ""
-  confirmed_by_user: true
+preferences: {}
 ---
 
-错误样例：核心事实仍为 pending。
+# 经历与资格
+
+## 教育经历
+### 某职业学院
+<!-- resume: id=edu-001 status=verified -->
+- 专业：电气自动化技术

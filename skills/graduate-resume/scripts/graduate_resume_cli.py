@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import sys
 from dataclasses import dataclass
@@ -27,6 +28,37 @@ TOP_LEVEL_FIELDS = {
     "photo",
     "preferences",
 }
+FRONTMATTER_FIELDS = {"schema", "profile", "photo", "preferences"}
+MARKDOWN_SECTIONS = {
+    "个人信息": "candidate",
+    "教育经历": "education",
+    "专业技能": "skills",
+    "证书与资格": "certificates",
+    "项目经历": "projects",
+    "实训经历": "training",
+    "相关经历": "experience",
+    "求职目标": "targets",
+}
+SECTION_TITLES = {
+    "education": "school",
+    "skills": "group",
+    "certificates": "name",
+    "projects": "title",
+    "training": "title",
+    "experience": "title",
+    "targets": "company",
+}
+FIELD_NAMES = {
+    "求职方向": "directions", "个人概述": "summary", "求职标题": "headline",
+    "电话": "phone", "邮箱": "email", "城市": "city", "地址": "address",
+    "网站": "website", "GitHub": "github", "微信": "wechat",
+    "学校": "school", "专业": "major", "学历": "degree", "开始时间": "start", "结束时间": "end",
+    "核心课程": "courses", "荣誉": "honors", "技能": "items", "说明": "note",
+    "发证机构": "issuer", "取得日期": "issued_on", "有效期至": "expires_on",
+    "角色": "role", "项目概述": "summary", "成果": "outcomes", "工具": "tools",
+    "单位": "organization", "岗位": "role", "来源": "source", "截至日期": "as_of",
+    "招聘要求": "requirements", "已确认": "confirmed",
+}
 SECTION_SCHEMAS: dict[str, set[str]] = {
     "candidate": {"name", "status", "headline", "summary", "contact", "directions"},
     "contact": {"phone", "email", "city", "address", "website", "github", "wechat"},
@@ -37,13 +69,13 @@ SECTION_SCHEMAS: dict[str, set[str]] = {
     "training": {"id", "status", "title", "organization", "start", "end", "summary", "outcomes"},
     "experience": {"id", "status", "title", "organization", "start", "end", "summary", "outcomes"},
     "targets": {"id", "company", "role", "source", "as_of", "confirmed", "requirements", "note"},
-    "photo": {"status", "path", "confirmed_by_user", "note"},
+    "photo": {"status", "path"},
     "preferences": {"theme", "preferred_pages", "photo_mode"},
 }
 ENTRY_SECTIONS = ("education", "skills", "certificates", "projects", "training", "experience")
 VALID_FIXTURES = (
     "valid-photo-single-target.md",
-    "valid-no-photo-declined.md",
+    "valid-no-photo.md",
     "valid-generic-no-target.md",
     "valid-multi-target.md",
 )
@@ -52,7 +84,7 @@ INVALID_FIXTURES = (
     "error-unknown-field.md",
     "error-duplicate-id.md",
     "error-pending-core-fact.md",
-    "error-photo-pending.md",
+    "error-photo-invalid-path.md",
     "error-unconfirmed-target.md",
 )
 
@@ -124,7 +156,114 @@ def load_resume(path_value: str) -> ResumeDocument:
         raise CliError("YAML_PARSE_FAILED", f"YAML frontmatter 解析失败: {exc}") from exc
     if not isinstance(parsed, dict):
         raise CliError("YAML_ROOT_INVALID", "YAML frontmatter 顶层必须是映射对象。")
-    return ResumeDocument(path=path, body=body, data=parsed)
+    unknown = sorted(set(parsed) - FRONTMATTER_FIELDS)
+    if unknown:
+        raise CliError("FRONTMATTER_INVALID", f"frontmatter 只允许 schema、profile、photo、preferences；发现: {', '.join(unknown)}")
+    if parsed.get("schema") != "graduate-resume/v2":
+        raise CliError("SCHEMA_VERSION_INVALID", "frontmatter.schema 必须为 graduate-resume/v2。")
+    return ResumeDocument(
+        path=path,
+        body=body,
+        data=parse_markdown_facts(
+            body, parsed.get("profile") or {}, parsed.get("photo"), parsed.get("preferences") or {}
+        ),
+    )
+
+
+def parse_metadata(raw: str, area: str) -> dict[str, str]:
+    match = re.fullmatch(r"<!--\s*resume:\s*(.*?)\s*-->", raw.strip())
+    if not match:
+        raise CliError("MARKDOWN_INVALID", f"{area} 的 resume 元数据格式无效。")
+    values: dict[str, str] = {}
+    for token in match.group(1).split():
+        if "=" not in token:
+            raise CliError("MARKDOWN_INVALID", f"{area} 的 resume 元数据必须使用 key=value。")
+        key, value = token.split("=", 1)
+        values[key] = value
+    return values
+
+
+def parse_value(field: str, raw: str) -> Any:
+    value = raw.strip()
+    if field in {"directions", "courses", "honors", "items", "outcomes", "tools", "requirements"}:
+        return [item.strip() for item in value.split("；") if item.strip()]
+    if field == "confirmed":
+        return value == "是"
+    return value
+
+
+def parse_markdown_facts(body: str, profile: Any, photo_path: Any, preferences: Any) -> dict[str, Any]:
+    if not isinstance(profile, dict):
+        raise CliError("FRONTMATTER_INVALID", "frontmatter.profile 必须是对象。")
+    if not isinstance(preferences, dict):
+        raise CliError("FRONTMATTER_INVALID", "frontmatter.preferences 必须是对象。")
+    if photo_path is None:
+        photo = {"status": "no-photo"}
+    elif isinstance(photo_path, str) and photo_path.strip():
+        photo = {"status": "provided", "path": photo_path}
+    else:
+        raise CliError("FRONTMATTER_INVALID", "frontmatter.photo 必须是非空本地路径；无照片时省略该字段。")
+    data: dict[str, Any] = {
+        "candidate": profile, "education": [], "skills": [], "certificates": [], "projects": [],
+        "training": [], "experience": [], "targets": [], "photo": photo, "preferences": preferences,
+    }
+    section: str | None = None
+    entry: dict[str, Any] | None = None
+    pending_area: tuple[str, dict[str, Any]] | None = None
+    unknown_fields: list[str] = []
+    for line_number, raw_line in enumerate(body.splitlines(), start=1):
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("# "):
+            # 文档标题仅用于人类阅读；profile 是信息栏的唯一事实源。
+            pending_area = None
+            continue
+        if line.startswith("## "):
+            title = line[3:].strip()
+            section = MARKDOWN_SECTIONS.get(title)
+            if section is None:
+                unknown_fields.append(f"第 {line_number} 行包含未知模块: {title}")
+            entry = None
+            pending_area = None
+            continue
+        if line.startswith("### "):
+            if section not in SECTION_TITLES:
+                unknown_fields.append(f"第 {line_number} 行的条目不属于可重复模块。")
+                continue
+            entry = {SECTION_TITLES[section]: line[4:].strip()}
+            data[section].append(entry)
+            pending_area = (section, entry)
+            continue
+        if line.startswith("<!--"):
+            if not line.startswith("<!-- resume:"):
+                continue
+            if pending_area is None:
+                unknown_fields.append(f"第 {line_number} 行的 resume 元数据没有对应标题。")
+                continue
+            metadata = parse_metadata(line, f"第 {line_number} 行")
+            target = pending_area[1]
+            if pending_area[0] != "targets":
+                target["id"] = metadata.get("id")
+                target["status"] = metadata.get("status", "verified")
+            else:
+                target["id"] = metadata.get("id")
+            continue
+        bullet = re.fullmatch(r"-\s+([^：:]+)[：:]\s*(.*)", line)
+        if bullet:
+            label, raw_value = bullet.groups()
+            field = FIELD_NAMES.get(label)
+            if field is None:
+                unknown_fields.append(f"第 {line_number} 行包含未知字段: {label}")
+                continue
+            if entry is not None:
+                entry[field] = parse_value(field, raw_value)
+            else:
+                unknown_fields.append(f"第 {line_number} 行的字段没有所属条目。")
+            continue
+        unknown_fields.append(f"第 {line_number} 行无法解析。")
+    data["__markdown_issues__"] = unknown_fields
+    return data
 
 
 def ensure_mapping(value: Any, area: str) -> dict[str, Any]:
@@ -157,8 +296,9 @@ def validate_unknown_fields(section: dict[str, Any], allowed: set[str], area: st
 
 def validate_top_level(data: dict[str, Any], issues: list[str]) -> None:
     for key in sorted(data):
-        if key not in TOP_LEVEL_FIELDS:
+        if key not in TOP_LEVEL_FIELDS and key != "__markdown_issues__":
             issues.append(f"top-level 包含未知字段: {key}")
+    issues.extend(data.get("__markdown_issues__", []))
     for required in ("candidate", "education", "targets", "photo"):
         if required not in data:
             issues.append(f"缺少必填 top-level 字段: {required}")
@@ -232,21 +372,16 @@ def validate_photo(photo_value: Any, issues: list[str]) -> dict[str, Any]:
     photo = ensure_mapping(photo_value, "photo")
     validate_unknown_fields(photo, SECTION_SCHEMAS["photo"], "photo", issues)
     status = photo.get("status")
-    if status not in {"provided", "pending", "declined"}:
-        issues.append("photo.status 必须是 provided、pending 或 declined。")
+    if status not in {"provided", "no-photo"}:
+        issues.append("photo 必须由受控解析器解析为 provided 或 no-photo。")
         return photo
-    if status == "pending":
-        issues.append("photo.status 仍为 pending，必须先追问一次并得到明确结果。")
-    confirmed = photo.get("confirmed_by_user")
-    if status in {"provided", "declined"} and confirmed is not True:
-        issues.append("photo.confirmed_by_user 必须为 true，才能进入 final render。")
     path = photo.get("path")
     if status == "provided":
         require_nonempty_string(path, "photo.path", issues)
         if isinstance(path, str) and path.startswith(("http://", "https://")):
             issues.append("photo.path 必须是本地路径，不能是远程 URL。")
-    if status == "declined" and path not in ("", None):
-        issues.append("photo.status 为 declined 时，photo.path 必须为空字符串或省略。")
+    if status == "no-photo" and path is not None:
+        issues.append("无照片时不得生成 photo.path。")
     return photo
 
 
@@ -367,7 +502,7 @@ def resolve_photo_mode(photo: dict[str, Any], preferences: dict[str, Any]) -> st
     declared = preferences.get("photo_mode")
     if declared == "no-photo":
         return "no-photo"
-    if photo.get("status") == "declined":
+    if photo.get("status") == "no-photo":
         return "no-photo"
     if photo.get("status") == "provided":
         return "photo"
@@ -393,7 +528,7 @@ def command_plan(args: argparse.Namespace) -> int:
         "next_phase_inputs": {
             "schema_frozen": True,
             "target_briefs_ready": bool(targets),
-            "photo_contract_ready": photo.get("status") in {"provided", "declined"},
+            "photo_contract_ready": photo.get("status") in {"provided", "no-photo"},
         },
         "runtime_probe": runtime_probe(),
     }
