@@ -6,9 +6,9 @@
 
 **Shipped:** 2026-07-17
 
-**Active milestone:** None — planning next milestone
+**Active milestone:** v1.19 毕业生高级简历生成器
 
-**Status:** v1.18 shipped, audited, and archived; awaiting the next milestone definition.
+**Status:** v1.19 requirements and roadmap definition in progress.
 
 **Delivered in v1.18:**
 - Standardized candidate-first clean delivery for all six current file-writing skills.
@@ -33,7 +33,17 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-Plan the next milestone while preserving the v1.18 clean-delivery contract and six-runtime compatibility.
+Define and build a portable graduate-resume skill while preserving the v1.18 clean-delivery contract and six-runtime compatibility.
+
+## Current Milestone: v1.19 毕业生高级简历生成器
+
+**Goal:** 为电气相关工科大专毕业生提供 Markdown-first 的高级简历技能，支持纯 CLI 批量生成主题化、定向且版式稳定的 Typst/PDF 简历。
+
+**Target features:**
+- 定义跨主题一致的简历 Markdown/YAML schema，并用主题参数切换可扩展模板。
+- 实现 `Markdown → Typst → PDF` 三件套、1/2 页 A4 收敛和双页逻辑分页保护。
+- 支持通用版、多个单位/岗位定向版、照片/无照片版和硬性条件缺口提示。
+- 将已标准化资料后的验证、定向、主题切换和批量渲染保持为零 token CLI 工作流，并将 AI 限定在可选资料整理模式。
 
 ## Latest Milestone: v1.18 全技能干净交付目录标准化改造
 
@@ -184,7 +194,10 @@ Plan the next milestone while preserving the v1.18 clean-delivery contract and s
 
 ### Active
 
-None — define the next milestone before adding active requirements.
+- [ ] 新建面向电气、机电、智能制造、发电厂与新能源方向大专毕业生的高级简历生成技能。
+- [ ] 建立主题无关的简历 Markdown schema、可扩展主题契约和纯 CLI 批量渲染接口。
+- [ ] 生成可打印的 Markdown、Typst、PDF 三件套，并保证 1/2 页 A4 的可读性和分页完整性。
+- [ ] 支持通用版、多个单位/岗位定向版、照片/无照片版与透明的资格缺口提示。
 
 ### Out of Scope
 
@@ -242,7 +255,7 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 
 ## Next Milestone Goals
 
-下一里程碑尚未定义。通过 `/gsd:new-milestone` 重新收集需求、确定验收范围，并从 Phase 46 继续阶段编号。
+v1.19 聚焦毕业生高级简历生成器；阶段编号从 Phase 46 继续。
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -285,6 +298,9 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 - **v1.18 clean-delivery discipline**: File-writing skills must generate and minimally verify complete candidates before current mutation, compare exact path-set+bytes for no-op, archive replaced bundles together, and fail closed on unknown or symlink states.
 - **v1.18 rollback boundary**: Portable guarantees cover tested handled failure, INT, and TERM rollback; they do not claim SIGKILL, power-loss, filesystem-corruption, or multi-file hard atomicity.
 - **v1.18 evidence discipline**: Central milestone gates must derive counts from parsed skill-local regression evidence; a successful no-op command or missing gate marker must fail strict verification.
+- **v1.19 shared-schema discipline**: 简历内容 schema 必须与主题、页面密度和照片位置解耦；新增模板不得要求重写学生资料 Markdown。
+- **v1.19 CLI discipline**: 已标准化资料的验证、定向、批量生成与 PDF 渲染必须只依赖 CLI，不消耗 AI token；AI 仅可用于可选的资料整理模式。
+- **v1.19 pagination discipline**: 两页简历不得出现孤立标题、被拆开的经历条目或无标题的续接内容；无法同时满足页面、可读性和模块完整性时必须失败关闭。
 
 ## Key Decisions
 
@@ -339,6 +355,7 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 | Standardize all writing skills on explicit managed bundles | Root cleanliness, revision history, and failure safety need one semantic contract without creating cross-skill runtime dependencies | Good - v1.18 shipped skill-local candidate/no-op/history/rollback implementations for all six skills |
 | Bind central verification to real regression evidence | Required/called counts are meaningful only when stable output markers and fault registries prove the underlying public CLI tests ran | Good - v1.18 audit gap closure rejects no-op replacement and deleted gate evidence |
 | Keep historical cleanup confirmation-gated | Unknown files and user materials cannot be classified safely by normal render commands | Good - v1.18 provides snapshot-bound audit/approval semantics and a test-only executable protocol fixture |
+| Build the graduate-resume skill as a shared-schema CLI renderer with optional AI intake | It enables zero-token batch generation while retaining a practical path from scattered student materials to standardized input | — Pending |
 
 ## Evolution
 
@@ -358,4 +375,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-07-17 after shipping milestone v1.18*
+*Last updated: 2026-07-17 after starting milestone v1.19*

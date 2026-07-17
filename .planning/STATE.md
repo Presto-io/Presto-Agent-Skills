@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.18
-milestone_name: 全技能干净交付目录标准化改造
-status: Awaiting next milestone
-stopped_at: v1.18 shipped and archived; awaiting next milestone
-last_updated: "2026-07-17T03:10:00+08:00"
-last_activity: 2026-07-17 — Milestone v1.18 completed and archived
+milestone: v1.19
+milestone_name: 毕业生高级简历生成器
+status: planning
+last_updated: "2026-07-17T10:37:50.141Z"
+last_activity: 2026-07-17
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
@@ -25,10 +24,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-17)
 
 ## Current Position
 
-Phase: Milestone v1.18 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-07-17 — Milestone v1.18 completed and archived
+Status: Defining requirements
+Last activity: 2026-07-17 — Milestone v1.19 started
 
 ## Workflow Preferences
 
