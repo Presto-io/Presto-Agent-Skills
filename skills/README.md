@@ -5,6 +5,7 @@ Canonical skills live here.
 Current skills:
 
 - `end-of-term-teaching-materials`: 期末教学提交材料和表格的 Markdown intermediate 到固定模板 Typst/PDF、deterministic table artifacts、calculated score evidence 和 workbook 的工作流。
+- `graduate-resume`: 毕业生简历资料契约与离线生成基线；先冻结 canonical Markdown/YAML 资料、照片/target 一次追问语义、fixtures 和离线 `validate` / `target` / `plan` / `verify` CLI，再进入后续主题、定向与三件套渲染。
 - `gongwen`: 类公文 Markdown intermediate 到 Presto gongwen Typst/PDF 的工作流。
 - `school-presentation`: 学校正式汇报、课程展示、培训课件、招生宣讲或项目答辩材料的 Markdown logical-slide intermediate 到离线 HTML 演示文稿的工作流；生成物内置 preview、overview、playback、presenter markup、课堂交互/结构化版式和一键最终 PDF 导出。
 - `school-pptx`: 已审阅 Markdown logical slides 到受控模板、原生可编辑 PPTX 的工作流；public verify 检查结构与负例，真实 PowerPoint/WPS UAT 仍由人类完成。
@@ -40,6 +41,7 @@ Artifact contract discovery:
 | Skill | Markdown intermediate | Artifact contract |
 |-------|-----------------------|-------------------|
 | `end-of-term-teaching-materials` | `templates/end-of-term-full.md` | `references/data-contract.md`, `references/workflow-and-artifacts.md` |
+| `graduate-resume` | `templates/graduate-resume.md` | `SKILL.md`, `references/schema-and-review-contract.md`, `references/phase-46-baseline.md`, `scripts/graduate-resume.sh` |
 | `gongwen` | `templates/gongwen-full.md` | `references/format-and-rendering.md` |
 | `school-presentation` | `templates/school-presentation-full.md` | `references/authoring-and-layout.md`, `references/playback-and-export.md`, `references/verification-contract.md` |
 | `school-pptx` | `scripts/school-pptx.sh example --out-dir <dir>` 生成 `fixtures/school-pptx-full.md` 与 companion media | `SKILL.md`, `references/markdown-contract.md`, `references/template-contract.md`, `references/template-editing.md`, `references/renderer-and-pagination.md`, `references/verification-contract.md`, `references/visual-uat.md`, `scripts/school-pptx.sh`, `templates/standard-school.pptx`, `templates/standard-school.manifest.yaml` |
