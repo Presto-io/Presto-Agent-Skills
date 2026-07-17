@@ -1,20 +1,21 @@
 # Requirements: Presto Agent Skills v1.19
 
 **Defined:** 2026-07-17
+**Last updated:** 2026-07-18 for `graduate-resume/v2` source contract
 **Core Value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
 
 ## v1.19 Requirements
 
 ### Resume Contract
 
-- [ ] **SCHEMA-01**: 用户可用一份主题无关的 Markdown/YAML 简历资料表达电气、机电、智能制造、发电厂和新能源方向大专毕业生的已核实个人信息、教育、技能、证书、项目、实训和经历。
-- [ ] **SCHEMA-02**: CLI 能校验受限 schema、稳定事实 ID、必填资料、待确认标记、未知字段和重复事实，并拒绝不可信的最终投递件。
-- [ ] **SCHEMA-03**: 用户可在可选 AI 整理模式中从零散材料得到待审阅的标准资料草稿；`validate`、`target`、`plan`、`render`、`batch` 和 `verify` 全程不调用 AI、不联网且不消耗 token。
-- [ ] **SCHEMA-04**: 用户可提供一个或多个单位、岗位及当次招聘信息；未提供时 CLI/skill 先询问一次，明确不提供后生成通用版。
+- [x] **SCHEMA-01**: 用户可用一份主题无关的混合 Markdown/YAML 简历资料表达电气、机电、智能制造、发电厂和新能源方向大专毕业生的已核实资料：信息栏 `profile` 与可选本地 `photo` 路径位于 YAML，其余事实位于 Markdown 正文。
+- [x] **SCHEMA-02**: CLI 能校验受限 schema、稳定事实 ID、必填资料、待确认标记、未知字段和重复事实，并拒绝不可信的最终投递件。
+- [x] **SCHEMA-03**: 用户可在可选 AI 整理模式中从零散材料得到待审阅的标准资料草稿；`validate`、`target`、`plan`、`render`、`batch` 和 `verify` 全程不调用 AI、不联网且不消耗 token。
+- [x] **SCHEMA-04**: 用户可提供一个或多个单位、岗位及当次招聘信息；未提供时 CLI/skill 先询问一次，明确不提供后生成通用版。
 
 ### Themes And Layout
 
-- [ ] **THEME-01**: CLI 支持技术技能型、项目实践型、稳健通用型三个初始主题，并允许通过 Markdown YAML 的主题参数在不改写资料 schema 的情况下切换主题。
+- [ ] **THEME-01**: CLI 支持保守稳妥、现代简洁、个性设计三个初始主题，并允许通过 YAML `preferences.theme` 在不改写资料 schema 的情况下切换主题。
 - [ ] **THEME-02**: 每个主题可支持带照片与无照片布局；无照片时移除照片区域，不保留空占位，且只使用学生明确提供的本地照片。
 - [ ] **THEME-03**: CLI 默认自动选择 1 页或 2 页 A4，也支持用户强制页数；输出必须在主题可读性阈值内收敛到指定页数，不能截断内容或产生第 3 页。
 - [ ] **THEME-04**: 两页输出不出现孤立标题、无标题续接内容或被拆开的项目、实训、经历、职责和成果；无法满足布局与可读性约束时必须失败关闭并说明原因。
@@ -86,4 +87,4 @@
 
 ---
 *Requirements defined: 2026-07-17*
-*Last updated: 2026-07-17 after v1.19 milestone definition*
+*Last updated: 2026-07-18 for `graduate-resume/v2` source contract*

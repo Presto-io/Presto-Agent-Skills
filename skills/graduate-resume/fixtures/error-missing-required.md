@@ -1,17 +1,13 @@
 ---
-candidate:
-  name: "缺专业样例"
+schema: graduate-resume/v2
+profile:
+  name: 缺专业样例
   status: verified
-education:
-  - id: edu-001
-    status: verified
-    school: "某职业学院"
-skills: []
-targets: []
-photo:
-  status: declined
-  path: ""
-  confirmed_by_user: true
+preferences: {}
 ---
 
-错误样例：缺少教育核心字段。
+# 经历与资格
+
+## 教育经历
+### 某职业学院
+<!-- resume: id=edu-001 status=verified -->

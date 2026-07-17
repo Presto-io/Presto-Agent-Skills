@@ -1,8 +1,9 @@
 ---
 schema: graduate-resume/v2
 profile:
-  name: 待确认样例
-  status: pending
+  name: 照片路径错误样例
+  status: verified
+photo: https://example.com/student-photo.jpg
 preferences: {}
 ---
 

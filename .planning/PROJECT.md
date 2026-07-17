@@ -8,7 +8,7 @@
 
 **Active milestone:** v1.19 毕业生高级简历生成器
 
-**Status:** v1.19 requirements and roadmap definition in progress.
+**Status:** Phase 46 已完成；Phase 47 已具备执行上下文。
 
 **Delivered in v1.18:**
 - Standardized candidate-first clean delivery for all six current file-writing skills.
@@ -40,7 +40,7 @@ Define and build a portable graduate-resume skill while preserving the v1.18 cle
 **Goal:** 为电气相关工科大专毕业生提供 Markdown-first 的高级简历技能，支持纯 CLI 批量生成主题化、定向且版式稳定的 Typst/PDF 简历。
 
 **Target features:**
-- 定义跨主题一致的简历 Markdown/YAML schema，并用主题参数切换可扩展模板。
+- 定义跨主题一致的简历混合 Markdown/YAML schema：YAML 保存信息栏、可选本地照片路径和派生偏好，Markdown 正文保存其余事实；用主题参数切换可扩展模板。
 - 实现 `Markdown → Typst → PDF` 三件套、1/2 页 A4 收敛和双页逻辑分页保护。
 - 支持通用版、多个单位/岗位定向版、照片/无照片版和硬性条件缺口提示。
 - 将已标准化资料后的验证、定向、主题切换和批量渲染保持为零 token CLI 工作流，并将 AI 限定在可选资料整理模式。

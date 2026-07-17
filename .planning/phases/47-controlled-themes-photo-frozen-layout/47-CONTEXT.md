@@ -21,6 +21,7 @@
 
 ### Source Of Truth And Derivation
 - **D-05:** `graduate-resume.md` 是唯一可编辑事实源；1 页版、2 页版、主题版、照片版都必须从这份源文件派生，不维护独立事实 MD。
+- **D-05a:** 事实源采用 v2 混合格式：首页信息栏 `profile`、可选本地 `photo` 路径与派生 `preferences` 位于 YAML frontmatter，教育、技能、证书、项目、实训、经历和目标位于 Markdown 正文；省略 `photo` 即无照片，正文顺序不构成事实语义。
 - **D-06:** 用户后续修改资料时，应继续修改唯一事实源并重跑派生流程；如果修改的是页数、主题或照片偏好，则优先通过 frontmatter 偏好字段或 CLI 参数表达，而不是复制内容。
 - **D-07:** 新增个性化模块时，默认由 agent 判断其容器归属，但允许用户显式覆盖。
 
@@ -97,7 +98,7 @@
 
 ### Reusable Assets
 - `skills/graduate-resume/scripts/graduate_resume_cli.py`: 已有 `preferences.theme`、`preferences.preferred_pages`、`preferences.photo_mode` 校验与 `resolve_photo_mode()`，可作为 Phase 47 页数/照片策略的现有命令面。
-- `skills/graduate-resume/templates/graduate-resume.md`: 已有 candidate、education、skills、certificates、projects、training、experience、targets、photo、preferences 的标准事实结构，可直接映射到 `fact-block` / `list-entry` 容器。
+- `skills/graduate-resume/templates/graduate-resume.md`: v2 模板将信息栏 `profile`、可选 `photo` 路径和派生 `preferences` 放在 YAML，教育、技能、证书、项目、实训、经历和 targets 放在 Markdown 正文；可直接映射到 `fact-block` / `list-entry` 容器。
 - `skills/graduate-resume/references/schema-and-review-contract.md`: 已把照片与主题布局剥离为“后续 phase 决策”，说明 Phase 47 应保持 renderer-owned defaults，而不是回写 schema。
 
 ### Established Patterns

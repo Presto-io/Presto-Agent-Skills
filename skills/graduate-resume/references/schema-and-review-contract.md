@@ -1,10 +1,23 @@
 # Graduate Resume Schema And Review Contract
 
-本文档定义 `graduate-resume` 在 Phase 46 的基础资料契约。目标是把主题、定向、照片布局和最终渲染之前的“真实资料层”单独稳定下来。
+本文档定义 `graduate-resume` 的基础资料契约。目标是把主题、定向、照片布局和最终渲染之前的“真实资料层”单独稳定下来，并让事实源保持可读、可审阅。
+
+## Document Shape
+
+`graduate-resume.md` 是唯一可编辑事实源，但不再把所有内容塞入 YAML。
+
+- YAML frontmatter 只允许 `schema`、`profile`、可选 `photo` 和 `preferences`。
+- `profile` 承担首页信息栏的姓名、状态、求职标题、概述、联系方式和求职方向。
+- `photo` 存在时值为学生明确提供的本地照片路径；字段不存在即为无照片。
+- `preferences` 只表达主题、页数和照片模式等派生偏好，不是事实。
+- Markdown 正文承载教育、技能、证书、项目、实训、经历和目标；标题保留模块语义。
+- 可复用正文条目的标题下使用 `<!-- resume: id=... status=... -->` 保存稳定 ID 与复核状态；target 仍以 `confirmed` 表达确认状态。
+
+正文可按可读性书写或调整顺序。后续 `fact-block` / `list-entry` 容器由渲染器从模块语义派生，条目出现的位置、主题、页数和照片槽位都不是新的事实，也不能反向改写资料源。
 
 ## Top-Level Sections
 
-- `candidate`: 候选人基本信息、求职方向、联系方式和摘要。
+- `candidate`（YAML 中的 `profile`）：候选人基本信息、求职方向、联系方式和摘要。
 - `education`: 学历、院校、专业、时间、核心课程。
 - `skills`: 技能分组、工具、设备、软件、语言能力。
 - `certificates`: 证书、职业资格、培训结业。
@@ -12,12 +25,12 @@
 - `training`: 实训、实习、校内综合实践。
 - `experience`: 兼职、社团、竞赛组织、相关工作经历。
 - `targets`: 一个或多个单位/岗位/招聘信息。
-- `photo`: 照片状态与本地路径。
+- `photo`（YAML 可选字段）：学生明确提供的本地照片路径；字段不存在表示无照片。
 - `preferences`: 页数、主题、照片模式等非事实偏好。
 
 ## Stable ID Rules
 
-- 所有可复用条目都必须带稳定 `id`。
+- 所有可复用条目都必须带稳定 `id`；正文中写在紧邻条目标题的 `resume` 注释里。
 - `projects`、`training`、`experience`、`certificates` 和需要单独引用的技能组不能只靠标题辨识。
 - `id` 一旦进入审阅与后续生成流程，就不应因主题或 target 变化而重写。
 
@@ -43,25 +56,7 @@ Phase 46 统一使用以下状态表达复核结果：
 
 照片是独立资料项，不是布局选项。
 
-字段建议：
-
-- `photo.status`
-- `photo.path`
-- `photo.confirmed_by_user`
-- `photo.note`
-
-`photo.status` 在 Phase 46 支持：
-
-- `provided`: 已提供本地照片，可供后续照片版布局消费。
-- `pending`: 尚未提供，且用户还没有明确说没有。
-- `declined`: 用户明确说没有照片或选择无照片版。
-
-约束：
-
-- 默认期待提供照片。
-- 没有照片时先追问一次。
-- 只有用户明确说没有后，才能写 `declined`。
-- `provided` 必须指向本地路径；远程 URL 不能直接视为最终受信输入。
+字段格式：`photo: sources/student-photo.jpg`。`photo` 不存在时不创建照片区域；远程 URL、空字符串或对象均不是受信输入。
 
 ## Target Contract
 
@@ -91,7 +86,7 @@ Phase 46 统一使用以下状态表达复核结果：
 - 出现重复事实 ID。
 - 缺失必填核心资料。
 - 核心事实仍为 `pending`。
-- 照片既未提供也未明确 `declined`。
+- `photo` 存在但不是非空本地路径。
 - 最终定向前的 target 缺少 `source`、`as_of` 或 `confirmed`。
 
 当前实现补充：
@@ -103,7 +98,7 @@ Phase 46 统一使用以下状态表达复核结果：
 ## One-Time Question Policy
 
 - 缺 target：问一次，用户明确不提供后继续通用版。
-- 缺照片：问一次，用户明确没有后继续无照片版。
+- 照片可选：问一次，用户没有照片后省略 `photo` 字段并继续无照片版。
 - 缺核心事实：只问一次当前缺项，不重复追问同一问题。
 
 ## Out Of Scope In Phase 46

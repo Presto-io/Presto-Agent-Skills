@@ -1,18 +1,15 @@
 ---
-candidate:
-  name: "未知字段样例"
+schema: graduate-resume/v2
+profile:
+  name: 未知字段样例
   status: verified
-  favorite_color: "blue"
-education:
-  - id: edu-001
-    status: verified
-    school: "某职业学院"
-    major: "电气自动化技术"
-targets: []
-photo:
-  status: declined
-  path: ""
-  confirmed_by_user: true
+preferences: {}
 ---
 
-错误样例：包含未知字段。
+# 经历与资格
+
+## 教育经历
+### 某职业学院
+<!-- resume: id=edu-001 status=verified -->
+- 专业：电气自动化技术
+- 自定义坐标：x=20

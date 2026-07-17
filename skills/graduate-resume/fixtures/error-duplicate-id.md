@@ -1,19 +1,18 @@
 ---
-candidate:
-  name: "重复 ID 样例"
+schema: graduate-resume/v2
+profile:
+  name: 重复 ID 样例
   status: verified
-projects:
-  - id: project-dup-001
-    status: verified
-    title: "项目 A"
-  - id: project-dup-001
-    status: verified
-    title: "项目 B"
-targets: []
-photo:
-  status: declined
-  path: ""
-  confirmed_by_user: true
+preferences: {}
 ---
 
-错误样例：重复事实 ID。
+# 经历与资格
+
+## 教育经历
+### 某职业学院
+<!-- resume: id=duplicate-001 status=verified -->
+- 专业：电气自动化技术
+
+## 项目经历
+### 控制柜实训
+<!-- resume: id=duplicate-001 status=verified -->

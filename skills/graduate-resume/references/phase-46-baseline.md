@@ -10,6 +10,10 @@
 - fixture 基线
 - 公开 CLI 入口骨架
 
+## Source Contract
+
+Phase 46 的资料源现为 `graduate-resume/v2`：YAML frontmatter 只保留 `schema`、首页信息栏 `profile`、可选的本地 `photo` 路径和派生 `preferences`；教育、技能、证书、项目、实训、经历与 target 位于 Markdown 正文。省略 `photo` 即无照片。正文标题和条目边界表达模块语义，稳定 ID/复核状态以紧邻条目的 `resume` 注释保存；正文顺序不构成事实语义，后续布局容器由 renderer 派生。
+
 ## CLI Boundary
 
 Phase 46 冻结以下命令名，并已实现其中的基础离线能力：
@@ -35,14 +39,14 @@ Phase 46 冻结以下命令名，并已实现其中的基础离线能力：
 建议至少维护以下 fixture：
 
 - `valid-photo-single-target.md`
-- `valid-no-photo-declined.md`
+- `valid-no-photo.md`
 - `valid-generic-no-target.md`
 - `valid-multi-target.md`
 - `error-missing-required.md`
 - `error-unknown-field.md`
 - `error-duplicate-id.md`
 - `error-pending-core-fact.md`
-- `error-photo-pending.md`
+- `error-photo-invalid-path.md`
 - `error-unconfirmed-target.md`
 
 ## Fonts And Dependencies
@@ -59,6 +63,6 @@ Phase 46 已冻结并公开以下“必须受控”的要求：
 进入 Phase 47 前，应默认以下内容已稳定：
 
 - 资料 schema 不再为主题切换而改写。
-- 照片状态明确，可区分 provided / pending / declined。
+- YAML `photo` 是可选的本地路径；字段不存在即无照片。
 - target 是独立 brief，不污染基础资料。
 - fixture 能覆盖有照、无照、通用、多目标和关键失败边界。
