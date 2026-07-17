@@ -1,167 +1,134 @@
 # Technology Stack
 
-**Project:** v1.17 `school-pptx`
-**Researched:** 2026-07-13
-**Scope:** 新增 `school-pptx` 技能的技术栈增量和实现边界
-**Overall confidence:** HIGH for `python-pptx`/Pandoc documented capabilities; MEDIUM for Open XML transition post-processing because it requires fixture validation in PowerPoint/WPS/Keynote.
+**Project:** v1.19 `graduate-resume` / 毕业生高级简历生成器
+**Researched:** 2026-07-17
+**Scope:** 纯 CLI 的 Markdown -> Typst -> PDF 简历渲染；中文字体、照片、1/2 页 A4 收敛、PDF 证据和六 runtime 运行边界。
+**Overall confidence:** HIGH（Typst、pypdf、Pillow 的公开能力和本机 CLI 均已核对）；MEDIUM（最终字体视觉效果仍需在受支持 OS 上以 fixture 验收）。
 
 ## Recommended Stack
 
 ### Core Runtime
 
 | Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Python | 3.11+ recommended; current local `python3` is 3.14.6 | Skill-local renderer and verification scripts | 仓库现有技能已经偏向 Python/脚本化渲染；Python 标准库可处理 zip/XML/JSON/CLI orchestration，新增认知成本低。建议写 3.11+，避免把本机 3.14 作为用户环境硬要求。 |
-| `python-pptx` | 1.0.2 | Primary PPTX object writer | 官方文档支持从模板打开/保存演示文稿，添加 slides、shapes、text frames、pictures、tables、speaker notes；当前 PyPI 可用最新版本为 1.0.2。本机尚未安装，需要作为新增轻量依赖。 |
-| Pandoc CLI | 3.x; current local `pandoc` is 3.10 | Markdown parsing/normalization and optional reference conversion | 官方文档支持 Markdown 到 pptx、`reference.pptx`、slide-level、speaker notes div、PowerPoint layout 名称约定。对本技能更适合作为 Markdown AST/contract parser，而不是最终 PPTX writer。 |
-| Python stdlib `zipfile` + `xml.etree` or `lxml` via `python-pptx` dependency | stdlib / transitive | Controlled Open XML inspection and small post-processing | PPTX 是 Open XML zip 包。`python-pptx` 没有覆盖所有 PresentationML 功能，transition、模板内部元数据、notes/shape 校验可通过受控 XML patch/inspection 完成。 |
+|---|---:|---|---|
+| Python | 3.11+ | skill-local CLI、Markdown/YAML contract、定向规则、版面计划、候选发布和验证 | 与现有 Typst 文档技能一致；标准库足以负责路径、JSON、subprocess、哈希和事务，不需要 Node 或运行时网络。不要把开发机的 Python 3.14.6 作为最低要求。 |
+| Typst CLI | `0.15.0`，固定为 tested 版本 | `candidate.typ -> candidate.pdf`、同源 PNG 审阅图、A4 排版 | 本机已验证 `typst 0.15.0`；CLI 提供 `--root`、`--font-path`、`--ignore-system-fonts`、`--creation-timestamp`、`--pdf-standard` 和 PNG 输出。它是唯一 PDF 生成器，版面完全由受控主题模板拥有。 |
+| PyYAML | `6.0.3`（或锁定已验收版本） | 解析 Markdown front matter / YAML 定向清单 | schema 必须稳定而非依赖自然语言解析；仅接受安全加载后的受限字段。保留 Markdown 正文为可审阅内容，YAML 只承载结构元数据。 |
+| Python stdlib | 随 Python | 文件交易、SHA-256、Unicode/path 验证、JSON evidence、子进程退出码 | 避免增添 orchestrator/数据库/服务依赖；已标准化资料后的流程完全离线、零 AI token。 |
 
-### Template and Assets
+### Chinese Fonts and Theme Assets
+
+| Technology / asset | Version / policy | Purpose | Why |
+|---|---|---|---|
+| Noto Sans CJK SC / Source Han Sans CN font bundle | 固定、可再分发的字库快照；以许可证清单随 skill 交付 | 简体中文正文、标题、联系方式 | 不可使用 macOS 的苹方、Windows 的微软雅黑或开发机的思源字体作为隐式前提。不同 runtime/OS 的系统字库不一致，会改变换行、页数和 PDF 字形。选择可随 skill 安装、覆盖简中与常用 Latin 的开源 CJK 字体。 |
+| 可选 Noto Serif CJK SC bundle | 同一受控快照 | 仅在某个主题确需衬线标题时使用 | 与无衬线正文字库同样显式提供；不得以系统宋体作为 fallback。v1 首选单一 Sans 主题，减少度量漂移。 |
+| 模板自带 SVG/PNG 图标 | skill-local allowlist | 电话、邮箱、地址等固定图标 | 不拉取 icon CDN，也不让 Markdown 注入任意 SVG/URL；固定资源可审计且离线可用。 |
+| Pillow | `12.3.0`（锁定已验收版本） | 照片解码、EXIF 方向归正、尺寸/格式/像素上限验证、生成受控 JPEG/PNG candidate asset | 官方 API 有 `ImageOps.exif_transpose` 与 `contain`/`fit`；在主题渲染之前标准化人像，消除手机拍照方向和超大图带来的不确定性。 |
+
+### PDF and Evidence
 
 | Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Standardized `.pptx` template derived from supplied `.potx` | Skill-local artifact | Canonical machine-mappable template | `.potx` 适合人工套用模板，但脚本最好从标准 `.pptx` 读取固定 slide layouts/placeholders。先手工规范化模板，比让脚本猜测人类视觉样张可靠。 |
-| Template manifest JSON/YAML | Skill-local, generated/hand-reviewed | Layout id, slot names, frame geometry, text budgets, continuation rules | Markdown 不应控制坐标、字号、颜色。模板 manifest 把布局槽位、预算和 overflow 规则固定下来，方便 roadmap 拆成模板标准化、合同 fixture、渲染器、验证 gate。 |
-| Image assets | PNG/JPEG/SVG converted if needed | School logo, icons, source images | `python-pptx` can add picture files. For editable PPTX stability, prefer PNG/JPEG for bitmap content; avoid SVG as a first-slice requirement unless fixture proves target Office stack renders it consistently. |
+|---|---:|---|---|
+| pypdf | `6.14.2` | 确认 PDF 可读取、页数、每页 `mediabox`、基础文本抽取与 metadata | 纯 Python，不依赖桌面 Office。A4 必须逐页为约 `595.28 x 841.89 pt`；页数只能是 1 或 2。它是结构 gate，不承担视觉排版判断。 |
+| Typst PNG export | 与 Typst 同版本 | 在 `.work/<run-id>/evidence/` 生成每页审阅 PNG | 从与 PDF 相同的 candidate `.typ` 以固定 `--ppi 144` 生成，供 fixture 图像 diff / 人工 UAT 使用；不进入 public delivery。避免把本机 Poppler、Ghostscript 或浏览器当作必备依赖。 |
+| `pdfinfo` | optional diagnostic only | 在存在时交叉记录 PDF page size / metadata | 本机有 Poppler `pdfinfo 26.05.0`，但不是六 runtime 的硬前置。其缺失不能改变核心 gate 的真值。 |
 
-### Verification
-
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| `python-pptx` reader | 1.0.2 | Verify slide count, layout use, shape presence, notes text, table dimensions, media references | Same object model can inspect generated PPTX enough for repeatable gates. |
-| Open XML zip/XML inspection | stdlib + optional `lxml` | Verify raw package parts, transition XML, relationships, placeholder ids, hidden work artifacts | Some properties are not surfaced by `python-pptx`; XML-level checks prevent false green results. |
-| Optional Pandoc AST snapshot | Pandoc 3.x JSON | Verify Markdown contract parsing before rendering | Keeps the teacher-reviewable Markdown contract separate from PPTX layout bugs. |
-
-## Recommended Division of Labor
-
-### `python-pptx`: Use as the primary generator
-
-Best for:
-
-- Opening the standardized `.pptx` template and adding slides from known layouts.
-- Creating editable text boxes, runs, paragraphs, simple bullet/list text, and non-highlighted code text boxes.
-- Adding pictures with calculated contain-style placement. Avoid picture placeholders for first slice because official behavior crops to fill the placeholder.
-- Adding basic editable tables and setting row/column dimensions within fixed template budgets.
-- Writing speaker notes through `slide.notes_slide.notes_text_frame`.
-- Applying bounded text fitting through explicit font-size budgeting and `TextFrame.fit_text()`/word-wrap behavior where it proves stable with installed fonts.
-- Reading back generated PPTX for smoke verification.
-
-Not suitable for:
-
-- Complex object animation.
-- Reliable creation of slide transitions through public API.
-- Automatic semantic pagination. The renderer must own page budgeting and continuation slide creation before writing shapes.
-- Arbitrary `.potx` marketplace templates. Layout and placeholder names need a controlled standard.
-- Pixel-perfect PowerPoint typography across platforms. Text fitting depends on available fonts and PowerPoint/WPS rendering differences, so budgets must be conservative.
-
-### Pandoc: Use as parser and reference tool, not the final renderer
-
-Best for:
-
-- Parsing structured Markdown, fenced divs, tables, lists, code blocks, and notes into a consistent AST.
-- Enforcing a `slide-level`/logical-slide contract during fixture development.
-- Validating that speaker notes can be represented in Markdown using `notes` divs.
-- Generating a quick reference `.pptx` only for comparison or debugging.
-
-Not suitable for this skill's final output:
-
-- Pandoc's PowerPoint writer chooses from predefined layout names and has limited control over school-specific slot geometry.
-- Column width behavior is explicitly limited for PowerPoint output, which conflicts with fixed two-column and image-text layouts.
-- It cannot own custom overflow splitting, elastic textbox budgets, four-image gallery packing, timeline subdivision, or template-specific continuation rules cleanly.
-- It may silently fall back to default layouts if expected names are missing, which is too loose for a strict school template.
-
-### Open XML post-processing: Keep small, audited, and fixture-gated
-
-Use only for:
-
-- Adding or preserving a simple slide transition if the standardized template or generated slides cannot handle it through `python-pptx`.
-- Inspecting package relationships, notes parts, media parts, placeholder ids, and slide layout references.
-- Repairing/normalizing narrow template metadata when it is deterministic and covered by fixtures.
-
-Do not use for:
-
-- General slide layout construction.
-- Large-scale table/text/picture generation.
-- Freeform animation authoring.
-- Office-suite automation that requires PowerPoint, WPS, LibreOffice, or Keynote to be installed.
-
-Transition recommendation: treat transition as optional and late. The roadmap should first prove the editable-object deck without transition. Then add a narrow Open XML experiment for a 0.5s smooth/fade-like slide transition and accept it only if generated XML round-trips in Microsoft PowerPoint and at least one common fallback viewer without corrupting the file. If not proven, preserve a transition already embedded in the template or omit transitions.
-
-## Implementation Boundaries for Requirements and Roadmap
-
-1. Start with template standardization, not script rendering.
-   - Convert the supplied `.potx` visual sample into a skill-local `.pptx` template.
-   - Name every supported layout and slot deterministically.
-   - Create a template manifest with slide size, layout key, placeholder/shape name, frame geometry, default font, min/max font, and overflow budget.
-
-2. Keep Markdown logical, not visual.
-   - Accept YAML metadata plus explicit `::: slide {layout="..."}` blocks.
-   - `theme` must be a controlled template identifier, not arbitrary style input.
-   - Do not accept Markdown-level coordinates, colors, fonts, crop values, or PowerPoint XML snippets.
-
-3. Build pagination before object writing.
-   - One logical slide may emit multiple physical slides.
-   - Text, tables, timelines, and galleries need budget estimators that choose continuation slides before writing PPTX.
-   - The renderer should never rely on PowerPoint's visual overflow behavior as a success path.
-
-4. Make editable objects the default.
-   - Text -> PPTX text boxes/placeholders.
-   - Tables -> editable PPTX tables, split by rows when budget exceeded.
-   - Code -> monospaced editable text box without syntax highlighting in v1.17.
-   - Images -> placed picture objects with contain-style geometry.
-   - Timeline/gallery -> editable lines/shapes/text/pictures where feasible; otherwise defer complexity rather than rasterizing the whole slide.
-
-5. Use speaker notes as a first-class contract.
-   - Markdown `::: notes` maps to `slide.notes_slide.notes_text_frame`.
-   - Verification should read notes back and fail if notes are missing from expected slides.
-
-6. Keep verification artifact-driven.
-   - Verify slide count, logical-to-physical slide mapping, layout names, shape names, notes text, table row/column counts, image relationships, code textbox presence, and non-empty PPTX package.
-   - Add XML-level checks only for capabilities not surfaced by `python-pptx`, especially transitions and package relationships.
-
-## Not Recommended Heavy Dependencies
-
-| Dependency | Why Not |
-|------------|---------|
-| LibreOffice/headless office conversion | Too heavy and viewer-dependent; tends to produce unstable layout and is hard to make portable across Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent. |
-| PowerPoint COM / AppleScript / Office automation | Requires installed desktop Office and OS-specific automation; violates portable skill boundary. |
-| Node PPTX stacks such as PptxGenJS or pptx-automizer | Adds a second runtime and duplicates `python-pptx` responsibilities. Useful elsewhere, but not justified when the user explicitly allows `python-pptx` and wants no heavier dependencies. |
-| Playwright/browser screenshot rendering | Produces raster slides or HTML-first workflows, which conflicts with editable PPTX objects. Keep this out of `school-pptx`; it belongs to `school-presentation`. |
-| Marp/Slidev/reveal.js as core renderer | Strong Markdown presentation ecosystems, but their PPTX paths are not the controlled editable-object, fixed-template renderer required here. |
-| Full Open XML SDK / Java/.NET stack | More powerful than needed and introduces a heavyweight runtime. Use raw zip/XML only for narrow post-processing. |
-| ImageMagick-heavy pipelines | Avoid making image conversion a hard requirement. Use existing source images and Python/Pillow only where already pulled by `python-pptx`. |
-
-## Installation
-
-Recommended dependency expression for the skill-local renderer:
+## Required Invocation Model
 
 ```bash
-# Required Python dependency
-python3 -m pip install "python-pptx==1.0.2"
+# prerequisites are verified, never installed automatically by the skill
+python3 --version
+typst --version
+python3 -c 'import yaml, PIL, pypdf'
 
-# Required external CLI when using Pandoc AST parsing
-pandoc --version
+# deterministic render: custom fonts only, fixed project root and timestamp
+SOURCE_DATE_EPOCH=0 typst compile \
+  --root "$candidate_root" \
+  --font-path "$skill_root/fonts" \
+  --ignore-system-fonts \
+  --creation-timestamp 0 \
+  --pdf-standard 1.7 \
+  "$candidate_root/resume.typ" "$candidate_root/resume.pdf"
+
+# hidden, same-source visual evidence (one PNG per physical page)
+typst compile --root "$candidate_root" --font-path "$skill_root/fonts" \
+  --ignore-system-fonts --ppi 144 "$candidate_root/resume.typ" \
+  "$work_root/evidence/resume-{0p}.png"
 ```
 
-If the project later introduces a lockfile for skills, pin `python-pptx==1.0.2` and document Pandoc as an external CLI prerequisite rather than vendoring it into the repository.
+The actual wrapper must pass an absolute, validated project root; it must not trust the caller's current directory. Font names in `.typ` must be tested with `typst fonts --font-path "$skill_root/fonts" --ignore-system-fonts`, and the template must set `fallback: false` after selecting the bundled CJK family. A missing glyph then fails visibly during fixture testing rather than silently changing to a system font.
+
+## Layout-Convergence Recommendation
+
+Do **not** attempt to infer final page count from character counts or by shrinking every font until compilation succeeds. Use a bounded, deterministic planner before publication:
+
+1. Validate schema and calculate semantic modules: header, summary, education, skills, projects, internships and awards. Each experience/project is a non-splittable item with an identifier.
+2. Render a finite ordered density ladder for the selected theme, for example `regular`, `compact`, then `two-page`. Only theme-owned constants may change: spacing, heading rhythm, approved summary-line cap and item cap. The raw student Markdown never changes.
+3. Compile each candidate, then use pypdf to measure 1/2 pages and A4 media boxes. A 1-page profile is accepted only when it fits intact. The two-page profile has an explicit semantic partition and explicit `pagebreak()` between sections.
+4. Emit every experience/project in Typst `block(breakable: false, ...)`. The official Typst layout API confirms this prevents a block splitting across pages. If an item cannot fit on an otherwise valid page, fail with its identifier; do not create an orphan heading or unheaded continuation.
+5. Accept the first profile satisfying all structural rules. If none does, fail closed with a short actionable overflow report. Never rasterize text, silently drop material, reduce text below theme accessibility minimum, or emit a third page.
+
+The renderer can use Typst's automatic pagination inside an allowed section, but page 2 must be logically planned. It must reject: a heading as the final usable block on a page, a section with no following item, any split `experience_id`, an empty second page, or a nonempty third page. Template-level visual UAT is still required because PDF structural inspection cannot prove every line is aesthetically balanced.
+
+## Photo Pipeline
+
+1. `--photo` is optional. No-photo is a first-class layout variant; do not leave an empty photo frame or reflow arbitrary content.
+2. Resolve only a regular local file below the allowed input/media root; reject symlinks, URLs, SVG/HTML/PDF masquerading as images, unsupported mode/format and excessive file/pixel dimensions.
+3. Treat Pillow `DecompressionBombWarning` as an error and retain a finite `Image.MAX_IMAGE_PIXELS`; official Pillow security guidance explicitly warns against disabling this limit.
+4. Decode, run `ImageOps.exif_transpose`, convert to sRGB RGB/RGBA, and generate a bounded JPEG or PNG into candidate-owned `assets/`. Record original hash, normalized hash, size and profile in hidden evidence, not in public resume content.
+5. Let Typst use a theme-owned fixed photo frame with `fit: "cover"` only after the contract explicitly allows center crop. Do not permit user-controlled crop coordinates. For identification photos, `contain`/padding is the safer default if head cropping would be unacceptable.
+
+## Cross-Runtime Dependency Boundary
+
+The canonical `SKILL.md` must state the same runtime-neutral command path for Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw and Hermes Agent. Runtime adapters may explain discovery and sandbox configuration, but must not fork renderer behavior.
+
+| Boundary | Mandatory policy |
+|---|---|
+| Install unit | Install the complete `skills/graduate-resume/` folder: `SKILL.md`, `scripts/`, `templates/`, bundled `fonts/`, fixed icons, fixtures and references. A script may not call a sibling skill at runtime. |
+| External prerequisites | Python 3.11+, Typst 0.15.0, PyYAML, Pillow and pypdf. `typst` must be on `PATH`; Python imports and exact/accepted version range must be checked before any current-delivery mutation. |
+| No hidden provisioning | The skill never runs `pip install`, downloads Typst/fonts/icons, accesses an LLM API, invokes a browser, or calls a desktop application. Missing dependencies produce one non-zero, actionable prerequisite error. |
+| Sandbox / allowlist | Grant execute for the wrapper and `typst`; read for the whole skill folder and approved input/photo roots; write only for the explicit delivery root and its owned `.work/`. No network permission is required. |
+| OpenClaw / Hermes | Both require installation-time whole-folder discovery, explicit shell-wrapper fallback, prerequisite probe, and a small fixture render. Do not claim automatic script discovery unless that runtime has been tested. |
+| Delivery | Reuse v1.18 candidate-first exact managed bundle, no-op and whole-bundle history rules. Candidate is Markdown + Typst + PDF + only explicitly managed normalized photo assets; logs, page PNGs, plan JSON and hashes stay under owned `.work/`. |
+
+## Alternatives Considered
+
+| Category | Recommended | Alternative | Why not |
+|---|---|---|---|
+| Typesetting | Typst CLI | LaTeX/XeLaTeX | CJK font setup, package installation and cross-machine reproducibility add operational burden without helping the short, controlled resume layout. |
+| Typesetting | Typst CLI | Pandoc direct PDF | Pandoc does not own the theme-specific page planner, non-splitting item contract, or photo/layout details; adding it would create a second formatting authority. |
+| PDF conversion | Typst direct PDF | LibreOffice headless / Word / WPS automation | Requires viewer installation and OS-specific typography; cannot provide a portable six-runtime contract. |
+| PDF inspection | pypdf + Typst PNG evidence | Browser screenshots as the only verification | Browser availability and PDF rendering vary. Screenshots are supplementary visual evidence, not a structural source of truth. |
+| Image processing | Pillow | ImageMagick | ImageMagick is a large external runtime and policy surface for the small, bounded photo-normalization job. |
+| Fonts | bundled open CJK fonts | system font fallback | Font availability and metrics vary by OS; it directly breaks the 1/2-page guarantee. |
+| Dynamic fitting | bounded semantic density ladder | arbitrary auto-shrink / CSS-like overflow hiding | It can meet page count by damaging readability or deleting semantics; it also makes results hard to audit. |
+| Runtime orchestration | Python CLI | Node service / web UI / LLM invocation | Violates the zero-token, offline batch-render requirement and multiplies runtime compatibility work. |
+
+## Implementation Preconditions
+
+- Select and license-review the exact font files before writing the first visual fixture. Record their SHA-256 values and tested Typst family names in a font manifest.
+- Establish two or more approved visual fixtures, including Chinese/Latin mixed text, dense two-page content, no-photo and portrait-photo variants. Acceptance needs PNG/PDF human review on at least macOS and one non-macOS supported environment before claiming stable cross-platform layout.
+- Define an explicit schema field for every item that must not split (`experience_id`, `project_id`, `award_id`) and an ordered section policy for the two-page profile.
+- Make all theme density constants data in a template manifest; source Markdown/YAML cannot set raw fonts, sizes, margins, page breaks, file paths or Typst expressions.
+- Define exact public filenames and asset policy before coding publication. Unknown files, partial prior bundles, symlinks, failed font probes, invalid photos, page count outside 1/2, non-A4 pages, or structural pagination violations must fail before current mutation.
+- Test the Typst lock/version with `SOURCE_DATE_EPOCH=0`; use byte equality only for identical inputs and pinned tool/font versions. Otherwise retain v1.18's no-op contract without promising PDF bytes are universally reproducible across unpinned hosts.
 
 ## Sources and Confidence
 
-| Source | Confidence | Notes |
-|--------|------------|-------|
-| `python-pptx` official docs: https://python-pptx.readthedocs.io/en/latest/ | HIGH | Confirms slides, shapes, pictures, tables, text frames, text fitting, and speaker notes APIs. |
-| PyPI `python-pptx`: https://pypi.org/project/python-pptx/ | HIGH | Confirms current available package line; `pip index versions` found 1.0.2. |
-| Pandoc manual: https://pandoc.org/MANUAL.html | HIGH | Confirms PowerPoint writer, `reference.pptx`, slide-level, speaker notes, and layout-name behavior. |
-| Pandoc local CLI `pandoc 3.10` | HIGH for current workspace | Confirms the repository machine already has Pandoc with Lua support available. |
-| Microsoft Open XML / PresentationML documentation | MEDIUM | Confirms the format layer exists for narrow zip/XML inspection and patching, but transition behavior still needs fixture validation in real viewers. |
+| Source | Confidence | What it establishes |
+|---|---|---|
+| Typst CLI local `typst 0.15.0`, `typst compile --help` | HIGH | `--root`, custom/isolated font paths, `SOURCE_DATE_EPOCH`, PDF standard, page-select and PNG export are current in the workspace. |
+| Typst official CLI / layout / text / image docs: https://typst.app/docs/reference/cli/ , https://typst.app/docs/reference/layout/block/ , https://typst.app/docs/reference/text/text/ , https://typst.app/docs/reference/visualize/image/ | HIGH | Non-splitting blocks, font fallback controls and image fit policy. |
+| Typst official release page: https://github.com/typst/typst/releases/tag/v0.15.0 | HIGH | Tested CLI release line. |
+| pypdf official docs: https://pypdf.readthedocs.io/en/stable/ | HIGH | `PdfReader` page count and per-page `mediabox` structural checks. Local PyPI metadata reports `6.14.2`. |
+| Pillow official docs/security: https://pillow.readthedocs.io/en/stable/reference/ImageOps.html , https://pillow.readthedocs.io/en/stable/reference/Image.html , https://pillow.readthedocs.io/en/stable/handbook/security.html | HIGH | EXIF transpose, bounded resize helpers and decompression-bomb handling. |
+| Existing v1.18 clean-delivery contracts and Typst skill scripts in this repository | HIGH | Candidate-first publication, exact bundle/no-op/history/rollback boundary that v1.19 must reuse. |
 
 ## Roadmap Recommendation
 
-Suggested phase split for `school-pptx`:
+1. **Stack and font baseline**: vendor/license fonts, lock Typst/Python package prerequisites, build the prerequisite probe and create visual Typst fixtures.
+2. **Shared schema and theme contract**: parser/validator, controlled theme manifest, no-photo/photo variants and safe Pillow normalization. Keep all style and density controls out of student data.
+3. **Renderer and bounded convergence**: Markdown -> Typst, semantic density ladder, one/two-page partition and non-splitting blocks.
+4. **Evidence and six-runtime gate**: PDF page/A4/readability structure checks, PNG visual fixtures, candidate publication/rollback, and installation-time adapter verification including OpenClaw/Hermes.
 
-1. **Template normalization and manifest** - standard `.pptx`, named layouts/slots, fixture deck, manifest, and XML/readback inspection.
-2. **Markdown contract and AST parser** - YAML, `::: slide`, `::: notes`, layout allowlist, table/code/image contracts, and parser diagnostics using Pandoc JSON.
-3. **Editable PPTX renderer** - `python-pptx` object generation for text, notes, images, tables, code, timeline/gallery basics, and continuation slides.
-4. **Overflow and verification gate** - budget estimators, logical-to-physical mapping, strict readback checks, XML package checks, and optional transition experiment.
-
-Do not make transitions, arbitrary template import, syntax highlighting, complex animation, or Office-driven visual export part of the minimum accepted slice.
+Phase 1 must precede layout work: without pinned fonts, every page-budget result is provisional. Phase 3 must precede final publication mechanics: the delivery layer should publish only a renderer output already proven to satisfy page and structural constraints.
