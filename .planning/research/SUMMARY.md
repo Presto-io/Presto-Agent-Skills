@@ -1,224 +1,151 @@
 # Project Research Summary
 
-**Project:** Presto Agent Skills v1.17 `school-pptx`
-**Domain:** 学校固定模板 Markdown-to-editable-PPTX 技能
-**Researched:** 2026-07-13
-**Confidence:** HIGH for milestone scope, feature boundary, and documented `python-pptx`/Pandoc capabilities; MEDIUM for transition XML and cross-viewer PPTX behavior until fixture验证。
+**Project:** Presto Agent Skills v1.19 `graduate-resume` / 毕业生高级简历生成器
+**Domain:** 面向电气、机电、智能制造、发电厂与新能源方向大专毕业生的离线 Markdown-to-Typst/PDF 简历技能
+**Researched:** 2026-07-17
+**Confidence:** HIGH（产品边界、Typst、Python PDF/图片能力与现有交付纪律均有直接依据；视觉密度需样张验收）
 
 ## Executive Summary
 
-`school-pptx` 应作为一条新的可编辑 PPTX 技能线，而不是 `school-presentation` 的 HTML 导出扩展。专家做这类固定学校模板生成器时，不应让 Markdown 控制坐标、字体、颜色或任意 PPT XML；正确边界是模板拥有视觉和几何，Markdown 拥有逻辑内容，renderer 负责分页、适配和写入可编辑 PPTX 对象。
+v1.19 是一个离线、可审阅、面向投递的简历生成技能，不是招聘平台、在线编辑器或自动投递系统。专家实现应把学生已核实事实收敛为唯一的主题无关 Markdown/YAML schema；通用版、多个单位/岗位定向版、主题化、照片/无照片和 1/2 页变体都只能从该 schema 派生。可选 AI 仅能把零散材料整理成待审阅草稿；一旦进入 `validate`、`target`、`plan`、`render`、`batch`，必须是零 token、无网络、可重复的纯 CLI 路径。
 
-推荐路线是先把人类友好的 `.potx` 视觉样例手工归一化为 skill-local 标准 `.pptx` 模板，再用 manifest/slot map 固定 11 个 layout 的 placeholder、frame geometry、预算和 overflow 规则。随后定义 YAML + `::: slide {layout="..."}` Markdown contract，最后用 Python + `python-pptx` 生成文本、图片、表格、notes、timeline、gallery、code 等可编辑对象，并通过 OOXML/ZIP 结构检查做 verification gate。
+推荐采用单技能目录内的 Python 3.11+ CLI、锁定 Typst 0.15.0、PyYAML、Pillow 与 pypdf：受控主题和随技能交付的中文字体拥有视觉与几何，Python 负责 schema、定向规则、冻结布局计划、验证和候选发布，Typst 是唯一 PDF 生成器。正确流水线是 `Markdown -> CanonicalResume -> TargetedResume -> ThemeSpec -> FrozenLayoutPlan -> Typst -> PDF -> 验证 -> 干净交付`；其中布局计划而不是 Typst 的临场溢出处理，是 1/2 页与双页完整性的唯一权威。
 
-主要风险是把原始 `.potx`、截图式高保真、复杂动画、自由 Markdown 样式或“文件非空”误当成功标准。缓解方式必须进入 requirements 和 verification：标准模板和 slot map 是硬前置；Markdown 必须受限；逻辑页可扩展为多张物理页；文本/表格/代码/notes 必须可验证为可编辑对象；转场仅在可靠保留或生成并通过 XML/Office 兼容验证时启用，否则无动画通过。
+最大风险是用系统字体、任意 Markdown/Typst、自动缩字或部分批量发布换取“生成成功”，从而破坏中文换行、真实性、可读性、隐私和既有 v1.18 交付保证。以固定字体与资产、白名单主题、经历不可拆块、有限密度阶梯、PDF 结构与视觉双重证据、候选优先的整 bundle 发布及失败关闭来防护；条件缺口、待确认资料、无效照片、非 A4、非 1/2 页、孤立标题、拆分经历或未知交付文件均不得发布投递件。
 
 ## Key Findings
 
 ### Recommended Stack
 
-第一版应保持轻量、skill-local、可跨 Codex/Claude/Gemini/OpenCode/OpenClaw/Hermes Agent 安装。`python-pptx` 是主 PPTX writer；Pandoc 更适合做 Markdown AST/contract 辅助和参考转换，不应作为最终 PPTX renderer；OOXML 只用于小范围检查和受控后处理。
+保留轻量的 skill-local 运行时，不引入 Node、数据库、浏览器、Office 自动化、运行时下载或模型 API。所有前置依赖只探测、不自动安装；六个 runtime 都安装完整 `skills/graduate-resume/` 目录，OpenClaw 与 Hermes 还须完成 shell wrapper 回退、前置探测和小型 fixture 渲染。
 
-**Core technologies:**
-- Python 3.11+：skill-local renderer、verifier、CLI orchestration；不要把本机 Python 3.14 作为用户硬要求。
-- `python-pptx==1.0.2`：打开标准 `.pptx` 模板，写 slides、text、pictures、tables、speaker notes，并读回做 smoke verification。
-- Pandoc 3.x CLI：解析/规范化 Markdown、辅助 AST fixture 和 notes/slide-level contract 验证；不负责最终版式。
-- Python `zipfile` + XML inspection：检查 PPTX package、relationships、notes parts、media parts、layout references、transition XML。
-- 标准 `.pptx` 模板 + `template-manifest.yaml`：作为 renderer 的 layout/slot/budget 真相源。
+**核心技术：**
 
-**Version requirements:**
-- `python-pptx` 需固定到当前研究确认的 1.0.2 线，并在 `verify` 中记录 import/version。
-- Pandoc 作为外部 CLI 前置项记录版本；本地已验证有 Pandoc 3.10，但技能不能假设所有 runtime 已安装。
-- 转场/动画不得基于未验证的内部 API；任何 Open XML patch 都必须 fixture-gated。
+- **Python 3.11+ 与标准库：** 实现 CLI、受限 Markdown/YAML contract、路径/哈希/事务、定向、布局与交付；避免服务端和运行时网络。
+- **Typst CLI 0.15.0：** 唯一的 `.typ -> .pdf` 引擎；以 `--root`、`--font-path`、`--ignore-system-fonts`、固定时间戳和 PDF 标准获得受控 A4 输出及同源 PNG 证据。
+- **PyYAML 6.0.3：** 安全解析 front matter、target 与 batch 清单；Markdown 保留可审阅经历正文，YAML 只承载结构化标量与选择。
+- **Pillow 12.3.0：** 校验和规范化可选照片，执行 EXIF 方向修正、尺寸/像素限制、sRGB 转换和受控 JPEG/PNG 产物。
+- **pypdf 6.14.2：** 验证真实 PDF、精确 1 或 2 页、逐页 A4 mediabox、基础文本和 metadata；不把“可打开”误作版式通过。
+- **固定 Noto Sans CJK SC 或 Source Han Sans CN 字体包：** 字体、许可证清单、哈希和 Typst family name 随技能交付；禁止系统字体 fallback，v1 首选单一 Sans 主题以减少度量漂移。
 
 ### Expected Features
 
-**Must have (table stakes):**
-- 新建 `skills/school-pptx/` canonical `SKILL.md`，包含六 runtime adapter notes，OpenClaw/Hermes 是必需目标。
-- Markdown-first 工作流：先形成教师可审阅 `school-pptx-full.md`，脚本只消费定稿 Markdown。
-- 固定 YAML 字段：`title/subtitle/school/department/program/course/author/presenter/date/theme`；未知值不得虚构。
-- 受控 `theme`，未知 theme 硬失败或要求用户选择。
-- 显式 `::: slide {layout="..."}`，不靠标题或视觉猜 layout。
-- 11 个固定 layout：`cover/contents/section/title-content/two-column/image-text/table/timeline/gallery/code/closing`。
-- 自动 contents：从所有 `##` 生成，`#` 只作文档标题 fallback。
-- 逻辑页自动扩展为物理页，覆盖长正文、长表格、timeline、gallery。
-- 可编辑 PPTX 对象：文本、表格、图片、notes、timeline、gallery、plain code 都不能整页截图冒充。
-- 图片 contain 等比放置；gallery 每页 4 图；timeline 横向；code 可编辑无高亮。
-- 重复可验证输出：example/render/verify 能检查 slide count、layout mapping、manifest、notes、media、table、pagination、非空 PPTX。
+**v1 table stakes：**
 
-**Differentiators:**
-- 从 `.potx` 视觉样例手工归一化为标准 `.pptx`，避免脚本猜测人类模板。
-- 固定 frame geometry 和 slot map，保证学校模板一致性。
-- 有界弹性文本策略：字号只在可读范围内调整，超出即分页。
-- logical-to-physical manifest，让用户和 verifier 知道一页 Markdown 拆成哪些 PPTX 页。
-- 可解释降级报告：转场、代码高亮、复杂表格等不稳定能力要写入 manifest/控制台摘要。
+- 主题无关且可审阅的统一 resume schema，含稳定事实 ID、源位置、资料完整性/占位符/日期/重复项校验。
+- 无岗位信息的通用版，以及由独立 target 文件驱动的多单位/岗位定向版；定向只能选择、排序和追溯已核实事实。
+- 硬条件的 `meets/gap/unknown/not-applicable` 报告；未知不等于满足，未满足的 required 条件默认不发布定向 PDF。
+- 登记制主题与照片/无照片布局变体；主题拥有字号、边距、槽位、密度和分页预算，schema 不含颜色、坐标、字体或 Typst 表达式。
+- 同源 `Markdown -> Typst -> PDF` 三件套，明确的一页优先/两页模式、A4 检查、标题与首条目绑定、经历/项目不可拆、无空白或无标题续页。
+- 零 token CLI 的 `validate`、`target`、`plan`、`render`、`batch`、`verify`；可选 AI 整理与确定性 CLI 严格分层。
+- candidate-first 的干净交付、全 bundle no-op/history/rollback 语义；批次默认先完成所有 job 验证再发布。
 
-**Deferred (v2+):**
-- 代码语法高亮。
-- 复杂对象动画。
-- 任意模板导入或市场模板 autodetection。
-- 智能图表/SmartArt。
-- 自动内容改写。
-- 高级表格样式。
-- 图片裁切/焦点控制。
-- PPTX 到 PDF/图片导出。
+**v1 应包含的差异化能力：** 电气相关课程实训、PLC/配电/安全/证书等可检索证据槽；变体 identity 至少包含 `target_id/theme/photo_mode/page_mode`；隐藏 evidence 或控制台给出定向选择理由；内容预算预检只做预警，最终以 PDF/布局 gate 为准。
 
-**Out of scope for v1.17:**
-- 直接 source-to-target，无 Markdown intermediate。
-- 把 `school-presentation` HTML renderer 当 PPTX 输出方案。
-- Markdown 控制坐标、字体、颜色、crop、animation XML。
-- 整页截图式 PPTX。
-- 强加全局页脚。
-- 复杂动画和未验证转场。
-- 托管分享、课堂互动、浏览器播放控件。
+**明确排除/延后：** 任何自动投递、招聘网站抓取或 JD 猜测、OCR/证书真伪核验、ATS 分数或录用预测、在线协作/托管、自由模板市场、用户自定义 Typst/字体/坐标/配色、将 AI 调用嵌入 render/batch，以及为凑页数自动删事实、缩到低于可读下限或生成第三页。硬条件为 gap 时可产出单独诊断的策略可在用户决定后支持，但不得产出投递 PDF。
 
 ### Architecture Approach
 
-架构应采用 standalone skill folder：`SKILL.md` 是轻入口，长规则放 `references/`，教师模板放 `templates/`，脚本入口放 `scripts/school-pptx.sh`，Python internals 放 `scripts/school_pptx/`。核心数据流是：source materials / supplied POTX -> hand-normalized standard PPTX template + manifest -> teacher-reviewable Markdown logical deck -> parser/pagination model -> editable PPTX renderer -> hidden verification evidence + public PPTX output。
+技能必须独立放在 `skills/graduate-resume/`，拥有自己的 `SKILL.md`、模板、references、字体/图标、shell wrapper、Python 模块和 fixtures；只能复用 v1.18 的交付语义，不能运行时调用兄弟技能。流水线单向且边界明确：解析器保留源行号，validator 构建 `CanonicalResume`，target resolver 产生不可回写的 `TargetedResume` 和缺口报告，theme registry 选择白名单 `ThemeSpec`，planner 先冻结 `FrozenLayoutPlan`，emitter 机械发射 Typst，verifier 生成结构/视觉 evidence，publisher 仅发布已通过的完整候选 bundle。
 
-**Major components:**
-1. `templates/school-standard.pptx`：归一化后的机器可映射模板，包含稳定 layout 和 placeholder。
-2. `references/template-manifest.yaml`：layout id、slot name、placeholder idx/name、EMU geometry、字体预算、overflow 策略。
-3. `references/markdown-contract.md`：YAML、`theme`、slide block、notes、layout allowlist、禁止 styling escape hatch。
-4. `templates/school-pptx.md`：覆盖 11 个 layout、notes、media、pagination 的全功能 fixture。
-5. `scripts/school-pptx.sh`：稳定命令面，至少提供 `example`、`template-report`、`render`、`verify`。
-6. `scripts/school_pptx/markdown_parser.py`：解析 frontmatter、slide blocks、notes、media、tables、code。
-7. `scripts/school_pptx/template_model.py`：读取 manifest，检查模板 layout/slot 映射。
-8. `scripts/school_pptx/pagination.py` / `fit.py`：在写 PPTX 前完成 logical -> physical splitting 和预算判断。
-9. `scripts/school_pptx/pptx_writer.py`：用 `python-pptx` 写可编辑对象。
-10. `scripts/school_pptx/ooxml_inspector.py` / `verify.py`：结构化检查 PPTX package、notes、relationships、media、layout、object editability。
+**主要组件：**
 
-**Key architecture decisions:**
-- 模板标准化先于 renderer：`.potx` 是视觉证据，不是运行时 contract。
-- Manifest/slot map 是 renderer 的唯一几何和预算真相源。
-- Markdown contract 只表达语义内容和允许的 layout，不表达视觉参数。
-- Renderer 拥有分页、文本适配、continuation slide 和输出 manifest。
-- OOXML verify 补足 `python-pptx` 读写 API 不覆盖的结构检查，尤其 notes、relationships、transitions、package invariants。
+1. **Markdown parser + schema validator：** 把受限 Markdown/YAML 转为有稳定 ID 的唯一事实模型，并对未知字段和 review marker 失败关闭。
+2. **target resolver：** 根据已确认 target 规则计算 included/deprioritized/qualification gaps；不推断、补齐或篡改资格事实。
+3. **theme registry + photo normalizer：** 从白名单主题读取 token、A4 预算与照片槽；照片必须是允许根内的普通本地文件，拒绝符号链接、伪装格式、超限尺寸和解压炸弹。
+4. **layout planner：** 先一页、再预定义两页语义分区；预留标题与首项、完整经历块，输出可审计的 `FrozenLayoutPlan`，不以反复编译或缩字修补。
+5. **Typst emitter + PDF verifier：** emitter 只执行计划，以 `block(breakable: false)` 与计划页间断作第二道防线；验证 schema、定向、主题、计划、Typst metadata、PDF A4/页数/文本/照片模式。
+6. **delivery publisher + aggregate verify：** 候选目录完整生成，精确 managed path set、whole-bundle 比较、历史归档和可处理失败回滚；日志、缺口报告、布局 JSON、哈希与 PNG 只留在 `.work/`/外部 workdir。
 
 ### Critical Pitfalls
 
-1. **把 `.potx` 当运行时模板输入** — 先手工归一化为标准 `.pptx`，再用 `template-report` 验证 layouts/placeholders/geometry。
-2. **Markdown grammar 太自由** — requirements 必须限制为 YAML + slide blocks + controlled theme，拒绝 raw HTML、坐标、字体、颜色、任意 styling。
-3. **整页截图或图片捷径破坏可编辑性** — verification 必须检查文本/code 是 text shapes，表格是 table objects，图片是 picture relationships。
-4. **PowerPoint 打开即误判成功** — gate 必须检查 slide count、layout IDs、placeholder fills、notes、media、table dimensions、manifest mapping、OOXML invariants。
-5. **转场/动画过度承诺** — v1.17 默认无动画；0.5s smooth transition 仅在模板保留或 XML patch 经 fixture 证明后启用。
-6. **字体和 autofit 不稳定** — 用 manifest 预算和有界字号 fallback，超出预算分页，不依赖 PowerPoint 视觉 overflow。
-7. **OpenClaw/Hermes 运行假设未写清** — adapter notes 必须覆盖 whole-folder installation、support-file discovery、script allowlist、write boundary 和 dependency checks。
+1. **把系统字体或 fallback 当作可用字体。** 中文字形与换行会改变页数；随技能锁定并校验字体包、family name、哈希和 Typst 版本，以 `--ignore-system-fonts` 编译。
+2. **让主题、照片或定向污染基础资料。** 会产生多份事实真相和跨目标串味；只允许 `CanonicalResume` 派生不可覆盖视图，主题只映射标准字段，照片只是素材引用与 job 选择。
+3. **在 Typst 渲染期自动缩字、删 bullet 或硬凑页数。** 会造成不可解释的低可读性或拆分经历；先冻结有限密度阶梯和 1/2 页计划，不能容纳即指出 entry 并非零失败。
+4. **把 PDF 非空/能打开等同投递通过。** 无法发现非 A4、孤立标题、跨页经历或错误照片；要求语义、结构、PDF 内容/页面、PNG 视觉与人工 UAT 的分层 gate。
+5. **批次部分成功或失败污染当前成果。** 会破坏可审阅版本集；默认全体 job 预检与候选验证通过后再发布，未知文件/符号链接/部分 bundle 均人工审计、失败关闭。
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+### Phase 46: 资料契约、字体与可验证夹具
 
-### Phase 41: Standard Template and Manifest
+**Rationale:** schema、输入身份与字体是之后主题、定向和页数结论的共同前置，不能先写 renderer。
+**Delivers:** 独立 skill 骨架、canonical `SKILL.md`/六 runtime 边界、锁定前置探测、字体/许可证/manifest、统一 Markdown/YAML schema、target/batch contract、稳定 ID、正常/缺口/待确认/有无照片 fixtures 与 validator。
+**Addresses:** shared schema、真实性校验、通用/定向输入、零 token 边界、照片规则。
+**Avoids:** schema 主题耦合、目标关键词回写、隐式系统字体、个人信息写入不安全路径。
 
-**Rationale:** 模板和 slot map 是后续 Markdown、renderer、verify 的共同前置；没有稳定 template contract，所有后续工作都会漂移。
-**Delivers:** `skills/school-pptx/` skeleton、`templates/school-standard.pptx`、`references/template-normalization.md`、`references/template-manifest.yaml`、`template-report` 初版和 fixture evidence。
-**Addresses:** 标准模板归一化、固定 frame geometry、11 layout inventory、受控 theme。
-**Avoids:** 原始 `.potx` autodiscovery、dirty master/layout、placeholder inheritance mismatch、转场误承诺。
+### Phase 47: 受控主题、照片和 1/2 页冻结布局
 
-### Phase 42: Markdown Contract and Full Fixture
+**Rationale:** 先手工验收同一资料的一页、两页、无照片、照片参考面，才能将真实中文密度固化为可测试主题预算。
+**Delivers:** `ThemeSpec` registry、首个受控主题及主题自检、Pillow 安全照片规范化、无照片重排、有限密度阶梯、`FrozenLayoutPlan`、标题/首项与经历不可拆规则、溢出诊断。
+**Addresses:** 主题化、照片/无照片、1/2 页 A4、双页逻辑完整性。
+**Avoids:** 任意样式输入、空照片框、自动裁剪/缩字、孤立标题、第三页和拆分经历。
 
-**Rationale:** 用户可见输入面必须先稳定，renderer 才能按合同实现；这也继承仓库 Markdown-first 的既有成功模式。
-**Delivers:** `references/markdown-contract.md`、`templates/school-pptx.md` 全 layout fixture、parser/model 层 validation、contents 从 `##` 生成的测试证据。
-**Addresses:** YAML 字段、controlled `theme`、显式 slide blocks、notes 语法、table/code/image/timeline/gallery 合同、deferred/out-of-scope 边界。
-**Avoids:** Markdown-level styling、目录 heading 混淆、未知 layout/theme 静默 fallback、未解决 review markers 进入渲染。
+### Phase 48: 确定性定向渲染与干净批量交付
 
-### Phase 43: Editable PPTX Renderer and Pagination
+**Rationale:** 只有 schema 与布局已闭合，target resolver 和三件套输出才不会把选择规则或发布失败混入内容层。
+**Delivers:** target resolver 和资格四态/可追溯缺口报告、Typst emitter、Typst 编译、pypdf structure/content gate、单 job candidate 交付、默认全有或全无 batch transaction、exact-set/no-op/history/rollback。
+**Addresses:** 多 target、定向选择、Markdown/Typst/PDF 三件套、零 token batch、失败隔离。
+**Avoids:** AI in the loop、硬条件虚构、同 stem 覆盖、半批发布、日志/evidence 泄露至投递根。
 
-**Rationale:** 有模板 contract 和 Markdown contract 后，renderer 才能集中实现可编辑对象、contain 图片、逻辑页分页和输出 manifest。
-**Delivers:** `render` 命令、`python-pptx` writer、logical-to-physical manifest、text/table/timeline/gallery/code pagination、notes 写入、media resolver、clean public output。
-**Uses:** Python 3.11+、`python-pptx==1.0.2`、manifest/slot map、Pandoc AST 或结构化 Markdown parser。
-**Implements:** parser、layout engine、pagination、fit、pptx_writer、hidden evidence。
-**Avoids:** screenshot PPTX、PowerPoint visual overflow、placeholder stale handles、notes slide accidental creation、hidden diagnostics 泄漏。
+### Phase 49: 证据回归、跨 runtime 与发布验收
 
-### Phase 44: Verification Gate, Runtime Notes, and UAT Evidence
-
-**Rationale:** PPTX 文件“存在”不是验收；必须把结构化验证、负例、runtime adapter、manual visual UAT 作为交付门槛。
-**Delivers:** `verify --workdir`、dependency gate、template gate、parser negative tests、render/readback checks、OOXML inspection、clean-output check、six-runtime adapter notes、PowerPoint/WPS/Keynote 或 fallback viewer 手工 UAT 记录。
-**Addresses:** slide count、layout map、notes、media、tables、code text、pagination、non-empty/openable PPTX、standalone skill install。
-**Avoids:** false green、runtime discovery failure、OpenClaw/Hermes support drift、transition XML corruption。
+**Rationale:** 文档和渲染命令完成不代表 PDF 可投递；必须独立复算所有 gate，并在非开发机字体环境验证。
+**Delivers:** aggregate verify、正常与故障注入测试、同源 144 PPI PNG evidence、PDF/布局 metadata 检查、macOS 加至少一个非 macOS 的视觉 UAT、六 runtime adapter 的安装期 fixture 验证，特别是 OpenClaw/Hermes。
+**Addresses:** 交付可信度、可重复性、跨 runtime 可用性。
+**Avoids:** 仅测开发机、仅检查 PDF 存在、字体漂移、无证据的兼容性承诺。
 
 ### Phase Ordering Rationale
 
-- Template/manifest first because layout names、slot geometry、placeholder ids 和预算定义了 Markdown 能表达什么。
-- Markdown contract second because parser、fixture、contents、notes 和 unsupported syntax 必须在 renderer 前稳定。
-- Renderer third because可编辑对象和 pagination 依赖已锁定的 template + Markdown contract。
-- Verification last as milestone acceptance gate，但每个阶段都应带局部验证；最终 phase 聚合结构化 PPTX gate、负例和 runtime notes。
+- 先锁 schema、资产和字体，避免后续主题容量、定向和 PDF 页数建立在不稳定输入上。
+- 将布局作为独立于 Typst 与发布层的冻结计划，确保 1/2 页规则可解释、可回归，且不允许渲染器改写事实。
+- 只有单 job 的内容、分页和 PDF gate 都闭合后，才把 v1.18 candidate-first 语义扩展到定向批量，避免用发布机制掩盖内容失败。
+- 最后做跨运行时与视觉 UAT，因为这是依赖受控字体、主题样张和端到端产物的系统级验收，而不是文档检查。
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 41:** 真实 `.potx` 到标准 `.pptx` 的归一化、placeholder idx/name/geometry、notes master 状态、转场保留策略需要样例级研究。
-- **Phase 43:** `python-pptx` notes、table insertion、placeholder replacement、字体/autofit、图片 contain、editable timeline/gallery primitives 需要实现 spike。
-- **Phase 44:** OOXML inspection、transition XML、PowerPoint/WPS/Keynote compatibility、OpenClaw/Hermes runtime install behavior 需要 fixture/UAT 研究。
+**规划时需深入研究：**
 
-Phases with standard patterns (skip research-phase unless new evidence appears):
-- **Phase 42:** Markdown-first contract、显式 review markers、fixture-first、unsupported syntax hard fail 已有本仓库模式可复用。
-- **Phase 44 adapter docs 部分:** 六 runtime adapter notes 的文档结构已有模板；重点是补本技能的 dependency/write-boundary 细节。
+- **Phase 47：** 中文/Latin 混排的实际字号、行高、边距、主题容量、照片 crop/contain 策略和双页锚点都必须通过受控样张与人工 UAT 定稿。
+- **Phase 48：** target 硬条件的最小表达式、默认阻断边界和 gap report 的公开位置需要落实为精确 schema/交付契约；PDF 文本/图像证据组合也须用真实与损坏 fixture 验证。
+- **Phase 49：** 六 runtime 的 whole-folder 发现、路径权限、字体可见性和 OpenClaw/Hermes shell fallback 要在真实安装环境确认。
 
-## Risks for Requirements and Verification Gates
+**可按成熟模式实施：**
 
-**Must enter requirements:**
-- Renderer consumes normalized skill-local `.pptx`, not raw `.potx`.
-- Normalized template has committed layout/placeholder/slot map.
-- Markdown contract is constrained to YAML + explicit slide blocks.
-- `theme` is a controlled identifier, not a style object.
-- Logical slides may expand into multiple physical slides.
-- Text、tables、notes、images、timeline、gallery、code must be editable PPTX objects where applicable.
-- Whole-slide screenshot PPTX is banned.
-- Complex object animation is out of scope; transition is optional and gated.
-- `school-pptx` is standalone and skill-local; no sibling skill runtime dependency.
-- OpenClaw and Hermes Agent adapter notes are mandatory.
-
-**Must enter verification gates:**
-- Dependency gate: `python3` imports `pptx`; version recorded; wrapper `--help` works.
-- Template gate: `.pptx` opens; masters/layouts/placeholders/names/types/idx/geometry match manifest.
-- Markdown gate: invalid layout/theme, raw HTML, unsupported styling, missing media, unresolved markers fail non-zero with locatable errors.
-- Render gate: PPTX opens; slide count and logical-to-physical mapping match manifest.
-- Contents gate: generated from `##` only; `#` not duplicated into contents except title fallback.
-- Notes gate: expected notes exist; slides without notes do not accidentally gain notes.
-- Object editability gate: no full-slide screenshot shortcut; text/code/tables/images/timeline/gallery represented structurally.
-- Pagination gate: long text/table/timeline/gallery fixtures split predictably; table headers repeat.
-- Clean output gate: public output excludes manifests/logs/status/temp/debug JSON unless explicitly requested or failure diagnostics.
-- Runtime adapter gate: Codex/Claude/Gemini/OpenCode/OpenClaw/Hermes notes cover support files, script execution, dependencies, and write boundaries.
+- **Phase 46：** skill-local 目录、受限 YAML 校验、fixture 驱动和前置依赖 probe 与现有文档技能模式一致。
+- **Phase 48 的候选发布子项：** 直接移植 v1.18 已验收的 exact-set、no-op、history、rollback 与 fail-closed 语义，并在本 skill 内重新实现测试。
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH/MEDIUM | HIGH for `python-pptx` documented slides/shapes/tables/pictures/notes and Pandoc documented PPTX/AST behavior; MEDIUM for transition post-processing and cross-viewer compatibility. |
-| Features | HIGH | Based on `.planning/PROJECT.md`, active v1.17 scope, existing Markdown-first skill family, and confirmed first-version boundaries. |
-| Architecture | HIGH/MEDIUM | HIGH for repository structure、standalone skill pattern、Markdown logical deck pattern；MEDIUM for exact PPTX placeholder/notes behavior until fixture proof. |
-| Pitfalls | HIGH/MEDIUM | HIGH for known python-pptx/template/Markdown risks from official docs and local project patterns；MEDIUM for OpenClaw/Hermes exact runtime execution until validated. |
+| Stack | HIGH | Typst 0.15.0、本地能力与官方文档；pypdf/Pillow 官方 API；现有 skill-local CLI 先例。 |
+| Features | HIGH | 直接来自 v1.19 项目目标和明确的 shared schema、零 token CLI、分页纪律。 |
+| Architecture | HIGH | 与仓库既有 Markdown-first/candidate-first 模式一致，且 Typst 不可拆 block/分页能力有官方依据。 |
+| Pitfalls | HIGH | 基于已知字体、PDF、图片、批处理和 clean-delivery 失败模式；视觉阈值的具体值仍待样张验证。 |
 
-**Overall confidence:** MEDIUM-HIGH
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- Real `.potx` sample behavior: planning must decide exact normalization evidence and whether to commit `.pptx` plus extracted placeholder-map JSON.
-- Font policy: choose minimum Chinese font/fallback strategy for macOS/Linux/OpenClaw/Hermes and avoid relying on unavailable metrics.
-- Transition mode: decide whether to defer entirely or preserve template transition only; do not make it a success dependency.
-- Parser implementation choice: Pandoc JSON vs Python Markdown parser needs a small spike focused on fenced div attributes and line-local diagnostics.
-- Manual visual UAT: structural checks are necessary but not sufficient; first accepted template needs at least one PowerPoint-compatible visual review.
+- **硬条件语言与阻断策略：** 用户需决定 v1 仅接受布尔/枚举/最小年限等受控规则，还是加入受控文本规则；建议 v1 限于前者，并将 `required.all` gap 默认阻断投递 PDF。
+- **照片默认与授权：** 用户需确认默认无照片，以及照片是否由候选人、投递渠道或每个 target 显式授权；在决定前采用无照片默认和 `contain` 优先，避免头部裁切。
+- **中文可读性与主题容量：** 需由代表性一页/密集两页 fixture 在 macOS 和至少一个非 macOS 环境执行 PNG/PDF 人工 UAT 后锁定最小字号、行高、边距与预算。
+- **target 时效与报告可见性：** 用户需决定 brief 的 `as-of`/截止日期策略，以及缺口报告仅作为隐藏诊断还是允许单独公开；建议无日期/未人工确认的 target 不生成最终定向 PDF，报告不进入投递 bundle。
+- **本地历史隐私：** 技能可限制路径和产物边界，但无法单独承诺 OS 级加密或访问控制；用户需按部署环境决定历史目录保留与保护策略。
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `.planning/PROJECT.md` — v1.17 goal, active requirements, out-of-scope, repository constraints, milestone history.
-- `.planning/research/STACK.md` — recommended stack, dependency boundaries, `python-pptx`/Pandoc/OOXML division of labor.
-- `.planning/research/FEATURES.md` — table stakes, differentiators, anti-features, MVP recommendation, acceptance checklist.
-- `.planning/research/ARCHITECTURE.md` — component boundaries, directory structure, command surface, manifest/slot map, pagination model.
-- `.planning/research/PITFALLS.md` — risks, required requirement gates, verification gates, phase warnings.
-- `python-pptx` official documentation — slides, placeholders, pictures, tables, text frames, notes, unsupported feature boundaries.
-- Pandoc manual — Markdown-to-PPTX, `reference.pptx`, slide-level, speaker notes, layout-name behavior.
 
-### Secondary (MEDIUM confidence)
-- Microsoft Open XML / PresentationML documentation — package structure and transition XML feasibility, still requiring fixture validation.
-- Context7 python-pptx extracts cited by PITFALLS — cross-check for notes, placeholders, tables, autofit behavior.
-
-### Tertiary (LOW confidence)
-- None used as decision source.
+- [.planning/PROJECT.md](../PROJECT.md) — v1.19 范围、共享 schema、Markdown→Typst→PDF、零 token CLI、主题/照片、1/2 页和 clean-delivery 强制纪律。
+- [STACK.md](STACK.md) — 固定版本、字体/照片/PDF 证据、六 runtime 前置和交付边界。
+- [FEATURES.md](FEATURES.md) — table stakes、差异化能力、反功能、用户流程与验收点。
+- [ARCHITECTURE.md](ARCHITECTURE.md) — 单向模型、组件边界、冻结布局、CLI 与 candidate publication。
+- [PITFALLS.md](PITFALLS.md) — 字体、真实性、分页、隐私、批处理与跨 runtime 风险防护。
+- Typst 官方文档：CLI、`block`、`pagebreak`、`text`、`image`、`query` — 受控编译、不可拆模块、分页与 metadata 验证依据。
+- pypdf 与 Pillow 官方文档 — PDF 结构检查、EXIF 转置、图像尺寸与解压炸弹防护。
 
 ---
-*Research completed: 2026-07-13*
+*Research completed: 2026-07-17*
 *Ready for roadmap: yes*

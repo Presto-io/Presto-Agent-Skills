@@ -1,214 +1,148 @@
-# Feature Landscape: school-pptx
+# Feature Landscape: 毕业生高级简历生成器
 
-**Domain:** 学校固定模板 Markdown-to-PPTX 技能  
-**Researched:** 2026-07-13  
-**Overall confidence:** HIGH for project-scoped feature boundary; MEDIUM for PPTX implementation difficulty until renderer spike验证。  
+**Domain:** 面向电气、机电、智能制造、发电厂与新能源方向大专毕业生的本地 Markdown-to-Typst/PDF 简历生成技能
+**Researched:** 2026-07-17
+**Overall confidence:** HIGH（功能边界来自当前项目定义；真实招聘方字段偏好仍需以岗位样本验证）。
 
 ## Research Basis
 
-本研究基于当前 v1.17 `school-pptx` 里程碑边界、项目级 Markdown-first 技能约定、`school-presentation` 既有逻辑页经验，以及用户已确认的字段和版式范围。`school-presentation` 只作为 Markdown-first、逻辑页拆物理页、固定画布和验证经验来源；不能把它的 HTML 输出、playback、overview、课堂交互或单文件离线模型迁移为 `school-pptx` 的输出方案。
+本研究以 `.planning/PROJECT.md` 中 v1.19 的目标、三项强制纪律（共享 schema、零 token CLI、两页分页保护）为准。它定义的是一个可审阅、可重复生成的简历文档技能，不是招聘平台、在线简历编辑器，也不是承诺通过筛选的自动求职系统。
+
+第一版的产品单位是“同一份已核实学生资料的一个或多个可交付简历变体”。学生资料、岗位/单位约束、主题和照片策略必须是独立维度；渲染器不得以主题、页数或照片位置为理由要求用户重写资料 Markdown。
 
 ## Table Stakes
 
-缺少这些功能时，`school-pptx` 会不像一个可交付的学校 PPTX 技能。
+缺少任一项，v1 无法满足已确认的毕业生简历生成场景。
 
-| Feature | Why Expected | Complexity | First Version | Notes |
-|---------|--------------|------------|---------------|-------|
-| `school-pptx` canonical skill entry | 仓库所有真实技能都需要可触发、可安装、可被多 runtime 读取的 `SKILL.md` | Low | Must | `description` 说明“什么时候使用”，不要写营销句；OpenClaw 与 Hermes Agent 必须出现在 adapter notes。 |
-| Markdown-first 工作流 | 本仓库文档技能的稳定模式是先产出可审阅 Markdown，再进入最终渲染 | Med | Must | 用户交互应先整理/确认 `school-pptx-full.md`，脚本只消费已定稿 Markdown。 |
-| YAML formatter 字段 | 用户需要通过顶层元数据表达学校、课程和作者等封面/模板信息 | Low | Must | 字段固定为 `title/subtitle/school/department/program/course/author/presenter/date/theme`；未知值不得虚构。 |
-| 受控 `theme` | 固定学校模板需要机器可映射的主题标识 | Med | Must | 第一版应只接受已登记的模板标识；未知 theme 硬失败或明确要求用户选择。 |
-| 显式 slide block | PPTX 版式需要可解析、可验证的布局选择 | Med | Must | 使用 `::: slide {layout="..."}`；不要靠标题文本或 Markdown 形状猜 layout。 |
-| 支持 11 个固定 layout | 已确认范围要求覆盖学校汇报常见页面类型 | High | Must | `cover/contents/section/title-content/two-column/image-text/table/timeline/gallery/code/closing` 必须全部可生成示例。 |
-| 封面 slot 固定行为 | 学校模板封面元素不能因缺字段发生漂移 | Med | Must | 缺失封面信息时留空或显示待补标记，不移动其他元素，不重排 logo/标题/装饰。 |
-| 自动目录页 | 学校课件通常要求目录；用户已确认从所有 `##` 生成 | Med | Must | `#` 只作为文档标题 fallback；所有 `##` 进入 contents，顺序等于 Markdown 顺序。 |
-| 逻辑页自动扩展为物理页 | Markdown 逻辑页应易写，超量内容由 renderer 分页 | High | Must | 文本、表格、timeline、gallery 超出预算时拆页；不能用缩到不可读字体来硬塞。 |
-| 可编辑 PPTX 对象 | `school-pptx` 的核心价值是 PowerPoint 可继续编辑 | High | Must | 文本、表格、图片、代码、timeline 基本形状应是 PPTX 对象，不用整页截图冒充。 |
-| 图片等比 contain 放置 | 既有学校 presentation 经验和当前项目 out-of-scope 均反对裁切用户图片 | Med | Must | image-text、gallery 等版式默认保留原始比例，允许留白，不做 fill crop。 |
-| Gallery 每页 4 图 | 用户已确认固定行为 | Med | Must | 多于 4 张自动生成后续物理页；每页维持同一四宫格 slot。 |
-| Timeline 横向布局 | 用户已确认固定行为 | High | Must | 长 timeline 自动分页或分段，不改成纵向列表。 |
-| Table 可编辑和可分页 | 学校课件常见表格需要后续人工微调 | High | Must | 表格使用 PPTX table 或等价可编辑 shape；超长表分物理页，表头可重复。 |
-| Code 可编辑、无高亮 | 第一版不追求高亮，但代码必须能在 PowerPoint 里改 | Med | Must | 使用等宽文本框；保留缩进；不要渲染为图片。 |
-| Speaker notes | PPTX 常见演讲稿需求，且当前里程碑目标包含 speaker notes | Med | Must | Markdown 中应有稳定 notes 语法或约定；写入 PPTX notes，不出现在画面正文。 |
-| 最小转场策略 | 用户已确认 0.5s 平滑可做则做，否则无动画 | Med | Must | 转场不应成为失败原因；不稳定时输出无动画 PPTX 并在 manifest/验证说明中记录。 |
-| 重复可验证输出 | 既有 GSD 里程碑强调黑盒真值命令和证据矩阵 | Med | Must | 需要 example/render/verify 之类命令，验证 slide count、layout、notes、media、table、pagination、非空 PPTX。 |
+| Feature | Why Expected | Complexity | v1 | Notes |
+|---|---|---:|---|---|
+| Canonical `SKILL.md` 与六 runtime adapter | 这是仓库技能的可安装、可触发和可移植入口 | Low | Must | 明确 OpenClaw 与 Hermes Agent；说明 AI 整理和 CLI 渲染的边界。 |
+| 可审阅的统一 Markdown/YAML schema | 同一名学生需要通用版、不同岗位版、不同主题与照片版，资料不能随输出重写 | High | Must | schema 只表达事实、经历、技能、证书、目标意向与可选照片引用；不含坐标、字体、颜色和页面密度。 |
+| 资料完整性与真实性校验 | 简历最小事实集缺失或自相矛盾时不能静默生成“完整简历” | Med | Must | 对必填身份/联系方式、日期、经历结构、重复条目和未解决占位标记给出可定位诊断；不臆造内容。 |
+| 无单位/岗位信息的通用版 | 用户经常先准备投递底稿；没有目标岗位时仍应可用 | Med | Must | 使用学生资料中的专业方向与求职意向，不生成虚构单位、JD 关键词或岗位资格结论。 |
+| 一个输入生成多份单位/岗位定向版 | 毕业生常向多个单位、岗位投递，手工复制会漂移 | High | Must | 从独立的 `targets` 记录逐个生成；每份输出能追溯到目标 id、主题、照片策略和源资料。 |
+| 定向选择而非事实改写 | 定向简历的核心是排序、强调与摘要，而不是添加未做过的项目或资格 | High | Must | 仅在已核实事实中选择/排序可匹配经历、技能、证书；任何定向摘要都必须可回链至源字段。 |
+| 硬性条件缺口报告 | 学历、专业、证书、经验、地点等硬门槛不满足时，悄悄输出会误导用户 | High | Must | 目标资料可声明明确硬条件；输出单独的机器可读和人可读缺口报告，逐项标记满足/缺失/未知，不把“未知”当“满足”。 |
+| 受控主题切换 | 用户需要不同职业视觉风格，但内容可比对且无需重录 | Med | Must | `theme` 是登记的模板标识；未知主题失败并列出可用值。主题只拥有排版 token、区域与照片槽。 |
+| 照片/无照片双变体 | 投递偏好和隐私需求不同，不能让照片成为内容模型分支 | Med | Must | 相同内容可按 `photo` 或 `no-photo` 生成；缺照片资源请求照片版应失败，照片版不应自动裁切或修改事实。 |
+| `Markdown -> Typst -> PDF` 三件套 | Markdown 是可审阅源，Typst 是可检查的排版中间产物，PDF 是投递成品 | High | Must | 成功交付按 v1.18 候选发布与干净目录纪律管理；Typst/PDF 必须来自同一已验证资料。 |
+| 1/2 页 A4 页面模式 | 学生简历常需要一页优先，内容较多时允许两页而非压到不可读 | High | Must | 明确 `one-page` 和 `two-page` 模式，字体/行距只能在预先定义的可读范围内调整。 |
+| 两页逻辑分页保护 | 两页简历不能出现孤立标题、拆开的经历条目或无标题续接 | High | Must | 把教育、实习/项目、证书等作为不可拆或有明确续接标题的模块；无法同时满足阅读性与完整性时非零失败。 |
+| 零 token CLI 验证、定向和批量渲染 | 已标准化资料后的重复工作必须不依赖模型调用 | High | Must | 提供可脚本化的 validate/render/batch 接口；批量运行不调用 AI、网络或隐式人工确认。 |
+| 可选 AI 资料整理模式 | 用户可能只有零散信息；AI 可以协助归一，但不能混入确定性渲染路径 | Med | Must | 输出仍须是待审阅的统一 Markdown；AI 输出中的待确认项不能跨过渲染校验。 |
+| 批次结果与失败隔离 | 多目标批量中一个岗位资料错误不应污染已生成的成功版本 | High | Must | 每个 target 有明确状态；所有输出完成候选验证后再发布，失败保留当前成功版本并给出目标级诊断。 |
 
 ## Differentiators
 
-这些功能不是泛用 Markdown-to-PPTX 的最低要求，但会让该技能真正贴合“学校固定模板”。
+这些能力使技能更适合技术类大专毕业生的真实投递，而非只是一张通用简历模板。
 
-| Feature | Value Proposition | Complexity | First Version | Notes |
-|---------|-------------------|------------|---------------|-------|
-| 从 `.potx` 视觉样例手工归一化为标准 PPTX 模板 | 降低脚本直接读人类模板时的不可控性 | High | Must | 先建立机器可映射 slot、placeholder、layout 名称和尺寸预算，再自动化。 |
-| 固定 frame geometry | 学校模板一致性优先于 Markdown 自由排版 | High | Must | 每个 layout 有固定坐标、字体层级、图片槽和安全边距；Markdown 不暴露坐标。 |
-| 有界弹性文本策略 | 内容稍多时还能稳，但不会无限缩小 | High | Must | 字号只在可读范围内变化；超出则拆物理页。 |
-| 逻辑页到物理页映射 manifest | 让用户知道一页 Markdown 被拆成了哪些 PPTX 页 | Med | Must | 验证和后续调试都依赖该映射。 |
-| 缺失信息就近可见 | 防止 agent 虚构学校/作者/日期 | Low | Must | Markdown review 阶段使用待补标记；最终 render 对关键缺失项应报错或保留空 slot，取决于字段性质。 |
-| 模板一致性优先的 layout fallback | 用户写得不完美时也能得到可控输出 | Med | Should | 例如普通正文可进入 `title-content`，但未知 layout 不应猜成任意样式。 |
-| Markdown fixture 覆盖所有 layout | 便于 roadmap 后续拆 phase 和做黑盒测试 | Low | Must | 第一版必须有一个 hand-authored 全功能 fixture，覆盖 11 个 layout、notes、media、分页。 |
-| PowerPoint 可人工二次编辑 | 学校用户通常需要最终微调 | High | Must | 输出不能依赖 HTML、浏览器或运行时 JS 才呈现核心内容。 |
-| 可解释的降级报告 | PPTX 能力不稳定时，用户要知道哪里降级 | Med | Should | 转场、代码高亮、复杂表格等降级写入 manifest 或控制台摘要。 |
+| Feature | Value Proposition | Complexity | v1 | Notes |
+|---|---|---:|---|---|
+| 面向电气相关岗位的结构化证据槽 | 将课程实训、设备/PLC/电气图纸、值班安全、竞赛和证书放入可检索事实结构 | Med | Must | 仍是通用字段集合，不把某个厂商、岗位或证书写死为唯一合法内容。 |
+| 显式“缺口而非淘汰”表达 | 用户可看见不可满足或资料不足的条件，避免错误承诺 | Med | Must | 报告是投递决策辅助，不得自动判定“不可投递”或生成规避性措辞。 |
+| 单一资料源的变体矩阵 | 可一次生成通用版、多个定向版、多个主题和照片策略，并保持事实一致 | High | Must | 变体 identity 应至少包含 `target_id/theme/photo_mode/page_mode`，防止覆盖。 |
+| 可解释的定向差异 | 用户能知道某份定向版为何强调某段经历/技能 | Med | Should | 生成隐藏 evidence 或控制台摘要，列出使用的事实 id 与硬条件比对，不把诊断放进投递目录。 |
+| 面向投递的安全默认值 | 默认无照片、通用版、一页优先，减少隐私和版式风险 | Low | Should | 这不是判断某地区法律或招聘习惯；用户可显式选择照片与两页。 |
+| 内容预算预检 | 在 Typst 编译前预测是否可能超过页数或拆坏模块，减少反复调参 | High | Should | 预算只是预检；最终页数与分页完整性必须以生成 PDF/Typst 检查为准。 |
+| 已确认信息与待确认信息分离 | AI 整理后可保留缺失事实，不让“润色”掩盖不确定性 | Med | Must | `TODO`、`待确认`、占位符或未知字段进入 final render 一律失败关闭。 |
 
 ## Anti-Features
 
-这些功能会破坏第一版边界，应该明确不做。
-
 | Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| 把 `school-presentation` HTML 渲染方案当 PPTX 输出方案 | v1.17 是新的 editable PPTX 技能线；HTML playback/export 不是 PowerPoint 可编辑对象 | 只借鉴 Markdown-first、逻辑页拆物理页和验证经验，另建 PPTX renderer。 |
-| 整页截图式 PPTX | 会丢失可编辑性，违背 `school-pptx` 核心目标 | 使用 PPTX 文本框、表格、图片和形状对象；只有不可避免的小装饰可来自模板。 |
-| Markdown 控制坐标/字体/颜色 | 会把固定学校模板变成自由排版系统，导致难验证 | 坐标、字体、颜色由 theme/template/layout slots 管理。 |
-| 泛化支持任意 PPT 模板市场 | 模板差异太大，会拖垮第一版验证 | 只支持从已确认 `.potx` 样例归一化出的标准模板。 |
-| 复杂对象动画 | 不稳定且不利于跨 PowerPoint/WPS/Keynote 兼容 | 第一版只支持无动画；0.5s 平滑切页能稳定生成/保留时再启用。 |
-| 强加页脚 | 用户已确认不强加页脚；学校模板可能没有固定 footer | 只使用模板本身已有元素；必要信息由 layout slots 或 notes 承载。 |
-| 自动裁切图片填满装饰框 | 会损坏教学图片、证书、截图等内容语义 | 默认 contain 等比缩放；如未来需要裁切，必须另设显式受控选项。 |
-| 代码高亮作为第一版硬要求 | PPTX 中稳定、可编辑的 token 高亮会显著增加复杂度 | 第一版输出可编辑等宽代码块；高亮延后。 |
-| 自动 OCR/旧 PPT 深度解析 | 会把技能变成输入理解项目，而不是固定模板渲染项目 | 第一版要求用户或 agent 先整理成 Markdown。 |
-| 托管分享、同步、课堂互动 | 这是 `school-presentation` HTML line 的能力，不是 PPTX 生成第一版核心 | 保持本地 Markdown-to-PPTX 输出和验证。 |
+|---|---|---|
+| 让主题、照片模式或页数改变内容 schema | 会产生多套资料真相，后续批量定向必然漂移 | 使用单一事实 schema；主题只决定呈现，照片只是受控资源槽。 |
+| 目标岗位存在时自动“补齐”经历、证书或技能 | 会造成虚假简历与不可审计的资格声明 | 只重排有证据的字段，并把硬条件缺口明确报告。 |
+| 未提供单位/岗位资料时猜测 JD 或伪造定向版 | 伪精确且无法验证 | 生成通用版，或要求用户提供目标名称、岗位与明确硬条件。 |
+| 将 AI 调用塞进 `render` 或 `batch` 命令 | 破坏零 token、可重复和离线批量边界 | AI 仅用于单独的资料整理阶段，产物必须人工复核后进入 CLI。 |
+| 任意 Markdown 直接进入 Typst | 会让分页、字段一致性、目标映射和资格报告不可验证 | 限制为 schema 定义的 Markdown/YAML，并对未知字段、未解决标记失败关闭。 |
+| 任意配色、字体、坐标或自定义 Typst 注入 | 会把稳定简历生成器变成难以验证的自由排版器 | 使用受控 theme registry；模板拥有视觉和几何。 |
+| 强制照片或在无照片时留大面积空框 | 存在隐私与版式风险 | 将 photo/no-photo 作为独立布局变体；无照片主题重排该区域。 |
+| 为凑一页缩小到不可读或为凑两页插水内容 | 破坏投递可读性，且会掩盖真正的内容预算问题 | 采用可读性下限、模块分页规则；无法满足时要求选择两页、删减或失败。 |
+| 自动投递、抓取招聘网站、排名候选人 | 超出文档生成技能范围，且引入外部系统、合规和隐私风险 | 只输出用户审核后的本地简历与资格缺口信息。 |
+| 通用“ATS 评分保证”或录用预测 | 评分标准不可得且会制造错误承诺 | 提供事实一致性、硬条件比对和版式完整性验证。 |
 
-## Markdown User Experience Recommendations
+## Recommended User Flows
 
-### Recommended Authoring Shape
+### A. 可选 AI 整理
 
-第一版 Markdown 应保持“YAML + 明确 slide blocks”的低歧义结构：
+1. 收集学生提供的简历草稿、成绩/证书、实训和项目资料。
+2. AI 仅将材料整理为统一 Markdown 草稿，并标出待确认事实与缺失项。
+3. 用户审阅、补充、确认后，CLI 校验该 Markdown；任何待确认项阻止最终生成。
 
-```markdown
----
-title: 项目建设汇报
-subtitle: 阶段成果与后续计划
-school: 示例学校
-department: 信息工程系
-program: 电气自动化技术
-course: 电气设备控制线路安装与调试
-author: 张三
-presenter: 李四
-date: 2026-07-13
-theme: standard-school
----
+### B. 零 token 通用版
 
-# 项目建设汇报
+1. 用户提供已验证的统一 Markdown，未提供目标单位/岗位信息。
+2. `validate` 检查 schema 与事实完整性；`render` 生成一页优先的通用版。
+3. 用户可显式选择主题、照片/无照片和一页/两页；所有选择仅改变变体呈现。
 
-## 建设背景
+### C. 零 token 多目标定向批量
 
-::: slide {layout="title-content"}
-### 建设背景
-
-- 背景要点一
-- 背景要点二
-
-::: notes
-这里写演讲提示，不进入画面。
-:::
-:::
-```
-
-### UX Rules
-
-| Recommendation | User-Visible Behavior | Acceptance Point |
-|----------------|-----------------------|------------------|
-| 顶层 YAML 字段固定，不扩展临时字段 | 用户知道哪些元数据会影响模板 | 示例 Markdown 只出现已确认 10 个字段；未知字段要么忽略并警告，要么验证失败。 |
-| `#` 只作为文档标题 fallback | 不把文档标题误放入目录 | 有 `#` 和多个 `##` 的 fixture 中，contents 只含 `##`。 |
-| `##` 是目录来源，不等于必须产生 section slide | 用户可以用 `##` 表达结构，而 slide block 表达页面 | contents 顺序匹配所有 `##`；section slide 由显式 `layout="section"` 控制。 |
-| 每个 slide block 必须有 layout | 减少 renderer 猜测 | 缺 layout 的 block 在验证阶段报清晰错误，或由 authoring helper 补成 `title-content` 并标记。 |
-| 缺失字段不导致视觉漂移 | 用户看到的是固定模板缺项，而不是整页重排 | 删除 subtitle/department 等字段后，封面其他元素坐标不变。 |
-| 长内容由 renderer 拆页 | 用户不用手动平衡每页字数 | 生成 manifest 显示 logical slide -> physical slides；物理页可读。 |
-| 图片路径相对 Markdown 文件解析 | 教师材料目录可整体移动 | fixture 使用相对图片路径并成功渲染。 |
-| notes 与正文分离 | 演讲提示不会污染画面 | PowerPoint notes pane 有内容，slide canvas 无 notes 文本。 |
-| 错误信息贴近 Markdown 行号或 slide 标识 | 用户能快速改源文件 | 无效 layout、缺图片、表格过宽等错误报告包含 slide heading/block index。 |
-
-## First-Version Must Do
-
-第一版必须交付以下功能，否则后续路线会缺少可验证地基：
-
-| Capability | Required Behavior | Verification |
-|------------|-------------------|--------------|
-| 标准模板归一化 | 从提供的 `.potx` 视觉样例建立 skill-local 标准 PPTX 模板和 layout slot contract | 模板文件、slot 说明、layout 名称一致；脚本不直接依赖人类视觉猜测。 |
-| 全 layout fixture | 一个 Markdown fixture 覆盖 YAML、11 个 layout、notes、图片、表格、timeline、gallery、code、分页 | `example` 或模板命令能生成该 fixture。 |
-| Markdown parser/validator | 解析 YAML 和 slide blocks，验证字段、layout、media、表格、notes | 无效输入非零退出；错误信息可定位。 |
-| PPTX renderer | 输出非空 `.pptx`，核心内容为可编辑 PPTX 对象 | 打开后文本/表格/代码可编辑；自动检查 ZIP structure 和 slide XML。 |
-| 目录生成 | 从全部 `##` 自动生成 contents slide | fixture 目录项数量和文本可被验证。 |
-| 逻辑页分页 | 文本、gallery、table、timeline 超预算时拆为多张物理页 | manifest 和 slide count 匹配预期。 |
-| Gallery 4 图/页 | 图片超过 4 张时自动新增物理页 | 5 图 fixture 输出 2 张 gallery 物理页。 |
-| 横向 timeline | timeline 使用横向排布，长 timeline 分页/分段 | 生成的 timeline 不是纵向列表。 |
-| 封面缺项稳定 | 缺少非关键封面字段时 slot 留空，其他元素不移动 | 对比完整/缺项封面关键坐标一致。 |
-| 无页脚强加 | 不向每页插入模板外 footer | Slide XML/截图检查没有新增统一页脚文本。 |
-| 代码可编辑无高亮 | 保留缩进和等宽风格，允许无 syntax highlight | PowerPoint 中可编辑代码文本。 |
-| 转场降级 | 能稳定生成 0.5s 平滑则启用，否则无动画且不失败 | 验证报告记录 transition mode。 |
-
-## Can Degrade or Defer
-
-这些功能可以降级或放到后续阶段，不应阻塞第一版。
-
-| Capability | First-Version Degradation | Defer Until |
-|------------|---------------------------|-------------|
-| 代码语法高亮 | 等宽可编辑文本框，无 token 颜色 | PPTX rich text run 生成稳定且可验证后。 |
-| 复杂对象动画 | 无动画；只保留稳定 slide transition | 有跨 PowerPoint/WPS 兼容验证后。 |
-| 任意模板导入 | 只支持已归一化标准模板 | 多模板 slot contract 稳定后。 |
-| 智能图表/SmartArt | 用固定形状和文字表达 timeline/gallery/table | 需要真实用户样例证明价值后。 |
-| 自动内容改写 | agent 可在 Markdown 草稿阶段辅助整理，但 renderer 不改写语义 | 技能交互层另行规划。 |
-| 高级表格样式 | 可编辑基础表格，必要时分页 | 官方模板表格视觉规则稳定后。 |
-| 图片裁切/焦点控制 | contain 放置，留白可接受 | 明确设计需求和非破坏性语法出现后。 |
-| PPTX 到 PDF/图片导出 | 第一版只保证 PPTX | 本机 office/libreoffice 导出链路稳定后。 |
-| 课堂播放控件 | 不做 | 仍由 `school-presentation` HTML line 承担。 |
+1. 用户提供同一统一 Markdown 和一个或多个结构化 target 记录。
+2. `validate` 解析每个目标的名称、岗位、选择规则与明确硬条件，生成条件匹配/缺口结果。
+3. `batch` 为每个可生成 target 输出独立的 Markdown、Typst、PDF 三件套及不进入投递目录的诊断；失败目标不会覆盖当前成功交付。
 
 ## Feature Dependencies
 
 ```text
-标准 PPTX 模板归一化 -> layout slot contract -> Markdown fixture -> parser/validator -> renderer -> verification
-YAML formatter -> cover/contents metadata behavior -> missing-field validation
-## heading collection -> contents slide generation -> contents verification
-slide block parser -> layout mapping -> pagination budgets -> logical-to-physical manifest
-media path resolver -> image-text/gallery rendering -> gallery 4-per-page verification
-table parser -> editable PPTX table renderer -> table pagination verification
-notes parser -> PPTX notes writer -> notes verification
-transition capability spike -> transition mode decision -> verification report
+统一事实 schema
+  -> schema/真实性校验
+  -> 通用版渲染
+  -> target schema + 硬条件比对
+  -> 定向选择/排序
+  -> 单 target render
+  -> 多 target batch + 失败隔离
+
+受控 theme registry + photo/no-photo layout contract
+  -> 变体解析
+  -> Typst emission
+  -> 1/2 页内容预算与分页保护
+  -> PDF 页数/完整性验证
+
+可选 AI 整理
+  -> 统一 Markdown 草稿 + 待确认标记
+  -> CLI validate（确认后才可进入所有 render/batch 流程）
 ```
 
 ## MVP Recommendation
 
 优先做：
 
-1. 标准模板归一化和 slot contract：没有这个，所有布局和验证都会漂移。
-2. Markdown contract 与全 layout fixture：先锁用户可见输入体验，再写 renderer。
-3. Renderer 的可编辑对象最小集：文本、图片、表格、timeline、gallery、code、notes。
-4. 自动目录和逻辑页分页：这是用户已确认且最影响使用体验的行为。
-5. 黑盒验证命令：验证 slide count、layout mapping、目录、notes、media、分页、非空 PPTX、无整页截图捷径。
+1. 统一 schema、目标 schema、资料/占位符校验：先锁定唯一事实来源和可审阅输入。
+2. 通用版与单目标定向版：实现“无岗位信息”和“有岗位信息”两条主路径，并交付硬条件缺口报告。
+3. 受控主题、照片/无照片与 1/2 页布局：以同一资料生成变体，不允许内容分叉。
+4. Typst/PDF 分页保护：针对标题、教育、经历、项目、证书建立不可拆模块与失败规则。
+5. 零 token `validate/render/batch` 和端到端 fixture：最后将稳定单份生成扩展为多目标批量，并验证候选发布、历史与失败回滚。
 
 延后：
 
-- 代码高亮：先保证可编辑和缩进稳定。
-- 复杂动画：先选择无动画或稳定 0.5s slide transition。
-- 任意模板导入：第一版只围绕一个标准学校模板。
-- PPTX 导出 PDF：除非后续阶段明确把 PDF 当验收条件。
+- 招聘网站采集、职位自动解析和自动投递。
+- 对未结构化材料的 OCR、图片文字识别和证书真伪验证。
+- 以不可解释模型分数取代明确硬条件与事实追溯。
+- 自由模板市场、用户自定义 Typst 和在线协作编辑。
 
 ## Acceptance Checklist
 
 | Area | Acceptance Point |
-|------|------------------|
-| Skill boundary | `school-pptx` 是新技能；不修改 `school-presentation` 的 HTML 输出定位。 |
-| Markdown | 示例文件包含固定 YAML 字段和显式 `::: slide {layout="..."}`；没有坐标、字体、颜色控制。 |
-| Layout coverage | 11 个 layout 都有 fixture、渲染结果和验证断言。 |
-| Contents | contents slide 从所有 `##` 生成；`#` 只作标题 fallback。 |
-| Pagination | 至少覆盖长正文、长表格、5 图 gallery、长 timeline 的逻辑页拆分。 |
-| Editability | 生成 PPTX 中正文、表格、代码、timeline 文本可编辑；不使用整页截图。 |
-| Cover stability | 删除可选封面字段不会移动其他封面元素。 |
-| Footer | 没有 renderer 强加的全局页脚。 |
-| Images | 图片 contain 放置，不裁切；缺图报错可定位。 |
-| Code | 代码块可编辑、保留缩进；无高亮不算失败。 |
-| Transition | 记录 transition mode；不稳定时无动画通过。 |
-| Verification | `verify` 能在临时目录重复生成并检查 slide count、layout map、manifest、PPTX 非空、media、notes、分页。 |
+|---|---|
+| Shared source | 同一名学生的通用、定向、主题、照片和页数变体均消费同一 schema；没有输出专用事实字段。 |
+| Generic path | 缺少单位/岗位信息时生成通用版，不猜测职位要求。 |
+| Targeted path | 每个 target 只从源资料选择/排序；产生可定位的硬条件满足/缺失/未知报告。 |
+| Multiple targets | 一次批处理生成多个独立、可命名的变体；一个目标失败不发布半成品或覆盖当前成功版。 |
+| Theme/photo | 未知 theme 非零失败；photo/no-photo 都有稳定 layout，照片缺失不会静默降级成假照片版。 |
+| AI boundary | AI 整理是可选前置流程；`validate/render/batch` 不调用 AI 或网络。 |
+| Artifacts | 每个成功变体产生可审阅 Markdown、从其生成的 Typst、以及非空 PDF；默认交付目录遵守 v1.18 干净发布约束。 |
+| Pagination | PDF 为明确的 1 或 2 页 A4；无孤立标题、跨页拆分的经历条目或无标题续接；无法满足即非零失败。 |
+| Safety | 所有待确认、未知关键事实和未满足硬条件保持可见，不被文案润色或默认值掩盖。 |
 
 ## Sources
 
-- `.planning/PROJECT.md` - v1.17 目标、确认范围、out-of-scope 和项目历史。Confidence: HIGH.
-- `.planning/STATE.md` - 当前 GSD 状态、历史决策、Markdown-first 与 school-presentation 经验。Confidence: HIGH.
-- `.planning/ROADMAP.md` - 当前路线状态和历史 phase 边界。Confidence: HIGH.
-- `AGENTS.md` - 仓库编辑规则、skill authoring rules、runtime adapter 要求。Confidence: HIGH.
-- `skills/school-presentation/SKILL.md` - Markdown-first presentation 经验和必须避免迁移的 HTML 输出边界。Confidence: HIGH.
-- User-provided v1.17 confirmed scope in this research request. Confidence: HIGH.
+- `.planning/PROJECT.md` — v1.19 目标、活动需求、共享 schema / CLI / 分页三项强制纪律。Confidence: HIGH.
+- `.planning/STATE.md` — 当前里程碑状态、v1.18 候选发布和失败隔离的既有交付纪律。Confidence: HIGH.
+- `AGENTS.md` — canonical skill、runtime adapter、外部命令和写入安全边界要求。Confidence: HIGH.
 
 ## Open Questions for Later Phases
 
-- PPTX 渲染库的选择、版本、notes 写入和转场 XML 支持需要在 STACK/ARCHITECTURE 或实现 spike 中验证。
-- `.potx` 到标准 PPTX 模板的归一化方式需要拿到真实样例后决定，是手工改母版/布局还是生成一个受控 `.pptx` seed。
-- 表格分页预算、中文字体 fallback、WPS/PowerPoint 兼容性需要真实输出验证，不宜只靠静态 XML 判断。
+- target 的硬条件语法应仅支持人工声明的布尔/枚举/最小年限，还是纳入受控文本规则；这需要在 schema phase 先做边界决策。
+- 照片的默认策略、尺寸与接受格式需要在模板设计时明确，并在本地 Typst 资源处理链验证。
+- 中文简历的可读字体阈值、不同主题的真实一页容量和“经历条目不可拆”的具体检测规则，需要用代表性资料 fixture 做视觉与 PDF 文本双重验证。
+- 缺口报告是否为每份 target 隐藏诊断，还是允许单独公开的投递前检查文件，需要先与 v1.18 的干净交付目录 contract 对齐。

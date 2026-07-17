@@ -1,409 +1,358 @@
-# Architecture Patterns
+# Architecture Patterns: 毕业生高级简历生成器
 
-**Domain:** school-pptx editable school PowerPoint workflow  
-**Project:** Presto Agent Skills v1.17 `school-pptx`  
-**Researched:** 2026-07-13  
-**Overall confidence:** HIGH for repository architecture and phase ordering; MEDIUM for exact PPTX library behavior until local fixture proof exists.
+**Domain:** 面向电气、机电、智能制造、发电厂与新能源方向大专毕业生的离线简历生成
+**Project:** Presto Agent Skills v1.19 `graduate-resume`
+**Researched:** 2026-07-17
+**Overall confidence:** HIGH（仓库边界和 Typst 能力均有直接依据；具体视觉主题仍须用本地样张验收）
 
 ## Recommended Architecture
 
-`school-pptx` should be a new standalone skill under `skills/school-pptx/`, not an extension of `school-presentation`. Reuse the proven repository pattern, but keep the output line separate:
+新功能应是独立的 `skills/graduate-resume/`，不能把简历能力塞进既有任一文档 skill，也不能在运行时调用兄弟 skill 的脚本。采用不可逆的单向流水线：内容资料和定向规则先被解析为主题无关的规范模型，布局规划器在不接触文件系统发布逻辑的情况下冻结分页，Typst 发射器只消费冻结计划，PDF 验证通过后才由技能本地的干净交付事务发布三件套。
 
 ```text
-source materials / supplied POTX
-  -> hand-normalized standard PPTX template + manifest
-  -> teacher-reviewable Markdown logical deck
-  -> skill-local Markdown parser and pagination model
-  -> editable PPTX renderer
-  -> hidden verification evidence + public PPTX output
+reviewed resume.md + optional assets/photo
+             |                     batch.yaml + targeting rules
+             v                                  |
+      schema parser + validator <----------------+
+             |  CanonicalResume (theme-free, source-located)
+             v
+      target resolver ----> TargetedResume + qualification-gap report
+             v
+      theme registry ----> ThemeSpec (tokens, slots, page budget)
+             v
+      layout planner ----> FrozenLayoutPlan (1 or 2 A4 pages)
+             v
+      Typst emitter ----> candidate .typ ----> typst compile ----> candidate .pdf
+             |                                                       |
+             +------------ structural/PDF verifier <----------------+
+                                      |
+                                      v
+                       clean-delivery publisher
+                 current .md + .typ + .pdf / history/<seq>/
 ```
 
-The core rule is: **template owns geometry and style; Markdown owns logical content; renderer owns physical slide splitting and fitting.** This mirrors the accepted `school-presentation` model of logical pages becoming physical pages, and the `tiaokedan` discipline of locking a hand-authored target surface before scripting. It also prevents the new skill from reopening the unstable PPTX export scope of `school-presentation`.
+核心不变量：
 
-### Component Boundaries
+- Markdown/YAML 表达候选人事实、可选素材和版本意图，不表达字号、坐标、颜色、照片位置或页面密度。
+- 定向输出是从同一个 `CanonicalResume` 派生出的不可覆盖视图；不得把单位名称、岗位关键词或删改后的经历写回原始简历。
+- 一个主题只能声明 `ThemeSpec` 和可验证的 A4 布局预算；主题不得重新解释简历字段。
+- `FrozenLayoutPlan` 是分页唯一权威。Typst 发射器不得根据溢出再次拆分、缩字或换页。
+- 发布层只接受通过所有验证的完整候选 bundle。失败、信号中断和未知/符号链接/部分现有 bundle 均不能触碰当前成功交付。
 
-| Component | Responsibility | Communicates With |
-|-----------|----------------|-------------------|
-| `SKILL.md` | Trigger, objective, high-level workflow, command pointers, runtime adapter notes, safety | `references/`, `templates/`, `scripts/` |
-| `templates/school-pptx.md` | Copyable teacher-reviewable Markdown logical deck fixture | Markdown parser |
-| `templates/school-standard.pptx` | Normalized machine-mappable PowerPoint template derived from the supplied `.potx` visual sample | Renderer, template validator |
-| `references/markdown-contract.md` | YAML + `::: slide {layout="..."}` authoring contract, review markers, layout names, speaker-note syntax | `SKILL.md`, parser, validator |
-| `references/template-normalization.md` | Human POTX -> standard PPTX process, placeholder naming, accepted layout inventory | Template authoring phase, validator |
-| `references/template-manifest.yaml` | Machine-readable layout/slot/budget map for the standard template | Renderer, verifier |
-| `references/rendering-and-pagination.md` | Logical-to-physical slide rules, overflow budgets, fixed/flexible slot behavior | Renderer, roadmap plans |
-| `references/verification-contract.md` | Required checks, manifest booleans, artifact boundaries, UAT expectations | `verify` command |
-| `scripts/school-pptx.sh` | Stable public command surface | Python modules |
-| `scripts/school_pptx/` | Internal parser, template inspector, layout engine, PPTX writer, verifier | Shell wrapper only |
-| `test/1.17/school-pptx/` | Versioned deterministic fixtures and expected verification evidence | Phase verification |
-
-## Recommended Skill-Local Directory Structure
+### Skill-Local Directory Structure
 
 ```text
-skills/school-pptx/
+skills/graduate-resume/
 ├── SKILL.md
-├── references/
-│   ├── markdown-contract.md
-│   ├── template-normalization.md
-│   ├── template-manifest.yaml
-│   ├── rendering-and-pagination.md
-│   └── verification-contract.md
 ├── templates/
-│   ├── school-pptx.md
-│   └── school-standard.pptx
-└── scripts/
-    ├── school-pptx.sh
-    └── school_pptx/
-        ├── __init__.py
-        ├── cli.py
-        ├── markdown_parser.py
-        ├── template_model.py
-        ├── pagination.py
-        ├── fit.py
-        ├── pptx_writer.py
-        ├── ooxml_inspector.py
-        └── verify.py
+│   ├── graduate-resume.md
+│   ├── batch.yaml
+│   └── themes/
+│       ├── engineering-classic.yaml
+│       └── engineering-compact.yaml
+├── references/
+│   ├── markdown-schema.md
+│   ├── targeting-rules.md
+│   ├── theme-contract.md
+│   ├── layout-and-pagination.md
+│   ├── pdf-verification.md
+│   └── clean-delivery.md
+├── scripts/
+│   ├── graduate-resume.sh
+│   └── graduate_resume/
+│       ├── cli.py
+│       ├── markdown_parser.py
+│       ├── schema.py
+│       ├── targeting.py
+│       ├── themes.py
+│       ├── layout_plan.py
+│       ├── typst_emit.py
+│       ├── pdf_verify.py
+│       ├── delivery.py
+│       └── verify.py
+└── tests/
+    ├── fixtures/
+    └── test_*.py
 ```
 
-Do not put the template manifest in a root-level shared schema. It is specific to this skill and to the normalized school PPTX template. The `.pptx` belongs in `templates/` because it is a runtime template copied/loaded for rendering. The manifest and slot map belong in `references/` because they are the skill-local rendering contract and validation source; scripts may read them, but they are not teacher-facing output templates.
+主题 YAML 放在 `templates/themes/`，因为它们是受控且可复制的模板输入；schema、规则、验证细节留在 `references/`。不能新增仓库级 `shared/` 简历解析器，也不能依赖 `tiaokedan`、`gongwen` 或 `teaching-design-package` 的实现。可借鉴它们的候选目录、无变更检测和回滚语义，但须在本 skill 内实现和测试。
 
-## Recommended Command Surface
+## Component Boundaries
 
-Use one stable shell wrapper, with Python internals hidden behind it:
+| Component | Responsibility | Input / Output | Must Not Do |
+|---|---|---|---|
+| `SKILL.md` | 触发条件、资料整理可选模式、标准 CLI 流程、六 runtime adapter、边界声明 | 指向本 skill 的模板、参考和脚本 | 承载完整 schema、主题数值或 Python 实现 |
+| Markdown parser | 解析 front matter、受限标题/列表/表格，保留源行号 | `.md` -> 语法树 | 猜测缺失事实、读取主题、输出 Typst |
+| schema validator | 建立 `CanonicalResume`，验证必填字段、枚举、日期、URL、素材和 review marker | 语法树 -> 规范模型 / 稳定诊断 | 为特定公司润色或删经历 |
+| target resolver | 根据明确规则筛选、排序和改写“展示文案”，生成资格缺口报告 | 规范模型 + target -> `TargetedResume` | 篡改资格事实、静默补齐硬性条件 |
+| theme registry | 加载白名单主题、校验 token、页边距、槽位和预算 | theme id -> `ThemeSpec` | 从 Markdown 接受任意颜色/字体/坐标 |
+| layout planner | 以 `TargetedResume + ThemeSpec` 选择模块、测量预算、冻结 1/2 页物理结构 | -> `FrozenLayoutPlan` | 写文件、动态试错 Typst、拆经历条目 |
+| Typst emitter | 机械生成受控 `.typ`，将每个计划模块映射到 Typst block | 计划 -> `.typ` | 改变模块顺序或分页决策 |
+| PDF verifier | 编译成功、页数、A4、文本/图像/结构证据和逻辑分页复核 | `.typ + .pdf + plan` -> evidence | 将“能打开 PDF”当成通过 |
+| delivery publisher | 候选隔离、全 bundle 比较、历史归档、发布及处理 INT/TERM 回滚 | validated candidate -> current/history | 重新解析内容或重跑布局 |
+| aggregate verify | 固定 gate 集、正常与故障夹具、证据重算 | skill fixtures -> pass/fail | 信任生产者自己写的 PASS 标记 |
 
-```bash
-skills/school-pptx/scripts/school-pptx.sh example \
-  --output school-pptx-full.md
+## Shared Markdown/YAML Schema
 
-skills/school-pptx/scripts/school-pptx.sh template-report \
-  --template skills/school-pptx/templates/school-standard.pptx \
-  --manifest skills/school-pptx/references/template-manifest.yaml \
-  --output build/school-pptx/template-report.json
-
-skills/school-pptx/scripts/school-pptx.sh render \
-  --input school-pptx-full.md \
-  --pptx build/school-pptx/school-pptx-full.pptx \
-  --manifest build/school-pptx/school-pptx-manifest.json
-
-skills/school-pptx/scripts/school-pptx.sh verify \
-  --workdir /tmp/school-pptx-verify
-```
-
-Optional phase-local commands can exist for authoring the standard template, but they should not become the normal teacher workflow:
-
-```bash
-skills/school-pptx/scripts/school-pptx.sh template-report \
-  --template /path/to/supplied-human-sample.potx \
-  --output /tmp/supplied-potx-inspection.json
-```
-
-Avoid `normalize-template` as an automatic promise unless the phase proves it can safely rewrite POTX files. The reliable architecture is human normalization first, script validation second.
-
-## Markdown Contract Shape
-
-The Markdown contract should be `YAML frontmatter + explicit slide blocks`:
+推荐一个 Markdown 文档作为候选人事实的唯一可编辑源；YAML 只负责结构化标量、选择和引用，正文负责可读经历。YAML 不应复制正文中的项目细节。
 
 ```markdown
 ---
-template: school-pptx
-theme: school-standard
-title: 示例课件标题
-subtitle: 可选副标题
-author: 张老师
-date: 2026-07-13
+schema: graduate-resume/v1
+name: 张三
+headline: 电气自动化技术应届毕业生
+contact:
+  phone: "13800000000"
+  email: "zhangsan@example.edu"
+  city: 武汉
+links:
+  - label: GitHub
+    url: https://github.com/example
+education:
+  school: 某职业技术学院
+  major: 电气自动化技术
+  degree: 大专
+  graduation: 2026-06
+facts:
+  certifications: [低压电工作业证]
+  hard_conditions: [可接受倒班]
+assets:
+  photo: assets/profile.jpg
 ---
 
-# 示例课件标题
+## 求职意向
 
-::: slide {layout="cover"}
-:::
+- 电气技术员
+- 自动化设备维护
 
-## 一、项目背景
+## 核心技能
 
-::: slide {layout="title-content" notes="本页讲清背景。"}
-### 背景与目标
+- PLC: 西门子 S7-1200、梯形图、HMI 基础组态
+- 电气: 低压配电、变频器、故障排查、安全规范
 
-- 要点一
-- 要点二
-:::
+## 项目经历
+
+### 自动化产线控制实训
+
+2025-03 至 2025-06；组员
+
+- 使用 S7-1200 完成输送、分拣与报警联锁控制。
+- 编写调试记录并排查传感器、接线与参数问题。
+
+## 实习经历
+
+### 某设备公司 | 电气装配实习生
+
+2025-07 至 2025-09
+
+- 按图纸完成柜内元件安装、端子压接及通电前检查。
 ```
 
-Rules:
+`CanonicalResume` 应具备稳定 ID（例如 `experience.project.automation-line-control`）和完整源位置。目标规则只引用这些 ID 或标准化 tags，不能用脆弱的字符串匹配标题。前端字段严格校验；未知字段默认失败，避免静默拼写错误。允许显式的可选值（如无照片）而不是空字符串隐式降级。
 
-- `theme` is a controlled template identifier, not arbitrary styling.
-- `#` is only a document-title fallback.
-- `##` headings define sections and feed the auto contents slide.
-- `::: slide {layout="..."}` creates one logical slide.
-- Markdown authors may choose allowed layout names but must not provide coordinates, font sizes, colors, placeholder ids, crop values, animation XML, or arbitrary PPTX styling.
-- Speaker notes are Markdown-owned content, rendered into PPTX notes where supported and verified by OOXML inspection.
+### Targeting Rule Input
 
-## Layout Inventory and Slot Map
-
-v1.17 should start with this fixed layout set:
-
-| Layout | Required Slots | Pagination Behavior |
-|--------|----------------|---------------------|
-| `cover` | `title`, `subtitle`, `meta` | No body overflow; cover body ignored or rejected |
-| `contents` | `title`, `items` | Auto-generated from `##`; splits after item budget |
-| `section` | `section_title`, `section_index` | One physical slide per section divider |
-| `title-content` | `title`, `body` | Body chunks split by text budget |
-| `two-column` | `title`, `left`, `right` | Split by paired column budget |
-| `image-text` | `title`, `image`, `body`, `caption` | Image contain placement; body may split |
-| `table` | `title`, `table`, `caption` | Split by row budget, repeat header |
-| `timeline` | `title`, `timeline` | Split by event count, preserve order |
-| `gallery` | `title`, `images`, `captions` | Four-image physical pages, overflow continues |
-| `code` | `title`, `code`, `caption` | Plain code text, no syntax highlighting in v1.17 |
-| `closing` | `title`, `subtitle`, `meta` | No overflow |
-
-The manifest should map each layout to PowerPoint slide layout identity, placeholder ids, slot kinds, budgets, and overflow strategy. Example shape:
+每个单位/岗位放在单独、可审阅的 YAML 文件；批量清单仅引用它们。这既允许一个候选人生成多版，也让“为什么选中/省略某经历”可追溯。
 
 ```yaml
-theme: school-standard
+# targets/power-plant-operator.yaml
+id: power-plant-operator
+employer: 示例新能源电站
+role: 运行值班员
+required:
+  all: [可接受倒班]
+  any: [低压电工作业证, 高压电工作业证]
+preferred_tags: [电气, 配电, 变频器, 故障排查, 安全]
+section_order: [求职意向, 核心技能, 实习经历, 项目经历, 教育背景]
+max_items:
+  核心技能: 6
+  项目经历: 2
+disclose_gaps: true
+```
+
+规则引擎输出三类结果：`included`、`deprioritized`、`qualification_gaps`。`qualification_gaps` 必须显式列出未满足的硬性条件、其事实依据及“不要声称已满足”的处理。若 `required.all` 不满足，默认禁止发布该定向 PDF；可用一个显式 `--allow-gap-report-only` 只生成诊断，不生成投递件。绝不基于 AI 推断证书、设备经验或可倒班意愿。
+
+### Theme Contract
+
+主题是数据，不是新的 Markdown 方言。每个 `ThemeSpec` 至少固定：A4 尺寸、页边距、字体 fallback 列表、排版 token、照片槽策略、每个模块的最小/最大可容预算和允许的 1/2 页结构。示例：
+
+```yaml
+id: engineering-classic
+schema_compatibility: graduate-resume/v1
 page:
-  width_in: 13.333
-  height_in: 7.5
-layouts:
-  title-content:
-    pptx_layout_name: "SP_TITLE_CONTENT"
-    slots:
-      title:
-        placeholder_idx: 10
-        kind: text
-        required: true
-        fit: fixed
-      body:
-        placeholder_idx: 11
-        kind: rich_text
-        required: true
-        fit: elastic_text
-        max_lines: 12
-        min_font_pt: 18
-        split: by_block
+  size: a4
+  margin_mm: {top: 13, right: 14, bottom: 13, left: 14}
+  maximum_pages: 2
+typography:
+  body_pt: 9.3
+  body_min_pt: 8.8
+  heading_pt: 11.5
+photo:
+  mode: optional
+  placement: header-right
+  aspect_ratio: "3:4"
+budgets:
+  first_page_units: 100
+  second_page_units: 104
+rules:
+  no_orphan_heading: true
+  keep_experience_entry_together: true
 ```
 
-Use stable placeholder `idx` values and names in the normalized template. python-pptx documentation states placeholder lookup by `idx` is stable and not simply list position, which makes it suitable for this slot map. Picture placeholder insertion crops to fill, so the renderer should prefer explicit image placement for contain behavior unless crop semantics are intentionally configured.
+主题新增通过 schema compatibility、主题自检、同一 canonical fixture 的回归 PDF 和布局快照验证。主题可改变呈现顺序的**槽位映射**，但不得改变定向规则的语义、字段必填性，或要求改写候选人 Markdown。
 
-## Human POTX to Machine-Mappable Template
+## CLI Surface and Batch Manifest
 
-The supplied `.potx` should be treated as visual evidence, not directly as the render contract. Recommended process:
+保留一个 shell wrapper，所有实际操作为零 token 的本地 CLI。AI 可选地协助把散乱材料整理到模板中，但绝不在 `validate`、`target`、`plan`、`render`、`batch` 或 `verify` 中被调用。
 
-1. Inspect the supplied POTX manually and with `template-report` to capture slide size, masters, layouts, placeholder names, and sample shapes.
-2. Create `templates/school-standard.pptx` by hand in PowerPoint/WPS/Keynote-compatible PowerPoint export: one master, one slide layout per supported `layout`, placeholder names prefixed with stable slot ids, no duplicate ambiguous placeholders.
-3. Assign explicit placeholder `idx` values for user-added placeholders where possible; keep names like `SP_SLOT_title`, `SP_SLOT_body`, `SP_SLOT_image`.
-4. Write `references/template-manifest.yaml` against that normalized template, not against the raw POTX.
-5. Run `template-report` and commit phase evidence showing every manifest slot maps to a real placeholder or declared shape frame.
-6. Do not let Markdown select arbitrary layouts from the raw POTX or rely on visual shape order.
+```bash
+graduate-resume.sh example --output applicant/resume.md
+graduate-resume.sh validate --input applicant/resume.md --assets applicant/assets
+graduate-resume.sh target --input applicant/resume.md --target targets/power-plant-operator.yaml \
+  --report build/power-plant-targeting.json
+graduate-resume.sh plan --input applicant/resume.md --theme engineering-classic \
+  --target targets/power-plant-operator.yaml --output build/plan.json
+graduate-resume.sh render --input applicant/resume.md --theme engineering-classic \
+  --target targets/power-plant-operator.yaml --out output/power-plant-operator
+graduate-resume.sh batch --input applicant/resume.md --manifest batch.yaml --out output
+graduate-resume.sh verify --workdir build/verify
+```
 
-This gives humans a familiar PPTX template to edit while giving the renderer a deterministic slot API. If future users bring another school template, it should be a new controlled `theme` with its own normalized `.pptx` and manifest, not marketplace autodetection.
+```yaml
+# batch.yaml
+schema: graduate-resume-batch/v1
+defaults:
+  theme: engineering-classic
+  photo: auto
+jobs:
+  - id: general
+    target: null
+    output_stem: 张三-通用简历
+  - id: power-plant
+    target: targets/power-plant-operator.yaml
+    output_stem: 张三-新能源电站-运行值班员
+    photo: none
+```
 
-## Logical Slide to Physical Slide Pagination
+批处理先验证整个 manifest、所有 target、所有主题和每个输出路径的唯一性，然后分别构建 job 的候选 bundle。默认全有或全无：任何 job 的资格、布局、Typst 或 PDF gate 失败，批次不发布任何 current 输出。若以后需要独立 job 发布，必须引入显式的 `--independent-jobs` 并为每个输出根隔离事务；v1 不应默认部分成功。
 
-Keep the hierarchy from `school-presentation`, adapted for PPTX:
+## Layout Planning and Typst Rendering
+
+`layout_plan.py` 应生成 JSON 可投影的物理计划：每页模块顺序、各模块的条目集合、continuation 标记和测量证据。它先依据主题预算做离散选择，再用保守的中英文宽度/行数模型确认每一槽。布局不是“反复编译到看起来能放下”。
 
 ```text
-sections -> logical_slides -> physical_slides -> slots
+Canonical sections
+ -> target visibility/ranking
+ -> immutable entries (heading + date/role + bullets)
+ -> choose 1-page plan; otherwise choose 2-page plan
+ -> reserve whole entry blocks and heading-with-first-entry pairs
+ -> freeze PagePlan[1..2]
+ -> emit Typst with plan page breaks and nonbreakable blocks
 ```
 
-Pagination should happen before writing PPTX. The parser creates logical slides; the layout engine calculates one or more physical slide payloads; the writer only fills a known layout payload.
+两页规则必须在 planner 和 Typst 两层同时受保护：
 
-Rules:
+- 标题与其后第一个经历条目是一个不可拆单元；页末只剩标题时 planner 必须将整个单元移到下一页。
+- 单个经历（机构、角色、日期、全部 bullets）是不可拆单元。它无法放进任何页面预算时，不得切开；应报告具体 entry 和建议（删减事实/选择更稀疏主题），然后非零失败。
+- 允许在完整经历条目之间分页，但第二页不能从无标题的续接 body 开始。
+- 先尝试 1 页；超过可读性阈值则按预定义两页分区重排，不能把正文缩到主题 `body_min_pt` 以下以伪装成一页。
+- Typst 仅根据计划在模块边界插入 `pagebreak(weak: true)`，将经历外层发为 `block(breakable: false, ...)`。官方文档明确支持弱分页和不可分页 block；它们是防御层，而不是布局规划算法。
 
-- Contents slides are generated from every `##` heading and split by manifest item budget.
-- A logical slide never changes layout mid-stream; overflow creates continuation slides with the same layout plus continuation markers in the manifest.
-- Text splits by Markdown block first, then list item, then sentence/line only as a last resort.
-- Tables split by rows and repeat the header row on continuation slides.
-- Timelines split by event count and preserve chronological order.
-- Galleries split into four-image physical slides.
-- Code blocks split by line count; v1.17 keeps non-highlighted editable text.
-- Speaker notes should attach to the first physical slide by default, with optional continuation notes recording `continued_from`.
+Typst 模板必须自带可查询的 metadata（schema、theme、plan hash、预计页数、每页 entry ID），以便 `typst eval` 从生成的 `.typ` 重算关键声明。编译固定使用受控 Typst 版本、受控字体目录/主题资产和可复现日期配置；不要依赖用户当前工作目录的字体发现。图片仅接受 candidate bundle 内受验证的普通文件，按主题槽位进行 contain/裁剪策略，且无照片模式需完全移除该槽，不留空白占位。
 
-The output manifest should record:
+## PDF Verification and Clean Delivery
 
-```json
-{
-  "sections": [],
-  "logical_slides": [],
-  "physical_slides": [],
-  "layout_usage": {},
-  "pagination": {
-    "logical_to_physical": {},
-    "overflow_events": []
-  },
-  "template": {
-    "theme": "school-standard",
-    "template_sha256": "...",
-    "manifest_sha256": "..."
-  },
-  "verification": {}
-}
-```
+PDF 验证至少分为以下固定 gates：
 
-## Fixed Slots and Elastic Text Boxes
+| Gate | Evidence | Failure behavior |
+|---|---|---|
+| Schema | 规范模型和源位置诊断 | 不生成候选 Typst |
+| Targeting | included/deprioritized/gaps JSON | 硬性缺口不发布定向件 |
+| Theme | 主题 schema、资产和预算 | 不进入规划 |
+| Plan | 1/2 页、每页完整模块、无 orphan/entry split | 不编译 |
+| Typst | 非零退出、受控输入/资产、metadata query | 不发布 |
+| PDF structure | 真 PDF、非空、A4、页数等于 plan | 不发布 |
+| PDF content | 所有计划 entry ID/关键文字可提取，照片模式匹配 | 不发布 |
+| Delivery | 精确 managed path set、字节级 no-op、history 和回滚故障夹具 | 不发布或回滚 |
 
-Use two categories, both renderer-owned:
+对于每个 job，交付根只允许当前 `<stem>.md`、`<stem>.typ`、`<stem>.pdf` 与受控的 `sources/`、`assets/`、`history/`、`.work/`；是否需要公开 `assets/` 由 Markdown 引用决定。候选版本必须在 `.work/<run-id>/candidate/` 完整生成并最小验证。若当前 managed 相对路径集合与 candidate 相同且逐字节相同，返回成功但不创建 history。变更时将旧完整 bundle（包括仍由旧 Markdown 引用的受管资产）归档至 `history/<zero-padded-sequence>/`，再逐路径发布候选。
 
-| Slot Type | Behavior | Use For |
-|-----------|----------|---------|
-| Fixed slot | Position, size, font role, alignment, and object type are fixed by manifest/template. Content must fit or paginate. | cover meta, section title, image frame, gallery cells, table frame |
-| Elastic text slot | Frame is fixed, but renderer may reduce font within a bounded range and adjust paragraph spacing before paginating. | body, two-column text, captions, code |
+发布前后都 fail closed：未知文件、legacy 布局、部分 bundle、符号链接、陈旧/并发 `.work`、不安全输出 stem 都要求人工审计；不得“顺手清理”。仅承诺经测试的异常、INT、TERM 回滚，不承诺 SIGKILL、断电、文件系统损坏或跨文件强原子性。诊断、布局 JSON、target report、日志和 PDF 检查证据均留在 `.work/` 或调用方 `--workdir`，不得进入成功交付根。
 
-Recommended fitting order:
+## Build Order
 
-1. Fill slot with template role defaults.
-2. Measure by conservative character/line budget from manifest.
-3. If slightly over budget, reduce font size down to `min_font_pt`.
-4. If still over budget, split into continuation physical slides.
-5. If unsplittable content still cannot fit, fail non-zero and write hidden diagnostics.
-
-Do not expose these knobs in Markdown. Do not implement freeform `x/y/w/h`, per-slide font sizes, or arbitrary color overrides. Template consistency depends on keeping layout knobs out of the teacher-maintained source.
-
-## PPTX Writer Choice
-
-Prefer Python for v1.17 because the repository already uses shell wrappers plus Python scripts for skill-local renderers, and this keeps runtime expectations close to existing skills. Use `python-pptx` as the first implementation candidate because its official documentation covers adding slides, placeholders, text, images, tables, charts, and notes slides, while also warning that the PPTX format has unsupported features. That means the renderer should pair high-level `python-pptx` writes with OOXML inspection for verification and avoid claiming support for transitions/animations until proven locally.
-
-Important constraints from current docs:
-
-- Placeholders can be located by stable `idx` keys.
-- Picture placeholder insertion may crop to fill; contain-style image placement should be implemented explicitly rather than relying on `insert_picture` defaults.
-- Notes slides are modeled and can hold notes text, but the first local fixture must verify PowerPoint/WPS/Keynote compatibility before notes are considered passed.
-- Complex transitions and object animations should remain out of v1.17 unless a local OOXML fixture proves reliable preservation.
-
-## Verification Artifacts
-
-Successful public output should stay clean:
-
-```text
-build/school-pptx/
-├── school-pptx-full.pptx
-├── school-pptx-full.md          # optional copied source, only if explicitly requested
-└── .school-pptx/
-    ├── school-pptx-manifest.json
-    ├── template-report.json
-    ├── ooxml-inspection.json
-    ├── media-report.json
-    └── verification.json
-```
-
-For phase evidence, commit deterministic fixtures under `test/1.17/school-pptx/` only when they are small, sanitized, and explicitly needed for regression:
-
-```text
-test/1.17/school-pptx/
-├── school-pptx-full.md
-├── expected-template-report.json
-├── expected-manifest.json
-└── README.md
-```
-
-The verification command should check:
-
-- `python3 -m py_compile` for all Python modules.
-- `school-pptx.sh --help` exposes `example`, `template-report`, `render`, and `verify`.
-- Example Markdown renders into non-empty PPTX.
-- PPTX opens as a ZIP and contains expected slide XML count.
-- Manifest `sections -> logical_slides -> physical_slides -> slots` is populated.
-- Every physical slide maps to a known layout and every required slot is filled.
-- Contents slide is generated from `##` headings, not hand-authored body text.
-- Speaker notes XML exists when notes are present.
-- Tables, images, galleries, timelines, and code produce editable PPTX objects where supported.
-- Image placement preserves aspect ratio with contain behavior.
-- Overflow creates continuation physical slides and records why.
-- Public output root does not leak logs, debug JSON, temp files, status sidecars, or failure diagnostics.
-
-Automated verification should be structural. Manual visual UAT remains required for accepting the first normalized template because PPTX rendering varies between PowerPoint, WPS, Keynote, and LibreOffice.
-
-## Patterns to Follow
-
-### Pattern 1: Hand Surface Before Script
-
-**What:** First phase accepts `school-standard.pptx` and its manifest before renderer implementation.  
-**When:** Template visual identity and slot geometry are not yet stable.  
-**Why:** This follows `tiaokedan`: lock the target surface, then author Markdown, then automate.
-
-### Pattern 2: Markdown Logical Deck as Source of Truth
-
-**What:** Teacher edits `school-pptx.md`, not PPTX XML, Python config, or slot coordinates.  
-**When:** Every normal workflow.  
-**Why:** It preserves reviewability and matches the repository's Markdown-first document workflow.
-
-### Pattern 3: Renderer-Owned Physical Pagination
-
-**What:** Markdown declares logical slides; renderer produces physical slides using manifest budgets.  
-**When:** Text, tables, timelines, galleries, or code exceed a layout budget.  
-**Why:** This keeps authoring simple and matches the accepted `school-presentation` page hierarchy.
-
-### Pattern 4: Whole-Folder Standalone Runtime
-
-**What:** `school-pptx` must run from its own `SKILL.md`, `references/`, `templates/`, and `scripts/`, without sibling skill dependencies.  
-**When:** Installation into Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, or Hermes Agent.  
-**Why:** v1.14-v1.16 established that new skills must not hide runtime dependencies on sibling skill folders.
+1. **先冻结 schema 和 fixture。** 编写可读 resume Markdown、target YAML、无照片/有照片和硬性缺口夹具；验证器先于渲染器存在。
+2. **建立主题契约和手工 Typst 样张。** 为第一个主题先制作可接受的 1 页和 2 页 A4 Typst/PDF 参考面，再把 token、槽位和预算固化到 `ThemeSpec`。
+3. **实现 schema、target resolver 与报告。** 用稳定 ID 和源位置做 deterministic 资格检查；确保纯 CLI 可在没有网络/API key 下运行。
+4. **实现冻结布局计划。** 以 fixture 验证全部无孤立标题、无拆经历、可读性下限、1/2 页边界和不可容纳失败。
+5. **实现 Typst emitter 与 PDF gates。** emitter 只读计划；对 Typst metadata、PDF 页数/A4/文本和图片模式建立证据。
+6. **接入候选发布、批处理和故障测试。** 将单 job 交付正确性闭合后再实现 atomic-by-default 批量预检和发布。
+7. **压缩 canonical 文档并补齐六 runtime adapter。** 入口保持简洁，细节下沉 `references/`；OpenClaw 和 Hermes 必须有安装期脚本回退验证。
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Raw POTX Autodiscovery
+### Theme-Specific Markdown
 
-**What:** Letting scripts infer arbitrary layouts from any user-supplied POTX.  
-**Why bad:** Placeholder order, names, masters, and visual intent are not stable enough for deterministic rendering.  
-**Instead:** Normalize one standard template and write an explicit manifest.
+**What:** 在 Markdown 加 `photo-left`、`font-size`、`two-column`、x/y 坐标，或为每个主题复制一份资料。
 
-### Anti-Pattern 2: Markdown Coordinates and Styling
+**Why bad:** 新主题迫使重写候选人事实，直接违反 v1.19 shared-schema discipline。
 
-**What:** Allowing `x`, `y`, `w`, `h`, font size, color, crop, and animation controls in slide Markdown.  
-**Why bad:** It breaks template consistency and moves design ownership to authors.  
-**Instead:** Markdown selects approved layouts and supplies semantic content only.
+**Instead:** content IDs + `ThemeSpec` 槽位与预算；照片仅是候选人素材引用和 job 选择。
 
-### Anti-Pattern 3: Screenshot PPTX
+### Render-Time Pagination
 
-**What:** Rendering each slide as a full-slide image.  
-**Why bad:** It violates the editable PPTX goal and hides text, tables, notes, and media from verification.  
-**Instead:** Use editable text boxes, tables, images, and shapes; reserve full-slide images only for an explicitly deferred layout.
+**What:** Typst emitter 发现溢出后自行缩字、删 bullet 或插入换页。
 
-### Anti-Pattern 4: False Animation Support
+**Why bad:** 物理结果不可预测，且无法给出“哪条经历为何失败”的稳定诊断。
 
-**What:** Claiming transitions or object animation because XML tokens exist.  
-**Why bad:** Office compatibility is fragile and hard to verify across apps.  
-**Instead:** v1.17 should support no animation by default; only add 0.5s smooth transition if a local fixture proves round-trip reliability.
+**Instead:** 先生成可审计 `FrozenLayoutPlan`；emitter 机械执行，PDF gate 检查是否偏离。
+
+### Prompt-in-the-Loop Batch Generation
+
+**What:** 每一公司版本都让模型重新选择经历、判断资格或生成文案。
+
+**Why bad:** 不能零 token、不可复现，也容易凭空满足硬性条件。
+
+**Instead:** 资料整理是明确可选的前置互动；一旦成为标准化 Markdown，target YAML 和 CLI 是唯一生成路径。
+
+### Partial Success Delivery
+
+**What:** 批量 5 个版本中 4 个发布，1 个失败却返回成功，或失败时覆盖旧 PDF。
+
+**Why bad:** 投递集合无法审阅，且会污染上次已验证结果。
+
+**Instead:** v1 预检全部 job 并默认 batch transaction；单 job 只在其完整 candidate 的验证通过后发布。
+
+### Cross-Skill Runtime Reuse
+
+**What:** `graduate-resume.sh` source/call 既有 skill 的 shell functions 或 Python modules。
+
+**Why bad:** 安装一个目录不再可用，命令表面稳定但实际耦合，且 future clean-delivery 改动会跨 skill 回归。
+
+**Instead:** 移植小而明确的思想和测试语义，保留 skill-local `delivery.py` / `delivery.sh`，只共享文档级约定。
 
 ## Scalability Considerations
 
-| Concern | At 100 decks | At 10K decks | At 1M decks |
-|---------|--------------|--------------|-------------|
-| Template variants | One controlled `school-standard` template | Add versioned themes with separate manifests | Need registry and migration tooling, out of v1.17 scope |
-| Rendering performance | Single-process Python is enough | Batch rendering needs cache for template inspection and media metadata | Queue/distributed rendering, out of repository skill scope |
-| Verification | Local structural checks + manual UAT | Deterministic fixture suite across themes | Office-app compatibility lab, out of scope |
-| Markdown contract | One template fixture | Contract versioning in frontmatter | Migration tooling required |
+| Concern | 100 candidates / local use | 10K candidates / batch service | 1M candidates / product scale |
+|---|---|---|---|
+| Parsing and targeting | 单进程 CLI、每份独立模型 | 并行 worker，锁定 schema/target/theme 版本 | 版本化规则服务和不可变输入存储 |
+| Rendering | 本地 Typst 子进程、每 job 临时目录 | 受限 worker pool、字体/主题镜像固定 | 隔离渲染队列、资源配额、可观测性 |
+| Assets | 本地 `assets/` 和 no-follow 校验 | 内容哈希缓存，仍复制进 candidate | 对象存储和签名/病毒扫描 |
+| Delivery/history | 目录级 current/history | 每候选人输出根和保留策略 | 数据库版本索引 + 不可变 artifact store |
 
-## Roadmap Phase Recommendation
-
-1. **Phase A: Standard Template and Manifest**
-   - Create `skills/school-pptx/` skeleton.
-   - Hand-normalize supplied `.potx` into `templates/school-standard.pptx`.
-   - Write `references/template-normalization.md` and `references/template-manifest.yaml`.
-   - Add `template-report` validation and phase evidence.
-
-2. **Phase B: Markdown Contract and Fixture**
-   - Add `templates/school-pptx.md`.
-   - Define frontmatter, `theme`, `::: slide {layout="..."}`, notes, review markers, allowed layouts, and anti-styling rules in `references/markdown-contract.md`.
-   - Verify contents generation from `##` headings at parser/model level.
-
-3. **Phase C: Renderer and Pagination**
-   - Implement `render` from Markdown to editable PPTX.
-   - Cover title-content, two-column, image-text, table, timeline, gallery, code, generated contents, section, cover, and closing.
-   - Implement logical-to-physical split before PPTX writing.
-   - Add hidden manifest and OOXML inspection evidence.
-
-4. **Phase D: Skill Entry, Runtime Notes, and Regression Gate**
-   - Finalize `SKILL.md`, README/index/docs references if required by phase scope.
-   - Add `verify --workdir`.
-   - Prove whole-folder standalone behavior and six-runtime adapter notes.
-   - Run manual visual UAT against PowerPoint-compatible apps before milestone close.
-
-Ordering rationale: template/manifest must precede Markdown finalization because layout names and slot budgets define what Markdown may express. Markdown must precede renderer implementation because parser and pagination need a stable semantic contract. Renderer must precede final skill docs because runtime notes and verification cannot be honest until local PPTX behavior is proven.
+v1.19 只需第一列。不要为了未来服务化而引入数据库、HTTP API、任务队列或在线账户；这些都会破坏离线、单技能、可复制的目标。
 
 ## Sources
 
-- Local: `.planning/PROJECT.md` v1.17 scope and active requirements.
-- Local: `AGENTS.md`, `docs/directory-spec.md`, `docs/compatibility-matrix.md` for canonical skill structure and runtime support.
-- Local: `skills/tiaokedan/SKILL.md`, `skills/tiaokedan/references/markdown-contract.md`, `skills/tiaokedan/references/pdf-workflow.md` for hand-authored target -> Markdown -> script discipline and clean output boundary.
-- Local: `skills/school-presentation/SKILL.md`, `skills/school-presentation/references/authoring-and-layout.md`, `skills/school-presentation/references/verification-contract.md` for logical/physical page hierarchy, fixed canvas, manifest verification, and deferred PPTX boundary.
-- Official: python-pptx 1.0.0 documentation, feature overview and unsupported-feature warning: https://python-pptx.readthedocs.io/
-- Official: python-pptx placeholders documentation, stable placeholder `idx` and insertion behavior: https://python-pptx.readthedocs.io/en/latest/user/placeholders-using.html
-- Official: python-pptx notes slide documentation: https://python-pptx.readthedocs.io/en/latest/user/notes.html
+- [项目 v1.19 约束与目标](../PROJECT.md)（HIGH，仓库一手需求）：shared schema、纯 CLI、两页 fail-closed、clean delivery 边界。
+- [Typst `pagebreak` 官方文档](https://typst.app/docs/reference/layout/pagebreak/)（HIGH）：`weak` 分页行为。
+- [Typst `block` 官方文档](https://typst.app/docs/reference/layout/block/)（HIGH）：`breakable: false` 可防止模块跨页拆分。
+- [Typst `layout` 官方文档](https://typst.app/docs/reference/layout/layout/)（HIGH）：可在 layout context 获取剩余空间；本设计选择先行规划而非把它当作动态溢出修补。
+- [Typst `query` 官方文档](https://typst.app/docs/reference/introspection/query/)（HIGH）：`typst eval` 可提取 metadata，用于验证生成源的声明。
+- [Typst CLI 变更记录](https://typst.app/docs/changelog/0.10.0/)（MEDIUM）：在手工设置文档日期时 PDF 可字节重现；实际锁定版本后需在 phase fixture 验证。
+
+## Research Gaps
+
+- 首个主题的中文/英文混排字体可用性、精确行高和视觉密度无法只靠文档推断，必须在 Phase 主题样张中以本机 Typst/PDF 人工验收和自动页数证据锁定。
+- PDF 文本提取工具和图片检测的跨平台稳定组合尚未在仓库确认；Phase 验证需选择已安装工具并用真实/损坏 PDF 夹具证明其行为。
+- “硬性条件”的默认阻断规则需由产品需求明确哪些条件属于 `required.all`、哪些仅提示；当前架构按安全默认阻断定向投递件设计。
