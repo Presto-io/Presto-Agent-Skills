@@ -59,10 +59,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCHEMA-01 | Phase 46 | Pending |
-| SCHEMA-02 | Phase 46 | Pending |
-| SCHEMA-03 | Phase 46 | Pending |
-| SCHEMA-04 | Phase 46 | Pending |
+| SCHEMA-01 | Phase 46 | Complete |
+| SCHEMA-02 | Phase 46 | Complete |
+| SCHEMA-03 | Phase 46 | Complete |
+| SCHEMA-04 | Phase 46 | Complete |
 | THEME-01 | Phase 47 | Pending |
 | THEME-02 | Phase 47 | Pending |
 | THEME-03 | Phase 47 | Pending |

@@ -49,12 +49,20 @@
 
 六者都遵守 [clean-delivery contract](clean-delivery-directory-contract.md)：完整 candidate 和最小 gate 先于 current mutation，path-set+bytes identical 是 no-op，changed 使用 `history/<max+1>/` 整包归档，handled failure/`INT`/`TERM` 回滚。`sources/` 不由普通发布修改，只有显式 managed 且持续引用的 assets 随版归档；unknown、legacy、partial、ambiguous 或 symlink 状态必须先走 [audit → confirm → execute](agent-output-cleanup-prompt.md)。不承诺 `SIGKILL`、断电或多文件跨路径原子，也不自动删除 history。
 
+`graduate-resume` 已完成 Phase 46 canonical 基线，但当前不属于已验收的 clean-delivery coverage 集合。它现已冻结 whole-folder 安装、资料 schema、fixtures 和离线 `validate` / `target` / `plan` / `verify` CLI；最终 Markdown/Typst/PDF 事务发布与验证 gate 以后续 phase 验收为准。
+
 ## Runtime Notes
 
 ### Teaching Design Package
 
 - `teaching-design-package` 是整包编排 skill：运行时必须能保留 `references/format-and-orchestration.md`、`references/calendar.json`、`templates/teaching-design-package-full.md`、`scripts/teaching-design-package.sh` 以及 package-owned renderer scripts；旧授课计划和实操教案版式规则已迁入本 skill folder，正常运行不得要求读取 sibling skill 支持文件。
 - PDF status 只有在显式 PDF 编译命令成功且输出文件存在时才能标记为 passed；只生成 Typst 不能声称最终 PDF 完成。
+
+### Graduate Resume
+
+- `graduate-resume` 必须 whole-folder 安装，保留 canonical `skills/graduate-resume/SKILL.md`、`references/`、`templates/`、`fixtures/` 和 `scripts/`；只复制入口会丢失 schema、照片/target 约束和 Phase 46 fixture 基线。
+- 当前 public fallback 是 `skills/graduate-resume/scripts/graduate-resume.sh <command>`；Phase 46 已实现 `validate`、`target`、`plan`、`verify`，并继续冻结 `render`、`batch` 的离线零 token 边界，不声称已完成最终渲染。
+- 所有命令都以离线、零 token 为前提；OpenClaw 与 Hermes Agent 的 whole-folder discovery、frontmatter、权限和 workdir 行为仍需 installation-time verification。
 
 ### Tiaokedan
 
