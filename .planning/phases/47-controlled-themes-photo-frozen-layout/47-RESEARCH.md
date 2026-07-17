@@ -343,19 +343,23 @@ pdfinfo <workdir>/resume.pdf
 | A3 | `pdfinfo` 可作为当前机器的 PDF 元数据检查工具。 | Environment Availability | CI/其他 runtime 需在 Phase 49 选择替代验证器。 |
 | A4 | 字体以许可证、哈希受控文件入库或显式提供的方式交付可行。 | Standard Stack | 字体体积/许可证可能要求不同的受控分发策略。 |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **如何取得并审阅两个 Source Han Sans SC 字重？**
-   - What we know: UI 契约要求该字体，当前 skill-local 字体目录和可用 fixture 媒体都不存在。 [VERIFIED: local inventory; CITED: `47-UI-SPEC.md`]
-   - Recommendation: 将“字体文件、许可证/来源、SHA-256 manifest、`typst fonts --ignore-system-fonts` 检查”作为 47-01 的硬前置；未满足时布局命令失败。 [ASSUMED]
+1. **受控 Source Han Sans SC 的来源、许可证与审阅证据已冻结。**
+   - 只接受 Adobe 官方 `adobe-fonts/source-han-sans` 的 release `2.005R` 中简体中文静态 OTF 的 Regular 与 Semibold 两个未修改文件；下载源固定为 release asset `09_SourceHanSansSC.zip`，不得改用系统安装、镜像站、变量字体或 HW 变体。 [VERIFIED: https://api.github.com/repos/adobe-fonts/source-han-sans/releases/latest; CITED: https://github.com/adobe-fonts/source-han-sans/blob/release/README.md]
+   - 允许随 skill 再分发的许可证固定为该上游随字体发布的 **SIL Open Font License 1.1**；将完整未修改 `LICENSE.txt`、上游 release tag/asset URL、下载日期、两个文件名、字节数与 SHA-256 共同写入 `skills/graduate-resume/fonts/manifest.json`。OFL 1.1 允许捆绑与再分发，但要求保留版权及许可证文本。 [CITED: https://raw.githubusercontent.com/adobe-fonts/source-han-sans/release/LICENSE.txt]
+   - `plan`/fixture 在生成 `font_manifest_hash` 前必须验证 manifest 精确匹配、两个字体文件存在、哈希一致，并运行 `typst fonts --font-path skills/graduate-resume/fonts --ignore-system-fonts --variants` 确认可发现 Regular 400 与 Semibold 600；任一步失败返回 `FONT_MANIFEST_INVALID`，不产生布局计划。 [VERIFIED: local `typst fonts --help`; CITED: `47-UI-SPEC.md`]
 
-2. **临界区的定量阈值如何落地？**
-   - What we know: 上游锁定了三段式策略和字号/间距边界，但没有指定“明显”的数值。 [CITED: `47-CONTEXT.md`; CITED: `47-UI-SPEC.md`]
-   - Recommendation: 把阈值设为 ThemeSpec 的命名常量并由临界 fixture 校准；计划、日志和测试都断言该常量，而不是在模板里隐式猜测。 [ASSUMED]
+2. **临界区的可版本化测量规则已冻结。**
+   - 在 `skills/graduate-resume/templates/layout-measurement.json` 维护 versioned `measurement_version`，并为三个 theme 都写入相同的四个数值：`one_page_clear_max = 0.88`、`one_page_critical_max = 0.94`、`two_page_min_page_utilization = 0.25`、`epsilon_mm = 0.1`。该配置是唯一阈值来源，计划 JSON 必须记录其版本和 SHA-256。 [ASSUMED]
+   - `utilization = (used_height_mm + epsilon_mm) / usable_height_mm`，其中 `used_height_mm` 为冻结计划中已占用的安全区高度，`usable_height_mm` 为该页主题安全区高度；禁止用最终 PDF 的像素、字号缩放或手工 pagebreak 改写这个数值。 [CITED: `47-UI-SPEC.md`; ASSUMED]
+   - 自动模式按以下精确规则决议：合法 1 页且 `utilization <= 0.88` 时为“明显 1 页”；1 页不合法且合法 2 页的每页 `utilization >= 0.25` 时为“明显 2 页”；合法 1 页且 `0.88 < utilization <= 0.94` 时为“临界区”，生成两份计划并以 1 页为推荐；合法 1 页且 `utilization > 0.94` 时为“临界区”，生成两份计划并以 2 页为推荐；强制页数仍生成推荐页数的对照计划。若没有满足上述页有效内容条件的合法计划，则返回 `LAYOUT_UNSATISFIABLE`。 [CITED: `47-CONTEXT.md` D-18 至 D-24; ASSUMED]
+   - 所有临界 fixture 必须断言配置 hash、分支名称、推荐页数、对照页数和每页利用率；阈值变更只能连同 `measurement_version`、fixture 期望值和人工视觉复核一起提交。 [ASSUMED]
 
-3. **照片的真实文件验证应补到何处？**
-   - What we know: Phase 46 的 `validate_photo` 不检查存在性或路径边界，虽然 Phase 47 UI 契约要求已通过本地路径校验。 [VERIFIED: `graduate_resume_cli.py:371-385`; CITED: `47-UI-SPEC.md`]
-   - Recommendation: 在 Phase 47 的照片决议入口补强，保持 Phase 46 schema 不变；把隐私发布/root 管理留在 Phase 48。 [ASSUMED]
+3. **照片根目录与验证责任边界已冻结。**
+   - `validate` 保持 Phase 46 的纯 schema 校验；Phase 47 新增的 `command_plan` 参数 `--assets-root`（默认输入 Markdown 的父目录）是唯一负责文件系统照片验证的边界。`resolve_layout_photo(input_path, assets_root, photo, preferences)` 必须在创建 `FrozenResumePlan` **之前**运行，成功时返回不可变 `PhotoAsset`；Typst 发射器只能消费该对象，不能再次按 YAML 路径读文件。 [VERIFIED: `graduate_resume_cli.py:371-385,501-535`; ASSUMED]
+   - YAML `photo` 必须是相对 `--assets-root` 的 POSIX 相对路径，且每一段不得为空、`.`、`..`；拒绝绝对路径、URL、Windows drive/UNC 形式。实现须逐段以 `lstat` 检查，拒绝任一 symlink；随后以 `resolve(strict=True)` 得到的路径必须仍位于已 `resolve(strict=True)` 的 assets root 内，并且目标必须是普通文件。任何失败统一为 `PHOTO_ASSET_INVALID`，诊断只返回相对逻辑路径或稳定原因，不回显绝对路径。 [CITED: `47-UI-SPEC.md`; CITED: `.planning/research/PITFALLS.md`; ASSUMED]
+   - Phase 47 fixture 的照片统一放在各 fixture Markdown 父目录下的 `media/`，并将 YAML 改为 `photo: media/student-photo.jpg`；缺失、越界、符号链接、目录、FIFO/设备文件与不可读取文件必须有负例。图片解码与 EXIF/交付根清理不属于本阶段的发布职责，仍由 Phase 48/49 覆盖。 [VERIFIED: current fixture photo paths; VERIFIED: `.planning/ROADMAP.md`; ASSUMED]
 
 ## Sources
 
