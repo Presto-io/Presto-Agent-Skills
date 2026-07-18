@@ -96,7 +96,7 @@
     if photo == none {
       block(inset: (left: space-lg), stroke: (left: 1pt + spec.colors.accent))[#body]
     } else {
-      grid(columns: (31%, 69%), gutter: 6mm)[
+      grid(columns: (31fr, 69fr), gutter: 6mm)[
         #align(center)[#photo-slot(theme, image_handle: photo, policy: photo_policy)]
       ][
         #body
