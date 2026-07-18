@@ -11,7 +11,7 @@ import stat
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, Mapping
 
 from graduate_resume_cli import CliError
 
@@ -296,6 +296,50 @@ def build_frozen_resume_plan(verified_data: dict[str, Any], theme: ThemeSpec, ph
     plan = FrozenResumePlan(theme.key, theme.label, page_preference, len(chosen[1]), "photo" if photo else "no-photo", photo, policy.photo_fit, policy.crop_policy, policy.preserve_aspect_ratio, policy.allow_stretch, policy.allow_controlled_crop, policy.subject_safe_area_contract, theme.photo_slot if photo else None, theme.no_photo_behavior, font_manifest_hash, version, digest, chosen[1], flattened, budgets, "preserved-profile-and-education-front" if len(chosen[1]) == 2 else None, PageRecommendation(recommended, page_preference, comparison, advisory))
     plan.validate(verified_data)
     return plan
+
+
+def selected_fact_view(facts: Mapping[str, Any], selected_fact_ids: tuple[str, ...]) -> dict[str, Any]:
+    """Project only the shared selected ID tuple; never score or restore facts."""
+    selected = frozenset(selected_fact_ids)
+    if len(selected) != len(selected_fact_ids) or "profile" not in selected:
+        raise CliError(LAYOUT_PLAN_INVALID, "所选事实视图无效。")
+    result: dict[str, Any] = {"candidate": facts.get("candidate")}
+    known = {"profile"}
+    for section in ("education", "skills", "certificates", "projects", "training", "experience"):
+        items = []
+        for item in facts.get(section, ()) or ():
+            if isinstance(item, Mapping) and isinstance(item.get("id"), str):
+                known.add(item["id"])
+                if item["id"] in selected:
+                    items.append(dict(item))
+        result[section] = items
+    if selected - known:
+        raise CliError(LAYOUT_PLAN_INVALID, "所选事实视图包含未知 ID。")
+    return result
+
+
+def build_layout_feedback_adapter(
+    facts: Mapping[str, Any], photo_mode: str, photo: PhotoAsset | None,
+    font_manifest_hash: str,
+):
+    """Return the Phase 48 real feedback callback for the shared fact tuple."""
+    from graduate_resume_targeting import LayoutFeedback
+
+    def feedback(theme_key: str, selected_ids: tuple[str, ...], request: Any) -> LayoutFeedback:
+        view = selected_fact_view(facts, selected_ids)
+        try:
+            plan = build_frozen_resume_plan(
+                view, resolve_theme(theme_key), photo_mode, photo, font_manifest_hash,
+                request.requested_pages,
+            )
+            return LayoutFeedback(theme_key, True, plan.page_count, ())
+        except CliError as exc:
+            if exc.code != LAYOUT_UNSATISFIABLE:
+                raise
+            overflow = tuple(container.id for container in project_containers(view))
+            return LayoutFeedback(theme_key, False, 3, overflow)
+
+    return feedback
 
 
 # Compatibility entry point retained for the Phase 47-01 theme-only contract.

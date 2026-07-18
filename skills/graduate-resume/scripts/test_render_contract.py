@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import hashlib
-import dataclasses
 import sys
 import tempfile
 import unittest
@@ -73,7 +72,7 @@ class TypstConsumerContractTests(unittest.TestCase):
         from graduate_resume_layout import build_frozen_resume_plan, resolve_theme
         from graduate_resume_typst import emit_typst
 
-        source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
+        source = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
         document = cli.load_resume(str(source))
         cli.validate_document(document)
         projection = resolve_version_projection(
@@ -99,12 +98,9 @@ class TypstConsumerContractTests(unittest.TestCase):
     def test_photo_normalization_is_deterministic_and_embedded(self) -> None:
         from graduate_resume_typst import normalize_photo_bytes
 
-        png = bytes.fromhex(
-            "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
-            "0000000d49444154789c6360f8cfc00000040101005f8d7f650000000049454e44ae426082"
-        )
-        first = normalize_photo_bytes(png)
-        second = normalize_photo_bytes(png)
+        source = (SKILL_ROOT / "fixtures" / "layout" / "media" / "student-photo.jpg").read_bytes()
+        first = normalize_photo_bytes(source)
+        second = normalize_photo_bytes(source)
         self.assertEqual(first, second)
         self.assertEqual(first[16:24], (413).to_bytes(4, "big") + (579).to_bytes(4, "big"))
         self.assertNotIn(b"EXIF", first)
