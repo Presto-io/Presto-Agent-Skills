@@ -154,12 +154,20 @@ class TypstRuntimeResolverTests(unittest.TestCase):
             def mutate_source(_copied: int) -> None:
                 source.chmod(0o700)
 
-            with mock.patch("tempfile.mkdtemp", wraps=tempfile.mkdtemp) as make_temp:
+            snapshot_roots: list[Path] = []
+            original_mkdtemp = tempfile.mkdtemp
+
+            def make_temp(*args, **kwargs) -> str:
+                value = original_mkdtemp(*args, **kwargs)
+                snapshot_roots.append(Path(value))
+                return value
+
+            with mock.patch("graduate_resume_typst_runtime.tempfile.mkdtemp", side_effect=make_temp):
                 with self.assertRaises(cli.CliError):
                     with resolve_typst_executable(source, _copy_chunk_hook=mutate_source):
                         pass
-                snapshot_root = Path(make_temp.return_value)
-                self.assertFalse(snapshot_root.exists())
+                self.assertEqual(len(snapshot_roots), 1)
+                self.assertFalse(snapshot_roots[0].exists())
 
 
 class FinalMarkdownContractTests(unittest.TestCase):
