@@ -587,6 +587,7 @@ class PublicCliContractTests(unittest.TestCase):
                 root = Path(temporary)
                 delivery = root / "delivery"
                 evidence = root / "evidence"
+                evidence.mkdir()
                 base = (
                     "render", "--input", str(targeted), "--target", "target-robot-001",
                     "--delivery-root", str(delivery), "--evidence-root", str(evidence),
@@ -812,6 +813,7 @@ class PublicCliContractTests(unittest.TestCase):
             root = Path(temporary)
             delivery = root / "delivery"
             evidence = root / "evidence"
+            evidence.mkdir()
             first = run_reviewed(
                 "render", "--input", str(targeted), "--generic", "--delivery-root", str(delivery),
                 "--photo-mode", "no-photo",
@@ -842,6 +844,7 @@ class PublicCliContractTests(unittest.TestCase):
             root = Path(temporary)
             delivery = root / "delivery"
             evidence = root / "evidence"
+            evidence.mkdir()
             initial = run_reviewed(
                 "batch", "--input", str(source), "--delivery-root", str(delivery),
                 "--evidence-root", str(evidence), "--photo-mode", "no-photo",
@@ -882,6 +885,7 @@ class PublicCliContractTests(unittest.TestCase):
             root = Path(temporary)
             delivery = str(root / "delivery")
             evidence = str(root / "evidence")
+            Path(evidence).mkdir()
             base = (
                 "render", "--input", str(source), "--target", target_id,
                 "--delivery-root", delivery, "--evidence-root", evidence,
@@ -925,6 +929,7 @@ class PublicCliContractTests(unittest.TestCase):
             root = Path(temporary)
             delivery = root / "delivery"
             evidence = root / "evidence"
+            evidence.mkdir()
             base = (
                 "batch", "--input", str(source), "--delivery-root", str(delivery),
                 "--evidence-root", str(evidence), "--photo-mode", "no-photo",
