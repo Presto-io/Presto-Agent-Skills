@@ -56,6 +56,16 @@ def public_files(root: Path) -> tuple[Path, ...]:
     return tuple(sorted(path for path in root.iterdir() if path.is_file())) if root.exists() else ()
 
 
+def recursive_snapshot(root: Path) -> dict[str, str]:
+    if not root.exists():
+        return {}
+    return {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
+
+
 def run_phase48_acceptance_registry() -> dict[str, object]:
     called: list[str] = []
     failures: list[str] = []
@@ -83,6 +93,40 @@ class PublicCliContractTests(unittest.TestCase):
         self.assertIn("--allow-gap-target TARGET_ID", completed.stdout)
         self.assertNotIn("override-file", completed.stdout)
         self.assertNotIn("TARGET=JSON", completed.stdout)
+
+    def test_publication_rejects_unverified_and_invalid_fact_ids_before_delivery(self) -> None:
+        source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            delivery = root / "delivery"
+            baseline = run_cli(
+                "render", "--input", str(source), "--generic",
+                "--delivery-root", str(delivery), "--photo-mode", "no-photo", "--confirm",
+            )
+            self.assertEqual(baseline.returncode, 0, baseline.stderr)
+            before = recursive_snapshot(delivery)
+
+            cases = (
+                ("declined", source.read_text(encoding="utf-8").replace("id=edu-001 status=verified", "id=edu-001 status=declined"), ()),
+                ("pending", source.read_text(encoding="utf-8").replace("id=edu-001 status=verified", "id=edu-001 status=pending"), ()),
+                ("invalid-id", source.read_text(encoding="utf-8").replace("edu-001", 'x\");#panic(\"injected\");#(\"'), ()),
+                ("declined-override", source.read_text(encoding="utf-8").replace("id=edu-001 status=verified", "id=edu-001 status=declined"), ("--retain", "edu-001")),
+            )
+            for name, text, extra in cases:
+                with self.subTest(name=name):
+                    candidate = root / f"{name}.md"
+                    candidate.write_text(text, encoding="utf-8")
+                    completed = run_cli(
+                        "render", "--input", str(candidate), "--generic",
+                        "--delivery-root", str(delivery), "--photo-mode", "no-photo",
+                        *extra,
+                    )
+                    self.assertNotEqual(completed.returncode, 0)
+                    self.assertEqual(recursive_snapshot(delivery), before)
+                    self.assertNotIn("Traceback", completed.stderr)
+                    self.assertNotIn("#panic", completed.stderr)
+                    self.assertNotIn(str(candidate), completed.stderr)
+                    self.assertLess(len(completed.stderr), 1600)
 
     def test_generic_render_preflights_then_publishes_three_theme_triples_and_true_noop(self) -> None:
         source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
