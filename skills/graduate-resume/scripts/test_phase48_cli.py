@@ -641,17 +641,27 @@ class PublicCliContractTests(unittest.TestCase):
             root = Path(temporary)
             render_evidence = root / "render-evidence"
             batch_evidence = root / "batch-evidence"
-            rendered = run_cli(
+            render_evidence.mkdir()
+            batch_evidence.mkdir()
+            render_arguments = (
                 "render", "--input", str(source), "--target", "target-robot-001",
                 "--delivery-root", str(root / "render-delivery"),
                 "--evidence-root", str(render_evidence), "--photo-mode", "no-photo",
             )
-            batched = run_cli(
+            preview = run_cli(*render_arguments)
+            self.assertEqual(preview.returncode, 0, preview.stderr)
+            self.assertFalse(tuple(render_evidence.iterdir()))
+            rendered = run_reviewed(*render_arguments)
+            batch_arguments = (
                 "batch", "--input", str(source),
                 "--delivery-root", str(root / "batch-delivery"),
                 "--evidence-root", str(batch_evidence), "--photo-mode", "no-photo",
                 "--allow-gap-target", "target-device-002",
             )
+            batch_preview = run_cli(*batch_arguments)
+            self.assertEqual(batch_preview.returncode, 0, batch_preview.stderr)
+            self.assertFalse(tuple(batch_evidence.iterdir()))
+            batched = run_reviewed(*batch_arguments)
             self.assertEqual(rendered.returncode, 0, rendered.stderr)
             self.assertEqual(batched.returncode, 0, batched.stderr)
             render_payload = parse_json(rendered)

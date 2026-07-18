@@ -29,7 +29,7 @@ RENDER_STEM_COLLISION = "RENDER_STEM_COLLISION"
 RENDER_MATRIX_FAILED = "RENDER_MATRIX_FAILED"
 THEME_KEYS = ("conservative", "modern", "expressive")
 _SAFE_RE = re.compile(r"[^\w\u3400-\u9fff-]+", re.UNICODE)
-_EVIDENCE_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}-[0-9a-f]{64}\.json")
+_EVIDENCE_NAME_RE = re.compile(r"evidence-[0-9a-f]{64}-[0-9a-f]{64}-[0-9a-f]{64}\.json")
 _HEX64_RE = re.compile(r"[0-9a-f]{64}")
 _EMAIL_RE = re.compile(r"(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}")
 _PHONE_RE = re.compile(r"(?<!\d)(?:\+?86[- ]?)?1[3-9]\d{9}(?!\d)")
@@ -76,9 +76,10 @@ def _open_root_no_follow(path: Path, *, create: bool) -> int:
 class EvidenceSink:
     """Caller-authorized, no-follow persistent sink for private condition evidence."""
 
-    def __init__(self, root: Path | str, *, delivery_root: Path | str | None = None) -> None:
+    def __init__(self, root: Path | str, *, delivery_root: Path | str | None = None, create: bool = True) -> None:
         self.path = _canonical_root(root)
         self.delivery_path = None if delivery_root is None else _canonical_root(delivery_root)
+        self.create = create
         self._descriptor: int | None = None
         self.identity: tuple[int, int] | None = None
 
@@ -89,7 +90,7 @@ class EvidenceSink:
             if evidence == delivery or evidence[: len(delivery)] == delivery or delivery[: len(evidence)] == evidence:
                 raise CliError(RENDER_INPUT_INVALID, "隐藏证据根必须与正式投递根完全分离。")
         try:
-            self._descriptor = _open_root_no_follow(self.path, create=True)
+            self._descriptor = _open_root_no_follow(self.path, create=self.create)
             stat = os.fstat(self._descriptor)
             if not stat.st_mode & 0o040000:
                 raise OSError
@@ -188,7 +189,7 @@ class EvidenceSink:
             or evidence["gap_allowed"] is not projection.gap_allowed
         ):
             raise CliError(RENDER_INPUT_INVALID, "条件证据与版本投影不一致。")
-        name = f"{projection.version_id}-{projection.condition_digest}.json"
+        name = f"evidence-{canonical_hash}-{projection.digest}-{projection.condition_digest}.json"
         if not _EVIDENCE_NAME_RE.fullmatch(name):
             raise CliError(RENDER_INPUT_INVALID, "条件证据文件名无效。")
         raw = _json_bytes(payload)
@@ -199,6 +200,7 @@ class EvidenceSink:
         if existing is not None:
             if existing == raw:
                 return name
+            raise CliError(RENDER_INPUT_INVALID, "同名条件证据与既有绑定冲突。")
         temporary = f".evidence-work-{os.getpid()}-{hashlib.sha256(raw).hexdigest()[:16]}"
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
         descriptor = os.open(temporary, flags, 0o600, dir_fd=self.descriptor)
@@ -325,6 +327,7 @@ def render_candidate_matrix(
     fail_theme: str | None = None,
     condition_evidence: Mapping[str, Any] | None = None,
     evidence_root: Path | str | EvidenceSink | None = None,
+    persist_evidence: bool = True,
 ) -> RenderMatrix:
     root = Path(candidate_root)
     if root.exists() and any(root.iterdir()):
@@ -369,7 +372,7 @@ def render_candidate_matrix(
         root.mkdir(exist_ok=True)
         for name in matrix.managed_files:
             os.replace(stage / name, root / name)
-        if projection.target_id is not None:
+        if projection.target_id is not None and persist_evidence:
             if condition_evidence is None or evidence_root is None:
                 raise CliError(RENDER_INPUT_INVALID, "定向渲染必须提供授权隐藏证据根。")
             if isinstance(evidence_root, EvidenceSink):

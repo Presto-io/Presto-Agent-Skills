@@ -518,7 +518,7 @@ class RenderMatrixContractTests(unittest.TestCase):
 
     def test_target_evidence_is_persisted_outside_candidate_and_digest_bound(self) -> None:
         from graduate_resume_layout import build_layout_feedback_adapter
-        from graduate_resume_render import render_candidate_matrix
+        from graduate_resume_render import EvidenceSink, render_candidate_matrix
 
         source = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
         document = cli.load_resume(str(source))
@@ -562,6 +562,14 @@ class RenderMatrixContractTests(unittest.TestCase):
             ).hexdigest()
             self.assertEqual(matrix_digest, projection.condition_digest)
             self.assertFalse(any("evidence" in path.name for path in result.candidate_root.iterdir()))
+            evidence_files[0].write_bytes(b"conflicting binding")
+            with self.assertRaises(cli.CliError):
+                with EvidenceSink(evidence_root) as sink:
+                    sink.persist(
+                        canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
+                        projection=projection,
+                        condition_evidence=evaluation.to_evidence_projection(),
+                    )
 
     def test_generic_matrix_has_three_complete_safe_triples(self) -> None:
         from graduate_resume_layout import build_layout_feedback_adapter

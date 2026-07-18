@@ -916,7 +916,7 @@ def _execute_publication(
         raise CliError("EVIDENCE_ROOT_REQUIRED", "定向渲染必须显式授权独立隐藏证据根。")
     try:
         evidence_context = (
-            EvidenceSink(args.evidence_root, delivery_root=delivery_root)
+            EvidenceSink(args.evidence_root, delivery_root=delivery_root, create=False)
             if condition_evidence else contextlib.nullcontext(None)
         )
         with evidence_context as evidence_sink, tempfile.TemporaryDirectory(prefix="graduate-resume-render-") as temporary:
@@ -928,6 +928,7 @@ def _execute_publication(
                     typst_executable=typst_executable, font_manifest_hash=font_hash,
                     condition_evidence=None if target is None else condition_evidence[str(target["id"])],
                     evidence_root=evidence_sink,
+                    persist_evidence=False,
                 )
                 if not result.publishable or result.candidate_root is None:
                     raise CliError("RENDER_MATRIX_FAILED", "候选矩阵未完成。")
@@ -954,6 +955,14 @@ def _execute_publication(
                     publication = session.publish(
                         approval_digest=args.approval_digest,
                     )
+                    if evidence_sink is not None:
+                        for projection, target in zip(projections, selected):
+                            if target is not None:
+                                evidence_sink.persist(
+                                    canonical_hash=canonical_hash,
+                                    projection=projection,
+                                    condition_evidence=condition_evidence[str(target["id"])],
+                                )
     except DeliveryError as exc:
         raise CliError("DELIVERY_PREFLIGHT_FAILED", "正式投递预检或发布失败。") from exc
     versions = [_projection_public(item) for item in projections]
