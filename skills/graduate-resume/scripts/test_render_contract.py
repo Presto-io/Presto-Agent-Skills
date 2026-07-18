@@ -131,7 +131,7 @@ class RenderMatrixContractTests(unittest.TestCase):
                 self.assertEqual({path.suffix for path in result.candidate_root.glob(item.stem + ".*")}, {".md", ".typ", ".pdf"})
 
     def test_safe_stem_normalizes_and_rejects_collision(self) -> None:
-        from graduate_resume_render import RENDER_STEM_COLLISION, build_render_matrix, safe_component
+        from graduate_resume_render import RENDER_MATRIX_FAILED, RENDER_STEM_COLLISION, build_render_matrix, render_candidate_matrix, safe_component
 
         self.assertEqual(safe_component(" Ａ/Ｂ\x00 C "), "A-B-C")
         source = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
@@ -140,6 +140,25 @@ class RenderMatrixContractTests(unittest.TestCase):
         with self.assertRaises(cli.CliError) as raised:
             build_render_matrix("甲", (projection, projection))
         self.assertEqual(raised.exception.code, RENDER_STEM_COLLISION)
+        target_source = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
+        targeted = cli.load_resume(str(target_source))
+        cli.validate_document(targeted)
+        target = targeted.data["targets"][0]
+        target_projection = resolve_version_projection(
+            targeted.data, target, PageBudgetRequest("auto"),
+            lambda theme, selected, request: LayoutFeedback(theme, True, 1, ()),
+        )
+        target_matrix = build_render_matrix(targeted.data["candidate"]["name"], target_projection, targets={target["id"]: target})
+        self.assertTrue(all(safe_component(target["role"]) in item.stem for item in target_matrix.items))
+        with tempfile.TemporaryDirectory() as temporary:
+            candidate = Path(temporary) / "candidate"
+            with self.assertRaises(cli.CliError) as raised:
+                render_candidate_matrix(
+                    candidate, document.data, projection,
+                    canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(), fail_theme="modern",
+                )
+            self.assertEqual(raised.exception.code, RENDER_MATRIX_FAILED)
+            self.assertFalse(candidate.exists() and any(candidate.iterdir()))
 
 
 if __name__ == "__main__":
