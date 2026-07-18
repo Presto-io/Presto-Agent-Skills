@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.19
 milestone_name: 毕业生高级简历生成器
 status: executing
-stopped_at: Completed 48-04-PLAN.md
-last_updated: "2026-07-18T08:51:09.612Z"
+stopped_at: Completed 48-05-PLAN.md
+last_updated: "2026-07-18T12:44:06.034Z"
 last_activity: 2026-07-18
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 9
-  completed_plans: 8
-  percent: 89
+  completed_plans: 9
+  percent: 100
 ---
 
 # State: Presto Agent Skills
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-17)
 ## Current Position
 
 Phase: 48 (确定性定向渲染与干净批量交付) — EXECUTING
-Plan: 4 of 4
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-07-18
 
@@ -137,6 +137,10 @@ Phase order:
 - [Phase 48]: render 固定 generic/单 target patch，batch 固定 generic + all confirmed targets authority；确认绑定同一 held-root preflight digest。 — 区分单份保留与权威批量移除，并阻止确认后的 snapshot 漂移。
 - [Phase 48]: Phase 48 aggregate 使用字面固定 13 gate registry 观察窄测试。 — 禁止动态发现、动态跳过或把 Phase 49 authority 冒充为本阶段证据。
 - [Phase 48]: not-applicable 只有 target ID、condition ID、1..200 Unicode code points reason 的三参数公开入口。 — 消除第二入口歧义，完整理由仅留 hidden evidence。
+- [Phase 48]: canonical 可保留 declined，但正式 publication 对任何非 verified 候选事实 fail closed。
+- [Phase 48]: 事实 ID 使用统一稳定 grammar，profile 固定为 profile，canonical、resolver、final Markdown 与 Typst 四层复验。
+- [Phase 48]: ContainerPlan.fields 同时驱动高度、分页和 Typst/PDF。
+- [Phase 48]: 显式 photo 必须绑定 provided 安全本地资产，只有 auto 可降级 no-photo。
 
 ### Pending Todos
 
@@ -184,11 +188,12 @@ None. Phases 46 and 47 are complete; Phase 48 is ready for discussion.
 | Phase 48 P01 | 11min | 2 tasks | 4 files |
 | Phase 48 P03 | 11min | 2 tasks | 2 files |
 | Phase 48 P04 | 23min | 3 tasks | 5 files |
+| Phase 48 P05 | 39min | 3 tasks | 8 files |
 
 ## Session Continuity
 
-Last session: 2026-07-18T07:25:34.708Z
-Stopped at: Completed 48-04-PLAN.md
+Last session: 2026-07-18T12:43:01.530Z
+Stopped at: Completed 48-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
