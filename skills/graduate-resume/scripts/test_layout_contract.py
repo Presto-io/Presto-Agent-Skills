@@ -84,6 +84,18 @@ class LayoutContractTests(unittest.TestCase):
             emit_typst(plan, self.document.data)
         self.assertEqual(raised.exception.code, LAYOUT_PLAN_INVALID)
 
+    def test_cli_plan_is_deidentified_frozen_summary(self) -> None:
+        args = type("Args", (), {"input": str(SKILL_ROOT / "fixtures" / "valid-no-photo.md"), "assets_root": None, "theme": None, "pages": "2", "photo_mode": "auto"})()
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            self.assertEqual(cli.command_plan(args), 0)
+        payload = json.loads(output.getvalue())
+        self.assertEqual(payload["plan_type"], "frozen-resume-layout")
+        self.assertEqual(payload["frozen_layout"]["page_count"], 2)
+        self.assertEqual(payload["frozen_layout"]["recommendation"]["recommended_pages"], 1)
+        self.assertNotIn("王宁", output.getvalue())
+        self.assertNotIn("fixtures/media", output.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
