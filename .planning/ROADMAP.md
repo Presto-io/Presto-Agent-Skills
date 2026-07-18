@@ -94,7 +94,7 @@ Plans:
 
 Plans:
 **Wave 1**
-- [ ] 48-01: 实现 target resolver、硬条件四态和可追溯版本 metadata。
+- [x] 48-01: 实现 target resolver、硬条件四态和可追溯版本 metadata。
 - [ ] 48-03: 实现单份/批量候选发布、完整预检、no-op、归档、rollback 和路径边界。
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -126,7 +126,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 46. 资料契约、字体与可验证夹具 | 3/3 | Completed | 2026-07-18 |
 | 47. 受控主题、照片与冻结布局 | 3/3 | Complete   | 2026-07-18 |
-| 48. 确定性定向渲染与干净批量交付 | 0/4 | Not started | - |
+| 48. 确定性定向渲染与干净批量交付 | 1/4 | In Progress|  |
 | 49. 聚合验证、跨 Runtime 与发布验收 | 0/2 | Not started | - |
 
 ## Traceability Coverage

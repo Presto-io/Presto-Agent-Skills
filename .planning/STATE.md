@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.19
 milestone_name: 毕业生高级简历生成器
 status: executing
-stopped_at: Phase 48 context gathered
-last_updated: "2026-07-18T05:58:14.740Z"
-last_activity: 2026-07-18 -- Phase 48 planning complete
+stopped_at: Completed 48-01-PLAN.md
+last_updated: "2026-07-18T06:17:05.851Z"
+last_activity: 2026-07-18
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
-  percent: 57
+  completed_plans: 5
+  percent: 71
 ---
 
 # State: Presto Agent Skills
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-17)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Discuss Phase 48 deterministic targeting, rendering, and clean batch delivery for the graduate-resume skill
+**Current focus:** Phase 48 — 确定性定向渲染与干净批量交付
 
 ## Current Position
 
-Phase: 48 — 确定性定向渲染与干净批量交付
-Plan: Not planned
+Phase: 48 (确定性定向渲染与干净批量交付) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-07-18 -- Phase 48 planning complete
+Last activity: 2026-07-18
 
 ## Workflow Preferences
 
@@ -129,6 +129,8 @@ Phase order:
 - [Phase 47]: 三个首批主题只登记视觉 token；照片以逻辑相对资产和冻结 contain/forbid 策略进入计划，不携带物理路径或事实。 — 主题扩展不得改写 graduate-resume/v2。
 - [Phase 47]: 受控字体清单在计划前验证 SHA-256 与 Typst 可见性；批准上游 Bold 的物理 700 保持原样并承担 UI 语义 600 角色。 — 不篡改上游 OFL 字体且不依赖系统回退。
 - [Phase 47]: 固定布局矩阵使用字面 fixture/theme 注册表并在临时 workdir 验证 PDF/PNG；正式交付仍属 Phase 48。 — 防止隐式样张漂移且避免把临时证据发布为投递产物。
+- [Phase 48]: 事实排序固定为受控模块顺序、pin 优先、整数相关性降序和稳定事实 ID；正文顺序不参与投影。 — 确保正文重排不会改变版本语义。
+- [Phase 48]: 只有 education_level、major_exact、certificate_exact、fresh_graduate_status 可产生 meets/gap；其他条件回退 unknown。 — 相关性不能作为资格证明。
 
 ### Pending Todos
 
@@ -173,12 +175,13 @@ None. Phases 46 and 47 are complete; Phase 48 is ready for discussion.
 | Phase 47 P02 | 28 min | 3 tasks | 6 files |
 | Phase 47 P03 | 34min | 3 tasks | 12 files |
 | Phase 47 P04 | 17 min | verification gap closure | 6 files |
+| Phase 48 P01 | 11min | 2 tasks | 4 files |
 
 ## Session Continuity
 
-Last session: 2026-07-18T04:51:57.501Z
-Stopped at: Phase 48 context gathered
-Resume file: .planning/phases/48-deterministic-targeted-rendering-clean-batch-delivery/48-CONTEXT.md
+Last session: 2026-07-18T06:17:05.844Z
+Stopped at: Completed 48-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
