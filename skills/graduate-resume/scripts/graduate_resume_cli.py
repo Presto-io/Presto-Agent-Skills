@@ -613,9 +613,14 @@ def main() -> int:
         if args.command in {"render", "batch"}:
             return command_reserved(args.command)
         raise CliError("UNKNOWN_COMMAND", f"未知命令: {args.command}")
-    except CliError as exc:
+    except Exception as exc:
+        # ``graduate_resume_layout`` can import this script by module name while
+        # this entry point is running as ``__main__``.  Normalize every stable
+        # CLI-shaped error here so layout failures never leak a traceback.
+        if not isinstance(getattr(exc, "code", None), str) or not isinstance(getattr(exc, "message", None), str):
+            raise
         payload = {"status": "failed", "code": exc.code, "message": exc.message}
-        if exc.details:
+        if getattr(exc, "details", None):
             payload["issues"] = exc.details
         print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
         return 2 if exc.code in {"VALIDATION_FAILED", "NOT_IMPLEMENTED"} else 64

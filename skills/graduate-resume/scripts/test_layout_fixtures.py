@@ -110,6 +110,23 @@ class LayoutFixtureTests(unittest.TestCase):
                 build_frozen_resume_plan(failing.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2")
             self.assertEqual(raised.exception.code, LAYOUT_UNSATISFIABLE)
 
+    def test_shell_cli_normalizes_unsatisfiable_layout_errors(self) -> None:
+        fixture = self.root / "error-unsatisfiable-two-pages.md"
+        shell = SCRIPT_DIR / "graduate-resume.sh"
+        for key in THEME_KEYS:
+            completed = subprocess.run(
+                [str(shell), "plan", "--input", str(fixture), "--theme", key, "--pages", "2"],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertNotIn("Traceback", completed.stderr)
+            payload = json.loads(completed.stderr)
+            self.assertEqual(payload["status"], "failed")
+            self.assertEqual(payload["code"], LAYOUT_UNSATISFIABLE)
+
     def test_each_theme_compiles_controlled_photo_and_no_photo_evidence(self) -> None:
         photo_document = self.load("standard-photo.md")
         no_photo_document = self.load("short-no-photo.md")
@@ -117,6 +134,19 @@ class LayoutFixtureTests(unittest.TestCase):
         for key in THEME_KEYS:
             compile_controlled(build_frozen_resume_plan(photo_document.data, THEME_SPECS[key], "photo", photo, self.font_hash, "auto"), photo_document)
             compile_controlled(build_frozen_resume_plan(no_photo_document.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2"), no_photo_document)
+
+    def test_boundary_and_pressure_fixtures_compile_for_every_theme(self) -> None:
+        boundary = self.load("boundary-content.md")
+        pressure = self.load("pressure-two-pages.md")
+        for key in THEME_KEYS:
+            boundary_plan = build_frozen_resume_plan(boundary.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "auto")
+            pressure_plan = build_frozen_resume_plan(pressure.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2")
+            self.assertIn(boundary_plan.page_count, (1, 2))
+            self.assertEqual(pressure_plan.page_count, 2)
+            self.assertEqual(len(pressure_plan.pages), 2)
+            self.assertTrue(pressure_plan.pages[1].anchors)
+            compile_controlled(boundary_plan, boundary)
+            compile_controlled(pressure_plan, pressure)
 
 
 if __name__ == "__main__":

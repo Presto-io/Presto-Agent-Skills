@@ -37,18 +37,28 @@ def emit_typst(plan: FrozenResumePlan, facts: dict[str, Any]) -> str:
         raise CliError(LAYOUT_PLAN_INVALID, "受控 Typst 主题模板缺失。")
     by_id = {container.id: container for container in plan.containers}
     pages: list[str] = []
-    for page in plan.pages:
+    for page_index, page in enumerate(plan.pages):
         body: list[str] = []
+        previous_section: str | None = None
         for container_id in page.containers:
             container = by_id[container_id]
             heading = typst_content(container.section)
             content = typst_content(_container_text(container))
             if container.kind == "list-entry":
-                body.append(f'#resume.list-entry("{heading}", "{container.id}", [{content}])')
+                show_heading = "true" if container.section != previous_section else "false"
+                body.append(f'#resume.list-entry("{heading}", "{container.id}", [{content}], show-heading: {show_heading})')
             else:
                 body.append(f'#resume.fact-block("{heading}", [{content}])')
-        pages.append("\n".join(body))
+            previous_section = container.section
+        # The frozen plan owns the theme and photo decision.  The template only
+        # realizes that decision; it never chooses another layout or asset.
+        photo = "none"
+        if page_index == 0 and plan.photo is not None:
+            photo = f'image("{plan.photo.logical_path}", fit: "contain")'
+        pages.append(
+            f'#resume.theme-layout("{plan.theme_key}", photo: {photo})[\n'
+            + "\n".join(body)
+            + "\n]"
+        )
     prefix = '#import "resume-themes.typ" as resume\n'
-    if plan.photo is not None:
-        prefix += f'#resume.photo-slot("{plan.theme_key}", image_handle: image("{plan.photo.logical_path}", fit: "contain"))\n'
     return prefix + "\n#pagebreak()\n".join(pages) + "\n"
