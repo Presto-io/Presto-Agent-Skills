@@ -589,9 +589,14 @@ class RenderMatrixContractTests(unittest.TestCase):
                 self.assertEqual({path.suffix for path in result.candidate_root.glob(item.stem + ".*")}, {".md", ".typ", ".pdf"})
 
     def test_safe_stem_normalizes_and_rejects_collision(self) -> None:
-        from graduate_resume_render import RENDER_MATRIX_FAILED, RENDER_STEM_COLLISION, build_render_matrix, render_candidate_matrix, safe_component
+        from graduate_resume_render import RENDER_INPUT_INVALID, RENDER_MATRIX_FAILED, RENDER_STEM_COLLISION, build_render_matrix, build_stem, render_candidate_matrix, safe_component
 
         self.assertEqual(safe_component(" Ａ/Ｂ\x00 C "), "A-B-C")
+        self.assertLessEqual(len(safe_component("张" * 40).encode("utf-8")), 48)
+        for sensitive in ("张三13800000000", "test@example.com", "11010519491231002X", "https://jobs.example.test/private"):
+            with self.subTest(sensitive=sensitive), self.assertRaises(cli.CliError) as raised:
+                build_stem(sensitive, "conservative")
+            self.assertEqual(raised.exception.code, RENDER_INPUT_INVALID)
         source = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
         document = cli.load_resume(str(source))
         projection = _projection(document)
