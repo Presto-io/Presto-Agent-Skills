@@ -16,7 +16,17 @@ from graduate_resume_final_markdown import FinalResumeDocument
 
 def typst_content(value: str) -> str:
     """Escape every candidate-controlled character before it becomes Typst content."""
-    return value.replace("\\", "\\\\").replace('"', '\\"').replace("#", "\\#").replace("[", "\\[").replace("]", "\\]").replace("\n", "#linebreak()")
+    escaped: list[str] = []
+    for character in value:
+        if character == "\n":
+            escaped.append("#linebreak()")
+        elif character == "\\":
+            escaped.append("\\\\")
+        elif character in '#[]<>@$*_`"':
+            escaped.append("\\" + character)
+        else:
+            escaped.append(character)
+    return "".join(escaped)
 
 
 def normalize_photo_bytes(source: bytes, *, max_bytes: int = 20 * 1024 * 1024) -> bytes:
