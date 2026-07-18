@@ -153,6 +153,20 @@ class TypstRuntimeResolverTests(unittest.TestCase):
                 self.assertIn(str(executable.snapshot_path), executable.run(("probe",), text=True).stdout)
                 self.assertNotIn("9.9.0", executable.run(("--version",), text=True).stdout)
 
+    def test_snapshot_in_place_overwrite_is_rejected_before_execution(self) -> None:
+        from graduate_resume_typst_runtime import resolve_typst_executable
+
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "typst"
+            self._fake_typst(source)
+            with resolve_typst_executable(source) as executable:
+                original = executable.snapshot_path.read_bytes()
+                executable.snapshot_path.chmod(0o700)
+                executable.snapshot_path.write_bytes(original.replace(b"0.15.0", b"9.9.0 "))
+                executable.snapshot_path.chmod(0o500)
+                with self.assertRaises(cli.CliError):
+                    executable.run(("--version",), text=True)
+
     def test_copy_time_source_change_is_rejected_and_snapshot_cleaned(self) -> None:
         from graduate_resume_typst_runtime import resolve_typst_executable
 
