@@ -259,5 +259,29 @@ class DocumentationContractTests(unittest.TestCase):
         self.assertNotIn("not-applicable", template)
 
 
+class Phase48AcceptanceRegistryTests(unittest.TestCase):
+    def test_acceptance_registry_is_literal_complete_and_observed(self) -> None:
+        required = (
+            "test_targeting_contract.TargetingProjectionTests.test_projection_is_deterministic_reorder_safe_and_immutable",
+            "test_targeting_contract.TargetingProjectionTests.test_invalid_overrides_and_unsatisfiable_budget_fail_closed",
+            "test_targeting_contract.HardConditionTests.test_controlled_predicates_produce_four_states_without_similarity_claims",
+            "test_render_contract.FinalMarkdownContractTests.test_round_trip_is_deterministic_and_tamper_evident",
+            "test_render_contract.TypstConsumerContractTests.test_photo_normalization_is_deterministic_and_embedded",
+            "test_render_contract.RenderMatrixContractTests.test_safe_stem_normalizes_and_rejects_collision",
+            "test_delivery_transaction.DiscoveryFailClosedTests.test_unknown_partial_symlink_directory_fifo_and_stale_work_fail",
+            "test_delivery_transaction.PublicationTransactionTests.test_authority_requires_unchanged_approval_and_patch_preserves_other_stems",
+            "test_delivery_transaction.PublicationTransactionTests.test_identical_does_not_create_history_or_touch_inode_mtime",
+            "test_delivery_transaction.PublicationTransactionTests.test_every_fault_and_handled_signal_restore_entire_current_set",
+            "test_phase48_cli.PublicCliContractTests.test_gap_allow_is_per_target_unknown_is_warning_and_runtime_failure_is_bounded",
+            "test_phase48_cli.PublicCliContractTests.test_batch_lists_and_confirms_removed_old_target_triples",
+        )
+        self.assertEqual(PHASE48_ACCEPTANCE_REGISTRY, required)
+        observed = run_phase48_acceptance_registry()
+        self.assertEqual(observed["required"], list(required))
+        self.assertEqual(observed["called"], list(required))
+        self.assertEqual(observed["status"], "passed")
+        self.assertNotIn("skip", json.dumps(observed).lower())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
