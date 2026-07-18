@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import replace
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_ROOT = SCRIPT_DIR.parent
@@ -32,6 +34,132 @@ def _projection(document):
         PageBudgetRequest("auto"),
         lambda theme, selected, request: LayoutFeedback(theme, True, 1, ()),
     )
+
+
+class TypstRuntimeResolverTests(unittest.TestCase):
+    @staticmethod
+    def _fake_typst(path: Path, version: str = "typst 0.15.0") -> None:
+        path.write_text(
+            "#!/bin/sh\n"
+            f"if [ \"$1\" = \"--version\" ]; then printf '%s\\n' '{version}'; exit 0; fi\n"
+            "printf '%s\\n' \"$0|$*\"\n",
+            encoding="utf-8",
+        )
+        path.chmod(0o755)
+
+    def test_real_homebrew_symlink_uses_one_private_snapshot(self) -> None:
+        from graduate_resume_typst_runtime import resolve_typst_executable
+
+        candidate = Path("/opt/homebrew/bin/typst")
+        self.assertTrue(candidate.is_symlink())
+        with resolve_typst_executable(candidate) as executable:
+            snapshot = executable.snapshot_path
+            self.assertEqual(executable.version, "0.15.0")
+            self.assertNotEqual(snapshot, candidate)
+            self.assertNotEqual(snapshot, candidate.resolve())
+            self.assertEqual(snapshot.stat().st_mode & 0o777, 0o500)
+            self.assertEqual(snapshot.stat().st_dev, executable.snapshot_dev)
+            self.assertEqual(snapshot.stat().st_ino, executable.snapshot_ino)
+            self.assertEqual(hashlib.sha256(snapshot.read_bytes()).hexdigest(), executable.snapshot_sha256)
+            completed = executable.run(("--version",), text=True)
+            self.assertEqual(completed.stdout.strip(), "typst 0.15.0 (unknown commit)")
+        self.assertFalse(snapshot.exists())
+
+    def test_relative_and_absolute_multihop_chains_are_supported(self) -> None:
+        from graduate_resume_typst_runtime import resolve_typst_executable
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "Cellar" / "typst" / "0.15.0" / "bin" / "typst"
+            target.parent.mkdir(parents=True)
+            self._fake_typst(target)
+            relative = root / "bin" / "typst"
+            relative.parent.mkdir()
+            relative.symlink_to(Path("../Cellar/typst/0.15.0/bin/typst"))
+            absolute = root / "typst-absolute"
+            absolute.symlink_to(relative)
+            with resolve_typst_executable(absolute) as executable:
+                self.assertEqual(executable.version, "0.15.0")
+                self.assertEqual(executable.run(("probe",), text=True).args[0], str(executable.snapshot_path))
+
+    def test_invalid_chain_target_and_version_fail_closed(self) -> None:
+        from graduate_resume_typst_runtime import resolve_typst_executable
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            dangling = root / "dangling"
+            dangling.symlink_to("missing")
+            cycle_a = root / "cycle-a"
+            cycle_b = root / "cycle-b"
+            cycle_a.symlink_to(cycle_b.name)
+            cycle_b.symlink_to(cycle_a.name)
+            directory = root / "directory"
+            directory.mkdir()
+            not_executable = root / "not-executable"
+            not_executable.write_text("typst", encoding="utf-8")
+            hop_paths = [root / f"hop-{index}" for index in range(18)]
+            final = root / "final"
+            self._fake_typst(final)
+            for index, path in enumerate(hop_paths):
+                path.symlink_to((hop_paths[index + 1] if index + 1 < len(hop_paths) else final).name)
+            bad_versions = []
+            for name, version in (("wrong", "typst 9.9.0"), ("multi", "typst 0.15.0\\nextra")):
+                path = root / name
+                self._fake_typst(path, version)
+                bad_versions.append(path)
+            nonzero = root / "nonzero"
+            nonzero.write_text("#!/bin/sh\nexit 7\n", encoding="utf-8")
+            nonzero.chmod(0o755)
+            verbose = root / "verbose"
+            verbose.write_text("#!/bin/sh\nyes x | head -c 70000\n", encoding="utf-8")
+            verbose.chmod(0o755)
+            for candidate in (dangling, cycle_a, directory, not_executable, hop_paths[0], *bad_versions, nonzero, verbose):
+                with self.subTest(candidate=candidate.name):
+                    with self.assertRaises(cli.CliError):
+                        with resolve_typst_executable(candidate):
+                            pass
+
+    def test_source_replacement_after_copy_cannot_change_snapshot_execution(self) -> None:
+        from graduate_resume_typst_runtime import resolve_typst_executable
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            original = root / "typst-original"
+            fake = root / "typst-fake"
+            link = root / "typst"
+            self._fake_typst(original)
+            self._fake_typst(fake, "typst 9.9.0")
+            link.symlink_to(original.name)
+
+            def replace_source() -> None:
+                link.unlink()
+                link.symlink_to(fake.name)
+                replacement = root / "replacement"
+                self._fake_typst(replacement, "typst 9.9.0")
+                os.replace(replacement, original)
+
+            with resolve_typst_executable(link, _after_source_verified=replace_source) as executable:
+                self.assertEqual(executable.version, "0.15.0")
+                self.assertIn(str(executable.snapshot_path), executable.run(("probe",), text=True).stdout)
+                self.assertNotIn("9.9.0", executable.run(("--version",), text=True).stdout)
+
+    def test_copy_time_source_change_is_rejected_and_snapshot_cleaned(self) -> None:
+        from graduate_resume_typst_runtime import resolve_typst_executable
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "typst"
+            self._fake_typst(source)
+
+            def mutate_source(_copied: int) -> None:
+                source.chmod(0o700)
+
+            with mock.patch("tempfile.mkdtemp", wraps=tempfile.mkdtemp) as make_temp:
+                with self.assertRaises(cli.CliError):
+                    with resolve_typst_executable(source, _copy_chunk_hook=mutate_source):
+                        pass
+                snapshot_root = Path(make_temp.return_value)
+                self.assertFalse(snapshot_root.exists())
 
 
 class FinalMarkdownContractTests(unittest.TestCase):
