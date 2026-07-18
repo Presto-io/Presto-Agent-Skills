@@ -1,8 +1,8 @@
 ---
 phase: 48-deterministic-targeted-rendering-clean-batch-delivery
-reviewed: 2026-07-18T13:42:57Z
+reviewed: 2026-07-18T16:49:28Z
 depth: standard
-files_reviewed: 18
+files_reviewed: 20
 files_reviewed_list:
   - skills/graduate-resume/SKILL.md
   - skills/graduate-resume/fixtures/render/targeted-photo.md
@@ -15,97 +15,134 @@ files_reviewed_list:
   - skills/graduate-resume/scripts/graduate_resume_render.py
   - skills/graduate-resume/scripts/graduate_resume_targeting.py
   - skills/graduate-resume/scripts/graduate_resume_typst.py
+  - skills/graduate-resume/scripts/graduate_resume_typst_runtime.py
   - skills/graduate-resume/scripts/test_delivery_transaction.py
   - skills/graduate-resume/scripts/test_phase48_cli.py
   - skills/graduate-resume/scripts/test_render_contract.py
   - skills/graduate-resume/scripts/test_targeting_contract.py
+  - skills/graduate-resume/scripts/test_theme_contract.py
   - skills/graduate-resume/templates/graduate-resume.md
   - skills/graduate-resume/templates/resume-themes.typ
   - skills/graduate-resume/templates/targeting-policy.json
 findings:
-  critical: 5
-  warning: 1
+  critical: 6
+  warning: 3
   info: 0
-  total: 6
+  total: 9
 status: issues_found
 ---
 
 # Phase 48: Code Review Report
 
-**Reviewed:** 2026-07-18T13:42:57Z
+**Reviewed:** 2026-07-18T16:49:28Z
 **Depth:** standard
-**Files Reviewed:** 18
+**Files Reviewed:** 20
 **Status:** issues_found
 
 ## Summary
 
-本次审查发现 5 个阻断发布的正确性、安全与交付契约问题，以及 1 个会破坏后续交付可用性的清理问题。最严重的缺陷会把拼错或省略复核状态的事实自动提升为 `verified`，允许照片资产在验证后被符号链接替换，以及把旧解析事实绑定到后来重新读取的 canonical hash。
+标准深度审查发现 6 个必须在发布前修复的正确性、安全和数据完整性问题，以及 3 个可靠性问题。最严重的缺陷会把招聘 URL 与电话号码写入正式产物路径或 Markdown、允许重复事实字段静默覆盖、让 `validate` 对不可渲染资料误报通过、在未确认的预检中覆盖既有隐藏证据，以及允许已通过版本门禁的 Typst 快照被原地替换后继续执行。
 
-范围内 53 个测试全部通过，但最小复现仍确认：`stats=pending` 会被解析为 `status=verified` 并通过校验；含私密文件的 `sources/` 会被正式投递事务接受；照片验证后替换为 symlink 时后续读取会跟随链接。现有测试只覆盖跨进程内容变化和初始 symlink，没有覆盖验证与消费之间的替换窗口。
+最小复现确认：重复 `专业` 字段以最后一个值覆盖且校验通过；`candidate.directions: [123]` 校验通过；URL 形式的 target source 原样进入最终 Markdown；姓名 `张三13800000000` 原样进入正式 stem。
 
 ## Narrative Findings (AI reviewer)
 
 ## Critical Issues
 
-### CR-01: 缺失或拼错的事实状态被自动提升为 `verified`
+### CR-01: 招聘来源 URL 被公开到预检与正式 Markdown
 
 **Classification:** BLOCKER
-**File:** `skills/graduate-resume/scripts/graduate_resume_cli.py:217`
-**Issue:** `parse_metadata()` 接受任意键且不拒绝重复键；正文条目随后用 `metadata.get("status", "verified")` 填充状态。因而 `<!-- resume: id=edu-001 stats=pending -->` 或完全省略 `status` 都会静默变成 `verified`，通过 `validate_document()`，并进入 Phase 48 正式 Markdown/Typst/PDF。这个默认值把未复核事实提升为已核实事实，直接违反 D-01 的“只消费 `status: verified`”边界。现有测试只覆盖显式 `status=pending/declined`，没有覆盖缺失、拼写错误或重复 metadata key。
-**Fix:** `parse_metadata()` 必须拒绝重复 key；非 target 条目必须精确包含 `id` 与 `status`，target 必须只包含 `id`。不要为复核状态提供 `verified` 默认值，并添加缺失/拼错/重复 `status` 的 CLI 负例。
+**File:** `skills/graduate-resume/scripts/graduate_resume_final_markdown.py:136`
+**Related:** `skills/graduate-resume/scripts/graduate_resume_cli.py:782`
+**Issue:** target 的 `source` 只要求是非空字符串，随后既被写入公开预检矩阵，也被原样写入 `graduate-resume-delivery/v1` 的 `target.source`。使用 `https://jobs.example.test/private?id=123` 的最小复现确认 URL 明文存在于最终 Markdown。这直接违反 D-12“最终 Markdown 不含原始招聘 URL”和安全章节的披露边界，也可能泄露带查询参数的私有招聘链接。
+**Fix:** 在 canonical 校验时把 `source` 限定为有界的来源描述/类别并拒绝 URL，或在投影时只发布来源类别与不可逆摘要；公开预检和最终 Markdown 都不得复制原始 URL。
 
 ```python
-if key in values:
-    raise CliError("MARKDOWN_INVALID", f"{area} 的 resume 元数据键重复: {key}")
-values[key] = value
-
-if pending_area[0] != "targets" and set(metadata) != {"id", "status"}:
-    raise CliError("MARKDOWN_INVALID", "正文事实必须显式提供 id 与 status。")
+if re.match(r"(?i)^[a-z][a-z0-9+.-]*://", source):
+    raise CliError("VALIDATION_FAILED", "target.source 必须是来源描述，不能是 URL。")
 ```
 
-### CR-02: 照片通过 no-follow 校验后又按路径读取，重新开放 symlink TOCTOU
+### CR-02: 安全 stem 未检测电话、邮箱或身份证信息
 
 **Classification:** BLOCKER
-**File:** `skills/graduate-resume/scripts/graduate_resume_cli.py:665`
-**Related:** `skills/graduate-resume/scripts/graduate_resume_layout.py:478`
-**Issue:** `resolve_layout_photo()` 逐组件检查 symlink、文件类型和图片 magic 后只返回逻辑路径；CLI 随后重新执行 `(assets_root.resolve(...) / logical_path).read_bytes()`。验证与读取之间若文件被替换为 symlink，第二次读取会跟随链接并消费未授权的替代图片。最小复现已确认：校验返回后把 `photo.jpg` 换成指向另一 JPEG 的 symlink，行 665 会读取链接目标。静态 symlink 测试无法覆盖该窗口。
-**Fix:** 在 `assets_root` 的 held directory descriptor 下逐组件使用 `O_NOFOLLOW` 打开最终文件，校验并从同一个 descriptor 读取有界 bytes；让 resolver 返回已验证 bytes（或 held fd），禁止调用者再按路径打开。增加校验后执行 inode/symlink swap 的回归测试。
+**File:** `skills/graduate-resume/scripts/graduate_resume_render.py:233`
+**Issue:** `safe_component()` 只规范化字符和长度，`build_stem()` 直接把姓名、单位和岗位拼入文件名。姓名 `张三13800000000` 会生成 `张三13800000000简历-通用-保守稳妥`；同理，邮箱或身份证号也可经这些字段进入 current/history 路径。D-15 和 `SKILL.md` 明确禁止电话、邮箱、身份证进入 stem，因此这是可触发的隐私泄露。
+**Fix:** 在拼接前对三个组件执行集中式敏感标识检测；命中电话、邮箱、身份证或 URL 时稳定失败，并在 canonical 字段校验与 stem 单元测试中覆盖这些负例。
 
-### CR-03: canonical hash 可能绑定到与实际渲染事实不同的文件版本
+```python
+def reject_sensitive_component(value: str) -> None:
+    if EMAIL_RE.search(value) or PHONE_RE.search(value) or ID_CARD_RE.search(value) or URL_RE.search(value):
+        raise CliError(RENDER_INPUT_INVALID, "文件名组件包含禁止的敏感标识。")
+```
 
-**Classification:** BLOCKER
-**File:** `skills/graduate-resume/scripts/graduate_resume_cli.py:774`
-**Related:** `skills/graduate-resume/scripts/graduate_resume_cli.py:184`
-**Issue:** `load_resume()` 在行 184 读取并解析输入，但 `ResumeDocument` 不保存原始 bytes/hash；完成校验、目标投影和布局反馈后，行 774 再次从路径读取文件计算 `canonical_hash`。若输入在两次读取之间变化，最终三件套会使用旧解析事实，却声明绑定新文件的 SHA-256，审批摘要也会认证这个错误绑定。D-02/D-12 所要求的 canonical 可追溯性因此失效，且现有“预检后改文件”测试只覆盖两个独立进程，未覆盖单进程内两次读取。
-**Fix:** 一次 no-follow、有界读取输入后，将原始 bytes 和 SHA-256 保存在 `ResumeDocument`；解析、投影、最终 Markdown 与审批摘要都消费同一份不可变快照，不再重读路径。添加在 `load_resume()` 后替换输入文件并断言渲染仍绑定原快照（或稳定失败）的测试。
-
-### CR-04: 正式投递根错误接受契约禁止的 `sources/` 与 `assets/`
+### CR-03: 重复 Markdown 字段静默覆盖已解析事实
 
 **Classification:** BLOCKER
-**File:** `skills/graduate-resume/scripts/graduate_resume_delivery.py:18`
-**Related:** `skills/graduate-resume/scripts/graduate_resume_delivery.py:355`
-**Issue:** `SUPPORT_DIRECTORIES` 把 `sources` 和 `assets` 视为合法节点，`_inspect_current()` 仅确认它们是目录，完全不检查内部内容。D-13 明确规定 Phase 48 delivery root 只能包含平铺 triples 和事务所需 `history/`；规范化照片、源文件或其他诊断资产不得进入。最小复现中 `sources/private.txt` 存在时 `DeliverySession` 仍成功打开，既破坏 clean delivery，也可能把个人资料留在用户认为可直接投递的目录中。
-**Fix:** Phase 48 的允许支持目录应只包含事务实际拥有的 `history` 与临时 `.work`；把 `sources`/`assets` 当作 unknown 并在 mutation 前失败。增加两个含非空 `sources`、`assets` 的 fail-closed 测试。
+**File:** `skills/graduate-resume/scripts/graduate_resume_cli.py:380`
+**Issue:** bullet 解析直接执行 `entry[field] = ...`，没有检查同一条目是否已出现该字段。两个 `- 专业：...`、`- 招聘要求：...` 或 `- 已确认：...` 会以后者静默覆盖前者并通过校验。最小复现中第二个“专业”成功替换第一个值且 `validate_document()` 返回 passed，导致人类可见的冲突资料被机器悄悄选边，破坏事实完整性和可审阅性。
+**Fix:** 每个条目的规范字段必须唯一；赋值前若字段已存在则以稳定 `MARKDOWN_INVALID` 失败，并为普通事实与 target 添加重复字段负例。
 
-### CR-05: “锁定 Typst 0.15.0”只写在错误消息中，代码接受任意版本
+```python
+if field in entry:
+    raise CliError("MARKDOWN_INVALID", f"第 {line_number} 行重复字段: {label}")
+entry[field] = parse_value(field, raw_value)
+```
+
+### CR-04: `validate` 接受渲染器必然拒绝的嵌套值
 
 **Classification:** BLOCKER
-**File:** `skills/graduate-resume/scripts/graduate_resume_layout.py:442`
-**Related:** `skills/graduate-resume/scripts/graduate_resume_render.py:291`, `skills/graduate-resume/scripts/graduate_resume_typst.py:38`
-**Issue:** 字体探测、照片规范化和 PDF 编译都只通过 `shutil.which("typst")`/命令名寻找可执行文件，从未执行并校验 `typst --version`。因此 0.14、0.16 或其他兼容命令只要能完成 fonts/compile 就会被接受，可能产生不同分页、PNG/PDF bytes 和 no-op 结果。当前机器恰好安装 0.15.0，所以测试通过不能证明 SKILL 与照片契约声明的版本锁定。
-**Fix:** 建立唯一的 Typst resolver，读取绝对可执行路径并要求版本精确为 `0.15.0`；字体探测、照片规范化和正式编译必须复用该已验证路径。测试应注入一个返回非 0.15.0 版本但能成功退出的假 Typst，并断言稳定失败。
+**File:** `skills/graduate-resume/scripts/graduate_resume_cli.py:447`
+**Related:** `skills/graduate-resume/scripts/graduate_resume_cli.py:500`
+**Issue:** validator 对 `candidate.contact` 只检查键名，对 `candidate.directions` 只检查外层是 list，对 target requirements 也只检查外层类型；它不验证元素均为安全非空字符串。`directions: [123]` 的最小复现会被 `validate` 判定 passed，但正式布局在 `_display_string()` 中失败。由此公开的 schema gate 会对不可发布资料给出错误成功结论，违背工作流“validate 后进入 final render”的契约。
+**Fix:** 抽取统一的安全字符串、字符串列表和 contact 值校验器，在 `validate_candidate()`、`validate_targets()` 及所有可选列表字段上递归应用；对应负例必须在 `validate` 阶段失败。
+
+### CR-05: 未确认预检会覆盖既有隐藏证据记录
+
+**Classification:** BLOCKER
+**File:** `skills/graduate-resume/scripts/graduate_resume_render.py:187`
+**Related:** `skills/graduate-resume/scripts/graduate_resume_cli.py:895`
+**Issue:** evidence 文件名只由 `version_id + condition_digest` 构成，未包含 canonical hash 或 projection digest。只要招聘条件与四态未变，候选事实或 canonical bytes 变化后仍会命中同名文件；`persist()` 在 bytes 不同时用 `os.rename()` 直接覆盖旧证据。更严重的是它在 delivery preflight 和 `--confirm` 判断之前执行，因此一次未确认预检即可破坏已发布版本对应的旧审计绑定，造成证据数据丢失。
+**Fix:** 文件身份至少加入 canonical hash 与 projection digest，已存在且内容不同时必须拒绝而不是覆盖；若证据属于正式发布审计，则先写 candidate evidence，并在 delivery 确认事务成功后原子发布，预检不得改写持久证据。
+
+```python
+name = f"{projection.version_id}-{canonical_hash}-{projection.digest}-{projection.condition_digest}.json"
+if existing is not None and existing != raw:
+    raise CliError(RENDER_INPUT_INVALID, "同名证据与既有绑定冲突。")
+```
+
+### CR-06: Typst 快照只校验 inode，版本门禁后仍可被原地篡改执行
+
+**Classification:** BLOCKER
+**File:** `skills/graduate-resume/scripts/graduate_resume_typst_runtime.py:104`
+**Issue:** resolver 虽记录了 `snapshot_sha256`，但 `run()` 仅比较 `st_dev/st_ino`，不复验 mode、size 或 hash。快照文件归当前用户所有；对其 chmod 后原地覆写可保留 inode，后续 `run()` 会执行被替换的二进制。这样恶意程序可在 `--version` 通过后获得任意命令执行，破坏“所有消费者共享 immutable 0.15.0 snapshot”的安全声明。
+**Fix:** 优先通过 held executable descriptor/fexecve 等机制执行不可替换对象；若平台限制至少在每次执行前复验完整 identity、mode、size 与 SHA-256，并缩短校验到 exec 的窗口。增加 snapshot 原地覆写但 inode 不变的负例。
 
 ## Warnings
 
-### WR-01: 事务清理错误被全部吞掉，可在“成功”后留下 stale `.work/.lock`
+### WR-01: CJK 长度按字符截断却按字节拒绝，导致合法 stem 延迟失败
 
 **Classification:** WARNING
-**File:** `skills/graduate-resume/scripts/graduate_resume_delivery.py:699`
-**Issue:** `close()` 对候选/rollback 文件删除、run 目录删除、`.lock` 删除和 `.work` 删除的所有 `OSError` 都直接忽略；`__exit__()` 也不验证清理结果。发布可向用户返回成功，同时留下锁或 stale run，下一次命令会因并发锁或 stale work fail-closed，且用户无法从本次结果知道需要审计。
-**Fix:** 对清理步骤收集错误并在无活动异常时返回明确的 `DELIVERY_CLEANUP_FAILED`；至少重新检查 owned `.lock`、run 目录与 `.work` 是否消失。若 current 已成功发布，错误结果必须明确区分“发布已完成但清理失败”，避免误导用户重试事务。
+**File:** `skills/graduate-resume/scripts/graduate_resume_render.py:242`
+**Related:** `skills/graduate-resume/scripts/graduate_resume_delivery.py:58`
+**Issue:** `safe_component()` 用 Unicode 字符数执行 48 字符限制，而 delivery owner prefix 使用 96 UTF-8 bytes、完整 stem 使用 180 bytes。40 个汉字的姓名可通过 stem 构建，却在 `DeliverySpec` 以 `delivery owner prefix is unsafe` 延迟失败。错误边界不一致，且用户得到的是投递层错误而不是明确的命名错误。
+**Fix:** 统一采用 UTF-8 byte budget，在 `safe_component()` 中按完整 stem/prefix 预算安全截断并保留摘要；构建矩阵时就验证最终 owner prefix 与 stem。
+
+### WR-02: 定向照片 fixture 引用了不存在的资产
+
+**Classification:** WARNING
+**File:** `skills/graduate-resume/fixtures/render/targeted-photo.md:7`
+**Issue:** fixture 声明 `photo: media/source-photo.jpg`，但 `fixtures/render/media/source-photo.jpg` 不存在，且范围内测试没有消费该 fixture。它可通过当前 schema 校验，却无法完成照片渲染，因此不能作为可靠的“定向照片渲染字面 fixture”。
+**Fix:** 提供受控 fixture 图片或把路径改为实际存在且位于授权 assets root 下的相对资产，并加入真实 render 负载测试，确保缺失资产不会再次漏检。
+
+### WR-03: 主题测试在源码模板目录使用固定探针文件
+
+**Classification:** WARNING
+**File:** `skills/graduate-resume/scripts/test_theme_contract.py:138`
+**Issue:** 测试固定创建 `templates/.theme-contract-probe.typ` 与相邻 PDF。并行测试会互相覆盖/删除文件，进程中断会留下脏文件，测试运行还会修改源码树，与可重复、隔离的 fixture 约定冲突。
+**Fix:** 在 `TemporaryDirectory()` 中创建探针并复制或引用受控模板；每个测试使用唯一工作目录，不向 `skills/graduate-resume/templates/` 写入临时产物。
 
 ---
 
-_Reviewed: 2026-07-18T13:42:57Z_
+_Reviewed: 2026-07-18T16:49:28Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
