@@ -18,6 +18,21 @@ from graduate_resume_targeting import condition_id_for_requirement
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 CLI = SKILL_ROOT / "scripts" / "graduate_resume_cli.py"
 THEME_LABELS = ("保守稳妥", "现代简洁", "个性设计")
+PHASE48_ACCEPTANCE_REGISTRY = (
+    "test_targeting_contract.TargetingProjectionTests.test_projection_is_deterministic_reorder_safe_and_immutable",
+    "test_targeting_contract.TargetingProjectionTests.test_invalid_overrides_and_unsatisfiable_budget_fail_closed",
+    "test_targeting_contract.HardConditionTests.test_controlled_predicates_produce_four_states_without_similarity_claims",
+    "test_render_contract.FinalMarkdownContractTests.test_round_trip_is_deterministic_and_tamper_evident",
+    "test_render_contract.TypstConsumerContractTests.test_photo_normalization_is_deterministic_and_embedded",
+    "test_render_contract.RenderMatrixContractTests.test_safe_stem_normalizes_and_rejects_collision",
+    "test_delivery_transaction.DiscoveryFailClosedTests.test_unknown_partial_symlink_directory_fifo_and_stale_work_fail",
+    "test_delivery_transaction.PublicationTransactionTests.test_authority_requires_unchanged_approval_and_patch_preserves_other_stems",
+    "test_delivery_transaction.PublicationTransactionTests.test_identical_does_not_create_history_or_touch_inode_mtime",
+    "test_delivery_transaction.PublicationTransactionTests.test_every_fault_and_handled_signal_restore_entire_current_set",
+    "test_phase48_cli.PublicCliContractTests.test_gap_allow_is_per_target_unknown_is_warning_and_runtime_failure_is_bounded",
+    "test_phase48_cli.PublicCliContractTests.test_batch_lists_and_confirms_removed_old_target_triples",
+    "test_phase48_cli.PublicCliContractTests.test_photo_triple_recompiles_after_move_without_source_photo",
+)
 
 
 def run_cli(*arguments: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -39,6 +54,25 @@ def parse_json(completed: subprocess.CompletedProcess[str]) -> dict[str, object]
 
 def public_files(root: Path) -> tuple[Path, ...]:
     return tuple(sorted(path for path in root.iterdir() if path.is_file())) if root.exists() else ()
+
+
+def run_phase48_acceptance_registry() -> dict[str, object]:
+    called: list[str] = []
+    failures: list[str] = []
+    for test_id in PHASE48_ACCEPTANCE_REGISTRY:
+        called.append(test_id)
+        suite = unittest.defaultTestLoader.loadTestsFromName(test_id)
+        result = unittest.TestResult()
+        suite.run(result)
+        if result.failures or result.errors or result.skipped or result.unexpectedSuccesses:
+            failures.append(test_id)
+    return {
+        "status": "passed" if not failures else "failed",
+        "scope": "phase-48-local-development-only",
+        "required": list(PHASE48_ACCEPTANCE_REGISTRY),
+        "called": called,
+        "failures": failures,
+    }
 
 
 class PublicCliContractTests(unittest.TestCase):
@@ -215,6 +249,43 @@ class PublicCliContractTests(unittest.TestCase):
             self.assertEqual(parse_json(failed)["code"], "FONT_MANIFEST_INVALID")
             self.assertEqual(public_files(delivery), ())
 
+    def test_photo_triple_recompiles_after_move_without_source_photo(self) -> None:
+        fixture = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "photo-source.md"
+            source.write_text(
+                fixture.read_text(encoding="utf-8").replace(
+                    "photo: fixtures/media/student-photo.jpg",
+                    "photo: fixtures/layout/media/student-photo.jpg",
+                ),
+                encoding="utf-8",
+            )
+            delivery = root / "delivery"
+            completed = run_cli(
+                "render", "--input", str(source), "--generic", "--delivery-root", str(delivery),
+                "--assets-root", str(SKILL_ROOT), "--photo-mode", "photo", "--confirm",
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            typst_source = next(delivery.glob("*保守稳妥.typ"))
+            isolated = root / "isolated"
+            isolated.mkdir()
+            moved = isolated / typst_source.name
+            moved.write_bytes(typst_source.read_bytes())
+            first = isolated / "first.pdf"
+            second = isolated / "second.pdf"
+            command = [
+                "typst", "compile", "--font-path", str(SKILL_ROOT / "fonts"),
+                "--ignore-system-fonts", "--creation-timestamp", "0", str(moved),
+            ]
+            one = subprocess.run([*command, str(first)], cwd=isolated, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            two = subprocess.run([*command, str(second)], cwd=isolated, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            self.assertEqual((one.returncode, two.returncode), (0, 0), (one.stderr, two.stderr))
+            self.assertEqual(first.read_bytes(), second.read_bytes())
+            typst_text = moved.read_text(encoding="utf-8")
+            self.assertNotIn(str(source), typst_text)
+            self.assertNotIn("student-photo.jpg", typst_text)
+
 
 class DocumentationContractTests(unittest.TestCase):
     def test_canonical_workflow_reference_and_template_are_synchronized(self) -> None:
@@ -274,6 +345,7 @@ class Phase48AcceptanceRegistryTests(unittest.TestCase):
             "test_delivery_transaction.PublicationTransactionTests.test_every_fault_and_handled_signal_restore_entire_current_set",
             "test_phase48_cli.PublicCliContractTests.test_gap_allow_is_per_target_unknown_is_warning_and_runtime_failure_is_bounded",
             "test_phase48_cli.PublicCliContractTests.test_batch_lists_and_confirms_removed_old_target_triples",
+            "test_phase48_cli.PublicCliContractTests.test_photo_triple_recompiles_after_move_without_source_photo",
         )
         self.assertEqual(PHASE48_ACCEPTANCE_REGISTRY, required)
         observed = run_phase48_acceptance_registry()
