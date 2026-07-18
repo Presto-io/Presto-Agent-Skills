@@ -55,8 +55,12 @@
   #body
 ]
 
-#let list-entry(section, id, body) = block(breakable: false)[
+#let list-entry(section, id, body, show-heading: false) = block(breakable: false)[
   #metadata((section: section, id: id))
+  #if show-heading [
+    #text(size: type-heading, weight: 600)[#section]
+    #v(space-xs)
+  ]
   #body
 ]
 
@@ -79,11 +83,33 @@
   set page(fill: spec.colors.surface)
   set text(font: "Noto Sans Mono CJK SC", size: type-body)
   if theme == "conservative" {
-    align(left)[#body]
+    if photo == none {
+      align(left)[#body]
+    } else {
+      grid(columns: (1fr, auto), gutter: space-lg)[
+        #body
+      ][
+        #photo-slot(theme, image_handle: photo, policy: photo_policy)
+      ]
+    }
   } else if theme == "modern" {
-    grid(columns: (31%, 69%), gutter: 6mm)[#body]
+    if photo == none {
+      block(inset: (left: space-lg), stroke: (left: 1pt + spec.colors.accent))[#body]
+    } else {
+      grid(columns: (31%, 69%), gutter: 6mm)[
+        #align(center)[#photo-slot(theme, image_handle: photo, policy: photo_policy)]
+      ][
+        #body
+      ]
+    }
   } else if theme == "expressive" {
-    grid(columns: (38%, 62%), gutter: 6mm)[#body]
+    block(fill: spec.colors.secondary, inset: space-md)[
+      #if photo != none [
+        #align(right)[#photo-slot(theme, image_handle: photo, policy: photo_policy)]
+        #v(space-sm)
+      ]
+      #body
+    ]
   } else {
     panic("unknown frozen theme")
   }

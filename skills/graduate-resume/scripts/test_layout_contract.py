@@ -75,6 +75,15 @@ class LayoutContractTests(unittest.TestCase):
         plan = build_frozen_resume_plan(self.document.data, resolve_theme("conservative"), "no-photo", None, self.font_hash, "auto")
         facts = {"__verified__": True, **self.document.data}
         output = emit_typst(plan, facts)
+        themed_outputs = {
+            key: emit_typst(
+                build_frozen_resume_plan(self.document.data, resolve_theme(key), "no-photo", None, self.font_hash, "auto"),
+                facts,
+            )
+            for key in THEME_SPECS
+        }
+        self.assertEqual(len(set(themed_outputs.values())), 3)
+        self.assertTrue(all('#resume.theme-layout(' in value for value in themed_outputs.values()))
         self.assertNotIn("image(", output)
         self.assertNotIn("student-photo.jpg", output)
         self.assertNotIn("EXIF", output)

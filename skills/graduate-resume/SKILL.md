@@ -96,7 +96,8 @@ skills/graduate-resume/scripts/graduate-resume.sh verify
 - [x] fixture 至少覆盖：有照片、无照片、通用版、多目标、未知字段、重复 ID、待确认核心事实、非法照片路径。
 - [x] canonical 主流程不包含 runtime 私有语法。
 - [x] `validate`、`target`、`plan`、`render`、`batch`、`verify` 被定义为离线、零 token 边界。
-- [x] `plan --theme <conservative|modern|expressive>` 可冻结主题、页数和照片模式；`verify` 使用固定有照/无照、短内容、临界和压力样张检查 A4 及页锚点。
+- [x] `plan --theme <conservative|modern|expressive>` 可冻结主题、页数和照片模式；每个主题均进入实际 Typst 布局，`verify` 对固定有照/无照、短内容、临界和压力样张逐页检查 A4、页数、锚点与条目归属。
+- [x] 不可满足的强制页数经公开 shell CLI 以非零退出和稳定 JSON `LAYOUT_UNSATISFIABLE` 失败，不输出 traceback、部分 Typst、PDF 或 PNG。
 - [x] 受控编译锁定 Typst 0.15.0、skill-local 字体和 `--ignore-system-fonts`；照片槽位不超过 35 mm x 49 mm，默认 contain 等比、禁止拉伸，只有主题显式许可时才可受控裁切。
 
 ## Safety
