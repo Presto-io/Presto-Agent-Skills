@@ -36,6 +36,8 @@ PHASE48_ACCEPTANCE_REGISTRY = (
     "test_phase48_cli.PublicCliContractTests.test_gap_allow_is_per_target_unknown_is_warning_and_runtime_failure_is_bounded",
     "test_phase48_cli.PublicCliContractTests.test_batch_lists_and_confirms_removed_old_target_triples",
     "test_phase48_cli.PublicCliContractTests.test_photo_triple_recompiles_after_move_without_source_photo",
+    "test_phase48_cli.PublicCliContractTests.test_one_typst_runtime_context_is_shared_by_all_consumers",
+    "test_phase48_cli.PublicCliContractTests.test_cleanup_failures_are_bounded_and_preserve_published_or_rolled_back_current",
 )
 
 
@@ -98,6 +100,162 @@ def run_phase48_acceptance_registry() -> dict[str, object]:
 
 
 class PublicCliContractTests(unittest.TestCase):
+    @staticmethod
+    def _publication_args(source: Path, delivery: Path, *, command: str = "render") -> argparse.Namespace:
+        return argparse.Namespace(
+            command=command,
+            input=str(source),
+            delivery_root=str(delivery),
+            evidence_root=None,
+            retain=[],
+            exclude=[],
+            pin=[],
+            not_applicable=[],
+            allow_gap_target=[],
+            pages="auto",
+            photo_mode="no-photo",
+            assets_root=None,
+            confirm=False,
+            approval_digest=None,
+            generic=True,
+            target=None,
+        )
+
+    def test_one_typst_runtime_context_is_shared_by_all_consumers(self) -> None:
+        import graduate_resume_typst_runtime as runtime
+
+        source_fixture = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "photo.md"
+            source.write_text(
+                source_fixture.read_text(encoding="utf-8").replace(
+                    "fixtures/media/student-photo.jpg",
+                    "fixtures/layout/media/student-photo.jpg",
+                ),
+                encoding="utf-8",
+            )
+            original_resolve = runtime.resolve_typst_executable
+            original_run = runtime.TypstExecutable.run
+            resolve_calls: list[object] = []
+            observations: list[tuple[int, str, int, int, str, tuple[str, ...]]] = []
+
+            def capture_resolve(*args: object, **kwargs: object):
+                resolve_calls.append((args, kwargs))
+                return original_resolve(*args, **kwargs)
+
+            def capture_run(executable, arguments, **kwargs):
+                observations.append((
+                    id(executable),
+                    str(executable.snapshot_path),
+                    executable.snapshot_dev,
+                    executable.snapshot_ino,
+                    executable.snapshot_sha256,
+                    tuple(arguments),
+                ))
+                return original_run(executable, arguments, **kwargs)
+
+            args = self._publication_args(source, root / "delivery")
+            args.photo_mode = "photo"
+            args.assets_root = str(SKILL_ROOT)
+            output = io.StringIO()
+            with (
+                mock.patch.object(runtime, "resolve_typst_executable", side_effect=capture_resolve),
+                mock.patch.object(runtime.TypstExecutable, "run", autospec=True, side_effect=capture_run),
+                contextlib.redirect_stdout(output),
+            ):
+                self.assertEqual(cli._command_publication(args, batch=False), 0)
+            self.assertEqual(len(resolve_calls), 1)
+            self.assertEqual(len({item[:5] for item in observations}), 1)
+            commands = [item[-1] for item in observations]
+            self.assertEqual(sum(command[:1] == ("--version",) for command in commands), 1)
+            self.assertEqual(sum(command[:1] == ("fonts",) for command in commands), 1)
+            self.assertEqual(sum(command[:1] == ("compile",) for command in commands), 4)
+
+            plan_args = argparse.Namespace(
+                input=str(source),
+                theme=None,
+                assets_root=str(SKILL_ROOT),
+                photo_mode="photo",
+                pages="auto",
+            )
+            resolve_calls.clear()
+            with mock.patch.object(runtime, "resolve_typst_executable", side_effect=capture_resolve), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cli.command_plan(plan_args), 0)
+            self.assertEqual(len(resolve_calls), 1)
+
+            args.command = "batch"
+            resolve_calls.clear()
+            with mock.patch.object(runtime, "resolve_typst_executable", side_effect=capture_resolve), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cli._command_publication(args, batch=True), 0)
+            self.assertEqual(len(resolve_calls), 1)
+
+            resolve_calls.clear()
+            with mock.patch.object(runtime, "resolve_typst_executable", side_effect=capture_resolve), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cli.command_validate(argparse.Namespace(input=str(source))), 0)
+                self.assertEqual(cli.command_target(argparse.Namespace(input=str(source))), 0)
+            self.assertEqual(resolve_calls, [])
+
+    def test_cleanup_failures_are_bounded_and_preserve_published_or_rolled_back_current(self) -> None:
+        import graduate_resume_delivery as delivery_module
+
+        source_fixture = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "resume.md"
+            source.write_bytes(source_fixture.read_bytes())
+            delivery = root / "delivery"
+            preview_args = self._publication_args(source, delivery)
+            preview_output = io.StringIO()
+            with contextlib.redirect_stdout(preview_output):
+                self.assertEqual(cli._command_publication(preview_args, batch=False), 0)
+            preview = json.loads(preview_output.getvalue())
+            publish_args = self._publication_args(source, delivery)
+            publish_args.confirm = True
+            publish_args.approval_digest = preview["approval_digest"]
+            original_close = delivery_module.DeliverySession.close
+
+            def cleanup_fault(session) -> None:
+                original_close(session)
+                raise delivery_module.DeliveryError("cleanup failed: rmdir .work errno=5")
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with (
+                mock.patch.object(cli, "parse_args", return_value=publish_args),
+                mock.patch.object(delivery_module.DeliverySession, "close", autospec=True, side_effect=cleanup_fault),
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                self.assertNotEqual(cli.main(), 0)
+            self.assertEqual(stdout.getvalue(), "")
+            self.assertEqual(json.loads(stderr.getvalue())["code"], "DELIVERY_PREFLIGHT_FAILED")
+            self.assertLess(len(stderr.getvalue()), 1600)
+            self.assertEqual(len(public_files(delivery)), 9)
+
+            source.write_bytes(source.read_bytes() + b"\n")
+            update_args = self._publication_args(source, delivery)
+            update_output = io.StringIO()
+            with contextlib.redirect_stdout(update_output):
+                self.assertEqual(cli._command_publication(update_args, batch=False), 0)
+            update = json.loads(update_output.getvalue())
+            update_args.confirm = True
+            update_args.approval_digest = update["approval_digest"]
+            before = recursive_snapshot(delivery)
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with (
+                mock.patch.object(cli, "parse_args", return_value=update_args),
+                mock.patch.object(delivery_module.DeliverySession, "close", autospec=True, side_effect=cleanup_fault),
+                mock.patch.dict(os.environ, {delivery_module.FAULT_ENV: "after_publish_file_1"}),
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                self.assertNotEqual(cli.main(), 0)
+            self.assertEqual(stdout.getvalue(), "")
+            self.assertEqual(json.loads(stderr.getvalue())["code"], "DELIVERY_PREFLIGHT_FAILED")
+            self.assertEqual(recursive_snapshot(delivery), before)
+
     def test_publication_photo_consumes_resolver_snapshot_without_path_reopen(self) -> None:
         from graduate_resume_layout import ResolvedPhotoAsset
 
@@ -907,6 +1065,8 @@ class Phase48AcceptanceRegistryTests(unittest.TestCase):
             "test_phase48_cli.PublicCliContractTests.test_gap_allow_is_per_target_unknown_is_warning_and_runtime_failure_is_bounded",
             "test_phase48_cli.PublicCliContractTests.test_batch_lists_and_confirms_removed_old_target_triples",
             "test_phase48_cli.PublicCliContractTests.test_photo_triple_recompiles_after_move_without_source_photo",
+            "test_phase48_cli.PublicCliContractTests.test_one_typst_runtime_context_is_shared_by_all_consumers",
+            "test_phase48_cli.PublicCliContractTests.test_cleanup_failures_are_bounded_and_preserve_published_or_rolled_back_current",
         )
         self.assertEqual(PHASE48_ACCEPTANCE_REGISTRY, required)
         observed = run_phase48_acceptance_registry()
