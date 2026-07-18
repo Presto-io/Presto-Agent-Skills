@@ -161,6 +161,57 @@ class DiscoveryFailClosedTests(unittest.TestCase):
 
 
 class PublicationTransactionTests(unittest.TestCase):
+    def test_removed_target_history_reopens_under_reduced_authority_and_then_noops(self) -> None:
+        owner_prefix = "张三简历-"
+        themes = ("保守稳妥", "现代简洁", "个性设计")
+        surviving = (
+            "张三简历-通用-保守稳妥",
+            "张三简历-通用-现代简洁",
+            "张三简历-通用-个性设计",
+        )
+        removed = "张三简历-某公司-设备工程师-个性设计"
+        initial = (*surviving, removed)
+
+        def specification(stems: tuple[str, ...]) -> DeliverySpec:
+            return DeliverySpec(
+                self.root, stems, themes, "authority", owner_prefix=owner_prefix,
+            )
+
+        with DeliverySession(specification(initial)) as session:
+            self.stage(session, initial, "v1")
+            delta = session.preflight()
+            self.assertEqual(session.publish(approval_digest=delta.approval_digest), "first")
+        with DeliverySession(specification(surviving)) as session:
+            self.stage(session, surviving, "v1")
+            delta = session.preflight()
+            self.assertEqual(delta.removed, (removed,))
+            self.assertEqual(session.publish(approval_digest=delta.approval_digest), "changed")
+
+        before = {
+            name: (
+                (self.root / name).stat().st_ino,
+                (self.root / name).stat().st_mtime_ns,
+                (self.root / name).read_bytes(),
+            )
+            for stem in surviving
+            for name in triple(stem, "v1")
+        }
+        history_before = snapshot(self.root / "history")
+        with DeliverySession(specification(surviving)) as session:
+            self.stage(session, surviving, "v1")
+            delta = session.preflight()
+            self.assertFalse(delta.changed)
+            self.assertEqual(session.publish(approval_digest=delta.approval_digest), "identical")
+        self.assertEqual(snapshot(self.root / "history"), history_before)
+        self.assertEqual({
+            name: (
+                (self.root / name).stat().st_ino,
+                (self.root / name).stat().st_mtime_ns,
+                (self.root / name).read_bytes(),
+            )
+            for name in before
+        }, before)
+
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name) / "delivery"
