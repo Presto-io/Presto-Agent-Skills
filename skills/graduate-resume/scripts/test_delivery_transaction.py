@@ -32,13 +32,12 @@ def triple(stem: str, marker: str) -> dict[str, bytes]:
     }
 
 
-def snapshot(root: Path) -> dict[str, tuple[str, int, int]]:
-    result: dict[str, tuple[str, int, int]] = {}
+def snapshot(root: Path) -> dict[str, str]:
+    result: dict[str, str] = {}
     if not root.exists():
         return result
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root).as_posix()
-        metadata = path.lstat()
         if path.is_symlink():
             digest = f"symlink:{os.readlink(path)}"
         elif path.is_file():
@@ -47,7 +46,7 @@ def snapshot(root: Path) -> dict[str, tuple[str, int, int]]:
             digest = "directory"
         else:
             digest = "special"
-        result[relative] = (digest, metadata.st_ino, metadata.st_mtime_ns)
+        result[relative] = digest
     return result
 
 
@@ -266,6 +265,27 @@ class PublicationTransactionTests(unittest.TestCase):
             with self.assertRaises(DeliveryError):
                 session.preflight()
         self.assertEqual(snapshot(self.root), before)
+
+    def test_preflight_snapshot_and_held_root_identity_block_toctou(self) -> None:
+        self.assertEqual(self.publish_authority(self.stems, "v1"), "first")
+        with DeliverySession(self.spec()) as session:
+            self.stage(session, self.stems, "v2")
+            delta = session.preflight()
+            (self.root / f"{self.stems[0]}.md").write_text("externally changed\n", encoding="utf-8")
+            changed = snapshot(self.root)
+            with self.assertRaisesRegex(DeliveryError, "approval"):
+                session.publish(approval_digest=delta.approval_digest)
+            self.assertEqual(snapshot(self.root), changed)
+
+        displaced = self.root.with_name("displaced")
+        with DeliverySession(self.spec()) as session:
+            self.stage(session, self.stems, "v3")
+            self.root.rename(displaced)
+            self.root.mkdir()
+            replacement = snapshot(self.root)
+            with self.assertRaisesRegex(DeliveryError, "root changed"):
+                session.preflight()
+            self.assertEqual(snapshot(self.root), replacement)
 
     def test_every_fault_and_handled_signal_restore_entire_current_set(self) -> None:
         self.assertEqual(self.publish_authority(self.stems, "v1"), "first")
