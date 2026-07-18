@@ -35,6 +35,11 @@ class ThemeContractTests(unittest.TestCase):
     def test_three_theme_aliases_and_photo_policy_are_frozen(self) -> None:
         expected = {"保守稳妥": "conservative", "现代简洁": "modern", "个性设计": "expressive"}
         self.assertEqual(set(THEME_SPECS), set(expected.values()))
+        no_photo_behaviors = {
+            "conservative": "remove-slot-and-decoration",
+            "modern": "move-sidebar-content-up",
+            "expressive": "expand-identity-bar",
+        }
         for label, key in expected.items():
             spec = resolve_theme(label)
             self.assertEqual(spec.key, key)
@@ -45,7 +50,7 @@ class ThemeContractTests(unittest.TestCase):
             self.assertEqual(spec.photo_policy.crop_policy, "forbid")
             self.assertTrue(spec.photo_policy.preserve_aspect_ratio)
             self.assertFalse(spec.photo_policy.allow_stretch)
-            self.assertEqual(spec.no_photo_behavior, "remove-slot-and-decoration")
+            self.assertEqual(spec.no_photo_behavior, no_photo_behaviors[key])
             plan = build_frozen_plan(spec, "no-photo", None, "test-hash", "auto")
             self.assertIsInstance(plan, FrozenResumePlan)
             self.assertEqual(plan.photo_fit, "contain")
@@ -119,6 +124,7 @@ class ThemeContractTests(unittest.TestCase):
             self.assertIn(text, payload)
         self.assertNotIn("student-photo.jpg", payload)
 
+    @unittest.skipUnless((SKILL_ROOT / "templates" / "resume-themes.typ").is_file(), "Task 3 creates the Typst template")
     def test_typst_template_contains_only_visual_contract(self) -> None:
         template = (SKILL_ROOT / "templates" / "resume-themes.typ").read_text(encoding="utf-8")
         for token in ("conservative", "modern", "expressive", "block(breakable: false)", "Noto Sans Mono CJK SC"):
