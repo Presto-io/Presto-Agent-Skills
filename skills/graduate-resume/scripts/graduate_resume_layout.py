@@ -457,11 +457,18 @@ def validate_font_manifest(fonts_root: Path) -> str:
     except (OSError, KeyError, ValueError, TypeError, json.JSONDecodeError, subprocess.SubprocessError) as exc: raise _manifest_error() from exc
 def _photo_error() -> CliError: return CliError(PHOTO_ASSET_INVALID, "照片资源无效。")
 def resolve_layout_photo(input_path: Path, assets_root: Path, photo: dict[str, Any], preferences: dict[str, Any]) -> PhotoAsset | None:
-    if preferences.get("photo_mode") == "no-photo" or photo.get("status") == "no-photo": return None
+    requested = preferences.get("photo_mode", "auto")
+    if requested not in {"auto", "photo", "no-photo"}:
+        raise _photo_error()
+    if requested == "no-photo":
+        return None
+    if photo.get("status") != "provided":
+        if requested == "photo":
+            raise _photo_error()
+        return None
     raw = photo.get("path")
     if not isinstance(raw, str) or not raw:
-        if preferences.get("photo_mode") == "photo": raise _photo_error()
-        return None
+        raise _photo_error()
     pure = PurePosixPath(raw)
     if pure.is_absolute() or "\\" in raw or ":" in raw or any(part in {"", ".", ".."} for part in raw.split("/")): raise _photo_error()
     try:
