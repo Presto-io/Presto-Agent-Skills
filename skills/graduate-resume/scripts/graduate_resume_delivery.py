@@ -15,7 +15,7 @@ from typing import Mapping
 
 
 TRIPLE_SUFFIXES = (".md", ".typ", ".pdf")
-SUPPORT_DIRECTORIES = ("sources", "assets", "history", ".work")
+SUPPORT_DIRECTORIES = ("history", ".work")
 PUBLICATION_MODES = ("patch", "authority")
 _HISTORY_STEM_RE = re.compile(r"[\w\u3400-\u9fff-]+", re.UNICODE)
 _HEX64_RE = re.compile(r"[0-9a-f]{64}")
