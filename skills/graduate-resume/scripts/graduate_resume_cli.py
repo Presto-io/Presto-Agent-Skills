@@ -518,7 +518,7 @@ def resolve_photo_mode(photo: dict[str, Any], preferences: dict[str, Any]) -> st
 
 def command_plan(args: argparse.Namespace) -> int:
     # Keep layout-only imports out of the Phase 46 validation path.
-    from graduate_resume_layout import build_frozen_plan, resolve_layout_photo, resolve_theme, validate_font_manifest
+    from graduate_resume_layout import build_frozen_resume_plan, resolve_layout_photo, resolve_theme, validate_font_manifest
 
     document = load_resume(args.input)
     validate_document(document)
@@ -531,11 +531,11 @@ def command_plan(args: argparse.Namespace) -> int:
     requested_photo_mode = resolve_photo_mode(photo, preferences) if args.photo_mode == "auto" else args.photo_mode
     photo_asset = resolve_layout_photo(document.path, assets_root, photo, {"photo_mode": requested_photo_mode})
     font_manifest_hash = validate_font_manifest(default_skill_root() / "fonts")
-    frozen_plan = build_frozen_plan(theme, requested_photo_mode, photo_asset, font_manifest_hash, args.pages)
+    frozen_plan = build_frozen_resume_plan(data, theme, requested_photo_mode, photo_asset, font_manifest_hash, args.pages)
     payload = {
         "status": "passed",
         "phase": 47,
-        "plan_type": "controlled-layout-inputs",
+        "plan_type": "frozen-resume-layout",
         "resume_mode": "generic" if not targets else "targeted",
         "target_count": len(targets),
         "resolved_photo_mode": frozen_plan.photo_mode,
@@ -545,12 +545,7 @@ def command_plan(args: argparse.Namespace) -> int:
         "available_themes": [{"key": item.key, "label": item.label} for item in THEME_SPECS_FOR_HELP()],
         "frozen_layout": frozen_plan.to_projection(),
         "font_manifest_hash": font_manifest_hash,
-        "next_phase_inputs": {
-            "schema_frozen": True,
-            "target_briefs_ready": bool(targets),
-            "photo_contract_ready": photo.get("status") in {"provided", "no-photo"},
-        },
-        "runtime_probe": runtime_probe(),
+        "advisory": frozen_plan.recommendation.advisory,
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0

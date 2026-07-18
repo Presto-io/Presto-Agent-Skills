@@ -74,7 +74,7 @@ class ContainerPlan:
     height_mm: float
 
     def to_projection(self) -> dict[str, Any]:
-        return {"id": self.id, "kind": self.kind, "section": self.section, "source_fact_ids": list(self.source_fact_ids), "fields": dict(self.fields), "page_number": self.page_number, "height_mm": self.height_mm}
+        return {"id": self.id, "kind": self.kind, "section": self.section, "source_fact_ids": list(self.source_fact_ids), "field_names": [key for key, _ in self.fields], "page_number": self.page_number, "height_mm": self.height_mm}
 
 
 @dataclass(frozen=True, slots=True)
