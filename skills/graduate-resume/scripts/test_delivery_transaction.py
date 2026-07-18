@@ -206,6 +206,28 @@ class DiscoveryFailClosedTests(unittest.TestCase):
 
 
 class PublicationTransactionTests(unittest.TestCase):
+    def test_patch_requires_the_reviewed_digest_and_rejects_stale_current(self) -> None:
+        patch_spec = self.spec("patch")
+        with DeliverySession(patch_spec) as session:
+            self.stage(session, (self.stems[0],), "v1")
+            delta = session.preflight()
+            with self.assertRaisesRegex(DeliveryError, "approval"):
+                session.publish()
+            self.assertEqual(snapshot(self.root), {})
+            self.assertEqual(
+                session.publish(approval_digest=delta.approval_digest),
+                "first",
+            )
+
+        with DeliverySession(patch_spec) as session:
+            self.stage(session, (self.stems[0],), "v2")
+            delta = session.preflight()
+            (self.root / f"{self.stems[0]}.md").write_bytes(b"external-change")
+            changed = snapshot(self.root)
+            with self.assertRaisesRegex(DeliveryError, "approval"):
+                session.publish(approval_digest=delta.approval_digest)
+            self.assertEqual(snapshot(self.root), changed)
+
     def test_removed_target_history_reopens_under_reduced_authority_and_then_noops(self) -> None:
         owner_prefix = "张三简历-"
         themes = ("保守稳妥", "现代简洁", "个性设计")
