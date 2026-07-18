@@ -29,6 +29,186 @@ RENDER_STEM_COLLISION = "RENDER_STEM_COLLISION"
 RENDER_MATRIX_FAILED = "RENDER_MATRIX_FAILED"
 THEME_KEYS = ("conservative", "modern", "expressive")
 _SAFE_RE = re.compile(r"[^\w\u3400-\u9fff-]+", re.UNICODE)
+_EVIDENCE_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}-[0-9a-f]{64}\.json")
+_HEX64_RE = re.compile(r"[0-9a-f]{64}")
+
+
+def _json_bytes(value: Any) -> bytes:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _canonical_root(path: Path | str) -> Path:
+    candidate = Path(path).expanduser()
+    absolute = Path(os.path.abspath(os.path.normpath(os.fspath(candidate))))
+    try:
+        parent = absolute.parent.resolve(strict=True)
+    except OSError as exc:
+        raise CliError(RENDER_INPUT_INVALID, "证据根父目录不存在或不安全。") from exc
+    return parent / absolute.name
+
+
+def _open_root_no_follow(path: Path, *, create: bool) -> int:
+    if not path.is_absolute():
+        raise CliError(RENDER_INPUT_INVALID, "证据根授权路径无效。")
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path.anchor, flags)
+    try:
+        for index, component in enumerate(path.parts[1:]):
+            try:
+                child = os.open(component, flags, dir_fd=descriptor)
+            except FileNotFoundError:
+                if not create or index != len(path.parts[1:]) - 1:
+                    raise
+                os.mkdir(component, 0o700, dir_fd=descriptor)
+                child = os.open(component, flags, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = child
+        return descriptor
+    except Exception:
+        os.close(descriptor)
+        raise
+
+
+class EvidenceSink:
+    """Caller-authorized, no-follow persistent sink for private condition evidence."""
+
+    def __init__(self, root: Path | str, *, delivery_root: Path | str | None = None) -> None:
+        self.path = _canonical_root(root)
+        self.delivery_path = None if delivery_root is None else _canonical_root(delivery_root)
+        self._descriptor: int | None = None
+        self.identity: tuple[int, int] | None = None
+
+    def __enter__(self) -> "EvidenceSink":
+        if self.delivery_path is not None:
+            evidence = self.path.parts
+            delivery = self.delivery_path.parts
+            if evidence == delivery or evidence[: len(delivery)] == delivery or delivery[: len(evidence)] == evidence:
+                raise CliError(RENDER_INPUT_INVALID, "隐藏证据根必须与正式投递根完全分离。")
+        try:
+            self._descriptor = _open_root_no_follow(self.path, create=True)
+            stat = os.fstat(self._descriptor)
+            if not stat.st_mode & 0o040000:
+                raise OSError
+            self.identity = (stat.st_dev, stat.st_ino)
+            self._inspect_existing()
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            self.close()
+            raise CliError(RENDER_INPUT_INVALID, "隐藏证据根包含未知、不完整或不安全节点。") from exc
+        return self
+
+    def close(self) -> None:
+        if self._descriptor is not None:
+            os.close(self._descriptor)
+            self._descriptor = None
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        self.close()
+
+    @property
+    def descriptor(self) -> int:
+        if self._descriptor is None:
+            raise CliError(RENDER_INPUT_INVALID, "隐藏证据根尚未打开。")
+        return self._descriptor
+
+    def assert_identity(self) -> None:
+        try:
+            current = _open_root_no_follow(self.path, create=False)
+            try:
+                stat = os.fstat(current)
+                identity = (stat.st_dev, stat.st_ino)
+            finally:
+                os.close(current)
+        except OSError as exc:
+            raise CliError(RENDER_INPUT_INVALID, "隐藏证据根身份已变化。") from exc
+        if identity != self.identity:
+            raise CliError(RENDER_INPUT_INVALID, "隐藏证据根身份已变化。")
+
+    @staticmethod
+    def _validate_payload(payload: Any) -> None:
+        if not isinstance(payload, dict) or set(payload) != {
+            "canonical_hash", "projection_digest", "condition_digest", "condition_evidence"
+        }:
+            raise ValueError
+        if any(not isinstance(payload[key], str) or not _HEX64_RE.fullmatch(payload[key]) for key in (
+            "canonical_hash", "projection_digest", "condition_digest"
+        )):
+            raise ValueError
+        evidence = payload["condition_evidence"]
+        if not isinstance(evidence, dict) or set(evidence) != {
+            "target_id", "matrix", "counts", "warnings", "gap_allowed", "evidence_digest"
+        }:
+            raise ValueError
+        digest_payload = {key: value for key, value in evidence.items() if key != "evidence_digest"}
+        if evidence["evidence_digest"] != payload["condition_digest"] or hashlib.sha256(_json_bytes(digest_payload)).hexdigest() != payload["condition_digest"]:
+            raise ValueError
+
+    def _read(self, name: str) -> bytes:
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(name, flags, dir_fd=self.descriptor)
+        try:
+            stat = os.fstat(descriptor)
+            if not stat.st_mode & 0o100000 or stat.st_size <= 0:
+                raise OSError
+            chunks: list[bytes] = []
+            while True:
+                chunk = os.read(descriptor, 65536)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            return b"".join(chunks)
+        finally:
+            os.close(descriptor)
+
+    def _inspect_existing(self) -> None:
+        for name in sorted(os.listdir(self.descriptor)):
+            if not _EVIDENCE_NAME_RE.fullmatch(name):
+                raise ValueError
+            raw = self._read(name)
+            payload = json.loads(raw)
+            self._validate_payload(payload)
+            if raw != _json_bytes(payload):
+                raise ValueError
+
+    def persist(self, *, canonical_hash: str, projection: VersionProjection, condition_evidence: Mapping[str, Any]) -> str:
+        evidence = dict(condition_evidence)
+        payload = {
+            "canonical_hash": canonical_hash,
+            "projection_digest": projection.digest,
+            "condition_digest": projection.condition_digest,
+            "condition_evidence": evidence,
+        }
+        self._validate_payload(payload)
+        if (
+            evidence["target_id"] != projection.target_id
+            or evidence["counts"] != dict(projection.condition_summary)
+            or evidence["gap_allowed"] is not projection.gap_allowed
+        ):
+            raise CliError(RENDER_INPUT_INVALID, "条件证据与版本投影不一致。")
+        name = f"{projection.version_id}-{projection.condition_digest}.json"
+        if not _EVIDENCE_NAME_RE.fullmatch(name):
+            raise CliError(RENDER_INPUT_INVALID, "条件证据文件名无效。")
+        raw = _json_bytes(payload)
+        try:
+            existing = self._read(name)
+        except FileNotFoundError:
+            existing = None
+        if existing is not None:
+            if existing == raw:
+                return name
+        temporary = f".evidence-work-{os.getpid()}-{hashlib.sha256(raw).hexdigest()[:16]}"
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(temporary, flags, 0o600, dir_fd=self.descriptor)
+        try:
+            offset = 0
+            while offset < len(raw):
+                offset += os.write(descriptor, raw[offset:])
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        os.rename(temporary, name, src_dir_fd=self.descriptor, dst_dir_fd=self.descriptor)
+        os.fsync(self.descriptor)
+        self.assert_identity()
+        return name
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +302,8 @@ def render_candidate_matrix(
     canonical_hash: str, target: Mapping[str, Any] | None = None,
     photo_bytes: bytes | None = None, font_manifest_hash: str | None = None,
     fail_theme: str | None = None,
+    condition_evidence: Mapping[str, Any] | None = None,
+    evidence_root: Path | str | EvidenceSink | None = None,
 ) -> RenderMatrix:
     root = Path(candidate_root)
     if root.exists() and any(root.iterdir()):
@@ -139,11 +321,8 @@ def render_candidate_matrix(
     normalized_photo = None if photo_bytes is None else normalize_photo_bytes(photo_bytes)
     photo = None if normalized_photo is None else PhotoAsset("embedded-normalized.png")
     root.parent.mkdir(parents=True, exist_ok=True)
-    evidence_root = root.parent / ".render-evidence"
-    evidence_root.mkdir(exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix="matrix-", dir=root.parent))
     try:
-        evidence = {"projection": projection.to_projection(), "themes": []}
         for item in matrix.items:
             if fail_theme == item.theme_key:
                 raise CliError(RENDER_MATRIX_FAILED, "注入的主题渲染失败。")
@@ -163,16 +342,26 @@ def render_candidate_matrix(
             typ_path.write_text(emit_typst(reparsed_plan, final), encoding="utf-8")
             pdf_path = stage / f"{item.stem}.pdf"
             _compile_typst(typ_path, pdf_path, fonts_root)
-            evidence["themes"].append({"theme": item.theme_key, "page_count": plan.page_count, "comparison_pages": plan.recommendation.comparison_pages})
         actual = {path.name for path in stage.iterdir() if path.is_file()}
         if actual != set(matrix.managed_files) or any((stage / name).stat().st_size == 0 for name in actual):
             raise CliError(RENDER_MATRIX_FAILED, "候选三件套集合不完整。")
         root.mkdir(exist_ok=True)
         for name in matrix.managed_files:
             os.replace(stage / name, root / name)
-        (evidence_root / f"{projection.version_id}.json").write_text(
-            json.dumps(evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":")), encoding="utf-8"
-        )
+        if projection.target_id is not None:
+            if condition_evidence is None or evidence_root is None:
+                raise CliError(RENDER_INPUT_INVALID, "定向渲染必须提供授权隐藏证据根。")
+            if isinstance(evidence_root, EvidenceSink):
+                evidence_root.persist(
+                    canonical_hash=canonical_hash, projection=projection,
+                    condition_evidence=condition_evidence,
+                )
+            else:
+                with EvidenceSink(evidence_root) as sink:
+                    sink.persist(
+                        canonical_hash=canonical_hash, projection=projection,
+                        condition_evidence=condition_evidence,
+                    )
         return RenderMatrix(matrix.items, root, True)
     except Exception:
         if root.exists():
@@ -185,6 +374,6 @@ def render_candidate_matrix(
 
 
 __all__ = [
-    "RenderItem", "RenderMatrix", "build_render_matrix", "build_stem",
+    "EvidenceSink", "RenderItem", "RenderMatrix", "build_render_matrix", "build_stem",
     "render_candidate_matrix", "safe_component",
 ]

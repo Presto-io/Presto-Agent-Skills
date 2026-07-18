@@ -87,7 +87,7 @@ def run_phase48_acceptance_registry() -> dict[str, object]:
 
 class PublicCliContractTests(unittest.TestCase):
     def test_render_and_batch_share_bounded_target_conditions_and_persist_private_evidence(self) -> None:
-        source = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
+        source = SKILL_ROOT / "fixtures" / "targeting" / "multi-state-targets.md"
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             render_evidence = root / "render-evidence"
@@ -101,6 +101,7 @@ class PublicCliContractTests(unittest.TestCase):
                 "batch", "--input", str(source),
                 "--delivery-root", str(root / "batch-delivery"),
                 "--evidence-root", str(batch_evidence), "--photo-mode", "no-photo",
+                "--allow-gap-target", "target-device-002",
             )
             self.assertEqual(rendered.returncode, 0, rendered.stderr)
             self.assertEqual(batched.returncode, 0, batched.stderr)
@@ -198,7 +199,9 @@ class PublicCliContractTests(unittest.TestCase):
     def test_generic_render_preflights_then_publishes_three_theme_triples_and_true_noop(self) -> None:
         source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
         with tempfile.TemporaryDirectory() as temporary:
-            delivery = Path(temporary) / "delivery"
+            root = Path(temporary)
+            delivery = root / "delivery"
+            evidence = root / "evidence"
             base = (
                 "render", "--input", str(source), "--generic",
                 "--delivery-root", str(delivery), "--photo-mode", "no-photo",
@@ -229,7 +232,9 @@ class PublicCliContractTests(unittest.TestCase):
     def test_target_patch_preserves_generic_and_batch_expands_all_confirmed_targets(self) -> None:
         targeted = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
         with tempfile.TemporaryDirectory() as temporary:
-            delivery = Path(temporary) / "delivery"
+            root = Path(temporary)
+            delivery = root / "delivery"
+            evidence = root / "evidence"
             first = run_cli(
                 "render", "--input", str(targeted), "--generic", "--delivery-root", str(delivery),
                 "--photo-mode", "no-photo", "--confirm",
@@ -237,7 +242,8 @@ class PublicCliContractTests(unittest.TestCase):
             self.assertEqual(first.returncode, 0, first.stderr)
             targeted_run = run_cli(
                 "render", "--input", str(targeted), "--target", "target-robot-001",
-                "--delivery-root", str(delivery), "--photo-mode", "no-photo", "--confirm",
+                "--delivery-root", str(delivery), "--evidence-root", str(evidence),
+                "--photo-mode", "no-photo", "--confirm",
             )
             self.assertEqual(targeted_run.returncode, 0, targeted_run.stderr)
             self.assertEqual(len(public_files(delivery)), 18)
@@ -245,7 +251,7 @@ class PublicCliContractTests(unittest.TestCase):
             batch_root = Path(temporary) / "batch"
             batch = run_cli(
                 "batch", "--input", str(targeted), "--delivery-root", str(batch_root),
-                "--photo-mode", "no-photo", "--confirm",
+                "--evidence-root", str(evidence), "--photo-mode", "no-photo", "--confirm",
             )
             self.assertEqual(batch.returncode, 0, batch.stderr)
             payload = parse_json(batch)
@@ -258,9 +264,10 @@ class PublicCliContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             delivery = root / "delivery"
+            evidence = root / "evidence"
             initial = run_cli(
                 "batch", "--input", str(source), "--delivery-root", str(delivery),
-                "--photo-mode", "no-photo", "--confirm",
+                "--evidence-root", str(evidence), "--photo-mode", "no-photo", "--confirm",
             )
             self.assertEqual(initial.returncode, 0, initial.stderr)
             reduced = root / "reduced.md"
@@ -270,7 +277,7 @@ class PublicCliContractTests(unittest.TestCase):
 
             preview = run_cli(
                 "batch", "--input", str(reduced), "--delivery-root", str(delivery),
-                "--photo-mode", "no-photo",
+                "--evidence-root", str(evidence), "--photo-mode", "no-photo",
             )
             self.assertEqual(preview.returncode, 0, preview.stderr)
             payload = parse_json(preview)
@@ -279,7 +286,7 @@ class PublicCliContractTests(unittest.TestCase):
 
             confirmed = run_cli(
                 "batch", "--input", str(reduced), "--delivery-root", str(delivery),
-                "--photo-mode", "no-photo", "--confirm",
+                "--evidence-root", str(evidence), "--photo-mode", "no-photo", "--confirm",
             )
             self.assertEqual(confirmed.returncode, 0, confirmed.stderr)
             self.assertEqual(len(public_files(delivery)), 18)
@@ -294,15 +301,21 @@ class PublicCliContractTests(unittest.TestCase):
         target_id = "target-robot-001"
         condition_id = condition_id_for_requirement(target_id, "具有2年设备经验")
         with tempfile.TemporaryDirectory() as temporary:
-            delivery = str(Path(temporary) / "delivery")
+            root = Path(temporary)
+            delivery = str(root / "delivery")
+            evidence = str(root / "evidence")
             base = (
                 "render", "--input", str(source), "--target", target_id,
-                "--delivery-root", delivery, "--photo-mode", "no-photo",
+                "--delivery-root", delivery, "--evidence-root", evidence,
+                "--photo-mode", "no-photo",
             )
             valid = run_cli(*base, "--not-applicable", target_id, condition_id, "招聘方确认本批次不适用")
             self.assertEqual(valid.returncode, 0, valid.stderr)
             self.assertNotIn("招聘方确认本批次不适用", valid.stdout)
-            self.assertEqual(parse_json(valid)["conditions"]["not-applicable"], 1)
+            self.assertEqual(
+                parse_json(valid)["target_conditions"][target_id]["counts"]["not-applicable"],
+                1,
+            )
 
             invalid_arguments = (
                 ("--not-applicable", target_id, condition_id, " "),
@@ -331,10 +344,12 @@ class PublicCliContractTests(unittest.TestCase):
     def test_gap_allow_is_per_target_unknown_is_warning_and_runtime_failure_is_bounded(self) -> None:
         source = SKILL_ROOT / "fixtures" / "targeting" / "multi-state-targets.md"
         with tempfile.TemporaryDirectory() as temporary:
-            delivery = Path(temporary) / "delivery"
+            root = Path(temporary)
+            delivery = root / "delivery"
+            evidence = root / "evidence"
             base = (
                 "batch", "--input", str(source), "--delivery-root", str(delivery),
-                "--photo-mode", "no-photo",
+                "--evidence-root", str(evidence), "--photo-mode", "no-photo",
             )
             blocked = run_cli(*base)
             self.assertNotEqual(blocked.returncode, 0)

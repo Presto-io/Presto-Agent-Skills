@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
 import hashlib
 import json
@@ -152,6 +153,7 @@ def parse_args() -> argparse.Namespace:
 def _add_publication_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--input", required=True, help="输入 Markdown 路径。")
     parser.add_argument("--delivery-root", required=True, help="正式三件套投递根。")
+    parser.add_argument("--evidence-root", help="定向条件完整证据的独立隐藏根。")
     parser.add_argument("--retain", metavar="FACT_ID", action="append", default=[], help="本次保留的稳定事实 ID，可重复。")
     parser.add_argument("--exclude", metavar="FACT_ID", action="append", default=[], help="本次排除的稳定事实 ID，可重复。")
     parser.add_argument("--pin", metavar="FACT_ID", action="append", default=[], help="本次置顶的稳定事实 ID，可重复。")
@@ -717,7 +719,7 @@ def publication_fact_view(data: dict[str, Any]) -> dict[str, Any]:
 def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
     from graduate_resume_delivery import DeliveryError, DeliverySession, DeliverySpec
     from graduate_resume_layout import build_layout_feedback_adapter
-    from graduate_resume_render import build_render_matrix, render_candidate_matrix, safe_component
+    from graduate_resume_render import EvidenceSink, build_render_matrix, render_candidate_matrix, safe_component
     from graduate_resume_targeting import PageBudgetRequest, evaluate_hard_conditions, resolve_version_projection
 
     document = load_resume(args.input)
@@ -730,6 +732,7 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
     feedback = build_layout_feedback_adapter(publication_data, photo_mode, feedback_photo, font_hash)
     overrides = {"retain": args.retain, "exclude": args.exclude, "pin": args.pin}
     projections = []
+    condition_evidence: dict[str, dict[str, Any]] = {}
     condition_public: dict[str, dict[str, Any]] = {}
     allowed = tuple(args.allow_gap_target)
     for target in selected:
@@ -752,8 +755,8 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
                     {"condition_id": item.condition_id, "predicate": item.predicate, "state": item.state}
                     for item in evaluation.matrix
                 ],
-                "warnings": list(evaluation.warnings),
             }
+            condition_evidence[target_id] = evaluation.to_evidence_projection()
     target_map = {str(item["id"]): item for item in publication_data.get("targets", [])}
     planned = build_render_matrix(publication_data["candidate"]["name"], tuple(projections), targets=target_map)
     delivery_root = Path(args.delivery_root).expanduser()
@@ -764,14 +767,22 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
     theme_suffixes = tuple(safe_component(item.label) for item in THEME_SPECS_FOR_HELP())
     canonical_hash = hashlib.sha256(document.path.read_bytes()).hexdigest()
     mode = "authority" if batch else "patch"
+    if condition_evidence and not args.evidence_root:
+        raise CliError("EVIDENCE_ROOT_REQUIRED", "定向渲染必须显式授权独立隐藏证据根。")
     try:
-        with tempfile.TemporaryDirectory(prefix="graduate-resume-render-") as temporary:
+        evidence_context = (
+            EvidenceSink(args.evidence_root, delivery_root=delivery_root)
+            if condition_evidence else contextlib.nullcontext(None)
+        )
+        with evidence_context as evidence_sink, tempfile.TemporaryDirectory(prefix="graduate-resume-render-") as temporary:
             rendered_roots: list[Path] = []
             for index, (projection, target) in enumerate(zip(projections, selected)):
                 result = render_candidate_matrix(
                     Path(temporary) / f"version-{index}" / "candidate", publication_data, projection,
                     canonical_hash=canonical_hash, target=target, photo_bytes=photo_bytes,
                     font_manifest_hash=font_hash,
+                    condition_evidence=None if target is None else condition_evidence[str(target["id"])],
+                    evidence_root=evidence_sink,
                 )
                 if not result.publishable or result.candidate_root is None:
                     raise CliError("RENDER_MATRIX_FAILED", "候选矩阵未完成。")
@@ -783,8 +794,12 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
                         if path.is_file():
                             session.candidate_path(path.name).write_bytes(path.read_bytes())
                 delta = session.preflight()
+                if evidence_sink is not None:
+                    evidence_sink.assert_identity()
                 publication = None
                 if args.confirm:
+                    if evidence_sink is not None:
+                        evidence_sink.assert_identity()
                     publication = session.publish(
                         approval_digest=delta.approval_digest if batch else None,
                     )
@@ -806,12 +821,7 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
         "removed": list(delta.removed),
         "approval_digest": delta.approval_digest,
     }
-    if not batch:
-        target_id = projections[0].target_id
-        payload["conditions"] = {} if target_id is None else condition_public[target_id]["counts"]
-        payload["warnings"] = [] if target_id is None else condition_public[target_id]["warnings"]
-    else:
-        payload["target_conditions"] = condition_public
+    payload["target_conditions"] = condition_public
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 
