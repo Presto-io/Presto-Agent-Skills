@@ -241,7 +241,7 @@ def _strings(value: Any) -> tuple[str, ...]:
 def _height(values: tuple[str, ...]) -> float:
     width = 32
     lines = sum(max(1, math.ceil(len(value) / width)) for value in values)
-    return round(6.0 + lines * 5.4, 2)
+    return round(19.0 + lines * 5.4, 2)
 
 
 def _display_string(value: Any) -> str:
@@ -280,6 +280,9 @@ def _display_fields(section: str, item: Mapping[str, Any]) -> tuple[tuple[str, s
             )
         else:
             raise CliError(LAYOUT_PLAN_INVALID, "展示字段类型无效。")
+    if section != "candidate" and len(fields) > 1:
+        context = fields[0][1]
+        fields = [fields[0], *((key, f"{context} · {value}") for key, value in fields[1:])]
     return tuple(fields)
 
 
