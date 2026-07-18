@@ -17,9 +17,12 @@ import tempfile
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
+
+if TYPE_CHECKING:
+    from graduate_resume_typst_runtime import TypstExecutable
 
 
 STATUS_VALUES = {"verified", "pending", "declined"}
@@ -644,6 +647,7 @@ def resolve_photo_mode(photo: dict[str, Any], preferences: dict[str, Any]) -> st
 def command_plan(args: argparse.Namespace) -> int:
     # Keep layout-only imports out of the Phase 46 validation path.
     from graduate_resume_layout import PhotoAsset, build_frozen_resume_plan, resolve_layout_photo, resolve_theme, validate_font_manifest
+    from graduate_resume_typst_runtime import resolve_typst_executable
 
     document = load_resume(args.input)
     validate_document(document)
@@ -654,10 +658,11 @@ def command_plan(args: argparse.Namespace) -> int:
     theme = resolve_theme(args.theme or preferences.get("theme"))
     assets_root = Path(args.assets_root).expanduser() if args.assets_root else document.path.parent
     requested_photo_mode = resolve_photo_mode(photo, preferences) if args.photo_mode == "auto" else args.photo_mode
-    resolved_photo = resolve_layout_photo(document.path, assets_root, photo, {"photo_mode": requested_photo_mode})
-    photo_asset = None if resolved_photo is None else PhotoAsset("embedded-normalized.png")
-    font_manifest_hash = validate_font_manifest(default_skill_root() / "fonts")
-    frozen_plan = build_frozen_resume_plan(data, theme, requested_photo_mode, photo_asset, font_manifest_hash, args.pages)
+    with resolve_typst_executable() as typst_executable:
+        resolved_photo = resolve_layout_photo(document.path, assets_root, photo, {"photo_mode": requested_photo_mode})
+        photo_asset = None if resolved_photo is None else PhotoAsset("embedded-normalized.png")
+        font_manifest_hash = validate_font_manifest(default_skill_root() / "fonts", typst_executable)
+        frozen_plan = build_frozen_resume_plan(data, theme, requested_photo_mode, photo_asset, font_manifest_hash, args.pages)
     payload = {
         "status": "passed",
         "phase": 47,
@@ -731,7 +736,7 @@ def _publication_request(args: argparse.Namespace, document: ResumeDocument, *, 
     return selected, grouped
 
 
-def _resolve_publication_photo(args: argparse.Namespace, document: ResumeDocument) -> tuple[str, bytes | None, Any | None, str]:
+def _resolve_publication_photo(args: argparse.Namespace, document: ResumeDocument, typst_executable: "TypstExecutable") -> tuple[str, bytes | None, Any | None, str]:
     from graduate_resume_layout import PhotoAsset, resolve_layout_photo, validate_font_manifest
 
     photo = document.data.get("photo", {})
@@ -746,7 +751,7 @@ def _resolve_publication_photo(args: argparse.Namespace, document: ResumeDocumen
         photo_bytes = resolved.source_bytes
         feedback_photo = PhotoAsset("embedded-normalized.png")
         photo_mode = "photo"
-    font_hash = validate_font_manifest(default_skill_root() / "fonts")
+    font_hash = validate_font_manifest(default_skill_root() / "fonts", typst_executable)
     return photo_mode, photo_bytes, feedback_photo, font_hash
 
 
@@ -800,10 +805,7 @@ def publication_fact_view(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
-    from graduate_resume_delivery import DeliveryError, DeliverySession, DeliverySpec
-    from graduate_resume_layout import build_layout_feedback_adapter
-    from graduate_resume_render import EvidenceSink, build_render_matrix, render_candidate_matrix, safe_component
-    from graduate_resume_targeting import PageBudgetRequest, evaluate_hard_conditions, resolve_version_projection
+    from graduate_resume_typst_runtime import resolve_typst_executable
 
     if args.confirm != bool(args.approval_digest):
         raise CliError("APPROVAL_DIGEST_INVALID", "--confirm 与 --approval-digest 必须同时提供。")
@@ -816,7 +818,34 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
         document.path, document.body, publication_data, document.source_bytes, document.source_sha256,
     )
     selected, not_applicable = _publication_request(args, publication_document, batch=batch)
-    photo_mode, photo_bytes, feedback_photo, font_hash = _resolve_publication_photo(args, document)
+    with resolve_typst_executable() as typst_executable:
+        return _execute_publication(
+            args,
+            batch=batch,
+            document=document,
+            publication_data=publication_data,
+            selected=selected,
+            not_applicable=not_applicable,
+            typst_executable=typst_executable,
+        )
+
+
+def _execute_publication(
+    args: argparse.Namespace,
+    *,
+    batch: bool,
+    document: ResumeDocument,
+    publication_data: dict[str, Any],
+    selected: list[dict[str, Any] | None],
+    not_applicable: dict[str, list[tuple[str, str, str]]],
+    typst_executable: "TypstExecutable",
+) -> int:
+    from graduate_resume_delivery import DeliveryError, DeliverySession, DeliverySpec
+    from graduate_resume_layout import build_layout_feedback_adapter
+    from graduate_resume_render import EvidenceSink, build_render_matrix, render_candidate_matrix, safe_component
+    from graduate_resume_targeting import PageBudgetRequest, evaluate_hard_conditions, resolve_version_projection
+
+    photo_mode, photo_bytes, feedback_photo, font_hash = _resolve_publication_photo(args, document, typst_executable)
     page_budget = PageBudgetRequest(args.pages)
     feedback = build_layout_feedback_adapter(publication_data, photo_mode, feedback_photo, font_hash)
     overrides = {"retain": args.retain, "exclude": args.exclude, "pin": args.pin}
@@ -869,7 +898,7 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
                 result = render_candidate_matrix(
                     Path(temporary) / f"version-{index}" / "candidate", publication_data, projection,
                     canonical_hash=canonical_hash, target=target, photo_bytes=photo_bytes,
-                    font_manifest_hash=font_hash,
+                    typst_executable=typst_executable, font_manifest_hash=font_hash,
                     condition_evidence=None if target is None else condition_evidence[str(target["id"])],
                     evidence_root=evidence_sink,
                 )

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -142,7 +143,13 @@ def resolve_typst_executable(
     _copy_chunk_hook: Callable[[int], None] | None = None,
 ) -> TypstExecutable:
     """Freeze one executable candidate and verify the snapshot reports Typst 0.15.0."""
-    raw_candidate = Path(candidate) if candidate is not None else Path(os.environ.get("TYPST", "/opt/homebrew/bin/typst"))
+    if candidate is None:
+        discovered = shutil.which("typst")
+        if discovered is None:
+            raise _runtime_error()
+        raw_candidate = Path(discovered)
+    else:
+        raw_candidate = Path(candidate)
     target = _resolve_symlink_chain(raw_candidate)
     source_descriptor = -1
     snapshot_descriptor = -1

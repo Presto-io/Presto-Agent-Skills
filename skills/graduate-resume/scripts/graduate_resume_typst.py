@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import shutil
 import struct
-import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -12,6 +10,7 @@ from typing import Any
 from graduate_resume_cli import CliError, is_stable_fact_id
 from graduate_resume_layout import FrozenResumePlan, LAYOUT_PLAN_INVALID
 from graduate_resume_final_markdown import FinalResumeDocument
+from graduate_resume_typst_runtime import TypstExecutable
 
 
 def typst_content(value: str) -> str:
@@ -29,15 +28,12 @@ def typst_content(value: str) -> str:
     return "".join(escaped)
 
 
-def normalize_photo_bytes(source: bytes, *, max_bytes: int = 20 * 1024 * 1024) -> bytes:
+def normalize_photo_bytes(source: bytes, typst_executable: TypstExecutable, *, max_bytes: int = 20 * 1024 * 1024) -> bytes:
     """Re-rasterize bounded JPEG/PNG bytes to deterministic 35x49mm PNG."""
     if not isinstance(source, bytes) or not 8 <= len(source) <= max_bytes:
         raise CliError(LAYOUT_PLAN_INVALID, "照片规范化输入无效。")
     if not (source.startswith(b"\xff\xd8") or source.startswith(b"\x89PNG\r\n\x1a\n")):
         raise CliError(LAYOUT_PLAN_INVALID, "照片规范化输入格式无效。")
-    typst = shutil.which("typst")
-    if typst is None:
-        raise CliError(LAYOUT_PLAN_INVALID, "Typst 0.15.0 不可用。")
     values = ",".join(str(value) for value in source)
     text = (
         '#set page(width: 35mm, height: 49mm, margin: 0pt, fill: white)\n'
@@ -48,9 +44,9 @@ def normalize_photo_bytes(source: bytes, *, max_bytes: int = 20 * 1024 * 1024) -
         source_path = root / "normalize.typ"
         output_path = root / "normalized.png"
         source_path.write_text(text, encoding="utf-8")
-        completed = subprocess.run(
-            [typst, "compile", str(source_path), str(output_path), "--format", "png", "--ppi", "300", "--creation-timestamp", "0"],
-            cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+        completed = typst_executable.run(
+            ("compile", str(source_path), str(output_path), "--format", "png", "--ppi", "300", "--creation-timestamp", "0"),
+            cwd=root,
         )
         if completed.returncode or not output_path.is_file():
             raise CliError(LAYOUT_PLAN_INVALID, "照片规范化失败。")

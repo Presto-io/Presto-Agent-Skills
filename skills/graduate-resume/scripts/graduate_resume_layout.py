@@ -6,7 +6,6 @@ import hashlib
 import json
 import math
 import os
-import shutil
 import stat
 import subprocess
 import unicodedata
@@ -15,6 +14,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping
 
 from graduate_resume_cli import CliError
+from graduate_resume_typst_runtime import TypstExecutable
 
 FONT_MANIFEST_INVALID = "FONT_MANIFEST_INVALID"
 PHOTO_ASSET_INVALID = "PHOTO_ASSET_INVALID"
@@ -449,15 +449,13 @@ def build_frozen_plan(theme: ThemeSpec, photo_mode: str, photo: PhotoAsset | Non
 
 
 def _manifest_error() -> CliError: return CliError(FONT_MANIFEST_INVALID, "受控字体清单无效。")
-def _validate_font_visibility(fonts_root: Path, entries: list[dict[str, Any]]) -> None:
-    typst = shutil.which("typst")
-    if typst is None: raise _manifest_error()
-    completed = subprocess.run([typst, "fonts", "--font-path", str(fonts_root), "--ignore-system-fonts", "--variants"], check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+def _validate_font_visibility(fonts_root: Path, entries: list[dict[str, Any]], typst_executable: TypstExecutable) -> None:
+    completed = typst_executable.run(("fonts", "--font-path", str(fonts_root), "--ignore-system-fonts", "--variants"), text=True)
     output = completed.stdout
     if completed.returncode or "Noto Sans Mono CJK SC" not in output: raise _manifest_error()
     expected = {400: "Weight: 400", 600: "Weight: 700"}
     if any(entry["path"] not in output or expected[entry["weight"]] not in output for entry in entries): raise _manifest_error()
-def validate_font_manifest(fonts_root: Path) -> str:
+def validate_font_manifest(fonts_root: Path, typst_executable: TypstExecutable) -> str:
     try:
         manifest = json.loads((fonts_root / "manifest.json").read_text(encoding="utf-8")); entries = manifest["fonts"]
         if manifest["family"] != "Noto Sans Mono CJK SC" or {item["weight"] for item in entries} != {400, 600}: raise ValueError
@@ -467,7 +465,7 @@ def validate_font_manifest(fonts_root: Path) -> str:
             actual = hashlib.sha256(path.read_bytes()).hexdigest()
             if actual != item["sha256"]: raise ValueError
             digest.update(actual.encode("ascii"))
-        _validate_font_visibility(fonts_root, entries); return digest.hexdigest()
+        _validate_font_visibility(fonts_root, entries, typst_executable); return digest.hexdigest()
     except (OSError, KeyError, ValueError, TypeError, json.JSONDecodeError, subprocess.SubprocessError) as exc: raise _manifest_error() from exc
 def _photo_error() -> CliError: return CliError(PHOTO_ASSET_INVALID, "照片资源无效。")
 
