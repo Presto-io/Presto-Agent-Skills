@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import argparse
+import contextlib
 import hashlib
+import io
 import json
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -94,6 +98,111 @@ def run_phase48_acceptance_registry() -> dict[str, object]:
 
 
 class PublicCliContractTests(unittest.TestCase):
+    def test_canonical_reader_rejects_unsafe_inputs_and_handles_short_reads(self) -> None:
+        source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            delivery = root / "delivery"
+            delivery.mkdir()
+            initial = recursive_snapshot(delivery)
+            real = root / "real.md"
+            real.write_bytes(source.read_bytes())
+            linked = root / "linked.md"
+            linked.symlink_to(real)
+            directory = root / "directory.md"
+            directory.mkdir()
+            fifo = root / "fifo.md"
+            os.mkfifo(fifo)
+            oversized = root / "oversized.md"
+            oversized.write_bytes(source.read_bytes() + b" " * (4 * 1024 * 1024))
+            invalid_utf8 = root / "invalid-utf8.md"
+            invalid_utf8.write_bytes(source.read_bytes() + b"\xff")
+
+            for candidate in (linked, directory, fifo, oversized, invalid_utf8):
+                with self.subTest(candidate=candidate.name):
+                    completed = run_cli(
+                        "render", "--input", str(candidate), "--generic",
+                        "--delivery-root", str(delivery), "--photo-mode", "no-photo",
+                    )
+                    self.assertNotEqual(completed.returncode, 0)
+                    self.assertEqual(parse_json(completed)["code"], "CANONICAL_INPUT_INVALID")
+                    self.assertNotIn(str(candidate), completed.stderr)
+                    self.assertNotIn("Traceback", completed.stderr)
+                    self.assertLess(len(completed.stderr), 1600)
+                    self.assertEqual(recursive_snapshot(delivery), initial)
+
+            original_read = os.read
+
+            def short_read(file_descriptor: int, size: int) -> bytes:
+                return original_read(file_descriptor, min(size, 7))
+
+            with mock.patch.object(cli.os, "read", side_effect=short_read) as read_spy:
+                document = cli.load_resume(str(real))
+            self.assertGreater(read_spy.call_count, 1)
+            self.assertEqual(document.source_bytes, source.read_bytes())
+            self.assertEqual(document.source_sha256, hashlib.sha256(document.source_bytes).hexdigest())
+
+    def test_loaded_canonical_snapshot_survives_path_byte_and_symlink_swaps(self) -> None:
+        import graduate_resume_delivery as delivery_module
+        import graduate_resume_render as render_module
+        from graduate_resume_final_markdown import load_final_resume
+
+        source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
+        for swap_kind in ("bytes", "symlink"):
+            with self.subTest(swap_kind=swap_kind), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                canonical = root / "resume.md"
+                original_bytes = source.read_bytes()
+                canonical.write_bytes(original_bytes)
+                replacement = root / "replacement.md"
+                replacement.write_bytes(original_bytes.replace("王宁".encode(), "李明".encode()))
+                expected_hash = hashlib.sha256(original_bytes).hexdigest()
+                captured: dict[str, object] = {}
+                original_publication_view = cli.publication_fact_view
+                original_render = render_module.render_candidate_matrix
+                original_spec = delivery_module.DeliverySpec
+
+                def swap_after_load(data: dict[str, object]) -> dict[str, object]:
+                    view = original_publication_view(data)
+                    canonical.unlink()
+                    if swap_kind == "bytes":
+                        canonical.write_bytes(replacement.read_bytes())
+                    else:
+                        canonical.symlink_to(replacement)
+                    return view
+
+                def capture_render(*args: object, **kwargs: object) -> object:
+                    captured["render_hash"] = kwargs["canonical_hash"]
+                    result = original_render(*args, **kwargs)
+                    markdown = next(result.candidate_root.glob("*.md"))
+                    captured["final_hash"] = load_final_resume(markdown).canonical_hash
+                    return result
+
+                def capture_spec(*args: object, **kwargs: object) -> object:
+                    spec = original_spec(*args, **kwargs)
+                    captured["approval_hash"] = spec.canonical_hash
+                    return spec
+
+                args = argparse.Namespace(
+                    input=str(canonical), delivery_root=str(root / "delivery"), evidence_root=None,
+                    retain=[], exclude=[], pin=[], not_applicable=[], allow_gap_target=[], pages="auto",
+                    photo_mode="no-photo", assets_root=None, confirm=False, approval_digest=None,
+                    generic=True, target=None,
+                )
+                output = io.StringIO()
+                with (
+                    mock.patch.object(cli, "publication_fact_view", side_effect=swap_after_load),
+                    mock.patch.object(render_module, "render_candidate_matrix", side_effect=capture_render),
+                    mock.patch.object(delivery_module, "DeliverySpec", side_effect=capture_spec),
+                    contextlib.redirect_stdout(output),
+                ):
+                    self.assertEqual(cli._command_publication(args, batch=False), 0)
+                self.assertEqual(cli.load_resume(str(replacement)).data["candidate"]["name"], "李明")
+                self.assertEqual(captured["render_hash"], expected_hash)
+                self.assertEqual(captured["final_hash"], expected_hash)
+                self.assertEqual(captured["approval_hash"], expected_hash)
+                self.assertRegex(json.loads(output.getvalue())["approval_digest"], r"^[0-9a-f]{64}$")
+
     def test_metadata_contract_rejects_missing_unknown_empty_and_duplicate_fields(self) -> None:
         non_target_source = (SKILL_ROOT / "fixtures" / "valid-no-photo.md").read_text(encoding="utf-8")
         target_source = (SKILL_ROOT / "fixtures" / "valid-multi-target.md").read_text(encoding="utf-8")
