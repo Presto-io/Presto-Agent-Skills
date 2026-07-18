@@ -106,5 +106,41 @@ class TypstConsumerContractTests(unittest.TestCase):
         self.assertNotIn(b"EXIF", first)
 
 
+class RenderMatrixContractTests(unittest.TestCase):
+    def test_generic_matrix_has_three_complete_safe_triples(self) -> None:
+        from graduate_resume_layout import build_layout_feedback_adapter
+        from graduate_resume_render import build_render_matrix, render_candidate_matrix
+
+        source = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
+        document = cli.load_resume(str(source))
+        cli.validate_document(document)
+        feedback = build_layout_feedback_adapter(document.data, "no-photo", None, "a" * 64)
+        projection = resolve_version_projection(document.data, None, PageBudgetRequest("auto"), feedback)
+        matrix = build_render_matrix(document.data["candidate"]["name"], projection)
+        self.assertEqual(tuple(item.theme_key for item in matrix.items), ("conservative", "modern", "expressive"))
+        self.assertTrue(all("-通用-" in item.stem for item in matrix.items))
+        with tempfile.TemporaryDirectory() as temporary:
+            result = render_candidate_matrix(
+                Path(temporary) / "candidate", document.data, projection,
+                canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
+            )
+            self.assertTrue(result.publishable)
+            names = sorted(path.name for path in result.candidate_root.iterdir())
+            self.assertEqual(len(names), 9)
+            for item in result.items:
+                self.assertEqual({path.suffix for path in result.candidate_root.glob(item.stem + ".*")}, {".md", ".typ", ".pdf"})
+
+    def test_safe_stem_normalizes_and_rejects_collision(self) -> None:
+        from graduate_resume_render import RENDER_STEM_COLLISION, build_render_matrix, safe_component
+
+        self.assertEqual(safe_component(" Ａ/Ｂ\x00 C "), "A-B-C")
+        source = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
+        document = cli.load_resume(str(source))
+        projection = _projection(document)
+        with self.assertRaises(cli.CliError) as raised:
+            build_render_matrix("甲", (projection, projection))
+        self.assertEqual(raised.exception.code, RENDER_STEM_COLLISION)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
