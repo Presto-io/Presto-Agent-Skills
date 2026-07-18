@@ -143,6 +143,22 @@ class PublicCliContractTests(unittest.TestCase):
                     payload = parse_json(completed)
                     self.assertEqual(payload["code"], "MARKDOWN_INVALID" if name == "duplicate" else "VALIDATION_FAILED")
 
+    def test_targeted_photo_fixture_renders_from_its_controlled_asset_root(self) -> None:
+        source = SKILL_ROOT / "fixtures" / "render" / "targeted-photo.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            evidence = root / "evidence"
+            evidence.mkdir()
+            completed = run_reviewed(
+                "render", "--input", str(source), "--target", "target-photo-001",
+                "--delivery-root", str(root / "delivery"), "--evidence-root", str(evidence),
+                "--assets-root", str(source.parent), "--photo-mode", "photo",
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            payload = parse_json(completed)
+            self.assertEqual(payload["photo_mode"], "photo")
+            self.assertEqual(len(public_files(root / "delivery")), 9)
+
     def test_one_typst_runtime_context_is_shared_by_all_consumers(self) -> None:
         import graduate_resume_typst_runtime as runtime
 
