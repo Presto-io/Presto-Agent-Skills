@@ -30,6 +30,7 @@ from graduate_resume_layout import (
     resolve_theme,
     validate_font_manifest,
 )
+from graduate_resume_typst_runtime import resolve_typst_executable
 
 
 class ThemeContractTests(unittest.TestCase):
@@ -73,13 +74,14 @@ class ThemeContractTests(unittest.TestCase):
         self.assertEqual(before, json.dumps(document.data, ensure_ascii=False, sort_keys=True))
 
     def test_font_manifest_rejects_tampering(self) -> None:
-        self.assertEqual(len(validate_font_manifest(SKILL_ROOT / "fonts")), 64)
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            (root / "manifest.json").write_text("{}", encoding="utf-8")
-            with self.assertRaises(cli.CliError) as raised:
-                validate_font_manifest(root)
-            self.assertEqual(raised.exception.code, FONT_MANIFEST_INVALID)
+        with resolve_typst_executable() as executable:
+            self.assertEqual(len(validate_font_manifest(SKILL_ROOT / "fonts", executable)), 64)
+            with tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                (root / "manifest.json").write_text("{}", encoding="utf-8")
+                with self.assertRaises(cli.CliError) as raised:
+                    validate_font_manifest(root, executable)
+                self.assertEqual(raised.exception.code, FONT_MANIFEST_INVALID)
 
     def test_photo_resolution_rejects_untrusted_paths_without_absolute_leaks(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -87,13 +89,13 @@ class ThemeContractTests(unittest.TestCase):
             media = root / "media"
             media.mkdir()
             image = media / "student.jpg"
-            image.write_bytes(b"\xff\xd8\xff\xd9")
+            image.write_bytes(b"\xff\xd8safe\xff\xd9")
             (root / "plain.jpg").write_text("not an image", encoding="utf-8")
             (root / "folder").mkdir()
             fifo = root / "pipe.jpg"
             os.mkfifo(fifo)
             unreadable = root / "closed.jpg"
-            unreadable.write_bytes(b"\xff\xd8\xff\xd9")
+            unreadable.write_bytes(b"\xff\xd8safe\xff\xd9")
             unreadable.chmod(0)
             try:
                 good = resolve_layout_photo(root, root, {"status": "provided", "path": "media/student.jpg"}, {})

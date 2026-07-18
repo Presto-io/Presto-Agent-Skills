@@ -139,10 +139,21 @@ class PublicCliContractTests(unittest.TestCase):
             original_run = runtime.TypstExecutable.run
             resolve_calls: list[object] = []
             observations: list[tuple[int, str, int, int, str, tuple[str, ...]]] = []
+            runtime_link = root / "typst"
+            fake_runtime = root / "typst-fake"
+            fake_runtime.write_text("#!/bin/sh\nprintf 'typst 9.9.0\\n'\n", encoding="utf-8")
+            fake_runtime.chmod(0o755)
 
             def capture_resolve(*args: object, **kwargs: object):
                 resolve_calls.append((args, kwargs))
-                return original_resolve(*args, **kwargs)
+                runtime_link.unlink(missing_ok=True)
+                runtime_link.symlink_to(Path("/opt/homebrew/bin/typst"))
+
+                def replace_source() -> None:
+                    runtime_link.unlink()
+                    runtime_link.symlink_to(fake_runtime)
+
+                return original_resolve(runtime_link, _after_source_verified=replace_source)
 
             def capture_run(executable, arguments, **kwargs):
                 observations.append((
@@ -272,7 +283,7 @@ class PublicCliContractTests(unittest.TestCase):
         with mock.patch("graduate_resume_layout.resolve_layout_photo", return_value=resolved), mock.patch(
             "graduate_resume_layout.validate_font_manifest", return_value="a" * 64
         ):
-            photo_mode, photo_bytes, feedback_photo, font_hash = cli._resolve_publication_photo(args, document)
+            photo_mode, photo_bytes, feedback_photo, font_hash = cli._resolve_publication_photo(args, document, object())
         self.assertEqual(photo_mode, "photo")
         self.assertEqual(photo_bytes, source)
         self.assertEqual(feedback_photo.logical_path, "embedded-normalized.png")
@@ -894,7 +905,7 @@ class PublicCliContractTests(unittest.TestCase):
             self.assertNotIn("Traceback", failed.stderr)
             self.assertNotIn(str(delivery), failed.stderr)
             self.assertLess(len(failed.stderr), 1600)
-            self.assertEqual(parse_json(failed)["code"], "FONT_MANIFEST_INVALID")
+            self.assertEqual(parse_json(failed)["code"], "TYPST_RUNTIME_INVALID")
             self.assertEqual(public_files(delivery), ())
 
     def test_photo_triple_recompiles_after_move_without_source_photo(self) -> None:

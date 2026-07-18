@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import contextlib
 from dataclasses import replace
 import subprocess
 import sys
@@ -34,6 +35,15 @@ def _projection(document):
         PageBudgetRequest("auto"),
         lambda theme, selected, request: LayoutFeedback(theme, True, 1, ()),
     )
+
+
+@contextlib.contextmanager
+def _verified_typst_runtime():
+    from graduate_resume_layout import validate_font_manifest
+    from graduate_resume_typst_runtime import resolve_typst_executable
+
+    with resolve_typst_executable() as executable:
+        yield executable, validate_font_manifest(SKILL_ROOT / "fonts", executable)
 
 
 class TypstRuntimeResolverTests(unittest.TestCase):
@@ -358,8 +368,9 @@ class TypstConsumerContractTests(unittest.TestCase):
         from graduate_resume_typst import normalize_photo_bytes
 
         source = (SKILL_ROOT / "fixtures" / "layout" / "media" / "student-photo.jpg").read_bytes()
-        first = normalize_photo_bytes(source)
-        second = normalize_photo_bytes(source)
+        with _verified_typst_runtime() as (executable, _font_hash):
+            first = normalize_photo_bytes(source, executable)
+            second = normalize_photo_bytes(source, executable)
         self.assertEqual(first, second)
         self.assertEqual(first[16:24], (413).to_bytes(4, "big") + (579).to_bytes(4, "big"))
         self.assertNotIn(b"EXIF", first)
@@ -521,15 +532,18 @@ class RenderMatrixContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             evidence_root = root / "private-evidence"
-            result = render_candidate_matrix(
-                root / "work" / "candidate",
-                document.data,
-                projection,
-                canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
-                target=target,
-                condition_evidence=evaluation.to_evidence_projection(),
-                evidence_root=evidence_root,
-            )
+            with _verified_typst_runtime() as (executable, font_hash):
+                result = render_candidate_matrix(
+                    root / "work" / "candidate",
+                    document.data,
+                    projection,
+                    canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
+                    target=target,
+                    typst_executable=executable,
+                    font_manifest_hash=font_hash,
+                    condition_evidence=evaluation.to_evidence_projection(),
+                    evidence_root=evidence_root,
+                )
             evidence_files = tuple(evidence_root.iterdir())
             self.assertEqual(len(evidence_files), 1)
             payload = json.loads(evidence_files[0].read_bytes())
@@ -562,10 +576,12 @@ class RenderMatrixContractTests(unittest.TestCase):
         self.assertEqual(tuple(item.theme_key for item in matrix.items), ("conservative", "modern", "expressive"))
         self.assertTrue(all("-通用-" in item.stem for item in matrix.items))
         with tempfile.TemporaryDirectory() as temporary:
-            result = render_candidate_matrix(
-                Path(temporary) / "candidate", document.data, projection,
-                canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
-            )
+            with _verified_typst_runtime() as (executable, font_hash):
+                result = render_candidate_matrix(
+                    Path(temporary) / "candidate", document.data, projection,
+                    canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
+                    typst_executable=executable, font_manifest_hash=font_hash,
+                )
             self.assertTrue(result.publishable)
             names = sorted(path.name for path in result.candidate_root.iterdir())
             self.assertEqual(len(names), 9)
@@ -594,10 +610,12 @@ class RenderMatrixContractTests(unittest.TestCase):
         self.assertTrue(all(safe_component(target["role"]) in item.stem for item in target_matrix.items))
         with tempfile.TemporaryDirectory() as temporary:
             candidate = Path(temporary) / "candidate"
-            with self.assertRaises(cli.CliError) as raised:
+            with _verified_typst_runtime() as (executable, font_hash), self.assertRaises(cli.CliError) as raised:
                 render_candidate_matrix(
                     candidate, document.data, projection,
-                    canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(), fail_theme="modern",
+                    canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
+                    typst_executable=executable, font_manifest_hash=font_hash,
+                    fail_theme="modern",
                 )
             self.assertEqual(raised.exception.code, RENDER_MATRIX_FAILED)
             self.assertFalse(candidate.exists() and any(candidate.iterdir()))

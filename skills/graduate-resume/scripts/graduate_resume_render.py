@@ -8,7 +8,6 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import tempfile
 import unicodedata
 from dataclasses import dataclass
@@ -23,6 +22,7 @@ from graduate_resume_layout import (
 )
 from graduate_resume_targeting import VersionProjection
 from graduate_resume_typst import emit_typst, normalize_photo_bytes
+from graduate_resume_typst_runtime import TypstExecutable
 
 RENDER_INPUT_INVALID = "RENDER_INPUT_INVALID"
 RENDER_STEM_COLLISION = "RENDER_STEM_COLLISION"
@@ -288,10 +288,10 @@ def build_render_matrix(
     return RenderMatrix(tuple(items))
 
 
-def _compile_typst(typst_path: Path, pdf_path: Path, fonts_root: Path) -> None:
-    completed = subprocess.run(
-        ["typst", "compile", "--font-path", str(fonts_root), "--ignore-system-fonts", "--creation-timestamp", "0", str(typst_path), str(pdf_path)],
-        cwd=typst_path.parent, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+def _compile_typst(typst_path: Path, pdf_path: Path, fonts_root: Path, typst_executable: TypstExecutable) -> None:
+    completed = typst_executable.run(
+        ("compile", "--font-path", str(fonts_root), "--ignore-system-fonts", "--creation-timestamp", "0", str(typst_path), str(pdf_path)),
+        cwd=typst_path.parent,
     )
     if completed.returncode or not pdf_path.is_file() or pdf_path.stat().st_size == 0:
         raise CliError(RENDER_MATRIX_FAILED, "Typst/PDF 候选编译失败。")
@@ -300,7 +300,8 @@ def _compile_typst(typst_path: Path, pdf_path: Path, fonts_root: Path) -> None:
 def render_candidate_matrix(
     candidate_root: Path | str, facts: Mapping[str, Any], projection: VersionProjection, *,
     canonical_hash: str, target: Mapping[str, Any] | None = None,
-    photo_bytes: bytes | None = None, font_manifest_hash: str | None = None,
+    typst_executable: TypstExecutable, photo_bytes: bytes | None = None,
+    font_manifest_hash: str,
     fail_theme: str | None = None,
     condition_evidence: Mapping[str, Any] | None = None,
     evidence_root: Path | str | EvidenceSink | None = None,
@@ -315,10 +316,10 @@ def render_candidate_matrix(
     matrix = build_render_matrix(candidate["name"], projection, targets=targets)
     skill_root = Path(__file__).resolve().parent.parent
     fonts_root = skill_root / "fonts"
-    font_hash = font_manifest_hash or validate_font_manifest(fonts_root)
+    font_hash = font_manifest_hash
     view = selected_fact_view(facts, projection.selected_fact_ids)
     photo_mode = "photo" if photo_bytes is not None else "no-photo"
-    normalized_photo = None if photo_bytes is None else normalize_photo_bytes(photo_bytes)
+    normalized_photo = None if photo_bytes is None else normalize_photo_bytes(photo_bytes, typst_executable)
     photo = None if normalized_photo is None else PhotoAsset("embedded-normalized.png")
     root.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix="matrix-", dir=root.parent))
@@ -341,7 +342,7 @@ def render_candidate_matrix(
             typ_path = stage / f"{item.stem}.typ"
             typ_path.write_text(emit_typst(reparsed_plan, final), encoding="utf-8")
             pdf_path = stage / f"{item.stem}.pdf"
-            _compile_typst(typ_path, pdf_path, fonts_root)
+            _compile_typst(typ_path, pdf_path, fonts_root, typst_executable)
         actual = {path.name for path in stage.iterdir() if path.is_file()}
         if actual != set(matrix.managed_files) or any((stage / name).stat().st_size == 0 for name in actual):
             raise CliError(RENDER_MATRIX_FAILED, "候选三件套集合不完整。")
