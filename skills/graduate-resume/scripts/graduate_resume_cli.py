@@ -11,6 +11,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 import unicodedata
@@ -22,6 +23,8 @@ import yaml
 
 
 STATUS_VALUES = {"verified", "pending", "declined"}
+MAX_CANONICAL_BYTES = 4 * 1024 * 1024
+CANONICAL_READ_CHUNK = 64 * 1024
 STABLE_FACT_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")
 TOP_LEVEL_FIELDS = {
     "candidate",
@@ -106,11 +109,13 @@ class CliError(Exception):
         self.details = details or []
 
 
-@dataclass
+@dataclass(frozen=True)
 class ResumeDocument:
     path: Path
     body: str
     data: dict[str, Any]
+    source_bytes: bytes
+    source_sha256: str
 
 
 def parse_args() -> argparse.Namespace:
@@ -177,11 +182,58 @@ def default_skill_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def _read_canonical_snapshot(path: Path) -> tuple[bytes, str]:
+    nofollow = getattr(os, "O_NOFOLLOW", None)
+    if nofollow is None:
+        raise CliError("CANONICAL_INPUT_INVALID", "当前运行时不支持安全读取 canonical 输入。")
+    flags = os.O_RDONLY | nofollow | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NONBLOCK", 0)
+    file_descriptor = -1
+    try:
+        file_descriptor = os.open(path, flags)
+        before = os.fstat(file_descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_CANONICAL_BYTES:
+            raise CliError("CANONICAL_INPUT_INVALID", "canonical 输入必须是大小受限的普通文件。")
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = os.read(file_descriptor, min(CANONICAL_READ_CHUNK, MAX_CANONICAL_BYTES + 1 - total))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+            if total > MAX_CANONICAL_BYTES:
+                raise CliError("CANONICAL_INPUT_INVALID", "canonical 输入超出大小上限。")
+        after = os.fstat(file_descriptor)
+        identity_before = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns)
+        identity_after = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+        if identity_after != identity_before or total != before.st_size:
+            raise CliError("CANONICAL_INPUT_INVALID", "canonical 输入在读取期间发生变化。")
+    except CliError:
+        raise
+    except OSError as exc:
+        raise CliError("CANONICAL_INPUT_INVALID", "无法安全读取 canonical 输入。") from exc
+    finally:
+        if file_descriptor >= 0:
+            try:
+                os.close(file_descriptor)
+            except OSError:
+                pass
+    source_bytes = b"".join(chunks)
+    return source_bytes, hashlib.sha256(source_bytes).hexdigest()
+
+
 def load_resume(path_value: str) -> ResumeDocument:
-    path = Path(path_value).expanduser().resolve()
-    if not path.is_file():
-        raise CliError("INPUT_NOT_FOUND", f"输入文件不存在: {path}")
-    raw = path.read_text(encoding="utf-8")
+    expanded = Path(path_value).expanduser()
+    try:
+        absolute = expanded if expanded.is_absolute() else Path.cwd() / expanded
+        path = absolute.parent.resolve(strict=True) / absolute.name
+    except OSError as exc:
+        raise CliError("CANONICAL_INPUT_INVALID", "canonical 输入父目录无效。") from exc
+    source_bytes, source_sha256 = _read_canonical_snapshot(path)
+    try:
+        raw = source_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise CliError("CANONICAL_INPUT_INVALID", "canonical 输入必须使用有效 UTF-8。") from exc
     if not raw.startswith("---\n"):
         raise CliError("FRONTMATTER_REQUIRED", "输入缺少 YAML frontmatter。")
     parts = raw.split("\n---\n", 1)
@@ -206,6 +258,8 @@ def load_resume(path_value: str) -> ResumeDocument:
         data=parse_markdown_facts(
             body, parsed.get("profile") or {}, parsed.get("photo"), parsed.get("preferences") or {}
         ),
+        source_bytes=source_bytes,
+        source_sha256=source_sha256,
     )
 
 
@@ -757,7 +811,9 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
     document = load_resume(args.input)
     validate_document(document)
     publication_data = publication_fact_view(document.data)
-    publication_document = ResumeDocument(document.path, document.body, publication_data)
+    publication_document = ResumeDocument(
+        document.path, document.body, publication_data, document.source_bytes, document.source_sha256,
+    )
     selected, not_applicable = _publication_request(args, publication_document, batch=batch)
     photo_mode, photo_bytes, feedback_photo, font_hash = _resolve_publication_photo(args, document)
     page_budget = PageBudgetRequest(args.pages)
@@ -797,7 +853,7 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
         *_discover_current_stems(delivery_root, publication_data["candidate"]["name"]),
     )))
     theme_suffixes = tuple(safe_component(item.label) for item in THEME_SPECS_FOR_HELP())
-    canonical_hash = hashlib.sha256(document.path.read_bytes()).hexdigest()
+    canonical_hash = document.source_sha256
     mode = "authority" if batch else "patch"
     if condition_evidence and not args.evidence_root:
         raise CliError("EVIDENCE_ROOT_REQUIRED", "定向渲染必须显式授权独立隐藏证据根。")
