@@ -107,7 +107,10 @@ class ResumeDocument:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="graduate-resume.sh")
+    parser = argparse.ArgumentParser(
+        prog="graduate-resume.sh",
+        description="主题可用 --theme <key> 选择：保守稳妥 (conservative)、现代简洁 (modern)、个性设计 (expressive)。",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     validate = subparsers.add_parser("validate", help="校验 Phase 46 资料契约。")
@@ -116,8 +119,12 @@ def parse_args() -> argparse.Namespace:
     target = subparsers.add_parser("target", help="输出归一化 target brief 摘要。")
     target.add_argument("--input", required=True, help="输入 Markdown 路径。")
 
-    plan = subparsers.add_parser("plan", help="输出 Phase 46 基线计划与依赖探测。")
+    plan = subparsers.add_parser("plan", help="输出受控主题、照片模式与布局输入摘要。")
     plan.add_argument("--input", required=True, help="输入 Markdown 路径。")
+    plan.add_argument("--theme", help="使用 --theme <key> 选择：保守稳妥 (conservative)、现代简洁 (modern)、个性设计 (expressive)。")
+    plan.add_argument("--pages", choices=("auto", "1", "2"), default="auto", help="页数偏好。")
+    plan.add_argument("--photo-mode", choices=("auto", "photo", "no-photo"), default="auto", help="照片模式覆盖。")
+    plan.add_argument("--assets-root", help="本地照片资源根目录，默认输入 Markdown 的父目录。")
 
     render = subparsers.add_parser("render", help="保留给后续阶段。")
     render.add_argument("--input", required=False, help="输入 Markdown 路径。")
@@ -510,21 +517,34 @@ def resolve_photo_mode(photo: dict[str, Any], preferences: dict[str, Any]) -> st
 
 
 def command_plan(args: argparse.Namespace) -> int:
+    # Keep layout-only imports out of the Phase 46 validation path.
+    from graduate_resume_layout import build_frozen_plan, resolve_layout_photo, resolve_theme, validate_font_manifest
+
     document = load_resume(args.input)
     validate_document(document)
     data = document.data
     targets = data.get("targets", [])
     photo = data.get("photo", {})
     preferences = data.get("preferences", {})
+    theme = resolve_theme(args.theme or preferences.get("theme"))
+    assets_root = Path(args.assets_root).expanduser() if args.assets_root else document.path.parent
+    requested_photo_mode = resolve_photo_mode(photo, preferences) if args.photo_mode == "auto" else args.photo_mode
+    photo_asset = resolve_layout_photo(document.path, assets_root, photo, {"photo_mode": requested_photo_mode})
+    font_manifest_hash = validate_font_manifest(default_skill_root() / "fonts")
+    frozen_plan = build_frozen_plan(theme, requested_photo_mode, photo_asset, font_manifest_hash, args.pages)
     payload = {
         "status": "passed",
-        "phase": 46,
-        "plan_type": "baseline",
+        "phase": 47,
+        "plan_type": "controlled-layout-inputs",
         "resume_mode": "generic" if not targets else "targeted",
         "target_count": len(targets),
-        "resolved_photo_mode": resolve_photo_mode(photo, preferences),
-        "preferred_pages": preferences.get("preferred_pages", "auto"),
-        "theme": preferences.get("theme", "未指定"),
+        "resolved_photo_mode": frozen_plan.photo_mode,
+        "preferred_pages": args.pages,
+        "theme": {"key": theme.key, "label": theme.label},
+        "theme_selection": "--theme <key>",
+        "available_themes": [{"key": item.key, "label": item.label} for item in THEME_SPECS_FOR_HELP()],
+        "frozen_layout": frozen_plan.to_projection(),
+        "font_manifest_hash": font_manifest_hash,
         "next_phase_inputs": {
             "schema_frozen": True,
             "target_briefs_ready": bool(targets),
@@ -534,6 +554,11 @@ def command_plan(args: argparse.Namespace) -> int:
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
+
+
+def THEME_SPECS_FOR_HELP() -> tuple[Any, ...]:
+    from graduate_resume_layout import THEME_SPECS
+    return tuple(THEME_SPECS[key] for key in ("conservative", "modern", "expressive"))
 
 
 def command_reserved(command_name: str) -> int:
