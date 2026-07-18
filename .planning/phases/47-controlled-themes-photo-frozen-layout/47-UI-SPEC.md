@@ -21,7 +21,7 @@ created: 2026-07-18
 | Preset | not applicable |
 | Component library | none |
 | Icon library | none；不得以图标替代电话、邮箱、城市等必须可复制和可检索的文字 |
-| Font | skill-local、版本锁定的 `Source Han Sans SC`；Regular 400 与 Semibold 600 两个字重。未找到或缺少所需字形时失败，不回退系统字体 |
+| Font | skill-local、版本锁定的 `Noto Sans Mono CJK SC`；Regular 400 与 Bold 600 两个字重，采用 SIL Open Font License 1.1。未找到或缺少所需字形时失败，不回退系统字体 |
 | Render environment | 固定 Typst 版本，生产渲染使用受控字体目录和 `--ignore-system-fonts` |
 | Source of truth | `graduate-resume.md`；主题、页数、照片模式、容器与分页均为派生值，禁止回写事实 Markdown |
 
