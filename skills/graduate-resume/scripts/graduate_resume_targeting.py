@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import unicodedata
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -16,6 +17,8 @@ TARGETING_INPUT_INVALID = "TARGETING_INPUT_INVALID"
 TARGETING_OVERRIDE_INVALID = "TARGETING_OVERRIDE_INVALID"
 PAGE_BUDGET_UNSATISFIABLE = "PAGE_BUDGET_UNSATISFIABLE"
 TARGETING_PROJECTION_INVALID = "TARGETING_PROJECTION_INVALID"
+TARGET_CONDITION_INVALID = "TARGET_CONDITION_INVALID"
+TARGET_GAP_NOT_ALLOWED = "TARGET_GAP_NOT_ALLOWED"
 
 _POLICY_FIELDS = frozenset(
     ("policy_version", "module_order", "score_weights", "exact_term_expansions", "predicate_registry")
@@ -24,6 +27,7 @@ _SCORE_FIELDS = frozenset(("role_exact", "role_expansion", "requirement_exact", 
 _OVERRIDE_FIELDS = frozenset(("retain", "exclude", "pin"))
 _CORE_SECTIONS = frozenset(("candidate", "education"))
 _THEMES = ("conservative", "modern", "expressive")
+_CONDITION_STATES = ("meets", "gap", "unknown", "not-applicable")
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -128,6 +132,53 @@ class LayoutFeedback:
             "fits": self.fits,
             "page_count": self.page_count,
             "overflow_container_ids": list(self.overflow_container_ids),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ConditionResult:
+    condition_id: str
+    predicate: str | None
+    state: str
+    evidence_fact_ids: tuple[str, ...]
+    reason: str
+
+    def to_evidence_projection(self) -> dict[str, Any]:
+        return {
+            "condition_id": self.condition_id,
+            "predicate": self.predicate,
+            "state": self.state,
+            "evidence_fact_ids": list(self.evidence_fact_ids),
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class HardConditionEvaluation:
+    target_id: str
+    matrix: tuple[ConditionResult, ...]
+    counts: tuple[tuple[str, int], ...]
+    warnings: tuple[str, ...]
+    gap_allowed: bool
+    evidence_digest: str
+
+    def to_public_projection(self) -> dict[str, Any]:
+        return {
+            "target_id": self.target_id,
+            "counts": dict(self.counts),
+            "warning_count": len(self.warnings),
+            "gap_allowed": self.gap_allowed,
+            "evidence_digest": self.evidence_digest,
+        }
+
+    def to_evidence_projection(self) -> dict[str, Any]:
+        return {
+            "target_id": self.target_id,
+            "matrix": [item.to_evidence_projection() for item in self.matrix],
+            "counts": dict(self.counts),
+            "warnings": list(self.warnings),
+            "gap_allowed": self.gap_allowed,
+            "evidence_digest": self.evidence_digest,
         }
 
 
@@ -299,6 +350,138 @@ def _score_fact(item: Mapping[str, Any], facts: Mapping[str, Any], target: Mappi
     return score, tuple(dict.fromkeys(reasons)) or ("no-relevance-match",)
 
 
+def _normalized_requirement(value: str) -> str:
+    normalized = _normalized(value)
+    return re.sub(r"\s*([:;,，。；])\s*", r"\1", normalized)
+
+
+def condition_id_for_requirement(target_id: str, requirement: str) -> str:
+    if not isinstance(target_id, str) or not target_id or not isinstance(requirement, str):
+        raise CliError(TARGET_CONDITION_INVALID, "硬条件 ID 输入无效。")
+    normalized = _normalized_requirement(requirement)
+    if not normalized:
+        raise CliError(TARGET_CONDITION_INVALID, "硬条件不得为空。")
+    digest = hashlib.sha256(f"{target_id}\0{normalized}".encode("utf-8")).hexdigest()[:20]
+    return f"condition-{digest}"
+
+
+def _condition_predicate(requirement: str) -> tuple[str | None, str | None]:
+    patterns = (
+        ("education_level", r"^学历要求:(.+)$"),
+        ("major_exact", r"^专业要求:(.+)$"),
+        ("certificate_exact", r"^证书要求:(.+)$"),
+        ("certificate_exact", r"^持有(.+证)$"),
+    )
+    for predicate, pattern in patterns:
+        match = re.fullmatch(pattern, requirement)
+        if match:
+            expected = match.group(1).strip()
+            return (predicate, expected) if expected else (None, None)
+    if requirement in {"应届毕业生", "要求应届毕业生", "仅限应届毕业生"}:
+        return "fresh_graduate_status", "应届毕业生"
+    return None, None
+
+
+def _evaluate_predicate(
+    predicate: str | None,
+    expected: str | None,
+    facts: Mapping[str, Any],
+) -> tuple[str, tuple[str, ...], str]:
+    if predicate is None or expected is None:
+        return "unknown", (), "unsupported-condition"
+    education = tuple(item for item in facts.get("education", ()) if isinstance(item, Mapping))
+    if predicate == "education_level":
+        evidence = tuple((str(item["id"]), _normalized(item.get("degree"))) for item in education if isinstance(item.get("id"), str) and _normalized(item.get("degree")))
+        if not evidence:
+            return "unknown", (), "verified-field-missing"
+        return ("meets", tuple(item[0] for item in evidence), "verified-exact-match") if any(value == expected for _, value in evidence) else ("gap", tuple(item[0] for item in evidence), "verified-explicit-mismatch")
+    if predicate == "major_exact":
+        evidence = tuple((str(item["id"]), _normalized(item.get("major"))) for item in education if isinstance(item.get("id"), str) and _normalized(item.get("major")))
+        if not evidence:
+            return "unknown", (), "verified-field-missing"
+        return ("meets", tuple(item[0] for item in evidence), "verified-exact-match") if any(value == expected for _, value in evidence) else ("gap", tuple(item[0] for item in evidence), "verified-explicit-mismatch")
+    if predicate == "certificate_exact":
+        certificates = tuple(item for item in facts.get("certificates", ()) if isinstance(item, Mapping))
+        evidence = tuple((str(item["id"]), _normalized(item.get("name"))) for item in certificates if isinstance(item.get("id"), str) and _normalized(item.get("name")))
+        if not evidence:
+            return "unknown", (), "verified-field-missing"
+        return ("meets", tuple(item[0] for item in evidence), "verified-exact-match") if any(value == expected for _, value in evidence) else ("gap", tuple(item[0] for item in evidence), "verified-explicit-mismatch")
+    if predicate == "fresh_graduate_status":
+        candidate = facts.get("candidate")
+        headline = _normalized(candidate.get("headline")) if isinstance(candidate, Mapping) else ""
+        if not headline:
+            return "unknown", (), "verified-field-missing"
+        if "非应届" in headline or "往届" in headline:
+            return "gap", ("profile",), "verified-explicit-mismatch"
+        if "应届毕业生" in headline:
+            return "meets", ("profile",), "verified-exact-match"
+        return "unknown", (), "verified-field-ambiguous"
+    return "unknown", (), "unsupported-condition"
+
+
+def _safe_not_applicable_reason(value: Any) -> str:
+    if not isinstance(value, str):
+        raise CliError(TARGET_CONDITION_INVALID, "不适用理由必须是文本。")
+    reason = value.strip()
+    if not 1 <= len(reason) <= 200 or any(unicodedata.category(character).startswith("C") for character in reason):
+        raise CliError(TARGET_CONDITION_INVALID, "不适用理由长度或字符无效。")
+    return reason
+
+
+def evaluate_hard_conditions(
+    facts: Mapping[str, Any],
+    target: Mapping[str, Any],
+    *,
+    not_applicable_overrides: Iterable[tuple[str, str, str]] = (),
+    allowed_gap_target_ids: Iterable[str] = (),
+) -> HardConditionEvaluation:
+    target_id = target.get("id")
+    requirements = target.get("requirements", ())
+    if not isinstance(target_id, str) or not target_id or target.get("confirmed") is not True or not isinstance(requirements, (list, tuple)) or any(not isinstance(item, str) for item in requirements):
+        raise CliError(TARGET_CONDITION_INVALID, "已确认目标及其硬条件无效。")
+    normalized_requirements = tuple(_normalized_requirement(item) for item in requirements)
+    if any(not item for item in normalized_requirements) or len(normalized_requirements) != len(set(normalized_requirements)):
+        raise CliError(TARGET_CONDITION_INVALID, "硬条件为空或归一化后重复。")
+    condition_ids = tuple(condition_id_for_requirement(target_id, item) for item in normalized_requirements)
+    known_conditions = frozenset(condition_ids)
+    override_map: dict[str, str] = {}
+    seen_pairs: set[tuple[str, str]] = set()
+    for raw in not_applicable_overrides:
+        if not isinstance(raw, (list, tuple)) or len(raw) != 3:
+            raise CliError(TARGET_CONDITION_INVALID, "不适用覆盖必须包含 target、condition 和 reason。")
+        override_target, condition_id, reason = raw
+        pair = (override_target, condition_id)
+        if pair in seen_pairs or override_target != target_id or condition_id not in known_conditions:
+            raise CliError(TARGET_CONDITION_INVALID, "不适用覆盖重复或引用未知目标/条件。")
+        seen_pairs.add(pair)
+        override_map[condition_id] = _safe_not_applicable_reason(reason)
+    allowed = tuple(allowed_gap_target_ids)
+    if len(allowed) != len(set(allowed)) or any(not isinstance(item, str) or not item for item in allowed):
+        raise CliError(TARGET_CONDITION_INVALID, "缺口放行必须使用唯一、非空的目标 ID。")
+    matrix: list[ConditionResult] = []
+    for requirement, condition_id in zip(normalized_requirements, condition_ids):
+        predicate, expected = _condition_predicate(requirement)
+        if condition_id in override_map:
+            matrix.append(ConditionResult(condition_id, predicate, "not-applicable", (), override_map[condition_id]))
+            continue
+        state, evidence_ids, reason = _evaluate_predicate(predicate, expected, facts)
+        matrix.append(ConditionResult(condition_id, predicate, state, evidence_ids, reason))
+    has_gap = any(item.state == "gap" for item in matrix)
+    gap_allowed = has_gap and target_id in allowed
+    if has_gap and not gap_allowed:
+        raise CliError(TARGET_GAP_NOT_ALLOWED, "目标存在已核实资格缺口，必须按目标 ID 明确放行本次生成。")
+    counts = tuple((state, sum(item.state == state for item in matrix)) for state in _CONDITION_STATES)
+    warnings = tuple(item.condition_id for item in matrix if item.state == "unknown")
+    evidence_payload = {
+        "target_id": target_id,
+        "matrix": [item.to_evidence_projection() for item in matrix],
+        "counts": dict(counts),
+        "warnings": list(warnings),
+        "gap_allowed": gap_allowed,
+    }
+    return HardConditionEvaluation(target_id, tuple(matrix), counts, warnings, gap_allowed, hashlib.sha256(_json_bytes(evidence_payload)).hexdigest())
+
+
 def _feedback_fits(item: LayoutFeedback, request: PageBudgetRequest) -> bool:
     if item.theme_key not in _THEMES or type(item.fits) is not bool or item.page_count not in (1, 2, 3):
         raise CliError(TARGETING_INPUT_INVALID, "布局反馈无效。")
@@ -317,6 +500,8 @@ def resolve_version_projection(
     layout_feedback_callback: LayoutFeedbackCallback,
     *,
     overrides: Mapping[str, Any] | None = None,
+    not_applicable_overrides: Iterable[tuple[str, str, str]] = (),
+    allowed_gap_target_ids: Iterable[str] = (),
     policy_path: Path | None = None,
 ) -> VersionProjection:
     policy = load_targeting_policy(policy_path)
@@ -324,6 +509,16 @@ def resolve_version_projection(
         required = ("id", "company", "role", "source", "as_of")
         if target.get("confirmed") is not True or any(not isinstance(target.get(key), str) or not target[key] for key in required):
             raise CliError(TARGETING_INPUT_INVALID, "目标岗位必须是已确认且来源完整的用户输入。")
+        condition_evaluation = evaluate_hard_conditions(
+            facts,
+            target,
+            not_applicable_overrides=not_applicable_overrides,
+            allowed_gap_target_ids=allowed_gap_target_ids,
+        )
+    else:
+        if tuple(not_applicable_overrides) or tuple(allowed_gap_target_ids):
+            raise CliError(TARGET_CONDITION_INVALID, "通用版不得携带目标条件覆盖或缺口放行。")
+        condition_evaluation = None
     entries = _facts_by_section(facts, policy.module_order)
     known_ids = frozenset(fact_id for _, fact_id, _ in entries)
     core_ids = frozenset(fact_id for section, fact_id, _ in entries if section in _CORE_SECTIONS)
@@ -392,6 +587,9 @@ def resolve_version_projection(
         snapshot,
         final_feedback,
         feedback_digest,
+        () if condition_evaluation is None else condition_evaluation.counts,
+        None if condition_evaluation is None else condition_evaluation.evidence_digest,
+        False if condition_evaluation is None else condition_evaluation.gap_allowed,
     )
     projection = replace(draft, digest=hashlib.sha256(_json_bytes(draft._payload())).hexdigest())
     projection.validate(known_ids)
@@ -399,12 +597,16 @@ def resolve_version_projection(
 
 
 __all__ = [
+    "ConditionResult",
     "FactDecision",
+    "HardConditionEvaluation",
     "LayoutFeedback",
     "OverrideSnapshot",
     "PageBudgetRequest",
     "TargetingPolicy",
     "VersionProjection",
+    "condition_id_for_requirement",
+    "evaluate_hard_conditions",
     "load_targeting_policy",
     "resolve_version_projection",
 ]

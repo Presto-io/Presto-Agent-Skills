@@ -294,14 +294,14 @@ class HardConditionTests(unittest.TestCase):
             self.assertNotIn(secret, public_text)
         self.assertNotIn("reason", public_text)
 
-    def test_duplicate_normalized_conditions_and_unknown_allow_ids_fail(self) -> None:
+    def test_duplicate_normalized_conditions_and_duplicate_allow_ids_fail(self) -> None:
         duplicate = self._target("target-duplicate", ["学历要求：大专", " 学历要求：大专 "])
         with self.assertRaises(cli.CliError) as raised:
             evaluate_hard_conditions(self.facts, duplicate)
         self.assertEqual(raised.exception.code, TARGET_CONDITION_INVALID)
-        valid = self._target("target-valid", ["学历要求：大专"])
+        valid = self._target("target-valid", ["学历要求：本科"])
         with self.assertRaises(cli.CliError) as raised:
-            evaluate_hard_conditions(self.facts, valid, allowed_gap_target_ids=("target-other",))
+            evaluate_hard_conditions(self.facts, valid, allowed_gap_target_ids=("target-valid", "target-valid"))
         self.assertEqual(raised.exception.code, TARGET_CONDITION_INVALID)
 
     def test_projection_freezes_condition_summary_digest_and_gap_allow(self) -> None:
