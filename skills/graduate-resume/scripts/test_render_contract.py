@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import replace
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -169,6 +170,81 @@ class TypstConsumerContractTests(unittest.TestCase):
             poisoned = replace(plan, containers=containers, pages=pages)
             with self.assertRaises(cli.CliError):
                 emit_typst(poisoned, final)
+
+    def test_structured_display_fields_reach_real_typst_and_pdf(self) -> None:
+        import fitz
+
+        from graduate_resume_final_markdown import emit_final_markdown, load_final_resume
+        from graduate_resume_layout import build_frozen_resume_plan, resolve_theme
+        from graduate_resume_typst import emit_typst
+
+        source = SKILL_ROOT / "templates" / "graduate-resume.md"
+        document = cli.load_resume(str(source))
+        markers = (
+            "CONTACT-MARKER-138",
+            "SKILL-MARKER-PLC",
+            "OUTCOME-MARKER-ALARM",
+            "TOOL-MARKER-TIA",
+        )
+        document.data["candidate"]["contact"]["phone"] = markers[0]
+        document.data["skills"][0]["items"] = [markers[1]]
+        document.data["projects"][0]["outcomes"] = [markers[2]]
+        document.data["projects"][0]["tools"] = [markers[3]]
+        cli.validate_document(document)
+        projection = _projection(document)
+        payload = emit_final_markdown(
+            document.data, projection,
+            canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
+            theme_key="modern", theme_label="现代简洁", page_count=1,
+            photo_mode="no-photo",
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            markdown_path = root / "resume.md"
+            markdown_path.write_bytes(payload)
+            final = load_final_resume(markdown_path)
+            plan = build_frozen_resume_plan(
+                final.fact_view(), resolve_theme("modern"), "no-photo", None,
+                "a" * 64, "1",
+            )
+            frozen_text = "\n".join(value for container in plan.containers for _, value in container.fields)
+            for marker in markers:
+                self.assertIn(marker, frozen_text)
+            typst = emit_typst(plan, final)
+            typst_path = root / "resume.typ"
+            pdf_path = root / "resume.pdf"
+            typst_path.write_text(typst, encoding="utf-8")
+            completed = subprocess.run(
+                [
+                    "typst", "compile", "--font-path", str(SKILL_ROOT / "fonts"),
+                    "--ignore-system-fonts", "--creation-timestamp", "0",
+                    str(typst_path), str(pdf_path),
+                ],
+                cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            with fitz.open(pdf_path) as pdf:
+                pdf_text = "\n".join(page.get_text() for page in pdf)
+            for marker in markers:
+                self.assertIn(marker, typst)
+                self.assertIn(marker, pdf_text)
+
+    def test_structured_display_fields_reject_unregistered_or_unsafe_values(self) -> None:
+        from graduate_resume_layout import project_containers
+
+        source = SKILL_ROOT / "templates" / "graduate-resume.md"
+        mutations = (
+            lambda data: data["candidate"]["contact"].update({"unknown": "secret"}),
+            lambda data: data["candidate"].update({"contact": {"phone": {"nested": "bad"}}}),
+            lambda data: data["skills"][0].update({"items": ["PLC", 7]}),
+            lambda data: data["projects"][0].update({"outcomes": ["normal", "bad\x00control"]}),
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                document = cli.load_resume(str(source))
+                mutation(document.data)
+                with self.assertRaises(cli.CliError):
+                    project_containers(document.data)
 
 
 class RenderMatrixContractTests(unittest.TestCase):
