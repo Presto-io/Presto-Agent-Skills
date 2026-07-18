@@ -1,6 +1,6 @@
 ---
 phase: 48-deterministic-targeted-rendering-clean-batch-delivery
-reviewed: 2026-07-18T16:49:28Z
+reviewed: 2026-07-18T18:38:41Z
 depth: standard
 files_reviewed: 20
 files_reviewed_list:
@@ -26,22 +26,22 @@ files_reviewed_list:
   - skills/graduate-resume/templates/targeting-policy.json
 findings:
   critical: 6
-  warning: 3
+  warning: 4
   info: 0
-  total: 9
+  total: 10
 status: issues_found
 ---
 
 # Phase 48: Code Review Report
 
-**Reviewed:** 2026-07-18T16:49:28Z
+**Reviewed:** 2026-07-18T18:38:41Z
 **Depth:** standard
 **Files Reviewed:** 20
 **Status:** issues_found
 
 ## Summary
 
-标准深度审查发现 6 个必须在发布前修复的正确性、安全和数据完整性问题，以及 3 个可靠性问题。最严重的缺陷会把招聘 URL 与电话号码写入正式产物路径或 Markdown、允许重复事实字段静默覆盖、让 `validate` 对不可渲染资料误报通过、在未确认的预检中覆盖既有隐藏证据，以及允许已通过版本门禁的 Typst 快照被原地替换后继续执行。
+标准深度审查发现 6 个必须在发布前修复的正确性、安全和数据完整性问题，以及 4 个可靠性问题。最严重的缺陷会把招聘 URL 与电话号码写入正式产物路径或 Markdown、允许重复事实字段静默覆盖、让 `validate` 对不可渲染资料误报通过、在未确认的预检中覆盖既有隐藏证据，以及允许已通过版本门禁的 Typst 快照被原地替换后继续执行。
 
 最小复现确认：重复 `专业` 字段以最后一个值覆盖且校验通过；`candidate.directions: [123]` 校验通过；URL 形式的 target source 原样进入最终 Markdown；姓名 `张三13800000000` 原样进入正式 stem。
 
@@ -141,8 +141,23 @@ if existing is not None and existing != raw:
 **Issue:** 测试固定创建 `templates/.theme-contract-probe.typ` 与相邻 PDF。并行测试会互相覆盖/删除文件，进程中断会留下脏文件，测试运行还会修改源码树，与可重复、隔离的 fixture 约定冲突。
 **Fix:** 在 `TemporaryDirectory()` 中创建探针并复制或引用受控模板；每个测试使用唯一工作目录，不向 `skills/graduate-resume/templates/` 写入临时产物。
 
+### WR-04: 已确认 target 可绕过结构化招聘要求进入发布
+
+**Classification:** WARNING
+**File:** `skills/graduate-resume/scripts/graduate_resume_cli.py:488`
+**Issue:** `validate_targets()` 只要求 `id/company/role/source/as_of`，并仅在 `requirements` 存在时检查外层类型（第 500-502 行）。字段缺失时，`evaluate_hard_conditions()` 又将其默认成空元组（`graduate_resume_targeting.py:439`），故 `render --target` 和 `batch` 会成功构造条件计数全为 0 的 projection 并允许发布。此行为违反 D-01 对 confirmed target 必须包含结构化 `requirements` 的投影前提，使四态检查与 gap gate 在该目标上失效。
+**Fix:** 在 canonical 校验阶段要求 `requirements` 为非空安全字符串列表，并增加缺失、空列表及空字符串列表的 CLI 负例。
+
+```python
+requirements = target.get("requirements")
+if not isinstance(requirements, list) or not requirements or any(
+    not isinstance(item, str) or not item.strip() for item in requirements
+):
+    issues.append(f"{area}.requirements 必须是非空字符串列表。")
+```
+
 ---
 
-_Reviewed: 2026-07-18T16:49:28Z_
+_Reviewed: 2026-07-18T18:38:41Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
