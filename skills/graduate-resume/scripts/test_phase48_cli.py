@@ -47,6 +47,14 @@ def run_cli(*arguments: str, env: dict[str, str] | None = None) -> subprocess.Co
     )
 
 
+def run_reviewed(*arguments: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    preview = run_cli(*arguments, env=env)
+    if preview.returncode != 0:
+        return preview
+    digest = parse_json(preview)["approval_digest"]
+    return run_cli(*arguments, "--confirm", "--approval-digest", str(digest), env=env)
+
+
 def parse_json(completed: subprocess.CompletedProcess[str]) -> dict[str, object]:
     stream = completed.stdout if completed.returncode == 0 else completed.stderr
     return json.loads(stream)
@@ -110,14 +118,125 @@ class PublicCliContractTests(unittest.TestCase):
                 self.assertNotEqual(completed.returncode, 0)
                 self.assertEqual(recursive_snapshot(delivery), {})
 
+            changed_candidate = run_cli(
+                *base, "--pages", "1", "--confirm", "--approval-digest", digest,
+            )
+            self.assertNotEqual(changed_candidate.returncode, 0)
+            self.assertEqual(recursive_snapshot(delivery), {})
+            original = canonical.read_bytes()
+            canonical.write_bytes(original + b"\n")
+            stale = run_cli(*base, "--confirm", "--approval-digest", digest)
+            self.assertNotEqual(stale.returncode, 0)
+            self.assertEqual(recursive_snapshot(delivery), {})
+            canonical.write_bytes(original)
+
             confirmed = run_cli(*base, "--confirm", "--approval-digest", digest)
             self.assertEqual(confirmed.returncode, 0, confirmed.stderr)
             self.assertEqual(parse_json(confirmed)["approval_digest"], digest)
-            published = recursive_snapshot(delivery)
-            canonical.write_bytes(canonical.read_bytes() + b"\n")
-            stale = run_cli(*base, "--confirm", "--approval-digest", digest)
-            self.assertNotEqual(stale.returncode, 0)
-            self.assertEqual(recursive_snapshot(delivery), published)
+
+    def test_reviewed_digest_binds_delivery_and_evidence_root_path_and_identity(self) -> None:
+        generic = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
+        targeted = SKILL_ROOT / "fixtures" / "targeting" / "multi-state-targets.md"
+        for case in ("alternate", "inode-swap", "symlink-swap"):
+            with self.subTest(root=case), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                delivery = root / "delivery"
+                base = (
+                    "render", "--input", str(generic), "--generic",
+                    "--delivery-root", str(delivery), "--photo-mode", "no-photo",
+                )
+                preview = run_cli(*base)
+                self.assertEqual(preview.returncode, 0, preview.stderr)
+                digest = str(parse_json(preview)["approval_digest"])
+                confirm_base = base
+                displaced = root / "displaced"
+                if case == "alternate":
+                    confirm_base = (
+                        "render", "--input", str(generic), "--generic",
+                        "--delivery-root", str(root / "other-delivery"), "--photo-mode", "no-photo",
+                    )
+                else:
+                    delivery.rename(displaced)
+                    if case == "inode-swap":
+                        delivery.mkdir()
+                    else:
+                        delivery.symlink_to(displaced, target_is_directory=True)
+                completed = run_cli(
+                    *confirm_base, "--confirm", "--approval-digest", digest,
+                )
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertEqual(recursive_snapshot(displaced), {})
+                if delivery.exists() and not delivery.is_symlink():
+                    self.assertEqual(recursive_snapshot(delivery), {})
+
+        for case in ("alternate", "inode-swap", "symlink-swap"):
+            with self.subTest(evidence=case), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                delivery = root / "delivery"
+                evidence = root / "evidence"
+                base = (
+                    "render", "--input", str(targeted), "--target", "target-robot-001",
+                    "--delivery-root", str(delivery), "--evidence-root", str(evidence),
+                    "--photo-mode", "no-photo",
+                )
+                preview = run_cli(*base)
+                self.assertEqual(preview.returncode, 0, preview.stderr)
+                digest = str(parse_json(preview)["approval_digest"])
+                confirm_base = base
+                displaced = root / "evidence-displaced"
+                if case == "alternate":
+                    confirm_base = (
+                        "render", "--input", str(targeted), "--target", "target-robot-001",
+                        "--delivery-root", str(delivery), "--evidence-root", str(root / "other-evidence"),
+                        "--photo-mode", "no-photo",
+                    )
+                else:
+                    evidence.rename(displaced)
+                    if case == "inode-swap":
+                        evidence.mkdir()
+                    else:
+                        evidence.symlink_to(displaced, target_is_directory=True)
+                completed = run_cli(
+                    *confirm_base, "--confirm", "--approval-digest", digest,
+                )
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertEqual(recursive_snapshot(delivery), {})
+
+    def test_reviewed_digest_rejects_photo_bytes_changed_after_preflight(self) -> None:
+        from PIL import Image
+
+        fixture = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
+        original_photo = SKILL_ROOT / "fixtures" / "layout" / "media" / "student-photo.jpg"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "resume.md"
+            source.write_text(
+                fixture.read_text(encoding="utf-8").replace(
+                    "fixtures/media/student-photo.jpg", "photo.jpg",
+                ),
+                encoding="utf-8",
+            )
+            photo = root / "photo.jpg"
+            photo.write_bytes(original_photo.read_bytes())
+            delivery = root / "delivery"
+            base = (
+                "render", "--input", str(source), "--generic",
+                "--delivery-root", str(delivery), "--assets-root", str(root),
+                "--photo-mode", "photo",
+            )
+            preview = run_cli(*base)
+            self.assertEqual(preview.returncode, 0, preview.stderr)
+            digest = str(parse_json(preview)["approval_digest"])
+            with Image.open(photo) as image:
+                changed = image.convert("RGB")
+                red, green, blue = changed.getpixel((0, 0))
+                changed.putpixel((0, 0), ((red + 1) % 256, green, blue))
+                changed.save(photo, format="JPEG", quality=95)
+            completed = run_cli(
+                *base, "--confirm", "--approval-digest", digest,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertEqual(recursive_snapshot(delivery), {})
 
     def test_render_and_batch_share_bounded_target_conditions_and_persist_private_evidence(self) -> None:
         source = SKILL_ROOT / "fixtures" / "targeting" / "multi-state-targets.md"
@@ -200,9 +319,9 @@ class PublicCliContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             delivery = root / "delivery"
-            baseline = run_cli(
+            baseline = run_reviewed(
                 "render", "--input", str(source), "--generic",
-                "--delivery-root", str(delivery), "--photo-mode", "no-photo", "--confirm",
+                "--delivery-root", str(delivery), "--photo-mode", "no-photo",
             )
             self.assertEqual(baseline.returncode, 0, baseline.stderr)
             before = recursive_snapshot(delivery)
@@ -247,7 +366,9 @@ class PublicCliContractTests(unittest.TestCase):
             self.assertEqual(len(payload["stems"]), 3)
             self.assertEqual(public_files(delivery), ())
 
-            published = run_cli(*base, "--confirm")
+            published = run_cli(
+                *base, "--confirm", "--approval-digest", str(payload["approval_digest"]),
+            )
             self.assertEqual(published.returncode, 0, published.stderr)
             self.assertEqual(parse_json(published)["publication"], "first")
             files = public_files(delivery)
@@ -255,7 +376,7 @@ class PublicCliContractTests(unittest.TestCase):
             self.assertEqual({path.suffix for path in files}, {".md", ".typ", ".pdf"})
             before = {path.name: (path.stat().st_ino, path.stat().st_mtime_ns, hashlib.sha256(path.read_bytes()).hexdigest()) for path in files}
 
-            identical = run_cli(*base, "--confirm")
+            identical = run_reviewed(*base)
             self.assertEqual(identical.returncode, 0, identical.stderr)
             self.assertEqual(parse_json(identical)["publication"], "identical")
             after = {path.name: (path.stat().st_ino, path.stat().st_mtime_ns, hashlib.sha256(path.read_bytes()).hexdigest()) for path in public_files(delivery)}
@@ -268,23 +389,23 @@ class PublicCliContractTests(unittest.TestCase):
             root = Path(temporary)
             delivery = root / "delivery"
             evidence = root / "evidence"
-            first = run_cli(
+            first = run_reviewed(
                 "render", "--input", str(targeted), "--generic", "--delivery-root", str(delivery),
-                "--photo-mode", "no-photo", "--confirm",
+                "--photo-mode", "no-photo",
             )
             self.assertEqual(first.returncode, 0, first.stderr)
-            targeted_run = run_cli(
+            targeted_run = run_reviewed(
                 "render", "--input", str(targeted), "--target", "target-robot-001",
                 "--delivery-root", str(delivery), "--evidence-root", str(evidence),
-                "--photo-mode", "no-photo", "--confirm",
+                "--photo-mode", "no-photo",
             )
             self.assertEqual(targeted_run.returncode, 0, targeted_run.stderr)
             self.assertEqual(len(public_files(delivery)), 18)
 
             batch_root = Path(temporary) / "batch"
-            batch = run_cli(
+            batch = run_reviewed(
                 "batch", "--input", str(targeted), "--delivery-root", str(batch_root),
-                "--evidence-root", str(evidence), "--photo-mode", "no-photo", "--confirm",
+                "--evidence-root", str(evidence), "--photo-mode", "no-photo",
             )
             self.assertEqual(batch.returncode, 0, batch.stderr)
             payload = parse_json(batch)
@@ -298,9 +419,9 @@ class PublicCliContractTests(unittest.TestCase):
             root = Path(temporary)
             delivery = root / "delivery"
             evidence = root / "evidence"
-            initial = run_cli(
+            initial = run_reviewed(
                 "batch", "--input", str(source), "--delivery-root", str(delivery),
-                "--evidence-root", str(evidence), "--photo-mode", "no-photo", "--confirm",
+                "--evidence-root", str(evidence), "--photo-mode", "no-photo",
             )
             self.assertEqual(initial.returncode, 0, initial.stderr)
             reduced = root / "reduced.md"
@@ -319,7 +440,8 @@ class PublicCliContractTests(unittest.TestCase):
 
             confirmed = run_cli(
                 "batch", "--input", str(reduced), "--delivery-root", str(delivery),
-                "--evidence-root", str(evidence), "--photo-mode", "no-photo", "--confirm",
+                "--evidence-root", str(evidence), "--photo-mode", "no-photo",
+                "--confirm", "--approval-digest", str(payload["approval_digest"]),
             )
             self.assertEqual(confirmed.returncode, 0, confirmed.stderr)
             self.assertEqual(len(public_files(delivery)), 18)
@@ -400,7 +522,10 @@ class PublicCliContractTests(unittest.TestCase):
 
             environment = dict(os.environ)
             environment["PATH"] = ""
-            failed = run_cli(*base, "--allow-gap-target", "target-device-002", "--confirm", env=environment)
+            failed = run_cli(
+                *base, "--allow-gap-target", "target-device-002",
+                "--confirm", "--approval-digest", str(payload["approval_digest"]), env=environment,
+            )
             self.assertNotEqual(failed.returncode, 0)
             self.assertNotIn("Traceback", failed.stderr)
             self.assertNotIn(str(delivery), failed.stderr)
@@ -421,9 +546,9 @@ class PublicCliContractTests(unittest.TestCase):
                 encoding="utf-8",
             )
             delivery = root / "delivery"
-            completed = run_cli(
+            completed = run_reviewed(
                 "render", "--input", str(source), "--generic", "--delivery-root", str(delivery),
-                "--assets-root", str(SKILL_ROOT), "--photo-mode", "photo", "--confirm",
+                "--assets-root", str(SKILL_ROOT), "--photo-mode", "photo",
             )
             self.assertEqual(completed.returncode, 0, completed.stderr)
             typst_source = next(delivery.glob("*保守稳妥.typ"))
@@ -451,9 +576,9 @@ class PublicCliContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             delivery = root / "delivery"
-            baseline = run_cli(
+            baseline = run_reviewed(
                 "render", "--input", str(no_photo), "--generic",
-                "--delivery-root", str(delivery), "--photo-mode", "no-photo", "--confirm",
+                "--delivery-root", str(delivery), "--photo-mode", "no-photo",
             )
             self.assertEqual(baseline.returncode, 0, baseline.stderr)
             before = recursive_snapshot(delivery)

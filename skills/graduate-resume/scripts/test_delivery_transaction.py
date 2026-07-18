@@ -211,9 +211,18 @@ class PublicationTransactionTests(unittest.TestCase):
         with DeliverySession(patch_spec) as session:
             self.stage(session, (self.stems[0],), "v1")
             delta = session.preflight()
+            payload = session.approval_payload(delta, session._candidate, session._current)
+            self.assertEqual(session.approval_digest(payload), delta.approval_digest)
+            self.assertEqual(payload["mode"], "patch")
+            self.assertEqual(payload["canonical_input_hash"], "0" * 64)
+            self.assertEqual(
+                set(payload["delivery_root"]), {"path", "st_dev", "st_ino"},
+            )
+            self.assertTrue(payload["candidate"][self.stems[0]][f"{self.stems[0]}.md"])
             with self.assertRaisesRegex(DeliveryError, "approval"):
                 session.publish()
-            self.assertEqual(snapshot(self.root), {})
+            self.assertFalse(tuple(self.root.glob("*.md")))
+            self.assertFalse((self.root / "history").exists())
             self.assertEqual(
                 session.publish(approval_digest=delta.approval_digest),
                 "first",
@@ -370,7 +379,7 @@ class PublicationTransactionTests(unittest.TestCase):
             self.stage(session, (self.stems[0],), "patch")
             delta = session.preflight()
             self.assertFalse(delta.removed)
-            self.assertEqual(session.publish(), "changed")
+            self.assertEqual(session.publish(approval_digest=delta.approval_digest), "changed")
         for name, payload in before.items():
             self.assertEqual((self.root / name).read_bytes(), payload)
 

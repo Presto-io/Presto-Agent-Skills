@@ -18,6 +18,7 @@ TRIPLE_SUFFIXES = (".md", ".typ", ".pdf")
 SUPPORT_DIRECTORIES = ("sources", "assets", "history", ".work")
 PUBLICATION_MODES = ("patch", "authority")
 _HISTORY_STEM_RE = re.compile(r"[\w\u3400-\u9fff-]+", re.UNICODE)
+_HEX64_RE = re.compile(r"[0-9a-f]{64}")
 FAULT_NAMES = (
     "after_candidate_validation",
     "after_history_reservation",
@@ -110,6 +111,9 @@ class DeliverySpec:
     theme_suffixes: tuple[str, ...]
     mode: str
     owner_prefix: str
+    canonical_hash: str = "0" * 64
+    evidence_root_path: str | None = None
+    evidence_root_identity: tuple[int, int] | None = None
 
     def __post_init__(self) -> None:
         if self.mode not in PUBLICATION_MODES:
@@ -122,6 +126,15 @@ class DeliverySpec:
             raise DeliveryError("registered theme suffixes must be unique and non-empty")
         if not _safe_owner_prefix(self.owner_prefix):
             raise DeliveryError("delivery owner prefix is unsafe")
+        if not isinstance(self.canonical_hash, str) or not _HEX64_RE.fullmatch(self.canonical_hash):
+            raise DeliveryError("canonical input hash must be lowercase sha256")
+        if (self.evidence_root_path is None) != (self.evidence_root_identity is None):
+            raise DeliveryError("evidence root authorization is incomplete")
+        if self.evidence_root_path is not None:
+            if not os.path.isabs(self.evidence_root_path) or not isinstance(self.evidence_root_identity, tuple) or len(self.evidence_root_identity) != 2:
+                raise DeliveryError("evidence root authorization is invalid")
+            if any(type(value) is not int or value < 0 for value in self.evidence_root_identity):
+                raise DeliveryError("evidence root identity is invalid")
         for theme in self.theme_suffixes:
             if not _safe_stem(theme) or "-" in theme:
                 raise DeliveryError("registered theme suffix is unsafe")
@@ -206,7 +219,11 @@ def _secure_io_capabilities() -> tuple[str, ...]:
 class DeliverySession:
     def __init__(self, spec: DeliverySpec) -> None:
         self.spec = spec
-        self.root = Path(os.path.abspath(spec.delivery_root))
+        requested_root = Path(os.path.abspath(spec.delivery_root))
+        try:
+            self.root = requested_root.parent.resolve(strict=True) / requested_root.name
+        except OSError as exc:
+            raise DeliveryError("delivery root parent must be an existing real directory") from exc
         self.root_fd: int | None = None
         self.root_identity: tuple[int, int] | None = None
         self.work_fd: int | None = None
@@ -257,6 +274,19 @@ class DeliverySession:
             or (held.st_dev, held.st_ino) != self.root_identity
         ):
             raise DeliveryError("delivery root changed during publication")
+
+    def _assert_evidence_identity(self) -> None:
+        if self.spec.evidence_root_path is None:
+            return
+        try:
+            current = os.stat(self.spec.evidence_root_path, follow_symlinks=False)
+        except OSError as exc:
+            raise DeliveryError("evidence root changed during publication") from exc
+        if (
+            not stat.S_ISDIR(current.st_mode)
+            or (current.st_dev, current.st_ino) != self.spec.evidence_root_identity
+        ):
+            raise DeliveryError("evidence root changed during publication")
 
     @staticmethod
     def _directory_entries(directory_fd: int) -> tuple[str, ...]:
@@ -398,36 +428,59 @@ class DeliverySession:
             raise DeliveryError("candidate requires at least one complete triple")
         return candidate
 
-    @staticmethod
-    def _snapshot_digest(
+    def approval_payload(
+        self,
         delta: BundleDelta,
+        candidate: Mapping[str, Mapping[str, bytes]],
         current: Mapping[str, Mapping[str, bytes]],
-    ) -> str:
-        snapshot = {
+    ) -> dict[str, object]:
+        if self.root_identity is None:
+            raise DeliveryError("delivery root identity is unavailable")
+        snapshot: dict[str, object] = {
+            "schema": "graduate-resume-approval/v1",
+            "mode": self.spec.mode,
             "unchanged": delta.unchanged,
             "added": delta.added,
             "updated": delta.updated,
             "removed": delta.removed,
+            "candidate": {
+                stem: {name: payload.hex() for name, payload in sorted(files.items())}
+                for stem, files in sorted(candidate.items())
+            },
             "current": {
-                stem: {
-                    name: hashlib.sha256(payload).hexdigest()
-                    for name, payload in sorted(files.items())
-                }
+                stem: {name: payload.hex() for name, payload in sorted(files.items())}
                 for stem, files in sorted(current.items())
             },
+            "canonical_input_hash": self.spec.canonical_hash,
+            "delivery_root": {
+                "path": os.fspath(self.root),
+                "st_dev": self.root_identity[0],
+                "st_ino": self.root_identity[1],
+            },
         }
+        if self.spec.evidence_root_path is not None and self.spec.evidence_root_identity is not None:
+            snapshot["evidence_root"] = {
+                "path": self.spec.evidence_root_path,
+                "st_dev": self.spec.evidence_root_identity[0],
+                "st_ino": self.spec.evidence_root_identity[1],
+            }
+        return snapshot
+
+    @staticmethod
+    def approval_digest(payload: Mapping[str, object]) -> str:
         return hashlib.sha256(
-            json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
 
     def preflight(self) -> BundleDelta:
+        self._assert_evidence_identity()
         candidate = self._candidate_bytes()
         current = self._inspect_current(allow_owned_work=True)
         comparison_current = current if self.spec.mode == "authority" else {
             stem: current[stem] for stem in candidate if stem in current
         }
         delta = classify_bundle_delta(candidate, comparison_current, mode=self.spec.mode)
-        approval_digest = self._snapshot_digest(delta, current)
+        approval_digest = self.approval_digest(self.approval_payload(delta, candidate, current))
         delta = BundleDelta(delta.unchanged, delta.added, delta.updated, delta.removed, approval_digest)
         self._candidate = candidate
         self._current = current
@@ -575,8 +628,8 @@ class DeliverySession:
     def publish(self, *, approval_digest: str | None = None) -> str:
         assert self.root_fd is not None and self.candidate_fd is not None and self.rollback_fd is not None
         delta = self.preflight()
-        if self.spec.mode == "authority" and approval_digest != delta.approval_digest:
-            raise DeliveryError("authority publication requires an unchanged approval digest")
+        if approval_digest != delta.approval_digest:
+            raise DeliveryError("publication requires an unchanged approval digest")
         self._fault("after_candidate_validation")
         if not delta.changed:
             self._fault("before_work_cleanup")
