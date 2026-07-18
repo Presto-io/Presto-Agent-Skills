@@ -7,6 +7,8 @@ import os
 import secrets
 import signal
 import stat
+import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
@@ -15,6 +17,7 @@ from typing import Mapping
 TRIPLE_SUFFIXES = (".md", ".typ", ".pdf")
 SUPPORT_DIRECTORIES = ("sources", "assets", "history", ".work")
 PUBLICATION_MODES = ("patch", "authority")
+_HISTORY_STEM_RE = re.compile(r"[\w\u3400-\u9fff-]+", re.UNICODE)
 FAULT_NAMES = (
     "after_candidate_validation",
     "after_history_reservation",
@@ -48,6 +51,36 @@ def _triple_names(stem: str) -> tuple[str, str, str]:
     return tuple(f"{stem}{suffix}" for suffix in TRIPLE_SUFFIXES)  # type: ignore[return-value]
 
 
+def _safe_owner_prefix(owner_prefix: str) -> bool:
+    if not isinstance(owner_prefix, str) or unicodedata.normalize("NFKC", owner_prefix) != owner_prefix:
+        return False
+    if not owner_prefix.endswith("简历-") or len(owner_prefix.encode("utf-8")) > 96:
+        return False
+    owner = owner_prefix[: -len("简历-")]
+    return bool(owner and _HISTORY_STEM_RE.fullmatch(owner))
+
+
+def _safe_history_stem(stem: str, owner_prefix: str, theme_suffixes: tuple[str, ...]) -> bool:
+    if (
+        not _safe_owner_prefix(owner_prefix)
+        or not isinstance(stem, str)
+        or unicodedata.normalize("NFKC", stem) != stem
+        or not _safe_stem(stem)
+        or not _HISTORY_STEM_RE.fullmatch(stem)
+        or not stem.startswith(owner_prefix)
+    ):
+        return False
+    matching = tuple(theme for theme in theme_suffixes if stem.endswith(f"-{theme}"))
+    embedded = tuple(theme for theme in theme_suffixes if f"-{theme}-" in stem)
+    if len(matching) != 1 or embedded:
+        return False
+    body = stem[len(owner_prefix): -(len(matching[0]) + 1)]
+    if body == "通用":
+        return True
+    components = body.split("-")
+    return len(components) >= 2 and all(components)
+
+
 def _validate_bundle_map(
     bundles: Mapping[str, Mapping[str, bytes]],
     *,
@@ -76,6 +109,7 @@ class DeliverySpec:
     safe_stems: tuple[str, ...]
     theme_suffixes: tuple[str, ...]
     mode: str
+    owner_prefix: str
 
     def __post_init__(self) -> None:
         if self.mode not in PUBLICATION_MODES:
@@ -86,16 +120,14 @@ class DeliverySpec:
             raise DeliveryError("delivery contains a duplicate safe stem")
         if not self.theme_suffixes or len(set(self.theme_suffixes)) != len(self.theme_suffixes):
             raise DeliveryError("registered theme suffixes must be unique and non-empty")
+        if not _safe_owner_prefix(self.owner_prefix):
+            raise DeliveryError("delivery owner prefix is unsafe")
         for theme in self.theme_suffixes:
             if not _safe_stem(theme) or "-" in theme:
                 raise DeliveryError("registered theme suffix is unsafe")
         for stem in self.safe_stems:
-            if not _safe_stem(stem):
-                raise DeliveryError("delivery contains an unsafe stem")
-            matching = tuple(theme for theme in self.theme_suffixes if stem.endswith(f"-{theme}"))
-            embedded = tuple(theme for theme in self.theme_suffixes if f"-{theme}-" in stem)
-            if len(matching) != 1 or embedded:
-                raise DeliveryError(f"stem must have exactly one registered theme suffix: {stem}")
+            if not _safe_history_stem(stem, self.owner_prefix, self.theme_suffixes):
+                raise DeliveryError(f"stem must match owner prefix and one registered theme suffix: {stem}")
 
     @property
     def managed_names(self) -> tuple[str, ...]:
@@ -270,8 +302,8 @@ class DeliverySession:
                 sequence_fd = os.open(sequence, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=history_fd)
                 try:
                     for stem in self._directory_entries(sequence_fd):
-                        if stem not in self.spec.safe_stems:
-                            raise DeliveryError(f"history contains an unknown stem: {stem}")
+                        if not _safe_history_stem(stem, self.spec.owner_prefix, self.spec.theme_suffixes):
+                            raise DeliveryError(f"history contains an unsafe stem: {stem}")
                         self._require_directory(stem, directory_fd=sequence_fd)
                         stem_fd = os.open(stem, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=sequence_fd)
                         try:

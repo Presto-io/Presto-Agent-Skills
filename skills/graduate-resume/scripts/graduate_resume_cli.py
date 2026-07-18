@@ -787,7 +787,8 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
                 if not result.publishable or result.candidate_root is None:
                     raise CliError("RENDER_MATRIX_FAILED", "候选矩阵未完成。")
                 rendered_roots.append(result.candidate_root)
-            spec = DeliverySpec(delivery_root, known_stems, theme_suffixes, mode)
+            owner_prefix = f"{safe_component(publication_data['candidate']['name'])}简历-"
+            spec = DeliverySpec(delivery_root, known_stems, theme_suffixes, mode, owner_prefix)
             with DeliverySession(spec) as session:
                 for rendered_root in rendered_roots:
                     for path in rendered_root.iterdir():
