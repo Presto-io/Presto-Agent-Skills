@@ -114,7 +114,7 @@ Plans:
 - [x] 48-09: 收紧投递根 allowlist，并让 cleanup failure 可观测、可测试。
 
 **Wave 7** *(blocked on Wave 6 completion)*
-- [ ] 48-08: 绑定照片 descriptor，并让所有生产消费者复用同一 Typst 0.15.0 不可变快照。
+- [x] 48-08: 绑定照片 descriptor，并让所有生产消费者复用同一 Typst 0.15.0 不可变快照。
 
 ### Phase 49: 聚合验证、跨 Runtime 与发布验收
 **Goal**: 用户能以重复的证据确认简历为真实、布局稳定、可在所有承诺 runtime 中离线交付的 1/2 页 A4 PDF。
@@ -139,7 +139,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 46. 资料契约、字体与可验证夹具 | 3/3 | Completed | 2026-07-18 |
 | 47. 受控主题、照片与冻结布局 | 3/3 | Complete   | 2026-07-18 |
-| 48. 确定性定向渲染与干净批量交付 | 8/9 | In Progress|  |
+| 48. 确定性定向渲染与干净批量交付 | 9/9 | Complete   | 2026-07-18 |
 | 49. 聚合验证、跨 Runtime 与发布验收 | 0/2 | Not started | - |
 
 ## Traceability Coverage
