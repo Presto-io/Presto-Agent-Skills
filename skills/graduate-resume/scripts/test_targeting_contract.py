@@ -18,9 +18,14 @@ sys.path.insert(0, str(SCRIPT_DIR))
 import graduate_resume_cli as cli
 from graduate_resume_targeting import (
     PAGE_BUDGET_UNSATISFIABLE,
+    TARGET_CONDITION_INVALID,
+    TARGET_GAP_NOT_ALLOWED,
     TARGETING_OVERRIDE_INVALID,
+    ConditionResult,
     LayoutFeedback,
     PageBudgetRequest,
+    condition_id_for_requirement,
+    evaluate_hard_conditions,
     load_targeting_policy,
     resolve_version_projection,
 )
@@ -193,6 +198,135 @@ class TargetingProjectionTests(unittest.TestCase):
             )
         self.assertEqual(raised.exception.code, PAGE_BUDGET_UNSATISFIABLE)
         self.assertEqual(json.dumps((facts, target), ensure_ascii=False, sort_keys=True), original)
+
+
+class HardConditionTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.facts = _facts()
+        self.facts["candidate"]["headline"] = "2026届应届毕业生"
+
+    def _target(self, target_id: str, requirements: list[str]) -> dict[str, object]:
+        return {
+            "id": target_id,
+            "company": "示例单位",
+            "role": "设备技术员",
+            "source": "用户提供的招聘简章",
+            "as_of": "2026-07-18",
+            "confirmed": True,
+            "requirements": requirements,
+        }
+
+    def test_controlled_predicates_produce_four_states_without_similarity_claims(self) -> None:
+        target = self._target(
+            "target-four-state",
+            [
+                "学历要求：大专",
+                "专业要求：智能制造装备技术",
+                "证书要求：低压电工证",
+                "应届毕业生",
+                "具有2年设备经验",
+                "了解低压电工安全知识",
+            ],
+        )
+        evaluation = evaluate_hard_conditions(self.facts, target, allowed_gap_target_ids=())
+        self.assertTrue(all(isinstance(item, ConditionResult) for item in evaluation.matrix))
+        states = [item.state for item in evaluation.matrix]
+        self.assertEqual(states, ["meets", "meets", "meets", "meets", "unknown", "unknown"])
+        self.assertEqual(
+            [item.predicate for item in evaluation.matrix[:4]],
+            ["education_level", "major_exact", "certificate_exact", "fresh_graduate_status"],
+        )
+        self.assertTrue(evaluation.warnings)
+        self.assertFalse(evaluation.gap_allowed)
+
+    def test_explicit_verified_mismatch_is_gap_and_allow_is_per_target(self) -> None:
+        target_a = self._target("target-a", ["学历要求：本科"])
+        target_b = self._target("target-b", ["证书要求：特种作业操作证"])
+        with self.assertRaises(cli.CliError) as raised:
+            evaluate_hard_conditions(self.facts, target_a)
+        self.assertEqual(raised.exception.code, TARGET_GAP_NOT_ALLOWED)
+        allowed = evaluate_hard_conditions(self.facts, target_a, allowed_gap_target_ids=("target-a",))
+        self.assertEqual(allowed.matrix[0].state, "gap")
+        self.assertTrue(allowed.gap_allowed)
+        with self.assertRaises(cli.CliError) as raised:
+            evaluate_hard_conditions(self.facts, target_b, allowed_gap_target_ids=("target-a",))
+        self.assertEqual(raised.exception.code, TARGET_GAP_NOT_ALLOWED)
+
+    def test_not_applicable_requires_exact_current_override_and_safe_reason(self) -> None:
+        target = self._target("target-na", ["学历要求：本科", "工作地点：本市"])
+        condition_id = condition_id_for_requirement("target-na", "学历要求：本科")
+        original = json.dumps(target, ensure_ascii=False, sort_keys=True)
+        evaluation = evaluate_hard_conditions(
+            self.facts,
+            target,
+            not_applicable_overrides=(("target-na", condition_id, "  招聘方确认该条不适用于本批次  "),),
+        )
+        self.assertEqual(evaluation.matrix[0].state, "not-applicable")
+        self.assertEqual(evaluation.matrix[0].reason, "招聘方确认该条不适用于本批次")
+        self.assertEqual(evaluation.matrix[1].state, "unknown")
+        self.assertEqual(json.dumps(target, ensure_ascii=False, sort_keys=True), original)
+        invalid_overrides = (
+            (("target-na", condition_id, ""),),
+            (("target-na", condition_id, "x" * 201),),
+            (("target-na", condition_id, "包含\n换行"),),
+            (("target-other", condition_id, "理由"),),
+            (("target-na", "condition-missing", "理由"),),
+            (("target-na", condition_id, "理由"), ("target-na", condition_id, "理由")),
+        )
+        for overrides in invalid_overrides:
+            with self.subTest(overrides=overrides):
+                with self.assertRaises(cli.CliError) as raised:
+                    evaluate_hard_conditions(self.facts, target, not_applicable_overrides=overrides, allowed_gap_target_ids=("target-na",))
+                self.assertEqual(raised.exception.code, TARGET_CONDITION_INVALID)
+
+    def test_public_summary_is_bounded_and_hidden_matrix_is_digest_bound(self) -> None:
+        target = self._target("target-public", ["学历要求：大专", "年龄不超过25岁", "工作地点：本市", "熟练掌握PLC"])
+        evaluation = evaluate_hard_conditions(self.facts, target)
+        public = evaluation.to_public_projection()
+        hidden = evaluation.to_evidence_projection()
+        public_text = json.dumps(public, ensure_ascii=False, sort_keys=True)
+        hidden_text = json.dumps(hidden, ensure_ascii=False, sort_keys=True)
+        self.assertEqual(public["counts"], {"meets": 1, "gap": 0, "unknown": 3, "not-applicable": 0})
+        self.assertEqual(public["evidence_digest"], evaluation.evidence_digest)
+        self.assertIn("condition_id", hidden_text)
+        self.assertIn("evidence_fact_ids", hidden_text)
+        for secret in ("周凯", "低压电工证", "/Users/", "招聘方确认"):
+            self.assertNotIn(secret, public_text)
+        self.assertNotIn("reason", public_text)
+
+    def test_duplicate_normalized_conditions_and_unknown_allow_ids_fail(self) -> None:
+        duplicate = self._target("target-duplicate", ["学历要求：大专", " 学历要求：大专 "])
+        with self.assertRaises(cli.CliError) as raised:
+            evaluate_hard_conditions(self.facts, duplicate)
+        self.assertEqual(raised.exception.code, TARGET_CONDITION_INVALID)
+        valid = self._target("target-valid", ["学历要求：大专"])
+        with self.assertRaises(cli.CliError) as raised:
+            evaluate_hard_conditions(self.facts, valid, allowed_gap_target_ids=("target-other",))
+        self.assertEqual(raised.exception.code, TARGET_CONDITION_INVALID)
+
+    def test_projection_freezes_condition_summary_digest_and_gap_allow(self) -> None:
+        target = self._target("target-projection", ["学历要求：本科", "具有2年设备经验"])
+
+        def feedback(theme_key: str, selected_ids: tuple[str, ...], request: PageBudgetRequest) -> LayoutFeedback:
+            return LayoutFeedback(theme_key, True, 1, ())
+
+        projection = resolve_version_projection(
+            self.facts,
+            target,
+            PageBudgetRequest("auto"),
+            feedback,
+            allowed_gap_target_ids=("target-projection",),
+        )
+        self.assertEqual(dict(projection.condition_summary), {"meets": 0, "gap": 1, "unknown": 1, "not-applicable": 0})
+        self.assertEqual(len(projection.condition_digest), 64)
+        self.assertTrue(projection.gap_allowed)
+
+
+class TargetingFixtureTests(unittest.TestCase):
+    def test_literal_multi_state_fixture_is_valid(self) -> None:
+        document = cli.load_resume(str(SKILL_ROOT / "fixtures" / "targeting" / "multi-state-targets.md"))
+        summary = cli.validate_document(document)
+        self.assertEqual(summary["target_count"], 2)
 
 
 if __name__ == "__main__":
