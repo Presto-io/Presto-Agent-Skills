@@ -128,7 +128,10 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
 - [ ] 49-01: 建立 PDF 结构/内容/布局验证、聚合回归及故障注入证据。
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 49-02: 完成六 runtime adapter/安装 fixture 验证和跨环境字体固定 PDF/PNG UAT。
 
 ## Progress
