@@ -11,7 +11,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping
+from typing import Callable, Mapping
 
 
 TRIPLE_SUFFIXES = (".md", ".typ", ".pdf")
@@ -629,7 +629,12 @@ class DeliverySession:
             raise DeliveryError("rollback verification failed")
         self._mutation_started = False
 
-    def publish(self, *, approval_digest: str | None = None) -> str:
+    def publish(
+        self,
+        *,
+        approval_digest: str | None = None,
+        post_publish: Callable[[], None] | None = None,
+    ) -> str:
         assert self.root_fd is not None and self.candidate_fd is not None and self.rollback_fd is not None
         delta = self.preflight()
         if approval_digest != delta.approval_digest:
@@ -637,6 +642,8 @@ class DeliverySession:
         self._fault("after_candidate_validation")
         if not delta.changed:
             self._fault("before_work_cleanup")
+            if post_publish is not None:
+                post_publish()
             return "identical"
         self._old_bytes = self._flatten(self._current)
         for name, payload in self._old_bytes.items():
@@ -682,6 +689,8 @@ class DeliverySession:
             if observed != expected:
                 raise DeliveryError("post-publish exact-set verification failed")
             self._fault("before_work_cleanup")
+            if post_publish is not None:
+                post_publish()
             self._mutation_started = False
             return "changed" if self._current else "first"
         except BaseException:

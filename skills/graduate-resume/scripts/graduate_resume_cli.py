@@ -29,7 +29,9 @@ STATUS_VALUES = {"verified", "pending", "declined"}
 MAX_CANONICAL_BYTES = 4 * 1024 * 1024
 CANONICAL_READ_CHUNK = 64 * 1024
 STABLE_FACT_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")
-URL_RE = re.compile(r"(?i)^[a-z][a-z0-9+.-]*://")
+SOURCE_URL_RE = re.compile(
+    r"(?i)^(?:[a-z][a-z0-9+.-]*://|www\.|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/?#].*)?$)"
+)
 TOP_LEVEL_FIELDS = {
     "candidate",
     "education",
@@ -512,7 +514,7 @@ def validate_targets(targets_value: Any, issues: list[str], seen_ids: dict[str, 
         for field in ("id", "company", "role", "source", "as_of"):
             require_nonempty_string(target.get(field), f"{area}.{field}", issues)
         source = target.get("source")
-        if isinstance(source, str) and URL_RE.match(source.strip()):
+        if isinstance(source, str) and SOURCE_URL_RE.match(source.strip()):
             issues.append(f"{area}.source 必须是来源描述，不能是 URL。")
         entry_id = target.get("id")
         validate_stable_fact_id(entry_id, f"{area}.id", issues)
@@ -952,17 +954,25 @@ def _execute_publication(
                 if args.confirm:
                     if evidence_sink is not None:
                         evidence_sink.assert_identity()
+
+                    def persist_evidence() -> None:
+                        assert evidence_sink is not None
+                        evidence_sink.persist_many(
+                            (
+                                (
+                                    canonical_hash,
+                                    projection,
+                                    condition_evidence[str(target["id"])],
+                                )
+                                for projection, target in zip(projections, selected)
+                                if target is not None
+                            )
+                        )
+
                     publication = session.publish(
                         approval_digest=args.approval_digest,
+                        post_publish=None if evidence_sink is None else persist_evidence,
                     )
-                    if evidence_sink is not None:
-                        for projection, target in zip(projections, selected):
-                            if target is not None:
-                                evidence_sink.persist(
-                                    canonical_hash=canonical_hash,
-                                    projection=projection,
-                                    condition_evidence=condition_evidence[str(target["id"])],
-                                )
     except DeliveryError as exc:
         raise CliError("DELIVERY_PREFLIGHT_FAILED", "正式投递预检或发布失败。") from exc
     versions = [_projection_public(item) for item in projections]
