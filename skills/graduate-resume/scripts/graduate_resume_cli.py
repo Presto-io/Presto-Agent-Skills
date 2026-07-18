@@ -8,6 +8,7 @@ import contextlib
 import copy
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -169,6 +170,7 @@ def _add_publication_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--photo-mode", choices=("auto", "photo", "no-photo"), default="auto", help="照片模式覆盖。")
     parser.add_argument("--assets-root", help="本地照片资源根，默认输入 Markdown 的父目录。")
     parser.add_argument("--confirm", action="store_true", help="确认发布当前预检摘要；省略时只预检。")
+    parser.add_argument("--approval-digest", help="上一独立预检进程输出的 64 位小写 SHA-256。")
 
 
 def default_skill_root() -> Path:
@@ -722,6 +724,10 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
     from graduate_resume_render import EvidenceSink, build_render_matrix, render_candidate_matrix, safe_component
     from graduate_resume_targeting import PageBudgetRequest, evaluate_hard_conditions, resolve_version_projection
 
+    if args.confirm != bool(args.approval_digest):
+        raise CliError("APPROVAL_DIGEST_INVALID", "--confirm 与 --approval-digest 必须同时提供。")
+    if args.approval_digest and not re.fullmatch(r"[0-9a-f]{64}", args.approval_digest):
+        raise CliError("APPROVAL_DIGEST_INVALID", "approval digest 必须是 64 位小写十六进制。")
     document = load_resume(args.input)
     validate_document(document)
     publication_data = publication_fact_view(document.data)
@@ -788,7 +794,12 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
                     raise CliError("RENDER_MATRIX_FAILED", "候选矩阵未完成。")
                 rendered_roots.append(result.candidate_root)
             owner_prefix = f"{safe_component(publication_data['candidate']['name'])}简历-"
-            spec = DeliverySpec(delivery_root, known_stems, theme_suffixes, mode, owner_prefix)
+            evidence_path = None if evidence_sink is None else os.fspath(evidence_sink.path)
+            evidence_identity = None if evidence_sink is None else evidence_sink.identity
+            spec = DeliverySpec(
+                delivery_root, known_stems, theme_suffixes, mode, owner_prefix,
+                canonical_hash, evidence_path, evidence_identity,
+            )
             with DeliverySession(spec) as session:
                 for rendered_root in rendered_roots:
                     for path in rendered_root.iterdir():
@@ -802,7 +813,7 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
                     if evidence_sink is not None:
                         evidence_sink.assert_identity()
                     publication = session.publish(
-                        approval_digest=delta.approval_digest if batch else None,
+                        approval_digest=args.approval_digest,
                     )
     except DeliveryError as exc:
         raise CliError("DELIVERY_PREFLIGHT_FAILED", "正式投递预检或发布失败。") from exc
