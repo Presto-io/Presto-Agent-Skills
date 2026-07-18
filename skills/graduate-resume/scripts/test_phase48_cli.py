@@ -86,6 +86,39 @@ def run_phase48_acceptance_registry() -> dict[str, object]:
 
 
 class PublicCliContractTests(unittest.TestCase):
+    def test_cross_process_preflight_digest_is_required_for_confirm_and_stale_input_fails(self) -> None:
+        source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            canonical = root / "resume.md"
+            canonical.write_bytes(source.read_bytes())
+            delivery = root / "delivery"
+            base = (
+                "render", "--input", str(canonical), "--generic",
+                "--delivery-root", str(delivery), "--photo-mode", "no-photo",
+            )
+            preview = run_cli(*base)
+            self.assertEqual(preview.returncode, 0, preview.stderr)
+            digest = parse_json(preview)["approval_digest"]
+            self.assertRegex(digest, r"^[0-9a-f]{64}$")
+            self.assertEqual(recursive_snapshot(delivery), {})
+
+            missing = run_cli(*base, "--confirm")
+            detached = run_cli(*base, "--approval-digest", digest)
+            malformed = run_cli(*base, "--confirm", "--approval-digest", "A" * 64)
+            for completed in (missing, detached, malformed):
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertEqual(recursive_snapshot(delivery), {})
+
+            confirmed = run_cli(*base, "--confirm", "--approval-digest", digest)
+            self.assertEqual(confirmed.returncode, 0, confirmed.stderr)
+            self.assertEqual(parse_json(confirmed)["approval_digest"], digest)
+            published = recursive_snapshot(delivery)
+            canonical.write_bytes(canonical.read_bytes() + b"\n")
+            stale = run_cli(*base, "--confirm", "--approval-digest", digest)
+            self.assertNotEqual(stale.returncode, 0)
+            self.assertEqual(recursive_snapshot(delivery), published)
+
     def test_render_and_batch_share_bounded_target_conditions_and_persist_private_evidence(self) -> None:
         source = SKILL_ROOT / "fixtures" / "targeting" / "multi-state-targets.md"
         with tempfile.TemporaryDirectory() as temporary:
