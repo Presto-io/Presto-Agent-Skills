@@ -31,6 +31,10 @@ THEME_KEYS = ("conservative", "modern", "expressive")
 _SAFE_RE = re.compile(r"[^\w\u3400-\u9fff-]+", re.UNICODE)
 _EVIDENCE_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}-[0-9a-f]{64}\.json")
 _HEX64_RE = re.compile(r"[0-9a-f]{64}")
+_EMAIL_RE = re.compile(r"(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}")
+_PHONE_RE = re.compile(r"(?<!\d)(?:\+?86[- ]?)?1[3-9]\d{9}(?!\d)")
+_ID_CARD_RE = re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)")
+_URL_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://")
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -230,18 +234,34 @@ class RenderMatrix:
         return tuple(f"{item.stem}{suffix}" for item in self.items for suffix in (".md", ".typ", ".pdf"))
 
 
-def safe_component(value: str, *, max_length: int = 48) -> str:
+def _reject_sensitive_component(value: str) -> None:
+    if _EMAIL_RE.search(value) or _PHONE_RE.search(value) or _ID_CARD_RE.search(value) or _URL_RE.search(value):
+        raise CliError(RENDER_INPUT_INVALID, "文件名组件包含禁止的敏感标识。")
+
+
+def safe_component(value: str, *, max_bytes: int = 48) -> str:
     if not isinstance(value, str):
         raise CliError(RENDER_INPUT_INVALID, "文件名组件无效。")
     normalized = unicodedata.normalize("NFKC", value)
+    _reject_sensitive_component(normalized)
     normalized = "".join("-" if char.isspace() or char in "/\\:|" else char for char in normalized if unicodedata.category(char) != "Cc")
     normalized = _SAFE_RE.sub("-", normalized)
     normalized = re.sub(r"-+", "-", normalized).strip("-_.")
     if not normalized:
         raise CliError(RENDER_INPUT_INVALID, "文件名组件规范化后为空。")
-    if len(normalized) > max_length:
+    if max_bytes < 12:
+        raise CliError(RENDER_INPUT_INVALID, "文件名组件长度预算无效。")
+    if len(normalized.encode("utf-8")) > max_bytes:
         digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:10]
-        normalized = normalized[: max_length - 11].rstrip("-_.") + "-" + digest
+        prefix: list[str] = []
+        used = 0
+        for char in normalized:
+            size = len(char.encode("utf-8"))
+            if used + size > max_bytes - 11:
+                break
+            prefix.append(char)
+            used += size
+        normalized = "".join(prefix).rstrip("-_.") + "-" + digest
     return normalized
 
 
