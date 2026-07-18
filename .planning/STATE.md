@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.19
 milestone_name: 毕业生高级简历生成器
 status: executing
-stopped_at: Completed 48-01-PLAN.md
-last_updated: "2026-07-18T06:17:05.851Z"
+stopped_at: Completed 48-03-PLAN.md
+last_updated: "2026-07-18T06:33:20.579Z"
 last_activity: 2026-07-18
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 5
-  percent: 71
+  completed_plans: 6
+  percent: 86
 ---
 
 # State: Presto Agent Skills
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-17)
 ## Current Position
 
 Phase: 48 (确定性定向渲染与干净批量交付) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-07-18
 
@@ -131,6 +131,9 @@ Phase order:
 - [Phase 47]: 固定布局矩阵使用字面 fixture/theme 注册表并在临时 workdir 验证 PDF/PNG；正式交付仍属 Phase 48。 — 防止隐式样张漂移且避免把临时证据发布为投递产物。
 - [Phase 48]: 事实排序固定为受控模块顺序、pin 优先、整数相关性降序和稳定事实 ID；正文顺序不参与投影。 — 确保正文重排不会改变版本语义。
 - [Phase 48]: 只有 education_level、major_exact、certificate_exact、fresh_graduate_status 可产生 meets/gap；其他条件回退 unknown。 — 相关性不能作为资格证明。
+- [Phase 48]: current 身份只消费显式 safe stem 与登记主题后缀，不通过连字符反向解析单位或岗位。 — 防止含连字符的单位或岗位被错误识别为 managed identity。
+- [Phase 48]: patch 保留非 candidate current；authority removals 必须由绑定整个 no-follow current snapshot 的批准摘要确认。 — 区分单份更新与权威批量替换，并阻止确认后的 TOCTOU。
+- [Phase 48]: history 只归档 updated/removed 完整 triples，handled rollback 恢复整个原 current path set 与 bytes。 — 同时满足最小历史副本与全批失败恢复。
 
 ### Pending Todos
 
@@ -176,11 +179,12 @@ None. Phases 46 and 47 are complete; Phase 48 is ready for discussion.
 | Phase 47 P03 | 34min | 3 tasks | 12 files |
 | Phase 47 P04 | 17 min | verification gap closure | 6 files |
 | Phase 48 P01 | 11min | 2 tasks | 4 files |
+| Phase 48 P03 | 11min | 2 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-07-18T06:17:05.844Z
-Stopped at: Completed 48-01-PLAN.md
+Last session: 2026-07-18T06:33:20.573Z
+Stopped at: Completed 48-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
