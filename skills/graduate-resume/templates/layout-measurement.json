@@ -1,0 +1,8 @@
+{
+  "measurement_version": "2026-07-18.1",
+  "themes": {
+    "conservative": {"one_page_clear_max": 0.88, "one_page_critical_max": 0.94, "two_page_min_page_utilization": 0.25, "epsilon_mm": 0.1},
+    "modern": {"one_page_clear_max": 0.88, "one_page_critical_max": 0.94, "two_page_min_page_utilization": 0.25, "epsilon_mm": 0.1},
+    "expressive": {"one_page_clear_max": 0.88, "one_page_critical_max": 0.94, "two_page_min_page_utilization": 0.25, "epsilon_mm": 0.1}
+  }
+}
