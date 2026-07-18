@@ -49,4 +49,6 @@ def emit_typst(plan: FrozenResumePlan, facts: dict[str, Any]) -> str:
                 body.append(f'#resume.fact-block("{heading}", [{content}])')
         pages.append("\n".join(body))
     prefix = '#import "resume-themes.typ" as resume\n'
+    if plan.photo is not None:
+        prefix += f'#resume.photo-slot("{plan.theme_key}", image_handle: image("{plan.photo.logical_path}", fit: "contain"))\n'
     return prefix + "\n#pagebreak()\n".join(pages) + "\n"

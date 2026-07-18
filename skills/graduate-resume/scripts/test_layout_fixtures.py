@@ -4,7 +4,11 @@
 from __future__ import annotations
 
 import json
+import re
+import shutil
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -14,6 +18,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 import graduate_resume_cli as cli
 from graduate_resume_layout import LAYOUT_UNSATISFIABLE, THEME_SPECS, build_frozen_resume_plan, resolve_layout_photo
+from graduate_resume_pdf_gate import verify_rendered_layout
 
 
 LAYOUT_FIXTURES = (
@@ -25,6 +30,39 @@ LAYOUT_FIXTURES = (
 )
 THEME_KEYS = ("conservative", "modern", "expressive")
 PHOTO_SUBJECT_SAFE_AREA = (0, 0, 1, 1)
+
+
+def compile_controlled(plan, document) -> None:
+    """Compile one fixture only under a disposable evidence root."""
+    from graduate_resume_typst import emit_typst
+    with tempfile.TemporaryDirectory() as temporary:
+        workdir = Path(temporary)
+        shutil.copy2(SKILL_ROOT / "templates" / "resume-themes.typ", workdir / "resume-themes.typ")
+        if plan.photo is not None:
+            (workdir / "media").mkdir()
+            shutil.copy2(SKILL_ROOT / "fixtures" / "layout" / plan.photo.logical_path, workdir / plan.photo.logical_path)
+        typst_path = workdir / "resume.typ"
+        typst_path.write_text(emit_typst(plan, {"__verified__": True, **document.data}), encoding="utf-8")
+        pdf_path = workdir / "resume.pdf"
+        common = ["typst", "compile", "--font-path", str(SKILL_ROOT / "fonts"), "--ignore-system-fonts", "--creation-timestamp", "0", str(typst_path)]
+        completed = subprocess.run([*common, str(pdf_path)], cwd=workdir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        if completed.returncode:
+            raise AssertionError(completed.stderr)
+        png_template = workdir / "page-{0p}.png"
+        completed = subprocess.run([*common, str(png_template)], cwd=workdir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        if completed.returncode:
+            raise AssertionError(completed.stderr)
+        info = subprocess.run(["pdfinfo", str(pdf_path)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        if info.returncode or not re.search(rf"^Pages:\s+{plan.page_count}$", info.stdout, re.MULTILINE) or "A4" not in info.stdout:
+            raise AssertionError("PDF 不是冻结的 A4 页数")
+        verify_rendered_layout(plan, document.data, pdf_path, sorted(workdir.glob("page-*.png")))
+
+
+def run_layout_fixture_matrix() -> None:
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(LayoutFixtureTests)
+    result = unittest.TextTestRunner(stream=open("/dev/null", "w", encoding="utf-8"), verbosity=0).run(suite)
+    if not result.wasSuccessful():
+        raise cli.CliError("LAYOUT_RENDER_MISMATCH", "固定布局样张验证失败。")
 
 
 class LayoutFixtureTests(unittest.TestCase):
@@ -71,6 +109,14 @@ class LayoutFixtureTests(unittest.TestCase):
             with self.assertRaises(cli.CliError) as raised:
                 build_frozen_resume_plan(failing.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2")
             self.assertEqual(raised.exception.code, LAYOUT_UNSATISFIABLE)
+
+    def test_each_theme_compiles_controlled_photo_and_no_photo_evidence(self) -> None:
+        photo_document = self.load("standard-photo.md")
+        no_photo_document = self.load("short-no-photo.md")
+        photo = resolve_layout_photo(photo_document.path, self.root, photo_document.data["photo"], photo_document.data["preferences"])
+        for key in THEME_KEYS:
+            compile_controlled(build_frozen_resume_plan(photo_document.data, THEME_SPECS[key], "photo", photo, self.font_hash, "auto"), photo_document)
+            compile_controlled(build_frozen_resume_plan(no_photo_document.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2"), no_photo_document)
 
 
 if __name__ == "__main__":

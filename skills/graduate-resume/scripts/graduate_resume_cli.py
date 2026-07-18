@@ -580,11 +580,18 @@ def command_verify(args: argparse.Namespace) -> int:
             results.append({"fixture": fixture_name, "expected": "fail", "actual": "failed"})
         else:
             raise CliError("VERIFY_FAILED", f"负例 fixture 意外通过: {fixture_name}")
+    # The Phase 47 matrix is intentionally literal and uses disposable evidence
+    # roots; it cannot discover user fixtures or publish delivery artifacts.
+    from test_layout_fixtures import LAYOUT_FIXTURES, run_layout_fixture_matrix
+    run_layout_fixture_matrix()
+    results.extend({"fixture": f"layout/{fixture_name}", "expected": "pass", "actual": "passed"} for fixture_name in LAYOUT_FIXTURES[:-1])
+    results.append({"fixture": f"layout/{LAYOUT_FIXTURES[-1]}", "expected": "fail", "actual": "failed"})
     payload = {
         "status": "passed",
         "fixtures_root": str(fixtures_root),
         "valid_fixture_count": len(VALID_FIXTURES),
         "invalid_fixture_count": len(INVALID_FIXTURES),
+        "layout_fixture_count": len(LAYOUT_FIXTURES),
         "results": results,
         "runtime_probe": runtime_probe(),
     }
