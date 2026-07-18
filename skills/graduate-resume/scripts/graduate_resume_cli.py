@@ -29,6 +29,7 @@ STATUS_VALUES = {"verified", "pending", "declined"}
 MAX_CANONICAL_BYTES = 4 * 1024 * 1024
 CANONICAL_READ_CHUNK = 64 * 1024
 STABLE_FACT_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")
+URL_RE = re.compile(r"(?i)^[a-z][a-z0-9+.-]*://")
 TOP_LEVEL_FIELDS = {
     "candidate",
     "education",
@@ -378,6 +379,8 @@ def parse_markdown_facts(body: str, profile: Any, photo_path: Any, preferences: 
                 unknown_fields.append(f"第 {line_number} 行包含未知字段: {label}")
                 continue
             if entry is not None:
+                if field in entry:
+                    raise CliError("MARKDOWN_INVALID", f"第 {line_number} 行重复字段: {label}")
                 entry[field] = parse_value(field, raw_value)
             else:
                 unknown_fields.append(f"第 {line_number} 行的字段没有所属条目。")
@@ -403,6 +406,21 @@ def ensure_list(value: Any, area: str) -> list[Any]:
 def require_nonempty_string(value: Any, area: str, issues: list[str]) -> None:
     if not isinstance(value, str) or not value.strip():
         issues.append(f"{area} 必须是非空字符串。")
+
+
+def validate_string_list(value: Any, area: str, issues: list[str], *, required: bool = False) -> None:
+    if not isinstance(value, list) or (required and not value) or any(not isinstance(item, str) or not item.strip() for item in value):
+        issues.append(f"{area} 必须是{'非空' if required else ''}字符串列表。")
+
+
+def validate_optional_values(section: dict[str, Any], area: str, issues: list[str]) -> None:
+    list_fields = {"directions", "courses", "honors", "items", "outcomes", "tools"}
+    ignored_fields = {"id", "status", "confirmed", "requirements", "contact"}
+    for field, value in section.items():
+        if field in list_fields:
+            validate_string_list(value, f"{area}.{field}", issues)
+        elif field not in ignored_fields:
+            require_nonempty_string(value, f"{area}.{field}", issues)
 
 
 def validate_status(value: Any, area: str, issues: list[str]) -> None:
@@ -445,10 +463,15 @@ def validate_candidate(candidate_value: Any, issues: list[str]) -> None:
     if candidate.get("status") == "pending":
         issues.append("candidate.status 仍为 pending，不能进入 final render。")
     if "contact" in candidate:
-        contact = ensure_mapping(candidate["contact"], "candidate.contact")
-        validate_unknown_fields(contact, SECTION_SCHEMAS["contact"], "candidate.contact", issues)
+        if not isinstance(candidate["contact"], dict):
+            issues.append("candidate.contact 必须是对象。")
+        else:
+            contact = candidate["contact"]
+            validate_unknown_fields(contact, SECTION_SCHEMAS["contact"], "candidate.contact", issues)
+            validate_optional_values(contact, "candidate.contact", issues)
     if "directions" in candidate and not isinstance(candidate["directions"], list):
         issues.append("candidate.directions 必须是字符串列表。")
+    validate_optional_values(candidate, "candidate", issues)
 
 
 def validate_entry_list(
@@ -466,6 +489,7 @@ def validate_entry_list(
         validate_unknown_fields(entry, allowed, area, issues)
         for field in required_fields:
             require_nonempty_string(entry.get(field), f"{area}.{field}", issues)
+        validate_optional_values(entry, area, issues)
         validate_status(entry.get("status"), f"{area}.status", issues)
         if entry.get("status") == "pending":
             issues.append(f"{area}.status 仍为 pending，不能进入 final render。")
@@ -487,6 +511,9 @@ def validate_targets(targets_value: Any, issues: list[str], seen_ids: dict[str, 
         validate_unknown_fields(target, SECTION_SCHEMAS["targets"], area, issues)
         for field in ("id", "company", "role", "source", "as_of"):
             require_nonempty_string(target.get(field), f"{area}.{field}", issues)
+        source = target.get("source")
+        if isinstance(source, str) and URL_RE.match(source.strip()):
+            issues.append(f"{area}.source 必须是来源描述，不能是 URL。")
         entry_id = target.get("id")
         validate_stable_fact_id(entry_id, f"{area}.id", issues)
         if is_stable_fact_id(entry_id):
@@ -497,9 +524,9 @@ def validate_targets(targets_value: Any, issues: list[str], seen_ids: dict[str, 
                 seen_ids[entry_id] = area
         if target.get("confirmed") is not True:
             issues.append(f"{area}.confirmed 必须为 true，才能进入定向流程。")
-        requirements = target.get("requirements")
-        if requirements is not None and not isinstance(requirements, list):
-            issues.append(f"{area}.requirements 必须是字符串列表。")
+        validate_string_list(target.get("requirements"), f"{area}.requirements", issues, required=True)
+        if "note" in target:
+            require_nonempty_string(target["note"], f"{area}.note", issues)
     return targets
 
 

@@ -121,6 +121,28 @@ class PublicCliContractTests(unittest.TestCase):
             target=None,
         )
 
+    def test_validate_rejects_duplicate_fields_urls_and_unrenderable_nested_values(self) -> None:
+        source = SKILL_ROOT / "fixtures" / "valid-photo-single-target.md"
+        original = source.read_text(encoding="utf-8").replace(
+            "  status: verified\n", "  status: verified\n  directions:\n    - 设备运维\n", 1,
+        )
+        cases = {
+            "duplicate": original.replace("- 专业：机电一体化技术", "- 专业：机电一体化技术\n- 专业：工业机器人技术", 1),
+            "source-url": original.replace("- 来源：校园宣讲会资料", "- 来源：https://jobs.example.test/private?id=123"),
+            "requirements-missing": original.replace("- 招聘要求：持有低压电工证\n", ""),
+            "nested-non-string": original.replace("  directions:\n    - 设备运维\n", "  directions: [123]\n"),
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for name, content in cases.items():
+                with self.subTest(case=name):
+                    path = root / f"{name}.md"
+                    path.write_text(content, encoding="utf-8")
+                    completed = run_cli("validate", "--input", str(path))
+                    self.assertEqual(completed.returncode, 64 if name == "duplicate" else 2, completed.stderr)
+                    payload = parse_json(completed)
+                    self.assertEqual(payload["code"], "MARKDOWN_INVALID" if name == "duplicate" else "VALIDATION_FAILED")
+
     def test_one_typst_runtime_context_is_shared_by_all_consumers(self) -> None:
         import graduate_resume_typst_runtime as runtime
 
