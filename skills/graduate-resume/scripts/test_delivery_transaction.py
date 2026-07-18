@@ -52,6 +52,35 @@ def snapshot(root: Path) -> dict[str, str]:
     return result
 
 
+def exact_snapshot(root: Path) -> dict[str, tuple[str, int, int, int, bytes | str | None]]:
+    result: dict[str, tuple[str, int, int, int, bytes | str | None]] = {}
+    if not root.exists():
+        return result
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root).as_posix()
+        metadata = path.lstat()
+        if path.is_symlink():
+            kind = "symlink"
+            payload: bytes | str | None = os.readlink(path)
+        elif path.is_file():
+            kind = "file"
+            payload = path.read_bytes()
+        elif path.is_dir():
+            kind = "directory"
+            payload = None
+        else:
+            kind = "special"
+            payload = None
+        result[relative] = (
+            kind,
+            metadata.st_ino,
+            metadata.st_mtime_ns,
+            metadata.st_mode,
+            payload,
+        )
+    return result
+
+
 class BundleDeltaTests(unittest.TestCase):
     def test_classifies_complete_triples_at_stem_granularity(self) -> None:
         unchanged = "resume-generic-conservative"
@@ -163,6 +192,44 @@ class DiscoveryFailClosedTests(unittest.TestCase):
         self.write_current()
         (self.root / "history").symlink_to("outside")
         self.assert_open_fails_unchanged()
+
+    def test_sources_and_assets_are_unknown_without_mutating_existing_state(self) -> None:
+        cases = (
+            "empty-directory",
+            "nonempty-directory",
+            "regular-file",
+            "symlink",
+        )
+        for support_name in ("sources", "assets"):
+            for case in cases:
+                with self.subTest(support_name=support_name, case=case):
+                    self.temporary.cleanup()
+                    self.temporary = tempfile.TemporaryDirectory()
+                    self.root = Path(self.temporary.name) / "delivery"
+                    self.write_current()
+                    history_stem = "张三简历-旧公司-旧岗位-现代简洁"
+                    archived = self.root / "history" / "001" / history_stem
+                    archived.mkdir(parents=True)
+                    for name, payload in triple(history_stem, "archived").items():
+                        (archived / name).write_bytes(payload)
+                    polluted = self.root / support_name
+                    if case == "empty-directory":
+                        polluted.mkdir()
+                    elif case == "nonempty-directory":
+                        polluted.mkdir()
+                        (polluted / "private.txt").write_text("private", encoding="utf-8")
+                    elif case == "regular-file":
+                        polluted.write_text("private", encoding="utf-8")
+                    else:
+                        polluted.symlink_to("outside")
+
+                    before = exact_snapshot(self.root)
+                    with self.assertRaisesRegex(
+                        DeliveryError,
+                        rf"unknown delivery-root entry: {support_name}",
+                    ):
+                        DeliverySession(self.spec()).__enter__()
+                    self.assertEqual(exact_snapshot(self.root), before)
 
     def test_history_uses_owner_bound_grammar_and_exact_triples_not_current_membership(self) -> None:
         cases = (
