@@ -96,6 +96,16 @@ class LayoutContractTests(unittest.TestCase):
         self.assertNotIn("王宁", output.getvalue())
         self.assertNotIn("fixtures/media", output.getvalue())
 
+    def test_oversized_atomic_entry_fails_closed(self) -> None:
+        facts = {
+            "candidate": {"name": "甲"},
+            "education": [{"id": "edu-1", "school": "学校", "major": "专业"}],
+            "projects": [{"id": "project-1", "title": "完整项目", "summary": "中" * 2000}],
+        }
+        with self.assertRaises(cli.CliError) as raised:
+            build_frozen_resume_plan(facts, resolve_theme("expressive"), "no-photo", None, self.font_hash, "auto")
+        self.assertEqual(raised.exception.code, LAYOUT_UNSATISFIABLE)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
