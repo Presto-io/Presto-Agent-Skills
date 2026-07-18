@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import os
 import signal
 import sys
@@ -21,7 +22,8 @@ from graduate_resume_delivery import (
 )
 
 
-THEMES = ("conservative", "modern", "expressive")
+THEMES = ("保守稳妥", "现代简洁", "个性设计")
+OWNER_PREFIX = "张三简历-"
 
 
 def triple(stem: str, marker: str) -> dict[str, bytes]:
@@ -90,28 +92,31 @@ class BundleDeltaTests(unittest.TestCase):
 
     def test_spec_consumes_explicit_stems_without_splitting_identity(self) -> None:
         stems = (
-            "王小明-acme-industrial-controls-engineer-modern",
-            "王小明-generic-conservative",
+            "王小明简历-acme-industrial-controls-engineer-现代简洁",
+            "王小明简历-通用-保守稳妥",
         )
-        spec = DeliverySpec(Path("delivery"), stems, THEMES, "authority")
+        spec = DeliverySpec(Path("delivery"), stems, THEMES, "authority", "王小明简历-")
         self.assertEqual(spec.safe_stems, stems)
         with self.assertRaisesRegex(DeliveryError, "registered theme"):
-            DeliverySpec(Path("delivery"), ("王小明-acme-modern-expressive",), THEMES, "patch")
+            DeliverySpec(Path("delivery"), ("王小明简历-acme-现代简洁-个性设计",), THEMES, "patch", "王小明简历-")
         with self.assertRaisesRegex(DeliveryError, "duplicate"):
-            DeliverySpec(Path("delivery"), (stems[0], stems[0]), THEMES, "patch")
+            DeliverySpec(Path("delivery"), (stems[0], stems[0]), THEMES, "patch", "王小明简历-")
+        for owner_prefix in ("", "Ｗang简历-", "李四简历-"):
+            with self.subTest(owner_prefix=owner_prefix), self.assertRaises(DeliveryError):
+                DeliverySpec(Path("delivery"), (stems[1],), THEMES, "patch", owner_prefix)
 
 
 class DiscoveryFailClosedTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name) / "delivery"
-        self.stem = "resume-generic-conservative"
+        self.stem = "张三简历-通用-保守稳妥"
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
     def spec(self) -> DeliverySpec:
-        return DeliverySpec(self.root, (self.stem,), THEMES, "patch")
+        return DeliverySpec(self.root, (self.stem,), THEMES, "patch", OWNER_PREFIX)
 
     def write_current(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -159,6 +164,46 @@ class DiscoveryFailClosedTests(unittest.TestCase):
         (self.root / "history").symlink_to("outside")
         self.assert_open_fails_unchanged()
 
+    def test_history_uses_owner_bound_grammar_and_exact_triples_not_current_membership(self) -> None:
+        cases = (
+            ("other-owner", "李四简历-通用-保守稳妥"),
+            ("unregistered-theme", "张三简历-通用-未登记"),
+            ("malformed-structure", "张三简历-单段-保守稳妥"),
+            ("unknown", "张三简历-旧公司-旧岗位-现代简洁"),
+            ("partial", "张三简历-旧公司-旧岗位-现代简洁"),
+            ("symlink", "张三简历-旧公司-旧岗位-现代简洁"),
+            ("directory", "张三简历-旧公司-旧岗位-现代简洁"),
+            ("fifo", "张三简历-旧公司-旧岗位-现代简洁"),
+        )
+        for case, historical_stem in cases:
+            with self.subTest(case=case):
+                self.temporary.cleanup()
+                self.temporary = tempfile.TemporaryDirectory()
+                self.root = Path(self.temporary.name) / "delivery"
+                self.write_current()
+                archived = self.root / "history" / "001" / historical_stem
+                archived.mkdir(parents=True)
+                for name, payload in triple(historical_stem, "old").items():
+                    (archived / name).write_bytes(payload)
+                if case == "unknown":
+                    (archived / "extra.txt").write_text("unknown", encoding="utf-8")
+                elif case == "partial":
+                    (archived / f"{historical_stem}.pdf").unlink()
+                elif case in {"symlink", "directory", "fifo"}:
+                    path = archived / f"{historical_stem}.pdf"
+                    path.unlink()
+                    if case == "symlink":
+                        path.symlink_to("outside")
+                    elif case == "directory":
+                        path.mkdir()
+                    else:
+                        os.mkfifo(path)
+                self.assert_open_fails_unchanged()
+
+        source = inspect.getsource(DeliverySession._inspect_history)
+        self.assertIn("self.spec.owner_prefix", source)
+        self.assertNotIn("stem in self.spec.safe_stems", source)
+
 
 class PublicationTransactionTests(unittest.TestCase):
     def test_removed_target_history_reopens_under_reduced_authority_and_then_noops(self) -> None:
@@ -181,7 +226,7 @@ class PublicationTransactionTests(unittest.TestCase):
             self.stage(session, initial, "v1")
             delta = session.preflight()
             self.assertEqual(session.publish(approval_digest=delta.approval_digest), "first")
-        with DeliverySession(specification(surviving)) as session:
+        with DeliverySession(specification(initial)) as session:
             self.stage(session, surviving, "v1")
             delta = session.preflight()
             self.assertEqual(delta.removed, (removed,))
@@ -216,9 +261,9 @@ class PublicationTransactionTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name) / "delivery"
         self.stems = (
-            "resume-generic-conservative",
-            "resume-generic-modern",
-            "resume-generic-expressive",
+            "张三简历-通用-保守稳妥",
+            "张三简历-通用-现代简洁",
+            "张三简历-通用-个性设计",
         )
 
     def tearDown(self) -> None:
@@ -226,7 +271,7 @@ class PublicationTransactionTests(unittest.TestCase):
         self.temporary.cleanup()
 
     def spec(self, mode: str = "authority") -> DeliverySpec:
-        return DeliverySpec(self.root, self.stems, THEMES, mode)
+        return DeliverySpec(self.root, self.stems, THEMES, mode, OWNER_PREFIX)
 
     @staticmethod
     def stage(session: DeliverySession, stems: tuple[str, ...], marker: str) -> None:
