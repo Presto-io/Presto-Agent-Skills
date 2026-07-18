@@ -83,7 +83,7 @@ def validate_emit_inputs(plan: FrozenResumePlan, document: FinalResumeDocument |
 
 def _container_text(container: Any) -> str:
     values = [value for _, value in container.fields]
-    return " · ".join(values)
+    return "\n".join(values)
 
 
 def emit_typst(plan: FrozenResumePlan, document: FinalResumeDocument | dict[str, Any]) -> str:
