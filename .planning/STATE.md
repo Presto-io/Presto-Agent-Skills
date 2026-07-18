@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.19
 milestone_name: 毕业生高级简历生成器
 status: executing
-stopped_at: Completed 48-09-PLAN.md
-last_updated: "2026-07-18T15:37:22.176Z"
+stopped_at: Completed 48-08-PLAN.md
+last_updated: "2026-07-18T16:36:45.316Z"
 last_activity: 2026-07-18
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 13
-  completed_plans: 12
-  percent: 92
+  completed_plans: 13
+  percent: 100
 ---
 
 # State: Presto Agent Skills
@@ -25,9 +25,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-17)
 
 ## Current Position
 
-Phase: 48 (deterministic-targeted-rendering-clean-batch-delivery) — EXECUTING
-Plan: 8 of 9
-Status: Ready to execute
+Phase: 48 (deterministic-targeted-rendering-clean-batch-delivery) — COMPLETE
+Plan: 9 of 9
+Status: Complete
 Last activity: 2026-07-18
 
 ## Workflow Preferences
@@ -150,6 +150,9 @@ Phase order:
 - [Phase 48]: Phase 48 投递根的 support allowlist 仅保留 history 与 .work；sources/assets 的任何文件系统形态都按 unknown fail closed。 — 防止私密附件或诊断材料被合法 current 吸收。
 - [Phase 48]: close() 固定尽力执行全部 owned cleanup，再以 operation、相对 owned name 与 errno 聚合为一个 bounded DeliveryError。 — 确保清理失败不会被首个错误截断或伪装成成功。
 - [Phase 48]: cleanup 首次失败后 session 进入 closed 状态，重复 close 不重试不确定 syscall，也不产生新的错误。 — 避免 close 失败后的 descriptor 状态不确定性造成二次误操作。
+- [Phase 48]: Typst 只通过 PATH 定位一次源候选，版本、字体、照片与 PDF 全部执行 held descriptor 复制的 immutable 0.15.0 snapshot。 — 阻止版本门禁后 PATH 或 Cellar target 替换改变真实渲染对象。
+- [Phase 48]: 照片 leaf 在 held assets-root 下 O_NOFOLLOW 打开一次，格式、大小、SHA-256、规范化与 approval 共享同一 frozen bytes。 — 关闭照片校验后按逻辑路径二次读取的 TOCTOU。
+- [Phase 48]: plan/render/batch 各自恰好持有一个 TypstExecutable context；validate/target 与渲染工具链保持解耦。 — 让所有生产 subprocess 共用同一版本门禁，同时保持离线 schema 命令无工具链依赖。
 
 ### Pending Todos
 
@@ -157,7 +160,7 @@ None yet.
 
 ### Blockers/Concerns
 
-None. Phases 46 and 47 are complete; Phase 48 is ready for discussion.
+None. Phase 48 is complete and ready for verification before Phase 49 execution.
 
 ## Performance Metrics
 
@@ -201,13 +204,14 @@ None. Phases 46 and 47 are complete; Phase 48 is ready for discussion.
 | Phase 48 P06 | 37min | 3 tasks | 6 files |
 | Phase 48 P07 | 14min | 2 tasks | 2 files |
 | Phase 48 P09 | 12min | 2 tasks | 2 files |
+| Phase 48 P08 | 46min | 3 tasks | 8 files |
 
 ## Session Continuity
 
-Last session: 2026-07-18T15:35:45.632Z
-Stopped at: Completed 48-09-PLAN.md
+Last session: 2026-07-18T16:34:53.265Z
+Stopped at: Completed 48-08-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Discuss Phase 48 with /gsd-discuss-phase 48
+- Verify Phase 48 with /gsd-verify-work 48, then continue Phase 49.
