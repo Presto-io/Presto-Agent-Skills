@@ -4,10 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
 import sys
+import tempfile
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -126,11 +129,14 @@ def parse_args() -> argparse.Namespace:
     plan.add_argument("--photo-mode", choices=("auto", "photo", "no-photo"), default="auto", help="照片模式覆盖。")
     plan.add_argument("--assets-root", help="本地照片资源根目录，默认输入 Markdown 的父目录。")
 
-    render = subparsers.add_parser("render", help="保留给后续阶段。")
-    render.add_argument("--input", required=False, help="输入 Markdown 路径。")
+    render = subparsers.add_parser("render", help="预检并发布通用版或一个定向版的三主题三件套。")
+    _add_publication_arguments(render)
+    selector = render.add_mutually_exclusive_group(required=True)
+    selector.add_argument("--generic", action="store_true", help="生成通用版。")
+    selector.add_argument("--target", metavar="TARGET_ID", help="生成一个稳定目标 ID 的定向版。")
 
-    batch = subparsers.add_parser("batch", help="保留给后续阶段。")
-    batch.add_argument("--input", required=False, help="输入 Markdown 路径。")
+    batch = subparsers.add_parser("batch", help="预检并权威发布通用版与全部已确认目标的三主题矩阵。")
+    _add_publication_arguments(batch)
 
     verify = subparsers.add_parser("verify", help="运行 Phase 46 fixture 回归与依赖探测。")
     verify.add_argument(
@@ -139,6 +145,26 @@ def parse_args() -> argparse.Namespace:
         help="fixture 根目录，默认使用 skills/graduate-resume/fixtures。",
     )
     return parser.parse_args()
+
+
+def _add_publication_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--input", required=True, help="输入 Markdown 路径。")
+    parser.add_argument("--delivery-root", required=True, help="正式三件套投递根。")
+    parser.add_argument("--retain", metavar="FACT_ID", action="append", default=[], help="本次保留的稳定事实 ID，可重复。")
+    parser.add_argument("--exclude", metavar="FACT_ID", action="append", default=[], help="本次排除的稳定事实 ID，可重复。")
+    parser.add_argument("--pin", metavar="FACT_ID", action="append", default=[], help="本次置顶的稳定事实 ID，可重复。")
+    parser.add_argument(
+        "--not-applicable", metavar=("TARGET_ID", "CONDITION_ID", "REASON"), nargs=3,
+        action="append", default=[], help="本次目标条件不适用覆盖，可重复。",
+    )
+    parser.add_argument(
+        "--allow-gap-target", metavar="TARGET_ID", action="append", default=[],
+        help="本次明确放行存在已核实缺口的目标 ID，可重复。",
+    )
+    parser.add_argument("--pages", choices=("auto", "1", "2"), default="auto", help="三主题共享页数偏好。")
+    parser.add_argument("--photo-mode", choices=("auto", "photo", "no-photo"), default="auto", help="照片模式覆盖。")
+    parser.add_argument("--assets-root", help="本地照片资源根，默认输入 Markdown 的父目录。")
+    parser.add_argument("--confirm", action="store_true", help="确认发布当前预检摘要；省略时只预检。")
 
 
 def default_skill_root() -> Path:
@@ -556,11 +582,212 @@ def THEME_SPECS_FOR_HELP() -> tuple[Any, ...]:
     return tuple(THEME_SPECS[key] for key in ("conservative", "modern", "expressive"))
 
 
-def command_reserved(command_name: str) -> int:
-    raise CliError(
-        "NOT_IMPLEMENTED",
-        f"{command_name} 保留给后续阶段；Phase 46 只冻结离线零 token 边界，不提供最终渲染。",
-    )
+_STABLE_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")
+_CONDITION_ID_RE = re.compile(r"condition-[0-9a-f]{20}")
+
+
+def _validate_stable_id(value: str, *, condition: bool = False) -> str:
+    pattern = _CONDITION_ID_RE if condition else _STABLE_ID_RE
+    if not isinstance(value, str) or pattern.fullmatch(value) is None:
+        raise CliError("TARGET_CONDITION_INVALID", "目标或条件必须使用稳定 ID。")
+    return value
+
+
+def _publication_request(args: argparse.Namespace, document: ResumeDocument, *, batch: bool) -> tuple[list[dict[str, Any] | None], dict[str, list[tuple[str, str, str]]]]:
+    targets = document.data.get("targets", [])
+    target_map = {str(item["id"]): item for item in targets}
+    selected: list[dict[str, Any] | None]
+    if batch:
+        selected = [None, *targets]
+    elif args.generic:
+        selected = [None]
+    else:
+        target_id = _validate_stable_id(args.target)
+        if target_id not in target_map:
+            raise CliError("TARGET_NOT_SELECTED", "指定目标不存在或未确认。")
+        selected = [target_map[target_id]]
+    selected_ids = {str(item["id"]) for item in selected if item is not None}
+    allowed = tuple(_validate_stable_id(item) for item in args.allow_gap_target)
+    if len(allowed) != len(set(allowed)) or any(item not in selected_ids for item in allowed):
+        raise CliError("TARGET_CONDITION_INVALID", "缺口放行重复或引用未选择目标。")
+    grouped: dict[str, list[tuple[str, str, str]]] = {}
+    seen: set[tuple[str, str]] = set()
+    for target_id, condition_id, raw_reason in args.not_applicable:
+        target_id = _validate_stable_id(target_id)
+        condition_id = _validate_stable_id(condition_id, condition=True)
+        reason = raw_reason.strip()
+        if not 1 <= len(reason) <= 200 or any(unicodedata.category(character).startswith("C") for character in reason):
+            raise CliError("TARGET_CONDITION_INVALID", "不适用理由长度或字符无效。")
+        pair = (target_id, condition_id)
+        if pair in seen or target_id not in selected_ids:
+            raise CliError("TARGET_CONDITION_INVALID", "不适用覆盖重复或引用未选择目标。")
+        seen.add(pair)
+        grouped.setdefault(target_id, []).append((target_id, condition_id, reason))
+    if selected == [None] and (allowed or grouped):
+        raise CliError("TARGET_CONDITION_INVALID", "通用版不得携带目标条件覆盖或缺口放行。")
+    return selected, grouped
+
+
+def _resolve_publication_photo(args: argparse.Namespace, document: ResumeDocument) -> tuple[str, bytes | None, Any | None, str]:
+    from graduate_resume_layout import PhotoAsset, resolve_layout_photo, validate_font_manifest
+
+    photo = document.data.get("photo", {})
+    preferences = document.data.get("preferences", {})
+    requested = resolve_photo_mode(photo, preferences) if args.photo_mode == "auto" else args.photo_mode
+    assets_root = Path(args.assets_root).expanduser() if args.assets_root else document.path.parent
+    resolved = resolve_layout_photo(document.path, assets_root, photo, {"photo_mode": requested})
+    photo_bytes = None
+    feedback_photo = None
+    photo_mode = "no-photo"
+    if resolved is not None:
+        photo_bytes = (assets_root.resolve(strict=True) / resolved.logical_path).read_bytes()
+        feedback_photo = PhotoAsset("embedded-normalized.png")
+        photo_mode = "photo"
+    font_hash = validate_font_manifest(default_skill_root() / "fonts")
+    return photo_mode, photo_bytes, feedback_photo, font_hash
+
+
+def _discover_current_stems(delivery_root: Path, candidate_name: str) -> tuple[str, ...]:
+    from graduate_resume_render import safe_component
+
+    try:
+        if delivery_root.is_symlink() or not delivery_root.exists():
+            return ()
+        entries = tuple(delivery_root.iterdir())
+    except OSError:
+        return ()
+    prefix = f"{safe_component(candidate_name)}简历-"
+    theme_suffixes = tuple(safe_component(item.label) for item in THEME_SPECS_FOR_HELP())
+    stems: set[str] = set()
+    for path in entries:
+        if path.suffix not in {".md", ".typ", ".pdf"}:
+            continue
+        stem = path.stem
+        if stem.startswith(prefix) and any(stem.endswith(f"-{theme}") for theme in theme_suffixes):
+            stems.add(stem)
+    return tuple(sorted(stems))
+
+
+def _projection_public(projection: Any) -> dict[str, Any]:
+    return {
+        "version": projection.version_id,
+        "target_id": projection.target_id,
+        "source": projection.target_source,
+        "as_of": projection.target_as_of,
+        "selected_fact_digest": hashlib.sha256("\0".join(projection.selected_fact_ids).encode("utf-8")).hexdigest(),
+        "conditions": dict(projection.condition_summary),
+        "condition_digest": projection.condition_digest,
+        "gap_allowed": projection.gap_allowed,
+        "pages": {item.theme_key: item.page_count for item in projection.layout_feedback},
+    }
+
+
+def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
+    from graduate_resume_delivery import DeliveryError, DeliverySession, DeliverySpec
+    from graduate_resume_layout import build_layout_feedback_adapter
+    from graduate_resume_render import build_render_matrix, render_candidate_matrix, safe_component
+    from graduate_resume_targeting import PageBudgetRequest, evaluate_hard_conditions, resolve_version_projection
+
+    document = load_resume(args.input)
+    validate_document(document)
+    selected, not_applicable = _publication_request(args, document, batch=batch)
+    photo_mode, photo_bytes, feedback_photo, font_hash = _resolve_publication_photo(args, document)
+    page_budget = PageBudgetRequest(args.pages)
+    feedback = build_layout_feedback_adapter(document.data, photo_mode, feedback_photo, font_hash)
+    overrides = {"retain": args.retain, "exclude": args.exclude, "pin": args.pin}
+    projections = []
+    condition_public: dict[str, dict[str, Any]] = {}
+    allowed = tuple(args.allow_gap_target)
+    for target in selected:
+        target_id = None if target is None else str(target["id"])
+        target_overrides = () if target_id is None else tuple(not_applicable.get(target_id, ()))
+        projection = resolve_version_projection(
+            document.data, target, page_budget, feedback, overrides=overrides,
+            not_applicable_overrides=target_overrides,
+            allowed_gap_target_ids=() if target is None else allowed,
+        )
+        projections.append(projection)
+        if target is not None:
+            evaluation = evaluate_hard_conditions(
+                document.data, target, not_applicable_overrides=target_overrides,
+                allowed_gap_target_ids=allowed,
+            )
+            condition_public[target_id] = {
+                **evaluation.to_public_projection(),
+                "conditions": [
+                    {"condition_id": item.condition_id, "predicate": item.predicate, "state": item.state}
+                    for item in evaluation.matrix
+                ],
+                "warnings": list(evaluation.warnings),
+            }
+    target_map = {str(item["id"]): item for item in document.data.get("targets", [])}
+    planned = build_render_matrix(document.data["candidate"]["name"], tuple(projections), targets=target_map)
+    delivery_root = Path(args.delivery_root).expanduser()
+    known_stems = tuple(dict.fromkeys((
+        *(item.stem for item in planned.items),
+        *_discover_current_stems(delivery_root, document.data["candidate"]["name"]),
+    )))
+    theme_suffixes = tuple(safe_component(item.label) for item in THEME_SPECS_FOR_HELP())
+    canonical_hash = hashlib.sha256(document.path.read_bytes()).hexdigest()
+    mode = "authority" if batch else "patch"
+    try:
+        with tempfile.TemporaryDirectory(prefix="graduate-resume-render-") as temporary:
+            rendered_roots: list[Path] = []
+            for index, (projection, target) in enumerate(zip(projections, selected)):
+                result = render_candidate_matrix(
+                    Path(temporary) / f"version-{index}" / "candidate", document.data, projection,
+                    canonical_hash=canonical_hash, target=target, photo_bytes=photo_bytes,
+                    font_manifest_hash=font_hash,
+                )
+                if not result.publishable or result.candidate_root is None:
+                    raise CliError("RENDER_MATRIX_FAILED", "候选矩阵未完成。")
+                rendered_roots.append(result.candidate_root)
+            spec = DeliverySpec(delivery_root, known_stems, theme_suffixes, mode)
+            with DeliverySession(spec) as session:
+                for rendered_root in rendered_roots:
+                    for path in rendered_root.iterdir():
+                        if path.is_file():
+                            session.candidate_path(path.name).write_bytes(path.read_bytes())
+                delta = session.preflight()
+                publication = None
+                if args.confirm:
+                    publication = session.publish(
+                        approval_digest=delta.approval_digest if batch else None,
+                    )
+    except DeliveryError as exc:
+        raise CliError("DELIVERY_PREFLIGHT_FAILED", "正式投递预检或发布失败。") from exc
+    versions = [_projection_public(item) for item in projections]
+    payload = {
+        "status": "published" if args.confirm else "preflight",
+        "mode": mode,
+        "publication": publication,
+        "versions": [item.version_id for item in projections],
+        "matrix": versions,
+        "stems": [item.stem for item in planned.items],
+        "photo_mode": photo_mode,
+        "gap_allow_target_ids": list(allowed),
+        "added": list(delta.added),
+        "updated": list(delta.updated),
+        "unchanged": list(delta.unchanged),
+        "removed": list(delta.removed),
+        "approval_digest": delta.approval_digest,
+    }
+    if not batch:
+        target_id = projections[0].target_id
+        payload["conditions"] = {} if target_id is None else condition_public[target_id]["counts"]
+        payload["warnings"] = [] if target_id is None else condition_public[target_id]["warnings"]
+    else:
+        payload["target_conditions"] = condition_public
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+def command_render(args: argparse.Namespace) -> int:
+    return _command_publication(args, batch=False)
+
+
+def command_batch(args: argparse.Namespace) -> int:
+    return _command_publication(args, batch=True)
 
 
 def command_verify(args: argparse.Namespace) -> int:
@@ -610,15 +837,19 @@ def main() -> int:
             return command_plan(args)
         if args.command == "verify":
             return command_verify(args)
-        if args.command in {"render", "batch"}:
-            return command_reserved(args.command)
+        if args.command == "render":
+            return command_render(args)
+        if args.command == "batch":
+            return command_batch(args)
         raise CliError("UNKNOWN_COMMAND", f"未知命令: {args.command}")
     except Exception as exc:
         # ``graduate_resume_layout`` can import this script by module name while
         # this entry point is running as ``__main__``.  Normalize every stable
         # CLI-shaped error here so layout failures never leak a traceback.
         if not isinstance(getattr(exc, "code", None), str) or not isinstance(getattr(exc, "message", None), str):
-            raise
+            payload = {"status": "failed", "code": "INTERNAL_ERROR", "message": "离线命令执行失败，正式投递未改变。"}
+            print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
+            return 70
         payload = {"status": "failed", "code": exc.code, "message": exc.message}
         if getattr(exc, "details", None):
             payload["issues"] = exc.details

@@ -20,13 +20,14 @@ CLI = SKILL_ROOT / "scripts" / "graduate_resume_cli.py"
 THEME_LABELS = ("保守稳妥", "现代简洁", "个性设计")
 
 
-def run_cli(*arguments: str) -> subprocess.CompletedProcess[str]:
+def run_cli(*arguments: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(CLI), *arguments],
         cwd=SKILL_ROOT.parent.parent,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        env=env,
         check=False,
     )
 
@@ -81,12 +82,11 @@ class PublicCliContractTests(unittest.TestCase):
             self.assertFalse((delivery / "history").exists())
 
     def test_target_patch_preserves_generic_and_batch_expands_all_confirmed_targets(self) -> None:
-        generic = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
         targeted = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
         with tempfile.TemporaryDirectory() as temporary:
             delivery = Path(temporary) / "delivery"
             first = run_cli(
-                "render", "--input", str(generic), "--generic", "--delivery-root", str(delivery),
+                "render", "--input", str(targeted), "--generic", "--delivery-root", str(delivery),
                 "--photo-mode", "no-photo", "--confirm",
             )
             self.assertEqual(first.returncode, 0, first.stderr)
@@ -140,7 +140,9 @@ class PublicCliContractTests(unittest.TestCase):
             self.assertEqual(len(public_files(delivery)), 18)
             archived = delivery / "history" / "001"
             self.assertTrue(archived.is_dir())
-            self.assertEqual(len(tuple(archived.iterdir())), 3)
+            removed_archives = tuple(path for path in archived.iterdir() if "某储能公司" in path.name)
+            self.assertEqual(len(removed_archives), 3)
+            self.assertTrue(all(len(tuple(path.iterdir())) == 3 for path in removed_archives))
 
     def test_not_applicable_is_repeatable_three_argv_and_rejects_invalid_scope_or_reason(self) -> None:
         source = SKILL_ROOT / "fixtures" / "targeting" / "multi-state-targets.md"
@@ -180,6 +182,38 @@ class PublicCliContractTests(unittest.TestCase):
             )
             self.assertNotEqual(generic.returncode, 0)
             self.assertEqual(parse_json(generic)["code"], "TARGET_CONDITION_INVALID")
+
+    def test_gap_allow_is_per_target_unknown_is_warning_and_runtime_failure_is_bounded(self) -> None:
+        source = SKILL_ROOT / "fixtures" / "targeting" / "multi-state-targets.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            delivery = Path(temporary) / "delivery"
+            base = (
+                "batch", "--input", str(source), "--delivery-root", str(delivery),
+                "--photo-mode", "no-photo",
+            )
+            blocked = run_cli(*base)
+            self.assertNotEqual(blocked.returncode, 0)
+            self.assertEqual(parse_json(blocked)["code"], "TARGET_GAP_NOT_ALLOWED")
+            self.assertEqual(public_files(delivery), ())
+
+            allowed = run_cli(*base, "--allow-gap-target", "target-device-002")
+            self.assertEqual(allowed.returncode, 0, allowed.stderr)
+            payload = parse_json(allowed)
+            conditions = payload["target_conditions"]
+            self.assertTrue(conditions["target-device-002"]["gap_allowed"])
+            self.assertFalse(conditions["target-robot-001"]["gap_allowed"])
+            self.assertGreater(conditions["target-robot-001"]["warning_count"], 0)
+            self.assertEqual(public_files(delivery), ())
+
+            environment = dict(os.environ)
+            environment["PATH"] = ""
+            failed = run_cli(*base, "--allow-gap-target", "target-device-002", "--confirm", env=environment)
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertNotIn("Traceback", failed.stderr)
+            self.assertNotIn(str(delivery), failed.stderr)
+            self.assertLess(len(failed.stderr), 1600)
+            self.assertEqual(parse_json(failed)["code"], "FONT_MANIFEST_INVALID")
+            self.assertEqual(public_files(delivery), ())
 
 
 if __name__ == "__main__":
