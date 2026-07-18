@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import re
@@ -19,6 +20,7 @@ import yaml
 
 
 STATUS_VALUES = {"verified", "pending", "declined"}
+STABLE_FACT_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")
 TOP_LEVEL_FIELDS = {
     "candidate",
     "education",
@@ -321,6 +323,17 @@ def validate_status(value: Any, area: str, issues: list[str]) -> None:
         issues.append(f"{area} 必须是 {sorted(STATUS_VALUES)} 之一。")
 
 
+def is_stable_fact_id(value: Any, *, profile: bool = False) -> bool:
+    if profile:
+        return value == "profile"
+    return value != "profile" and isinstance(value, str) and STABLE_FACT_ID_RE.fullmatch(value) is not None
+
+
+def validate_stable_fact_id(value: Any, area: str, issues: list[str]) -> None:
+    if not is_stable_fact_id(value):
+        issues.append(f"{area} 必须使用稳定事实 ID。")
+
+
 def validate_unknown_fields(section: dict[str, Any], allowed: set[str], area: str, issues: list[str]) -> None:
     for key in sorted(section):
         if key not in allowed:
@@ -370,10 +383,11 @@ def validate_entry_list(
         if entry.get("status") == "pending":
             issues.append(f"{area}.status 仍为 pending，不能进入 final render。")
         entry_id = entry.get("id")
-        if isinstance(entry_id, str) and entry_id.strip():
+        validate_stable_fact_id(entry_id, f"{area}.id", issues)
+        if is_stable_fact_id(entry_id):
             previous = seen_ids.get(entry_id)
             if previous is not None:
-                issues.append(f"发现重复事实 ID: {entry_id} 同时出现在 {previous} 和 {area}")
+                issues.append(f"{area}.id 与其他事实 ID 重复。")
             else:
                 seen_ids[entry_id] = area
 
@@ -387,10 +401,11 @@ def validate_targets(targets_value: Any, issues: list[str], seen_ids: dict[str, 
         for field in ("id", "company", "role", "source", "as_of"):
             require_nonempty_string(target.get(field), f"{area}.{field}", issues)
         entry_id = target.get("id")
-        if isinstance(entry_id, str) and entry_id.strip():
+        validate_stable_fact_id(entry_id, f"{area}.id", issues)
+        if is_stable_fact_id(entry_id):
             previous = seen_ids.get(entry_id)
             if previous is not None:
-                issues.append(f"发现重复事实 ID: {entry_id} 同时出现在 {previous} 和 {area}")
+                issues.append(f"{area}.id 与其他事实 ID 重复。")
             else:
                 seen_ids[entry_id] = area
         if target.get("confirmed") is not True:
@@ -582,13 +597,16 @@ def THEME_SPECS_FOR_HELP() -> tuple[Any, ...]:
     return tuple(THEME_SPECS[key] for key in ("conservative", "modern", "expressive"))
 
 
-_STABLE_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")
 _CONDITION_ID_RE = re.compile(r"condition-[0-9a-f]{20}")
 
 
 def _validate_stable_id(value: str, *, condition: bool = False) -> str:
-    pattern = _CONDITION_ID_RE if condition else _STABLE_ID_RE
-    if not isinstance(value, str) or pattern.fullmatch(value) is None:
+    valid = (
+        isinstance(value, str) and _CONDITION_ID_RE.fullmatch(value) is not None
+        if condition
+        else is_stable_fact_id(value)
+    )
+    if not valid:
         raise CliError("TARGET_CONDITION_INVALID", "目标或条件必须使用稳定 ID。")
     return value
 
@@ -682,6 +700,20 @@ def _projection_public(projection: Any) -> dict[str, Any]:
     }
 
 
+def publication_fact_view(data: dict[str, Any]) -> dict[str, Any]:
+    """Return an isolated view containing only facts eligible for publication."""
+    candidate = data.get("candidate")
+    if not isinstance(candidate, dict) or candidate.get("status") != "verified":
+        raise CliError("PUBLICATION_FACT_INVALID", "正式渲染要求已核实的个人信息。")
+    view = copy.deepcopy(data)
+    for section in ENTRY_SECTIONS:
+        entries = view.get(section, [])
+        if any(not isinstance(item, dict) or item.get("status") != "verified" for item in entries):
+            raise CliError("PUBLICATION_FACT_INVALID", "正式渲染只接受已核实事实。")
+        view[section] = [item for item in entries if isinstance(item, dict) and item.get("status") == "verified"]
+    return view
+
+
 def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
     from graduate_resume_delivery import DeliveryError, DeliverySession, DeliverySpec
     from graduate_resume_layout import build_layout_feedback_adapter
@@ -690,10 +722,12 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
 
     document = load_resume(args.input)
     validate_document(document)
-    selected, not_applicable = _publication_request(args, document, batch=batch)
+    publication_data = publication_fact_view(document.data)
+    publication_document = ResumeDocument(document.path, document.body, publication_data)
+    selected, not_applicable = _publication_request(args, publication_document, batch=batch)
     photo_mode, photo_bytes, feedback_photo, font_hash = _resolve_publication_photo(args, document)
     page_budget = PageBudgetRequest(args.pages)
-    feedback = build_layout_feedback_adapter(document.data, photo_mode, feedback_photo, font_hash)
+    feedback = build_layout_feedback_adapter(publication_data, photo_mode, feedback_photo, font_hash)
     overrides = {"retain": args.retain, "exclude": args.exclude, "pin": args.pin}
     projections = []
     condition_public: dict[str, dict[str, Any]] = {}
@@ -702,14 +736,14 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
         target_id = None if target is None else str(target["id"])
         target_overrides = () if target_id is None else tuple(not_applicable.get(target_id, ()))
         projection = resolve_version_projection(
-            document.data, target, page_budget, feedback, overrides=overrides,
+            publication_data, target, page_budget, feedback, overrides=overrides,
             not_applicable_overrides=target_overrides,
             allowed_gap_target_ids=() if target is None else allowed,
         )
         projections.append(projection)
         if target is not None:
             evaluation = evaluate_hard_conditions(
-                document.data, target, not_applicable_overrides=target_overrides,
+                publication_data, target, not_applicable_overrides=target_overrides,
                 allowed_gap_target_ids=allowed,
             )
             condition_public[target_id] = {
@@ -720,12 +754,12 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
                 ],
                 "warnings": list(evaluation.warnings),
             }
-    target_map = {str(item["id"]): item for item in document.data.get("targets", [])}
-    planned = build_render_matrix(document.data["candidate"]["name"], tuple(projections), targets=target_map)
+    target_map = {str(item["id"]): item for item in publication_data.get("targets", [])}
+    planned = build_render_matrix(publication_data["candidate"]["name"], tuple(projections), targets=target_map)
     delivery_root = Path(args.delivery_root).expanduser()
     known_stems = tuple(dict.fromkeys((
         *(item.stem for item in planned.items),
-        *_discover_current_stems(delivery_root, document.data["candidate"]["name"]),
+        *_discover_current_stems(delivery_root, publication_data["candidate"]["name"]),
     )))
     theme_suffixes = tuple(safe_component(item.label) for item in THEME_SPECS_FOR_HELP())
     canonical_hash = hashlib.sha256(document.path.read_bytes()).hexdigest()
@@ -735,7 +769,7 @@ def _command_publication(args: argparse.Namespace, *, batch: bool) -> int:
             rendered_roots: list[Path] = []
             for index, (projection, target) in enumerate(zip(projections, selected)):
                 result = render_candidate_matrix(
-                    Path(temporary) / f"version-{index}" / "candidate", document.data, projection,
+                    Path(temporary) / f"version-{index}" / "candidate", publication_data, projection,
                     canonical_hash=canonical_hash, target=target, photo_bytes=photo_bytes,
                     font_manifest_hash=font_hash,
                 )
