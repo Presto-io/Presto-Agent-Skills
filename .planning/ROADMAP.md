@@ -90,7 +90,7 @@ Plans:
   3. 每个版本资料记录实际主题、页数、照片模式、目标单位/岗位和当次招聘信息来源/日期，技能不抓取、猜测或声称招聘信息实时。
   4. 每个成功版本以同 stem 输出正式命名的 Markdown、Typst、PDF 三件套；通用版使用 `通用`，投递根不含诊断或中间件。
   5. 单份与批量任务均先完整预检；任一目标失败不发布部分版本，并保留 candidate-first、bytes no-op、完整 bundle history、rollback 与 unknown/symlink fail-closed 语义。
-**Plans**: 4 plans
+**Plans**: 9 plans
 
 Plans:
 **Wave 1**
@@ -102,6 +102,19 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [x] 48-04: 接通公开 render/batch CLI、文档契约与 Phase 48 固定验收矩阵。
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 48-05: 关闭 verified-only publication、稳定事实 ID、结构字段保留与显式照片失败边界缺口。
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 48-06: 关闭逐条件公开投影、隐藏 evidence、历史连续性与跨进程 approval digest 缺口。
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 48-07: 关闭 metadata 状态提升与 canonical 多次读取造成的快照错绑。
+- [ ] 48-09: 收紧投递根 allowlist，并让 cleanup failure 可观测、可测试。
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 48-08: 绑定照片 descriptor，并让所有生产消费者复用同一 Typst 0.15.0 不可变快照。
 
 ### Phase 49: 聚合验证、跨 Runtime 与发布验收
 **Goal**: 用户能以重复的证据确认简历为真实、布局稳定、可在所有承诺 runtime 中离线交付的 1/2 页 A4 PDF。
