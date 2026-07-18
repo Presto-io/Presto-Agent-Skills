@@ -36,7 +36,7 @@ v1.19 为电气相关工科大专毕业生交付离线、Markdown-first 的 `gra
 
 - [x] **Phase 46: 资料契约、字体与可验证夹具** - 建立主题无关、可验证的简历资料与离线 CLI 基线。
 - [x] **Phase 47: 受控主题、照片与冻结布局** - 让同一资料在三种主题下稳定收敛为 1/2 页 A4 简历。 (completed 2026-07-18)
-- [ ] **Phase 48: 确定性定向渲染与干净批量交付** - 生成通用版和多目标定向 Markdown、Typst、PDF 三件套。
+- [x] **Phase 48: 确定性定向渲染与干净批量交付** - 生成通用版和多目标定向 Markdown、Typst、PDF 三件套。 (completed 2026-07-18)
 - [ ] **Phase 49: 聚合验证、跨 Runtime 与发布验收** - 通过故障注入、跨环境 UAT 和六 runtime 验证证明交付可信。
 
 ## Phase Details
@@ -98,10 +98,10 @@ Plans:
 - [x] 48-03: 实现单份/批量候选发布、完整预检、no-op、归档、rollback 和路径边界。
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 48-02: 从冻结布局生成正式命名的 Markdown、Typst、PDF 三件套。
+- [x] 48-02: 从冻结布局生成正式命名的 Markdown、Typst、PDF 三件套。
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 48-04: 接通公开 render/batch CLI、文档契约与 Phase 48 固定验收矩阵。
+- [x] 48-04: 接通公开 render/batch CLI、文档契约与 Phase 48 固定验收矩阵。
 
 ### Phase 49: 聚合验证、跨 Runtime 与发布验收
 **Goal**: 用户能以重复的证据确认简历为真实、布局稳定、可在所有承诺 runtime 中离线交付的 1/2 页 A4 PDF。
@@ -126,7 +126,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 46. 资料契约、字体与可验证夹具 | 3/3 | Completed | 2026-07-18 |
 | 47. 受控主题、照片与冻结布局 | 3/3 | Complete   | 2026-07-18 |
-| 48. 确定性定向渲染与干净批量交付 | 2/4 | In Progress|  |
+| 48. 确定性定向渲染与干净批量交付 | 4/4 | Complete   | 2026-07-18 |
 | 49. 聚合验证、跨 Runtime 与发布验收 | 0/2 | Not started | - |
 
 ## Traceability Coverage
