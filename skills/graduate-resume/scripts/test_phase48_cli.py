@@ -94,6 +94,74 @@ def run_phase48_acceptance_registry() -> dict[str, object]:
 
 
 class PublicCliContractTests(unittest.TestCase):
+    def test_metadata_contract_rejects_missing_unknown_empty_and_duplicate_fields(self) -> None:
+        non_target_source = (SKILL_ROOT / "fixtures" / "valid-no-photo.md").read_text(encoding="utf-8")
+        target_source = (SKILL_ROOT / "fixtures" / "valid-multi-target.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            delivery = root / "delivery"
+            baseline = run_reviewed(
+                "render", "--input", str(SKILL_ROOT / "fixtures" / "valid-no-photo.md"), "--generic",
+                "--delivery-root", str(delivery), "--photo-mode", "no-photo",
+            )
+            self.assertEqual(baseline.returncode, 0, baseline.stderr)
+            before = recursive_snapshot(delivery)
+
+            cases = {
+                "missing-id": non_target_source.replace(
+                    "id=edu-001 status=verified", "status=verified",
+                ),
+                "missing-status": non_target_source.replace(
+                    "id=edu-001 status=verified", "id=edu-001",
+                ),
+                "misspelled-status": non_target_source.replace(
+                    "id=edu-001 status=verified", "id=edu-001 stats=verified",
+                ),
+                "extra-key": non_target_source.replace(
+                    "id=edu-001 status=verified", "id=edu-001 status=verified note=reviewed",
+                ),
+                "empty-value": non_target_source.replace(
+                    "id=edu-001 status=verified", "id=edu-001 status=",
+                ),
+                "duplicate-id": non_target_source.replace(
+                    "id=edu-001 status=verified", "id=edu-001 id=edu-shadow status=verified",
+                ),
+                "duplicate-status": non_target_source.replace(
+                    "id=edu-001 status=verified", "id=edu-001 status=pending status=verified",
+                ),
+                "duplicate-comment": non_target_source.replace(
+                    "<!-- resume: id=edu-001 status=verified -->",
+                    "<!-- resume: id=edu-001 status=verified -->\n<!-- resume: id=edu-shadow status=verified -->",
+                ),
+                "target-status": target_source.replace(
+                    "id=target-robot-001", "id=target-robot-001 status=verified",
+                ),
+                "target-extra-key": target_source.replace(
+                    "id=target-robot-001", "id=target-robot-001 note=reviewed",
+                ),
+                "target-duplicate-id": target_source.replace(
+                    "id=target-robot-001", "id=target-robot-001 id=target-shadow-002",
+                ),
+            }
+            for name, text in cases.items():
+                with self.subTest(name=name):
+                    candidate = root / f"{name}.md"
+                    candidate.write_text(text, encoding="utf-8")
+                    completed = run_cli(
+                        "render", "--input", str(candidate), "--generic",
+                        "--delivery-root", str(delivery), "--photo-mode", "no-photo",
+                    )
+                    self.assertNotEqual(completed.returncode, 0)
+                    self.assertEqual(recursive_snapshot(delivery), before)
+                    self.assertNotIn("Traceback", completed.stderr)
+                    self.assertNotIn("王宁", completed.stderr)
+                    self.assertNotIn("周凯", completed.stderr)
+                    self.assertNotIn(str(candidate), completed.stderr)
+                    self.assertLess(len(completed.stderr), 1600)
+
+        production = CLI.read_text(encoding="utf-8")
+        self.assertNotIn('metadata.get("status", "verified")', production)
+
     def test_cross_process_preflight_digest_is_required_for_confirm_and_stale_input_fails(self) -> None:
         source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
         with tempfile.TemporaryDirectory() as temporary:
