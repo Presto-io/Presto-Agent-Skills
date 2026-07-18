@@ -31,9 +31,10 @@ metadata:
 - `source_facts`: 候选人提供的已核实资料、待核实资料、目标单位/岗位信息和照片情况。
 - `templates/graduate-resume.md`: canonical Markdown/YAML 资料模板。
 - `references/schema-and-review-contract.md`: 字段职责、稳定 ID、复核状态、一次追问和阻断规则。
+- `references/targeted-render-delivery-contract.md`: 目标投影、四态条件、三主题最终 Markdown、自包含照片与 patch/authority 干净投递契约。
 - `references/phase-46-baseline.md`: Phase 46 骨架、夹具基线、CLI 边界和字体/依赖要求。
 - `fixtures/`: 有照片、无照片、通用版、多目标和错误样例。
-- `scripts/graduate-resume.sh`: 公开 CLI 入口；Phase 46 已实现 `validate`、`target`、`plan`、`verify`。
+- `scripts/graduate-resume.sh`: 离线公开 CLI 入口。
 
 ## Canonical Workflow
 
@@ -41,8 +42,10 @@ metadata:
 2. 对缺失且影响可信度的资料执行一次追问，不循环追问。
 3. 生成或更新 `graduate-resume.md`：把首页信息栏所需的 `profile`、可选本地 `photo` 路径和派生偏好写入 YAML frontmatter；把教育、技能、证书、项目、实训、经历和目标写入 Markdown 正文。
 4. 运行 `validate` 检查 schema、必填、稳定 ID、待确认事实、照片状态和 target 完整度。
-5. 资料通过 `validate` 后，可使用 `plan` 选择受控视觉主题并冻结 1/2 页布局；首批主题为保守稳妥 (conservative)、现代简洁 (modern)、个性设计 (expressive)。`--help` 与成功的脱敏 plan 摘要都会完整列出三项，用户无需猜测默认主题。
-6. 使用 `verify` 运行 schema fixture 和固定布局样张。样张仅在调用方临时 workdir 中产生 PDF/PNG 证据，不是正式投递产物。
+5. 资料通过 `validate` 后，使用 `render --generic` 或 `render --target <stable-id>` 预检单份版本；使用 `batch` 预检 generic 与全部 confirmed targets。两个命令都固定生成保守稳妥、现代简洁、个性设计三个主题。
+6. 检查预检中的版本矩阵、逐条件四态、gap allow、完整 stems 和 `added/updated/unchanged/removed`。没有确认时不改变 current/history；确认无误后用完全相同参数追加 `--confirm`。
+7. 失败时按稳定错误码修正事实、覆盖冲突、gap、照片、字体、命名碰撞或投递根异常，再重新预检。不要手工发布 partial triple 或绕过 `.work`/history 审计。
+8. 使用 `verify` 运行 schema fixture 和固定布局样张；这些证据只进入调用方临时 workdir，不是正式投递产物。
 
 ## One-Time Questions
 
@@ -65,21 +68,30 @@ skills/graduate-resume/scripts/graduate-resume.sh plan \
   --input skills/graduate-resume/templates/graduate-resume.md \
   --theme <conservative|modern|expressive>
 
+skills/graduate-resume/scripts/graduate-resume.sh render \
+  --input graduate-resume.md \
+  --generic \
+  --delivery-root delivery
+
+skills/graduate-resume/scripts/graduate-resume.sh render \
+  --input graduate-resume.md \
+  --target target-grid-001 \
+  --not-applicable target-grid-001 condition-0123456789abcdefabcd "招聘方确认本批次不适用" \
+  --delivery-root delivery
+
+skills/graduate-resume/scripts/graduate-resume.sh batch \
+  --input graduate-resume.md \
+  --allow-gap-target target-grid-001 \
+  --delivery-root delivery
+
 skills/graduate-resume/scripts/graduate-resume.sh verify
 ```
 
-`plan` 输出受控主题、照片模式、`FrozenResumePlan` 的冻结 1/2 页建议和脱敏摘要。ThemeSpec/ThemeRegistry 可以新增纯视觉主题，但不得改写 `graduate-resume/v2` schema 或已验证事实。`render` 与 `batch` 仍只冻结离线、零 token 边界，不在 canonical 主体里承诺已完成最终渲染。
+`render` 在 `--generic` 与 `--target` 中二选一，固定采用 patch 语义；`batch` 默认展开 generic + all confirmed targets，固定采用 authority 语义。`--retain`、`--exclude`、`--pin`、`--allow-gap-target` 可重复；不适用覆盖只有 `--not-applicable <target-id> <condition-id> <reason>` 这一种公开三参数语法。先运行上述命令查看预检，再追加 `--confirm` 发布。
 
 ## Runtime Adapter Notes
 
-| Runtime | Notes |
-|---------|-------|
-| Codex | 整体安装并读取 `SKILL.md`、`references/`、`templates/`、`fixtures/`、`scripts/`；显式 fallback 是执行 `scripts/graduate-resume.sh`。允许 Bash 执行、读取输入，并写授权 workdir 或 delivery root。 |
-| Claude Code | 整体安装到可发现 skill path；若 discovery 不可用，显式执行 `scripts/graduate-resume.sh`。授予 Bash、输入读取、workdir 或 delivery root 写入权限。 |
-| Gemini CLI | 由 `GEMINI.md` 或项目上下文指向完整 skill folder；显式 fallback 是 `scripts/graduate-resume.sh`。sandbox/allowlist 必须允许 Bash、输入读取与目标输出根写入。 |
-| OpenCode | 使用 native skill path 并保留全部支持文件；无法自动发现时显式执行 `scripts/graduate-resume.sh`。allowlist 必须覆盖 Bash、输入读取与目标输出根写入。 |
-| OpenClaw | whole-folder 支持、frontmatter、support-file discovery 和路径行为均须 installation-time verified；始终保留 `scripts/graduate-resume.sh` 显式 fallback，并验证离线 CLI、输入读取与目标输出根写入权限。 |
-| Hermes Agent | whole-folder 项目/全局加载、support-file discovery 和权限模型均须 installation-time verified；始终保留 `scripts/graduate-resume.sh` 显式 fallback，并验证离线 CLI、输入读取与目标输出根写入权限。 |
+Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 与 Hermes Agent 都应保留完整 skill folder，并通过同一个 `scripts/graduate-resume.sh` 执行上述 runtime-neutral 工作流。运行环境只需允许离线 shell、读取用户授权的输入/本地照片，以及写入用户授权的 workdir 和 delivery root。跨 runtime 的安装与发现验收属于 Phase 49，本技能不在 Phase 48 声称已经完成。
 
 ## Outputs
 
@@ -87,7 +99,9 @@ skills/graduate-resume/scripts/graduate-resume.sh verify
 - `validate` diagnostics: 仅用于说明为什么当前资料不能进入 final render。
 - target brief summary / frozen plan: 输出不含候选人事实、照片路径或 EXIF 的 JSON 摘要。
 - layout evidence: `verify` 仅在调用方临时 workdir 中生成受控 Typst/PDF/PNG 样张证据。
-- render artifacts: 正式 Markdown/Typst/PDF 三件套命名、批量发布、history、candidate-first/no-op/rollback 属于 Phase 48；跨 runtime 与跨环境人工验收属于 Phase 49。
+- render/batch preflight: 只显示有界版本矩阵、四态、digest、stems 和 delta，不显示完整理由、联系方式、照片路径或绝对路径。
+- current: 平铺的正式 Markdown/Typst/PDF triples；不包含 manifest sidecar、完整 evidence、preview、照片中间件或日志。
+- history: 只归档 updated/removed 的旧完整 triples；精确 no-op 不创建 history、不改变 inode/mtime。
 
 ## Verification
 
@@ -97,6 +111,9 @@ skills/graduate-resume/scripts/graduate-resume.sh verify
 - [x] canonical 主流程不包含 runtime 私有语法。
 - [x] `validate`、`target`、`plan`、`render`、`batch`、`verify` 被定义为离线、零 token 边界。
 - [x] `plan --theme <conservative|modern|expressive>` 可冻结主题、页数和照片模式；每个主题均进入实际 Typst 布局，`verify` 对固定有照/无照、短内容、临界和压力样张逐页检查 A4、页数、锚点与条目归属。
+- [x] `render` 以 patch 发布一个 generic/target 三主题矩阵并保留其他 current；`batch` 以 authority 发布 generic + all confirmed targets，并在确认前显示 removals。
+- [x] gap allow 逐 target 生效；unknown 只警告；`--not-applicable TARGET_ID CONDITION_ID "REASON"` 是唯一公开覆盖入口。
+- [x] 任一候选或事务失败不改变 current/history；相同输入为 true no-op。
 - [x] 不可满足的强制页数经公开 shell CLI 以非零退出和稳定 JSON `LAYOUT_UNSATISFIABLE` 失败，不输出 traceback、部分 Typst、PDF 或 PNG。
 - [x] 受控编译锁定 Typst 0.15.0、skill-local 字体和 `--ignore-system-fonts`；照片槽位不超过 35 mm x 49 mm，默认 contain 等比、禁止拉伸，只有主题显式许可时才可受控裁切。
 
@@ -107,4 +124,6 @@ skills/graduate-resume/scripts/graduate-resume.sh verify
 - 不要为照片生成、猜测或写入远程 URL；无照片时省略 `photo` 字段。
 - 不要把主题、页数或照片布局回写为 `graduate-resume/v2` 的基础事实；照片必须是显式本地文件，且无照片输出不得保留图像、路径、EXIF 或照片装饰。
 - 不要把电话、邮箱、身份证、原始招聘 URL 写入输出 stem 或 history 路径。
+- 不要把完整 condition reason/evidence、preview、normalized photo 或 manifest sidecar 放入 delivery root。
+- 不要在未检查权威目标矩阵和 removals 时追加 `--confirm`。
 - 不要把 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 或 Hermes Agent 的私有语法写入 canonical 主流程。

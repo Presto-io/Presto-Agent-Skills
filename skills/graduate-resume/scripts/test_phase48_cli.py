@@ -216,5 +216,48 @@ class PublicCliContractTests(unittest.TestCase):
             self.assertEqual(public_files(delivery), ())
 
 
+class DocumentationContractTests(unittest.TestCase):
+    def test_canonical_workflow_reference_and_template_are_synchronized(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        contract = (SKILL_ROOT / "references" / "targeted-render-delivery-contract.md").read_text(encoding="utf-8")
+        template = (SKILL_ROOT / "templates" / "graduate-resume.md").read_text(encoding="utf-8")
+
+        for needle in (
+            "render --generic", "render --target <stable-id>", "generic + all confirmed targets",
+            "--not-applicable <target-id> <condition-id> <reason>", "--confirm",
+            "added/updated/unchanged/removed", "失败不改变 current/history", "Phase 49",
+        ):
+            self.assertIn(needle, skill)
+        for runtime in ("Codex", "Claude Code", "Gemini CLI", "OpenCode", "OpenClaw", "Hermes Agent"):
+            self.assertIn(runtime, skill)
+        self.assertNotIn("AskUserQuestion", skill)
+        self.assertNotIn("tool_call", skill)
+
+        for decision in range(1, 20):
+            self.assertIn(f"D-{decision:02d}", contract)
+        for needle in (
+            "education_level", "major_exact", "certificate_exact", "fresh_graduate_status",
+            "meets", "gap", "unknown", "not-applicable", "1..200 Unicode code points",
+            "graduate-resume-delivery/v1", "conservative", "modern", "expressive",
+            "Markdown/Typst/PDF", "mode=patch", "mode=authority", "true no-op",
+            "updated/removed", "rollback", "owned hidden evidence", "413 × 579", "300 PPI",
+            "EXIF", "内嵌 bytes", "history", "manifest sidecar", "Phase 49",
+        ):
+            self.assertIn(needle, contract)
+        self.assertIn("--not-applicable <target-id> <condition-id> <reason>", contract)
+        self.assertNotIn("override.json", contract)
+        self.assertEqual(contract.count("TARGET=JSON"), 1)
+
+        for needle in (
+            "id=target-grid-001", "来源：校园招聘公告", "截至日期：2026-07-17",
+            "已确认：是", "学历要求：大专", "专业要求：电气自动化技术",
+            "证书要求：低压电工证", "应届毕业生",
+        ):
+            self.assertIn(needle, template)
+        self.assertNotIn("status=pending", template)
+        self.assertNotIn("gap_allowed", template)
+        self.assertNotIn("not-applicable", template)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

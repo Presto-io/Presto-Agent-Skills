@@ -43,9 +43,9 @@ preferences:
 ## 证书与资格
 
 ### 低压电工证
-<!-- resume: id=cert-electrician-001 status=pending -->
+<!-- resume: id=cert-electrician-001 status=verified -->
 
-- 说明：待补证书编号或取得状态
+- 发证机构：应急管理部门
 
 ## 项目经历
 
@@ -75,6 +75,6 @@ preferences:
 - 来源：校园招聘公告
 - 截至日期：2026-07-17
 - 已确认：是
-- 招聘要求：接受应届毕业生
+- 招聘要求：学历要求：大专；专业要求：电气自动化技术；证书要求：低压电工证；应届毕业生；工作地点：南京
 
-<!-- 复核说明：所有 pending 条目必须先确认或明确不适用。省略 YAML photo 字段即为无照片版；preferences 只影响派生版本，不改变事实。 -->
+<!-- 填写说明：每个 target 使用稳定 ID，并完整填写来源、截至日期、已确认和逐条招聘要求。只写用户已提供并确认的条件；override、四态结果和 gap allow 不回写本模板。省略 YAML photo 字段即为无照片版。 -->
