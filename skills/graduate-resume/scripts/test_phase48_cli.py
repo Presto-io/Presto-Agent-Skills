@@ -330,6 +330,77 @@ class PublicCliContractTests(unittest.TestCase):
             self.assertNotIn(str(source), typst_text)
             self.assertNotIn("student-photo.jpg", typst_text)
 
+    def test_explicit_photo_requires_safe_provided_asset_before_any_delivery_change(self) -> None:
+        no_photo = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
+        photo_fixture = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            delivery = root / "delivery"
+            baseline = run_cli(
+                "render", "--input", str(no_photo), "--generic",
+                "--delivery-root", str(delivery), "--photo-mode", "no-photo", "--confirm",
+            )
+            self.assertEqual(baseline.returncode, 0, baseline.stderr)
+            before = recursive_snapshot(delivery)
+
+            plan_failed = run_cli("plan", "--input", str(no_photo), "--photo-mode", "photo")
+            render_failed = run_cli(
+                "render", "--input", str(no_photo), "--generic",
+                "--delivery-root", str(delivery), "--photo-mode", "photo",
+            )
+            batch_failed = run_cli(
+                "batch", "--input", str(no_photo),
+                "--delivery-root", str(delivery), "--photo-mode", "photo",
+            )
+            for completed in (plan_failed, render_failed, batch_failed):
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertEqual(parse_json(completed)["code"], "PHOTO_ASSET_INVALID")
+                self.assertNotIn("Traceback", completed.stderr)
+                self.assertNotIn(str(no_photo), completed.stderr)
+                self.assertEqual(recursive_snapshot(delivery), before)
+
+            auto_plan = run_cli("plan", "--input", str(no_photo), "--photo-mode", "auto")
+            self.assertEqual(auto_plan.returncode, 0, auto_plan.stderr)
+            self.assertEqual(parse_json(auto_plan)["resolved_photo_mode"], "no-photo")
+            for command in ("render", "batch"):
+                selector = ("--generic",) if command == "render" else ()
+                completed = run_cli(
+                    command, "--input", str(no_photo), *selector,
+                    "--delivery-root", str(delivery), "--photo-mode", "auto",
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                self.assertEqual(parse_json(completed)["photo_mode"], "no-photo")
+                self.assertEqual(recursive_snapshot(delivery), before)
+
+            ignored = run_cli(
+                "plan", "--input", str(photo_fixture), "--photo-mode", "no-photo",
+                "--assets-root", str(root / "does-not-exist"),
+            )
+            self.assertEqual(ignored.returncode, 0, ignored.stderr)
+            self.assertEqual(parse_json(ignored)["resolved_photo_mode"], "no-photo")
+
+            assets = root / "assets"
+            assets.mkdir()
+            real_photo = SKILL_ROOT / "fixtures" / "layout" / "media" / "student-photo.jpg"
+            (assets / "linked.jpg").symlink_to(real_photo)
+            (assets / "invalid.jpg").write_bytes(b"not-a-jpeg")
+            source_text = photo_fixture.read_text(encoding="utf-8")
+            for name in ("linked.jpg", "invalid.jpg", "missing.jpg"):
+                source = root / f"{name}.md"
+                source.write_text(
+                    source_text.replace("fixtures/media/student-photo.jpg", name),
+                    encoding="utf-8",
+                )
+                completed = run_cli(
+                    "render", "--input", str(source), "--generic",
+                    "--delivery-root", str(delivery), "--photo-mode", "photo",
+                    "--assets-root", str(assets),
+                )
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertEqual(parse_json(completed)["code"], "PHOTO_ASSET_INVALID")
+                self.assertNotIn(str(source), completed.stderr)
+                self.assertEqual(recursive_snapshot(delivery), before)
+
 
 class DocumentationContractTests(unittest.TestCase):
     def test_canonical_workflow_reference_and_template_are_synchronized(self) -> None:
