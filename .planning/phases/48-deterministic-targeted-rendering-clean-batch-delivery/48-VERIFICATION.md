@@ -1,79 +1,28 @@
 ---
 phase: 48-deterministic-targeted-rendering-clean-batch-delivery
-verified: 2026-07-18T13:56:41Z
-status: gaps_found
-score: 1/5 must-haves verified
+verified: 2026-07-18T17:13:16Z
+status: passed
+score: 5/5 must-haves verified
 overrides_applied: 0
 re_verification:
   previous_status: gaps_found
   previous_score: 1/5
   gaps_closed:
-    - "declined/pending publication、事实 ID 注入、结构化字段丢失和显式照片静默降级已关闭。"
-    - "单目标逐条件公开投影、digest-bound hidden evidence 已接通。"
-    - "历史 stem 已与当前 authority 解耦，删除目标后的连续 no-op 已恢复。"
-    - "--confirm 已要求用户提交上一独立预检的 --approval-digest。"
+    - "严格 metadata authority 已拒绝缺失、拼错、额外与重复字段，publication 只消费显式 verified 事实。"
+    - "照片校验、hash 与规范化已消费同一个 held no-follow descriptor bytes 快照。"
+    - "canonical 解析、final Markdown、evidence 与 approval payload 已绑定同一次有界 no-follow source snapshot。"
+    - "投递根 allowlist 已收紧为 managed triples、history 与当前事务拥有的 .work，sources/assets 一律拒绝。"
+    - "全部生产 Typst 消费者已复用同一个精确 0.15.0 immutable executable snapshot。"
   gaps_remaining: []
   regressions: []
-gaps:
-  - truth: "正式定向只能消费显式标记为 verified 的事实，缺失、拼错或重复复核状态必须失败关闭。"
-    status: failed
-    reason: "Markdown metadata 未校验精确字段和重复键，并以 verified 作为缺省状态；未复核事实可被静默提升后进入定向、条件判定和正式三件套。"
-    artifacts:
-      - path: "skills/graduate-resume/scripts/graduate_resume_cli.py"
-        issue: "parse_metadata 覆盖重复键；parse_markdown_facts 使用 metadata.get('status', 'verified')。"
-    missing:
-      - "非 target 条目必须精确且唯一地提供 id/status，target 必须只提供 id。"
-      - "缺失、拼错、额外或重复 metadata key 的 CLI 负例。"
-  - truth: "照片校验与消费必须绑定同一 no-follow 文件快照，不能在校验后跟随替换的 symlink。"
-    status: failed
-    reason: "resolve_layout_photo 只返回逻辑路径；CLI 随后按路径重新 read_bytes，存在可复现的校验后 symlink 替换窗口。"
-    artifacts:
-      - path: "skills/graduate-resume/scripts/graduate_resume_layout.py"
-        issue: "校验图片后仅返回 PhotoAsset 路径，没有返回 held descriptor 或已验证 bytes。"
-      - path: "skills/graduate-resume/scripts/graduate_resume_cli.py"
-        issue: "_resolve_publication_photo 对已验证路径执行第二次可跟随 symlink 的读取。"
-    missing:
-      - "在 held assets-root descriptor 下以 O_NOFOLLOW 打开并从同一 descriptor 校验、读取有界 bytes。"
-      - "校验后 inode/symlink swap 回归。"
-  - truth: "最终事实、canonical hash 与审批摘要必须来自同一个不可变输入快照。"
-    status: failed
-    reason: "load_resume 读取并解析一次，发布编排又从路径重读 bytes 计算 canonical_hash；文件在两次读取间变化时会用旧事实渲染、却声明绑定新 hash。"
-    artifacts:
-      - path: "skills/graduate-resume/scripts/graduate_resume_cli.py"
-        issue: "ResumeDocument 不保存原始 bytes/hash；_command_publication 在投影后再次 document.path.read_bytes()。"
-    missing:
-      - "一次 no-follow、有界读取后冻结原始 bytes/hash，解析、渲染与审批全部消费同一快照。"
-      - "单进程 load 后替换 canonical 的负例。"
-  - truth: "Phase 48 投递根只能包含平铺正式 triples 和事务 history/.work，不接受 sources/assets 或私密附件。"
-    status: failed
-    reason: "DeliverySession 将 sources/assets 作为合法支持目录且不检查其内容；临时根中的 sources/private.txt 与 assets/private.txt 均被接受。"
-    artifacts:
-      - path: "skills/graduate-resume/scripts/graduate_resume_delivery.py"
-        issue: "SUPPORT_DIRECTORIES 包含 sources/assets，_inspect_current 只确认它们是目录。"
-    missing:
-      - "Phase 48 只允许 history 和事务拥有的 .work；sources/assets 一律 unknown fail-closed。"
-      - "非空 sources/assets 在 mutation 前失败且 current/history 不变的回归。"
-  - truth: "受控渲染必须实际锁定 Typst 0.15.0，不能仅依赖命令名或错误文案。"
-    status: failed
-    reason: "字体探测、照片规范化与 PDF 编译均未调用 typst --version；伪造的 Typst 9.9 只要返回预期 fonts 文本即可通过当前门禁。"
-    artifacts:
-      - path: "skills/graduate-resume/scripts/graduate_resume_layout.py"
-        issue: "_validate_font_visibility 只运行 fonts 子命令。"
-      - path: "skills/graduate-resume/scripts/graduate_resume_typst.py"
-        issue: "normalize_photo_bytes 只检查 shutil.which 后直接 compile。"
-      - path: "skills/graduate-resume/scripts/graduate_resume_render.py"
-        issue: "_compile_typst 直接调用字符串 typst。"
-    missing:
-      - "唯一 Typst resolver，冻结绝对路径并精确校验版本 0.15.0。"
-      - "三个生产消费者复用同一已验证可执行文件，增加错误版本假实现负例。"
 ---
 
 # Phase 48: 确定性定向渲染与干净批量交付 Verification Report
 
 **Phase Goal:** 用户能离线生成通用版及多个透明、可追溯的定向简历三件套，并在失败时保持当前成功交付。
-**Verified:** 2026-07-18T13:56:41Z
-**Status:** gaps_found
-**Re-verification:** 是，上一轮缺口关闭后复核；本轮发现新的生产边界阻断项
+**Verified:** 2026-07-18T17:13:16Z
+**Status:** passed
+**Re-verification:** 是 — 对上一轮 5 个阻断项完整复核，并对旧通过项做回归检查
 
 ## Goal Achievement
 
@@ -81,115 +30,101 @@ gaps:
 
 | # | Roadmap Success Criterion | Status | Evidence |
 |---|---|---|---|
-| 1 | 同一已核实资料生成通用版及每个单位+岗位的定向版，且只选择、排序或强调已核实事实 | ✗ FAILED | `stats=pending`、缺失 `status`、重复 `status` 均被解析为 `verified` 并通过校验；53 项现有窄测试未覆盖。 |
-| 2 | 用户可查看硬条件四态；gap 可明确放行且简历不暗示满足 | ✗ FAILED | 逐条件公开行、hidden evidence 和 gap gate 已接通，但状态提升漏洞会把未复核 evidence 当作 verified，四态中的 `meets` 不再可信。 |
-| 3 | 每个版本记录实际主题、页数、照片模式、目标及来源/日期，且不抓取或猜测招聘信息 | ✓ VERIFIED | final Markdown 记录上述字段；目标信息只来自本地 canonical/CLI，生产路径未发现网络调用。canonical hash 错绑另作为可追溯性阻断。 |
-| 4 | 每个成功版本同 stem 输出正式命名的 Markdown、Typst、PDF 三件套，投递根保持干净 | ✗ FAILED | triples/命名可生成，但 delivery transaction 明确接受任意非空 `sources/`、`assets/`，违反路线图和 D-13 的干净投递根。 |
-| 5 | 单份/批量完整预检，失败零部分发布，并保持 candidate-first、no-op、history、rollback、unknown/symlink fail-closed | ✗ FAILED | reviewed digest、history/no-op 和故障 rollback 测试通过；但 canonical 两次读取与照片二次路径读取使预检不能绑定实际消费快照，cleanup 错误还会被静默吞掉。 |
+| 1 | 同一已核实资料生成通用版及每个单位+岗位定向版，且定向只选择、排序或强调已核实事实 | ✓ VERIFIED | `publication_fact_view` 在 `graduate_resume_cli.py:793` 强制候选人与全部事实为 `verified`；target resolver 在 `graduate_resume_targeting.py:282` 再次复验。CLI 回归覆盖 generic、target patch、all-confirmed batch、declined/pending 与非法 ID。 |
+| 2 | 用户可查看硬条件 meets/gap/unknown/not-applicable；gap 可显式放行且简历不暗示满足 | ✓ VERIFIED | 四态固定于 `graduate_resume_targeting.py:30`，不受控或证据不足条件回退 unknown；target render/batch 共用 `target_conditions` 投影，完整理由仅进入 digest-bound 独立 evidence。逐目标 allow、不扩散与 not-applicable 三参数负例均通过。 |
+| 3 | 每个版本记录主题、页数、照片模式、目标与来源/日期，且不抓取、猜测或声称招聘信息实时 | ✓ VERIFIED | final Markdown 精确 schema 绑定上述 metadata、canonical/policy/condition digest；目标信息只来自 canonical 与 CLI。生产实现无网络调用，公开 `verify` 报告 `offline_only=true`、`token_free=true`。 |
+| 4 | 每个成功版本以同 stem 输出正式 Markdown、Typst、PDF 三件套；generic 使用“通用”，投递根无诊断/中间件 | ✓ VERIFIED | `render_candidate_matrix` 在 `graduate_resume_render.py:300` 生成三主题完整 triples；真实编译、移动后重编译与 exact candidate set 测试通过。`SUPPORT_DIRECTORIES` 在 `graduate_resume_delivery.py:18` 仅为 `history/.work`。 |
+| 5 | 单份/批量完整预检；任一失败零部分发布，并保持 candidate-first、bytes no-op、完整 history、rollback、unknown/symlink fail-closed | ✓ VERIFIED | CLI 在 `graduate_resume_cli.py:887` 明确选择 `patch/authority`，`DeliverySession.preflight/publish` 在 `graduate_resume_delivery.py:479/632` 重算 reviewed digest 后才 mutation。no-op、history、removed、全部 fault/INT/TERM rollback、unknown/partial/symlink/FIFO/stale 与 cleanup 双故障回归全部通过。 |
 
-**Score:** 1/5 truths verified
-
-上一轮五类缺口均有当前代码与回归证明已关闭；本报告中的五项是独立复核代码审查后确认的新阻断项，不是沿用旧报告结论。
+**Score:** 5/5 truths verified
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `skills/graduate-resume/templates/targeting-policy.json` | 冻结离线定向策略 | ✓ VERIFIED | 精确字段、版本和 raw-bytes SHA-256 存在。 |
-| `skills/graduate-resume/scripts/graduate_resume_targeting.py` | 稳定投影、四态条件与 gap gate | ⚠ PARTIAL | 算法与 evidence 投影实质存在；上游 metadata 状态提升破坏 verified-evidence 前提。 |
-| `skills/graduate-resume/scripts/graduate_resume_final_markdown.py` | 可重读并绑定的最终 Markdown | ✓ VERIFIED | emitter -> reopen -> parse -> binding 校验已接通。 |
-| `skills/graduate-resume/scripts/graduate_resume_layout.py` | 冻结布局、照片与字体门禁 | ✗ UNSAFE | 结构字段已恢复、显式 photo 已 fail-closed；照片只返回路径且 Typst 未验证版本。 |
-| `skills/graduate-resume/scripts/graduate_resume_typst.py` | 机械、安全、受控版本发射 | ⚠ PARTIAL | 稳定 ID/文本边界已修复；照片规范化只检查命令存在性。 |
-| `skills/graduate-resume/scripts/graduate_resume_render.py` | 三主题候选矩阵与 triples | ⚠ PARTIAL | final Markdown 重读、结构化内容、hidden evidence 可用；编译未锁 Typst 版本。 |
-| `skills/graduate-resume/scripts/graduate_resume_delivery.py` | 干净 root、事务、history、rollback | ✗ UNSAFE | history/digest/rollback 已修复；仍接受 sources/assets，且清理错误全部吞掉。 |
-| `skills/graduate-resume/scripts/graduate_resume_cli.py` | render/batch 编排与快照绑定 | ✗ UNSAFE | 四态与 reviewed digest 已接通；metadata、照片和 canonical 快照三条信任边界仍破裂。 |
-| `skills/graduate-resume/scripts/test_phase48_cli.py` | Phase 48 固定验收矩阵 | ⚠ INSUFFICIENT | 53/53 Phase 48 相关测试通过，但五个 Critical 最小反例仍成功。 |
+| `skills/graduate-resume/templates/targeting-policy.json` | 冻结离线定向策略 | ✓ VERIFIED | SDK artifact gate 通过；精确 schema、policy version 与 raw-bytes SHA-256 由测试复算。 |
+| `skills/graduate-resume/scripts/graduate_resume_targeting.py` | 稳定投影、共享页数预算与四态条件 | ✓ VERIFIED | 实质算法存在并由 12 项 targeting tests 覆盖，输入保持不可变。 |
+| `skills/graduate-resume/scripts/graduate_resume_final_markdown.py` | 可重读、可篡改检测的最终 Markdown | ✓ VERIFIED | emit→reopen→exact schema/body/hash binding 已接通，非 verified 与非法 ID 二次拒绝。 |
+| `skills/graduate-resume/scripts/graduate_resume_layout.py` | 冻结布局、结构化内容与照片快照 | ✓ VERIFIED | `ResolvedPhotoAsset` 在 `graduate_resume_layout.py:113` 冻结 bytes/hash/identity；布局字段同时驱动测量和发射。 |
+| `skills/graduate-resume/scripts/graduate_resume_typst_runtime.py` | 精确 Typst 0.15.0 immutable snapshot | ✓ VERIFIED | descriptor-copy、bounded symlink chain、版本门禁与 source swap 负例均通过。 |
+| `skills/graduate-resume/scripts/graduate_resume_typst.py` | final Markdown/plan 的机械 Typst emitter | ✓ VERIFIED | 只消费显式 `TypstExecutable`，照片 bytes 内嵌，候选文本与 ID 再转义。 |
+| `skills/graduate-resume/scripts/graduate_resume_render.py` | 三主题完整候选矩阵与隐藏 evidence | ✓ VERIFIED | 三主题 triple、safe stem、碰撞、partial failure、evidence 隔离均有真实文件断言。 |
+| `skills/graduate-resume/scripts/graduate_resume_delivery.py` | patch/authority、no-op、history、rollback 与 fail-closed 事务 | ✓ VERIFIED | held root、exact allowlist、reviewed digest、whole-set rollback 与 observable cleanup 实质存在。 |
+| `skills/graduate-resume/scripts/graduate_resume_cli.py` | 公开 render/batch 编排与 bounded JSON | ✓ VERIFIED | load→validate→projection→candidate→preflight→confirm→publish 全链接通；`render=patch`、`batch=authority` 已人工确认。 |
+| 四个 Phase 48 测试模块 | 固定本地验收矩阵 | ✓ VERIFIED | 本次独立运行 70/70 PASS，非 SUMMARY 复述。 |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |---|---|---|---|---|
-| canonical parser | publication fact view | 显式 verified 状态 | ✗ NOT_WIRED | parser 在状态缺失/拼错时自行补成 verified。 |
-| target evaluator | public rows + hidden evidence | 同一 evaluation/digest | ✓ WIRED | CLI 同时持久化公开行与完整隐藏 evidence。 |
-| renderer | final Markdown loader | write -> reopen -> parse -> validate | ✓ WIRED | `render_candidate_matrix` 使用重读模型。 |
-| photo resolver | normalized photo bytes | 同一 no-follow 快照 | ✗ NOT_WIRED | resolver 返回路径，CLI 二次 path read。 |
-| parsed canonical facts | canonical hash/approval | 同一 immutable bytes | ✗ NOT_WIRED | parse 与 hash 分两次路径读取。 |
-| CLI | delivery transaction | patch/authority + reviewed digest | ✓ WIRED | `mode` 明确按 render/batch 选择，用户 digest 原样交给 publish；SDK regex 的 false negative 不改变代码证据。 |
-| delivery transaction | delivery root discovery | exact allowlist | ✗ PARTIAL | managed triples/history/.work 可控，但 sources/assets 被无界放行。 |
-| render/layout/typst | Typst executable | 精确 0.15.0 resolver | ✗ NOT_WIRED | 三个消费者没有共同版本门禁。 |
+| canonical parser | publication fact view / target resolver | exact metadata + explicit verified status | ✓ WIRED | 缺失、额外、空值、重复 metadata 与非 verified publication 负例通过。 |
+| target evaluator | public rows + hidden evidence | 同一 condition projection/digest | ✓ WIRED | render/batch schema 一致；持久 evidence 重算 digest 与公开值一致。 |
+| renderer | final Markdown loader | write → reopen → validate → layout → Typst → PDF | ✓ WIRED | SDK link gate 与真实 Typst/PDF 内容测试同时通过。 |
+| photo resolver | normalized photo bytes | 同一 no-follow descriptor snapshot | ✓ WIRED | CLI 只消费 `ResolvedPhotoAsset.source_bytes`，path reopen 回归通过。 |
+| canonical facts | final/evidence/approval hash | `ResumeDocument.source_bytes/source_sha256` | ✓ WIRED | load 后 byte/inode/symlink swap 不改变本次绑定，下一进程旧 digest 失效。 |
+| CLI | delivery transaction | render=`patch`、batch=`authority` + reviewed digest | ✓ WIRED | SDK 的旧 regex 未匹配局部变量赋值；人工确认 `graduate_resume_cli.py:887` 与 publish 调用 `:928` 完整接线。 |
+| delivery transaction | root/current/history | held descriptor + exact triples + support allowlist | ✓ WIRED | sources/assets、unknown、partial、symlink、FIFO、stale work 与非法 history 均在 mutation 前拒绝。 |
+| layout/typst/render | Typst executable | 单一 immutable 0.15.0 snapshot | ✓ WIRED | 三消费者显式接收同一 `TypstExecutable`；fake 9.9 与 source replacement 失败。 |
 
 ### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 |---|---|---|---|---|
-| final Markdown/Typst/PDF | selected facts | parsed canonical -> publication view | malformed metadata 可提升为 verified | ✗ UNTRUSTED |
-| condition public/evidence | `HardConditionEvaluation` | publication facts + target conditions | 公开/隐藏投影一致，但 evidence trust 可被状态提升破坏 | ⚠ PARTIAL |
-| canonical binding | `canonical_hash` | publication 时重新读取 input path | 与先前解析事实可能不是同一 bytes | ✗ DISCONNECTED |
-| normalized photo | `photo_bytes` | resolver 逻辑路径的二次读取 | 可跟随校验后替换的 symlink | ✗ UNTRUSTED |
-| delivery current | triples + support directories | held root descriptor | triples 实质流动；sources/assets 内容未审计 | ✗ POLLUTABLE |
+| final Markdown/Typst/PDF | selected verified facts | canonical source snapshot → publication view → VersionProjection | 是；真实 PDF 文本含联系方式、技能、项目成果与工具 | ✓ FLOWING |
+| condition public/evidence | `HardConditionEvaluation` | verified facts + target conditions + one-run overrides | 是；公开 rows 与独立 evidence digest 可重算一致 | ✓ FLOWING |
+| version metadata | theme/page/photo/target/source/as_of | frozen plan + canonical target brief | 是；final Markdown round-trip exact schema 复验 | ✓ FLOWING |
+| normalized photo | `ResolvedPhotoAsset.source_bytes` | held assets-root descriptor | 是；同一 bytes/hash/identity 进入 413×579 PNG 与 embedded Typst | ✓ FLOWING |
+| current/history | complete triples | fully rendered candidate matrix + reviewed transaction | 是；no-op 保持 inode/mtime，updated/removed 归档旧完整 triple | ✓ FLOWING |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Phase 48 相关窄回归 | `python3 -m unittest test_targeting_contract.py test_render_contract.py test_delivery_transaction.py test_phase48_cli.py -v` | 53 tests, OK, 16.491s | ✓ PASS（覆盖不足） |
-| graduate-resume 全量发现 | `python3 -m unittest discover -s skills/graduate-resume/scripts -p 'test_*.py' -q` | exit 0 | ✓ PASS（覆盖不足） |
-| metadata 拼错/缺失/重复必须拒绝 | 临时改写 `valid-no-photo.md` 后 `load_resume` + `validate_document` | 三种输入均 `ACCEPTED verified passed` | ✗ FAIL |
-| 照片校验后 symlink swap | resolve 后将 `photo.jpg` 替换为指向另一 JPEG 的 symlink，再执行 CLI 同构读取 | `followed_alternate=True` | ✗ FAIL |
-| canonical 同快照绑定 | load 后改写原文件，再按发布路径计算 hash | parsed body 为旧内容，claimed hash 为新文件 | ✗ FAIL |
-| delivery root 拒绝 sources/assets | 各放入 `private.txt` 后打开 `DeliverySession` | `sources_private=ACCEPTED`、`assets_private=ACCEPTED` | ✗ FAIL |
-| Typst 精确版本门禁 | mock `which=/fake/typst-9.9` 且 fonts 返回预期文本 | fake 9.9 被接受，唯一调用为 `fonts` | ✗ FAIL |
+| Phase 48 四模块验收 | `python3 -m unittest skills/graduate-resume/scripts/test_targeting_contract.py skills/graduate-resume/scripts/test_render_contract.py skills/graduate-resume/scripts/test_delivery_transaction.py skills/graduate-resume/scripts/test_phase48_cli.py -v` | 70 tests，206.521s，exit 0 | ✓ PASS |
+| 公开 fixture/layout 验证 | `python3 skills/graduate-resume/scripts/graduate_resume_cli.py verify` | 4 valid、6 invalid、5 layout 全部符合 expected；offline/token-free；exit 0 | ✓ PASS |
+| generic/多目标/同 stem triples | 上述 CLI tests | generic 三主题、target patch、all-confirmed batch、移动后重编译全部通过 | ✓ PASS |
+| 完整预检/零部分发布 | 上述 delivery/CLI tests | stale digest、photo/canonical/root swap、candidate failure 均非零且 current/history 不变 | ✓ PASS |
+| no-op/history/rollback | 上述 delivery/CLI tests | identical 不建 history且 inode/mtime 不变；updated/removed 完整归档；fault/INT/TERM 恢复全 current | ✓ PASS |
+| unknown/symlink 拒绝 | 上述 render/delivery/CLI tests | delivery/evidence/assets/canonical/Typst source 的 unknown、symlink、special file 均 fail closed | ✓ PASS |
 
 ### Probe Execution
 
-Step 7c: SKIPPED。Phase 48 的 PLAN/SUMMARY 未声明 `probe-*.sh`，仓库也没有本阶段约定 probe。
+Step 7c: SKIPPED。9 份 PLAN/SUMMARY 未声明 `probe-*.sh`，仓库也没有 Phase 48 约定 probe；本阶段由固定 Python acceptance registry 与公开 `verify` 命令承担可运行验收。
 
 ### Requirements Coverage
 
-| Requirement | Source Plan | Status | Evidence |
-|---|---|---|---|
-| TARGET-01 | 48-01, 48-02, 48-04, 48-05 | ✗ BLOCKED | 状态缺失/拼错/重复可提升为 verified，违反“只选已核实事实”。 |
-| TARGET-02 | 48-01, 48-04, 48-06 | ✗ BLOCKED | 四态、公开行、hidden evidence 与 gap allow 均已实现，但其 verified evidence 前提可被 metadata 状态提升绕过。 |
-| TARGET-03 | 48-01, 48-02, 48-04, 48-05 | ✓ SATISFIED | 最终 Markdown 记录实际主题/页数/照片/目标/source/as_of，生产路径无抓取或网络调用。 |
-| DELIVERY-01 | 48-02, 48-04, 48-05 | ✓ SATISFIED | 三主题同 stem `.md/.typ/.pdf` 与正式命名由当前回归和实际编译覆盖。 |
-| DELIVERY-02 | 48-03, 48-04, 48-06 | ✗ BLOCKED | 跨进程 reviewed digest 已实现；canonical 与照片在单进程内仍存在“校验/解析后重新读取”窗口，完整预检不成立。 |
-| DELIVERY-03 | 48-03, 48-04, 48-06 | ✗ BLOCKED | no-op/history/rollback/unknown/symlink 主路径通过；sources/assets 污染被接受，cleanup 失败又无错误信号。 |
+| Requirement | Source Plan | Description | Status | Evidence |
+|---|---|---|---|---|
+| TARGET-01 | 48-01, 48-02, 48-04, 48-05, 48-07 | 通用版 + 每目标定向版，只处理已核实事实 | ✓ SATISFIED | verified-only publication、共享事实投影、generic/target/batch CLI 与负例全部通过。 |
+| TARGET-02 | 48-01, 48-04, 48-06, 48-07 | 四态条件、逐目标 gap allow、不得暗示满足 | ✓ SATISFIED | 四态 evaluator、逐条件公开 rows、digest-bound evidence、per-target allow 与唯一 not-applicable 入口通过。 |
+| TARGET-03 | 48-01, 48-02, 48-04, 48-05, 48-07, 48-08 | 主题/页数/照片/目标/source/as_of 可追溯且离线 | ✓ SATISFIED | final Markdown exact metadata、canonical/photo/tool snapshots 与 offline probe 通过。 |
+| DELIVERY-01 | 48-02, 48-04, 48-05, 48-08 | 同 stem 正式 Markdown/Typst/PDF；generic=`通用` | ✓ SATISFIED | 三主题 exact triples、真实 PDF 内容、自包含照片与移动重编译通过。 |
+| DELIVERY-02 | 48-03, 48-04, 48-06, 48-07, 48-08, 48-09 | 单份/批量完整预检，任一失败零部分发布 | ✓ SATISFIED | patch/authority、跨进程 reviewed digest、所有 candidate/input/root/cleanup fault 回归通过。 |
+| DELIVERY-03 | 48-03, 48-04, 48-06, 48-08, 48-09 | candidate-first、bytes no-op、history、rollback、unknown/symlink fail-closed、干净根 | ✓ SATISFIED | 事务测试覆盖所有列明语义；投递根仅允许 triples/history/.work。 |
 
-六个 Phase 48 requirement 均至少被一个 PLAN frontmatter 声明，无 orphaned requirement。Phase 49 仅明确承接 PDF 结构验证、聚合回归、六 runtime 和跨环境字体 UAT，没有承接上述生产实现缺口；无 deferred 项。
-
-### Code Review Findings Re-check
-
-| Finding | Independent Result | Classification | Evidence |
-|---|---|---|---|
-| CR-01 metadata 状态提升 | CONFIRMED | 🛑 BLOCKER | 拼错、缺失、重复 status 三个最小反例均通过。 |
-| CR-02 照片 symlink TOCTOU | CONFIRMED | 🛑 BLOCKER | resolve 后 swap，二次读取跟随替代文件。 |
-| CR-03 canonical hash 错绑 | CONFIRMED | 🛑 BLOCKER | 旧 parsed body 与新 claimed hash 可同时出现。 |
-| CR-04 sources/assets 污染 | CONFIRMED | 🛑 BLOCKER | 两个私密文件目录均被 DeliverySession 接受。 |
-| CR-05 Typst 版本未锁 | CONFIRMED | 🛑 BLOCKER | fake 9.9 通过字体门禁，代码无 `--version` 调用。 |
-| WR-01 cleanup 错误吞掉 | CONFIRMED（静态） | ⚠ WARNING | `close()` 的 unlink/rmdir/close OSError 全部 `pass`，`__exit__` 不检查结果。 |
+全部 6 个 Phase 48 requirement 均被 PLAN frontmatter 声明，无 orphaned requirement。Phase 49 仅承接 PDF 结构/布局、六 runtime、聚合故障 authority 与跨环境 UAT，不承接任何未关闭的 Phase 48 实现缺口。
 
 ### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 |---|---:|---|---|---|
-| `graduate_resume_cli.py` | 221, 287 | 重复 metadata 覆盖 + verified 缺省 | 🛑 Blocker | 未核实事实可进入正式输出和资格判定。 |
-| `graduate_resume_cli.py` | 665 | 校验后按路径二次读照片 | 🛑 Blocker | 可消费未经授权替代文件。 |
-| `graduate_resume_cli.py` | 774 | 解析后重读 canonical 计算 hash | 🛑 Blocker | 可追溯绑定声明错误。 |
-| `graduate_resume_delivery.py` | 18, 355 | sources/assets allowlist | 🛑 Blocker | 投递根可保留私密或中间资产。 |
-| `graduate_resume_layout.py` | 442 | 只检查 typst 命令存在 | 🛑 Blocker | 不同版本可改变布局与 bytes。 |
-| `graduate_resume_delivery.py` | 690-738 | 清理 OSError 全部吞掉 | ⚠ Warning | 成功后可遗留 stale `.work/.lock`，下一次运行才失败。 |
-
-阶段生产文件未发现未引用的 `TBD`、`FIXME` 或 `XXX` 债务标记。
+| — | — | 未发现未引用的 `TBD`、`FIXME`、`XXX`，也未发现流向正式输出的 placeholder/空实现 | — | 无阻断或警告 |
 
 ### Human Verification Required
 
-无。五项阻断均由代码检查和无状态临时目录最小复现确定；视觉、跨 runtime 与跨环境字体 UAT 属于 Phase 49，不能替代本阶段失败判定。
+无。Phase 48 的可观察目标由真实 Typst/PDF、文件系统事务和公开 CLI 自动化验收确定；视觉观感、跨 runtime 安装与跨环境字体/PDF UAT 是 Phase 49 的明确范围，不作为本阶段不确定项。
+
+### Disconfirmation Pass
+
+- 最易部分满足的 TARGET-02 已专项检查：公开 rows 不是只有 counts，hidden evidence 也不是临时内存对象；两者由同一 digest 绑定并持久化到独立授权根。
+- 最可能误导的测试是 SDK 对 48-04 `mode=.*patch|authority` 的 regex：它报告未匹配，但生产代码使用局部变量 `mode = "authority" if batch else "patch"`，后续传入 `DeliverySpec`，真实 CLI patch/authority 行为测试通过，因此属于静态 pattern false negative。
+- 最危险的未覆盖错误路径原为 cleanup failure；现有 service 与 CLI 均有成功 publish + cleanup failure、rollback + cleanup 双故障回归，且断言非零、无 success payload、current 状态正确。
 
 ### Gaps Summary
 
-上一轮报告指出的信任边界、结构化内容、condition evidence、history 连续性和 reviewed digest 缺口已经关闭，现有回归也全部通过。但 Phase 48 目标仍未达成：解析器可把未复核事实提升为 verified，照片与 canonical 都没有把验证和消费绑定到同一快照，投递根允许 `sources/assets` 污染，声明锁定的 Typst 版本没有任何代码门禁。五项 Critical 均被独立复现，不能进入 Phase 49。
+上一轮的 5 个阻断项均已由当前生产实现、专项负例和本次独立测试关闭；未发现回归、未决阻断或需要 override 的偏差。Phase 48 目标已实现，可以进入 Phase 49。
 
 ---
 
-_Verified: 2026-07-18T13:56:41Z_
+_Verified: 2026-07-18T17:13:16Z_
 _Verifier: the agent (gsd-verifier)_
