@@ -267,6 +267,25 @@ class TypstConsumerContractTests(unittest.TestCase):
 
 
 class RenderMatrixContractTests(unittest.TestCase):
+    def test_evidence_root_rejects_unknown_nodes_and_identity_swap(self) -> None:
+        from graduate_resume_render import EvidenceSink
+
+        with tempfile.TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            evidence = parent / "evidence"
+            evidence.mkdir()
+            (evidence / "unknown.txt").write_text("unknown", encoding="utf-8")
+            with self.assertRaises(cli.CliError):
+                with EvidenceSink(evidence):
+                    pass
+            (evidence / "unknown.txt").unlink()
+            with EvidenceSink(evidence) as sink:
+                original = parent / "evidence-original"
+                evidence.rename(original)
+                evidence.mkdir()
+                with self.assertRaises(cli.CliError):
+                    sink.assert_identity()
+
     def test_target_evidence_is_persisted_outside_candidate_and_digest_bound(self) -> None:
         from graduate_resume_layout import build_layout_feedback_adapter
         from graduate_resume_render import render_candidate_matrix
@@ -298,9 +317,11 @@ class RenderMatrixContractTests(unittest.TestCase):
             self.assertEqual(payload["canonical_hash"], hashlib.sha256(source.read_bytes()).hexdigest())
             self.assertEqual(payload["projection_digest"], projection.digest)
             self.assertEqual(payload["condition_digest"], projection.condition_digest)
+            digest_payload = dict(payload["condition_evidence"])
+            digest_payload.pop("evidence_digest")
             matrix_digest = hashlib.sha256(
                 json.dumps(
-                    payload["condition_evidence"]["matrix"],
+                    digest_payload,
                     ensure_ascii=False,
                     sort_keys=True,
                     separators=(",", ":"),
