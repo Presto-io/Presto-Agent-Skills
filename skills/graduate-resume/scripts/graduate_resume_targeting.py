@@ -10,7 +10,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
-from graduate_resume_cli import CliError
+from graduate_resume_cli import CliError, is_stable_fact_id
 
 TARGETING_POLICY_INVALID = "TARGETING_POLICY_INVALID"
 TARGETING_INPUT_INVALID = "TARGETING_INPUT_INVALID"
@@ -279,7 +279,7 @@ def load_targeting_policy(path: Path | None = None) -> TargetingPolicy:
 def _facts_by_section(facts: Mapping[str, Any], module_order: tuple[str, ...]) -> tuple[tuple[str, str, Mapping[str, Any]], ...]:
     result: list[tuple[str, str, Mapping[str, Any]]] = []
     candidate = facts.get("candidate")
-    if not isinstance(candidate, Mapping) or not candidate:
+    if not isinstance(candidate, Mapping) or candidate.get("status") != "verified":
         raise CliError(TARGETING_INPUT_INVALID, "已核实资料缺少个人信息。")
     result.append(("candidate", "profile", candidate))
     seen = {"profile"}
@@ -290,7 +290,7 @@ def _facts_by_section(facts: Mapping[str, Any], module_order: tuple[str, ...]) -
         if not isinstance(raw_items, (list, tuple)):
             raise CliError(TARGETING_INPUT_INVALID, "已核实事实模块必须是条目列表。")
         for item in raw_items:
-            if not isinstance(item, Mapping) or not isinstance(item.get("id"), str) or not item["id"]:
+            if not isinstance(item, Mapping) or item.get("status") != "verified" or not is_stable_fact_id(item.get("id")):
                 raise CliError(TARGETING_INPUT_INVALID, "已核实事实缺少稳定 ID。")
             fact_id = item["id"]
             if fact_id in seen:

@@ -9,14 +9,14 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from graduate_resume_cli import CliError
+from graduate_resume_cli import CliError, is_stable_fact_id
 from graduate_resume_layout import FrozenResumePlan, LAYOUT_PLAN_INVALID
 from graduate_resume_final_markdown import FinalResumeDocument
 
 
 def typst_content(value: str) -> str:
     """Escape every candidate-controlled character before it becomes Typst content."""
-    return value.replace("\\", "\\\\").replace("#", "\\#").replace("[", "\\[").replace("]", "\\]").replace("\n", "#linebreak()")
+    return value.replace("\\", "\\\\").replace('"', '\\"').replace("#", "\\#").replace("[", "\\[").replace("]", "\\]").replace("\n", "#linebreak()")
 
 
 def normalize_photo_bytes(source: bytes, *, max_bytes: int = 20 * 1024 * 1024) -> bytes:
@@ -59,6 +59,9 @@ def validate_emit_inputs(plan: FrozenResumePlan, document: FinalResumeDocument |
         raise CliError(LAYOUT_PLAN_INVALID, "Typst 发射只接受重读后的最终 Markdown 与完整冻结计划。")
     facts = document if legacy else document.fact_view()
     plan.validate(facts)
+    ids = tuple(container.id for container in plan.containers)
+    if len(ids) != len(set(ids)) or any(not is_stable_fact_id(item, profile=item == "profile") for item in ids):
+        raise CliError(LAYOUT_PLAN_INVALID, "冻结布局包含无效事实 ID。")
     if not legacy and (plan.theme_key != document.theme_key or plan.page_count != document.page_count or plan.photo_mode != document.photo_mode):
         raise CliError(LAYOUT_PLAN_INVALID, "冻结布局与最终 Markdown 元数据不匹配。")
     if plan.photo_mode == "no-photo" and (plan.photo is not None or plan.photo_slot is not None):
@@ -90,7 +93,8 @@ def emit_typst(plan: FrozenResumePlan, document: FinalResumeDocument | dict[str,
             content = typst_content(_container_text(container))
             if container.kind == "list-entry":
                 show_heading = "true" if container.section != previous_section else "false"
-                body.append(f'#list-entry("{heading}", "{container.id}", [{content}], show-heading: {show_heading})')
+                fact_id = typst_content(container.id)
+                body.append(f'#list-entry("{heading}", "{fact_id}", [{content}], show-heading: {show_heading})')
             else:
                 body.append(f'#fact-block("{heading}", [{content}])')
             previous_section = container.section

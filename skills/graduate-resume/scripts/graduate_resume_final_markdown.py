@@ -11,7 +11,7 @@ from typing import Any, Mapping
 
 import yaml
 
-from graduate_resume_cli import CliError
+from graduate_resume_cli import CliError, is_stable_fact_id
 from graduate_resume_targeting import VersionProjection
 
 FINAL_MARKDOWN_INVALID = "FINAL_MARKDOWN_INVALID"
@@ -84,12 +84,15 @@ def _json_bytes(value: Any) -> bytes:
 def _all_facts(facts: Mapping[str, Any]) -> dict[str, tuple[str, Mapping[str, Any]]]:
     result: dict[str, tuple[str, Mapping[str, Any]]] = {}
     candidate = facts.get("candidate")
-    if isinstance(candidate, Mapping):
+    if isinstance(candidate, Mapping) and candidate.get("status") == "verified":
         result["profile"] = ("candidate", candidate)
     for section in ("education", "skills", "certificates", "projects", "training", "experience"):
         for item in facts.get(section, ()) or ():
-            if isinstance(item, Mapping) and isinstance(item.get("id"), str):
-                result[item["id"]] = (section, item)
+            if not isinstance(item, Mapping) or item.get("status") != "verified" or not is_stable_fact_id(item.get("id")):
+                continue
+            if item["id"] in result:
+                raise _error()
+            result[item["id"]] = (section, item)
     return result
 
 
@@ -168,7 +171,12 @@ def _parse_body(body: bytes) -> tuple[FinalResumeFact, ...]:
             section = match.group(1).decode("ascii")
             fact_id = match.group(2).decode("utf-8")
             data = json.loads(match.group(3))
-            if not isinstance(data, dict) or (fact_id != "profile" and data.get("id") != fact_id):
+            if (
+                not isinstance(data, dict)
+                or data.get("status") != "verified"
+                or not is_stable_fact_id(fact_id, profile=fact_id == "profile")
+                or (fact_id != "profile" and data.get("id") != fact_id)
+            ):
                 raise ValueError
             facts.append(FinalResumeFact(fact_id, section, tuple(data.items())))
         except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
