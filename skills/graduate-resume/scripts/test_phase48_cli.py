@@ -161,6 +161,7 @@ class PublicCliContractTests(unittest.TestCase):
                 original_publication_view = cli.publication_fact_view
                 original_render = render_module.render_candidate_matrix
                 original_spec = delivery_module.DeliverySpec
+                original_path_read_bytes = Path.read_bytes
 
                 def swap_after_load(data: dict[str, object]) -> dict[str, object]:
                     view = original_publication_view(data)
@@ -183,6 +184,11 @@ class PublicCliContractTests(unittest.TestCase):
                     captured["approval_hash"] = spec.canonical_hash
                     return spec
 
+                def forbid_canonical_path_read(path: Path) -> bytes:
+                    if path == canonical:
+                        raise AssertionError("publication must not reread the canonical path")
+                    return original_path_read_bytes(path)
+
                 args = argparse.Namespace(
                     input=str(canonical), delivery_root=str(root / "delivery"), evidence_root=None,
                     retain=[], exclude=[], pin=[], not_applicable=[], allow_gap_target=[], pages="auto",
@@ -194,6 +200,7 @@ class PublicCliContractTests(unittest.TestCase):
                     mock.patch.object(cli, "publication_fact_view", side_effect=swap_after_load),
                     mock.patch.object(render_module, "render_candidate_matrix", side_effect=capture_render),
                     mock.patch.object(delivery_module, "DeliverySpec", side_effect=capture_spec),
+                    mock.patch.object(Path, "read_bytes", forbid_canonical_path_read),
                     contextlib.redirect_stdout(output),
                 ):
                     self.assertEqual(cli._command_publication(args, batch=False), 0)
