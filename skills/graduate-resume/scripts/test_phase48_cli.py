@@ -98,6 +98,28 @@ def run_phase48_acceptance_registry() -> dict[str, object]:
 
 
 class PublicCliContractTests(unittest.TestCase):
+    def test_publication_photo_consumes_resolver_snapshot_without_path_reopen(self) -> None:
+        from graduate_resume_layout import ResolvedPhotoAsset
+
+        document = cli.load_resume(str(SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"))
+        source = b"\xff\xd8descriptor-snapshot\xff\xd9"
+        resolved = ResolvedPhotoAsset(
+            "missing-after-resolve.jpg",
+            source,
+            hashlib.sha256(source).hexdigest(),
+            11,
+            22,
+        )
+        args = argparse.Namespace(photo_mode="photo", assets_root="/definitely/missing")
+        with mock.patch("graduate_resume_layout.resolve_layout_photo", return_value=resolved), mock.patch(
+            "graduate_resume_layout.validate_font_manifest", return_value="a" * 64
+        ):
+            photo_mode, photo_bytes, feedback_photo, font_hash = cli._resolve_publication_photo(args, document)
+        self.assertEqual(photo_mode, "photo")
+        self.assertEqual(photo_bytes, source)
+        self.assertEqual(feedback_photo.logical_path, "embedded-normalized.png")
+        self.assertEqual(font_hash, "a" * 64)
+
     def test_canonical_reader_rejects_unsafe_inputs_and_handles_short_reads(self) -> None:
         source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
         with tempfile.TemporaryDirectory() as temporary:

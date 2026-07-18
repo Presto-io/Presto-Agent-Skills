@@ -170,6 +170,89 @@ class TypstRuntimeResolverTests(unittest.TestCase):
                 self.assertFalse(snapshot_roots[0].exists())
 
 
+class PhotoDescriptorSnapshotTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.source = SKILL_ROOT / "fixtures" / "valid-generic-no-target.md"
+        self.photo = SKILL_ROOT / "fixtures" / "layout" / "media" / "student-photo.jpg"
+
+    def test_photo_bytes_hash_and_identity_come_from_one_descriptor(self) -> None:
+        from graduate_resume_layout import resolve_layout_photo
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assets = root / "assets"
+            assets.mkdir()
+            leaf = assets / "student.jpg"
+            original = self.photo.read_bytes()
+            leaf.write_bytes(original)
+            replacement = b"\xff\xd8replacement\xff\xd9"
+
+            def replace_leaf() -> None:
+                alternate = assets / "alternate.jpg"
+                alternate.write_bytes(replacement)
+                os.replace(alternate, leaf)
+
+            resolved = resolve_layout_photo(
+                self.source,
+                assets,
+                {"status": "provided", "path": "student.jpg"},
+                {"photo_mode": "photo"},
+                _after_leaf_read=replace_leaf,
+            )
+            self.assertEqual(resolved.logical_path, "student.jpg")
+            self.assertEqual(resolved.source_bytes, original)
+            self.assertEqual(resolved.source_sha256, hashlib.sha256(original).hexdigest())
+            self.assertNotEqual(resolved.source_bytes, leaf.read_bytes())
+            self.assertGreater(resolved.st_dev, 0)
+            self.assertGreater(resolved.st_ino, 0)
+
+    def test_photo_root_components_leaf_type_size_and_format_fail_closed(self) -> None:
+        from graduate_resume_layout import MAX_PHOTO_BYTES, resolve_layout_photo
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            real_assets = root / "real-assets"
+            real_assets.mkdir()
+            valid = real_assets / "valid.jpg"
+            valid.write_bytes(self.photo.read_bytes())
+            linked_root = root / "linked-assets"
+            linked_root.symlink_to(real_assets, target_is_directory=True)
+            middle = real_assets / "middle"
+            middle.symlink_to(root, target_is_directory=True)
+            linked_leaf = real_assets / "linked.jpg"
+            linked_leaf.symlink_to(valid)
+            directory_leaf = real_assets / "directory.jpg"
+            directory_leaf.mkdir()
+            fifo = real_assets / "fifo.jpg"
+            os.mkfifo(fifo)
+            oversized = real_assets / "oversized.jpg"
+            with oversized.open("wb") as stream:
+                stream.write(b"\xff\xd8")
+                stream.seek(MAX_PHOTO_BYTES)
+                stream.write(b"\xff\xd9")
+            (real_assets / "truncated.jpg").write_bytes(b"\xff\xd8truncated")
+            (real_assets / "truncated.png").write_bytes(b"\x89PNG\r\n\x1a\ntruncated")
+            cases = (
+                (linked_root, "valid.jpg"),
+                (real_assets, "middle/valid.jpg"),
+                (real_assets, "linked.jpg"),
+                (real_assets, "directory.jpg"),
+                (real_assets, "fifo.jpg"),
+                (real_assets, "oversized.jpg"),
+                (real_assets, "truncated.jpg"),
+                (real_assets, "truncated.png"),
+            )
+            for assets_root, logical_path in cases:
+                with self.subTest(logical_path=logical_path):
+                    with self.assertRaises(cli.CliError):
+                        resolve_layout_photo(
+                            self.source,
+                            assets_root,
+                            {"status": "provided", "path": logical_path},
+                            {"photo_mode": "photo"},
+                        )
+
+
 class FinalMarkdownContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
