@@ -23,9 +23,9 @@
 
 ### Targeting And Delivery
 
-- [ ] **TARGET-01**: CLI 能从同一份已核实资料生成一份通用版，以及每个“单位 + 岗位”一份独立定向版；定向只允许选择、排序和强调已核实事实。
-- [ ] **TARGET-02**: CLI 对用户提供的岗位硬条件生成透明的满足、缺口、未知或不适用提示；有缺口时仍允许按用户决定生成定向版，但简历不得暗示已符合。
-- [ ] **TARGET-03**: 每个版本的 YAML 记录实际主题、页数、照片模式、目标单位和岗位，以及本次定向信息的来源/日期；招聘信息不由技能抓取、猜测或声称实时。
+- [x] **TARGET-01**: CLI 能从同一份已核实资料生成一份通用版，以及每个“单位 + 岗位”一份独立定向版；定向只允许选择、排序和强调已核实事实。
+- [x] **TARGET-02**: CLI 对用户提供的岗位硬条件生成透明的满足、缺口、未知或不适用提示；有缺口时仍允许按用户决定生成定向版，但简历不得暗示已符合。
+- [x] **TARGET-03**: 每个版本的 YAML 记录实际主题、页数、照片模式、目标单位和岗位，以及本次定向信息的来源/日期；招聘信息不由技能抓取、猜测或声称实时。
 - [ ] **DELIVERY-01**: 每个成功版本同 stem 输出 Markdown、Typst、PDF 三件套，正式命名为 `某某某简历-某某单位-某某主题.md`、`.typ`、`.pdf`；通用版的单位段固定为 `通用`。
 - [ ] **DELIVERY-02**: CLI 提供单份与批量命令，批量任务先完整预检，任何目标失败时不发布部分当前版本。
 - [ ] **DELIVERY-03**: 成功交付沿用 candidate-first、精确 path-set/bytes no-op、完整 bundle history、handled error/INT/TERM rollback 与 unknown/symlink fail-closed 语义；诊断、照片规范化中间件和缺口报告不泄露到投递根。
@@ -69,9 +69,9 @@
 | THEME-03 | Phase 47 | Complete |
 | THEME-04 | Phase 47 | Complete |
 | THEME-05 | Phase 47 | Complete |
-| TARGET-01 | Phase 48 | Pending |
-| TARGET-02 | Phase 48 | Pending |
-| TARGET-03 | Phase 48 | Pending |
+| TARGET-01 | Phase 48 | Complete |
+| TARGET-02 | Phase 48 | Complete |
+| TARGET-03 | Phase 48 | Complete |
 | DELIVERY-01 | Phase 48 | Pending |
 | DELIVERY-02 | Phase 48 | Pending |
 | DELIVERY-03 | Phase 48 | Pending |
