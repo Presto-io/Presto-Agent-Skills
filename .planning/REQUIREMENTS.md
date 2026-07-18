@@ -15,8 +15,8 @@
 
 ### Themes And Layout
 
-- [ ] **THEME-01**: CLI 支持保守稳妥、现代简洁、个性设计三个初始主题，并允许通过 YAML `preferences.theme` 在不改写资料 schema 的情况下切换主题。
-- [ ] **THEME-02**: 每个主题可支持带照片与无照片布局；无照片时移除照片区域，不保留空占位，且只使用学生明确提供的本地照片。
+- [x] **THEME-01**: CLI 支持保守稳妥、现代简洁、个性设计三个初始主题，并允许通过 YAML `preferences.theme` 在不改写资料 schema 的情况下切换主题。
+- [x] **THEME-02**: 每个主题可支持带照片与无照片布局；无照片时移除照片区域，不保留空占位，且只使用学生明确提供的本地照片。
 - [ ] **THEME-03**: CLI 默认自动选择 1 页或 2 页 A4，也支持用户强制页数；输出必须在主题可读性阈值内收敛到指定页数，不能截断内容或产生第 3 页。
 - [ ] **THEME-04**: 两页输出不出现孤立标题、无标题续接内容或被拆开的项目、实训、经历、职责和成果；无法满足布局与可读性约束时必须失败关闭并说明原因。
 - [ ] **THEME-05**: 对内容不足的页面，CLI 只可重排或扩展已有材料可支撑的表达及主题密度，不能虚构经历、证书、成果或数据。
@@ -64,8 +64,8 @@
 | SCHEMA-02 | Phase 46 | Complete |
 | SCHEMA-03 | Phase 46 | Complete |
 | SCHEMA-04 | Phase 46 | Complete |
-| THEME-01 | Phase 47 | Pending |
-| THEME-02 | Phase 47 | Pending |
+| THEME-01 | Phase 47 | Complete |
+| THEME-02 | Phase 47 | Complete |
 | THEME-03 | Phase 47 | Pending |
 | THEME-04 | Phase 47 | Pending |
 | THEME-05 | Phase 47 | Pending |

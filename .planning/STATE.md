@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.19
 milestone_name: 毕业生高级简历生成器
 status: executing
-stopped_at: Phase 47 UI-SPEC approved
-last_updated: "2026-07-18T00:42:42.087Z"
+stopped_at: Completed 47-01-PLAN.md
+last_updated: "2026-07-18T02:20:54.063Z"
 last_activity: 2026-07-18 -- Phase 47 planning complete
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 33
 ---
 
 # State: Presto Agent Skills
@@ -124,6 +124,8 @@ Phase order:
 - [Phase 45]: Repository discovery names exactly six implemented writing skills; no unlisted skill inherits clean-delivery status implicitly.
 - [Phase 45]: Verification workdirs are caller-owned evidence roots rather than delivery roots, and normal publication never promotes diagnostic evidence to current.
 - [Phase 45]: OpenClaw and Hermes Agent support remains installation-time verified with explicit public-script fallback and no automatic-discovery claim.
+- [Phase 47]: 三个首批主题只登记视觉 token；照片以逻辑相对资产和冻结 contain/forbid 策略进入计划，不携带物理路径或事实。 — 主题扩展不得改写 graduate-resume/v2。
+- [Phase 47]: 受控字体清单在计划前验证 SHA-256 与 Typst 可见性；批准上游 Bold 的物理 700 保持原样并承担 UI 语义 600 角色。 — 不篡改上游 OFL 字体且不依赖系统回退。
 
 ### Pending Todos
 
@@ -164,12 +166,13 @@ None. Phase 46 shipped; Phase 47 may proceed.
 | Phase 45 P07 | 10h 41m | 3 tasks | 6 files |
 | Phase 45 P08 | 20 min | 2 tasks | 5 files |
 | Phase 45 P09 | 2h 50m | 3 tasks | 5 plan-owned files |
+| Phase 47 P01 | 37 min | 3 tasks | 10 files |
 
 ## Session Continuity
 
-Last session: 2026-07-17T23:17:38.351Z
-Stopped at: Phase 47 UI-SPEC approved
-Resume file: .planning/phases/47-controlled-themes-photo-frozen-layout/47-UI-SPEC.md
+Last session: 2026-07-18T02:20:54.057Z
+Stopped at: Completed 47-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
