@@ -209,16 +209,24 @@ def load_resume(path_value: str) -> ResumeDocument:
     )
 
 
-def parse_metadata(raw: str, area: str) -> dict[str, str]:
+def parse_metadata(raw: str, area: str, expected_fields: frozenset[str]) -> dict[str, str]:
     match = re.fullmatch(r"<!--\s*resume:\s*(.*?)\s*-->", raw.strip())
     if not match:
         raise CliError("MARKDOWN_INVALID", f"{area} 的 resume 元数据格式无效。")
     values: dict[str, str] = {}
     for token in match.group(1).split():
-        if "=" not in token:
+        if token.count("=") != 1:
             raise CliError("MARKDOWN_INVALID", f"{area} 的 resume 元数据必须使用 key=value。")
         key, value = token.split("=", 1)
+        if not key or not value:
+            raise CliError("MARKDOWN_INVALID", f"{area} 的 resume 元数据键和值均不能为空。")
+        if key in values:
+            raise CliError("MARKDOWN_INVALID", f"{area} 的 resume 元数据键不得重复。")
         values[key] = value
+    if frozenset(values) != expected_fields:
+        raise CliError("MARKDOWN_INVALID", f"{area} 的 resume 元数据字段集合无效。")
+    if "status" in values and values["status"] not in STATUS_VALUES:
+        raise CliError("MARKDOWN_INVALID", f"{area} 的 resume 元数据状态无效。")
     return values
 
 
@@ -249,30 +257,42 @@ def parse_markdown_facts(body: str, profile: Any, photo_path: Any, preferences: 
     section: str | None = None
     entry: dict[str, Any] | None = None
     pending_area: tuple[str, dict[str, Any]] | None = None
+    metadata_consumed = False
     unknown_fields: list[str] = []
+
+    def require_metadata() -> None:
+        if pending_area is not None and not metadata_consumed:
+            raise CliError("MARKDOWN_INVALID", "Markdown 条目缺少必需的 resume 元数据。")
+
     for line_number, raw_line in enumerate(body.splitlines(), start=1):
         line = raw_line.strip()
         if not line:
             continue
         if line.startswith("# "):
             # 文档标题仅用于人类阅读；profile 是信息栏的唯一事实源。
+            require_metadata()
             pending_area = None
+            metadata_consumed = False
             continue
         if line.startswith("## "):
+            require_metadata()
             title = line[3:].strip()
             section = MARKDOWN_SECTIONS.get(title)
             if section is None:
                 unknown_fields.append(f"第 {line_number} 行包含未知模块: {title}")
             entry = None
             pending_area = None
+            metadata_consumed = False
             continue
         if line.startswith("### "):
+            require_metadata()
             if section not in SECTION_TITLES:
                 unknown_fields.append(f"第 {line_number} 行的条目不属于可重复模块。")
                 continue
             entry = {SECTION_TITLES[section]: line[4:].strip()}
             data[section].append(entry)
             pending_area = (section, entry)
+            metadata_consumed = False
             continue
         if line.startswith("<!--"):
             if not line.startswith("<!-- resume:"):
@@ -280,16 +300,21 @@ def parse_markdown_facts(body: str, profile: Any, photo_path: Any, preferences: 
             if pending_area is None:
                 unknown_fields.append(f"第 {line_number} 行的 resume 元数据没有对应标题。")
                 continue
-            metadata = parse_metadata(line, f"第 {line_number} 行")
+            if metadata_consumed:
+                raise CliError("MARKDOWN_INVALID", f"第 {line_number} 行的条目包含重复 resume 元数据。")
+            expected_fields = frozenset({"id"}) if pending_area[0] == "targets" else frozenset({"id", "status"})
+            metadata = parse_metadata(line, f"第 {line_number} 行", expected_fields)
             target = pending_area[1]
             if pending_area[0] != "targets":
-                target["id"] = metadata.get("id")
-                target["status"] = metadata.get("status", "verified")
+                target["id"] = metadata["id"]
+                target["status"] = metadata["status"]
             else:
-                target["id"] = metadata.get("id")
+                target["id"] = metadata["id"]
+            metadata_consumed = True
             continue
         bullet = re.fullmatch(r"-\s+([^：:]+)[：:]\s*(.*)", line)
         if bullet:
+            require_metadata()
             label, raw_value = bullet.groups()
             field = FIELD_NAMES.get(label)
             if field is None:
@@ -301,6 +326,7 @@ def parse_markdown_facts(body: str, profile: Any, photo_path: Any, preferences: 
                 unknown_fields.append(f"第 {line_number} 行的字段没有所属条目。")
             continue
         unknown_fields.append(f"第 {line_number} 行无法解析。")
+    require_metadata()
     data["__markdown_issues__"] = unknown_fields
     return data
 
