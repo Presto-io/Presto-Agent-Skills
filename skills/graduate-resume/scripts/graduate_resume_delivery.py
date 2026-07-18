@@ -5,6 +5,7 @@ import inspect
 import json
 import os
 import secrets
+import signal
 import stat
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +15,16 @@ from typing import Mapping
 TRIPLE_SUFFIXES = (".md", ".typ", ".pdf")
 SUPPORT_DIRECTORIES = ("sources", "assets", "history", ".work")
 PUBLICATION_MODES = ("patch", "authority")
+FAULT_NAMES = (
+    "after_candidate_validation",
+    "after_history_reservation",
+    "after_archive_snapshot",
+    "after_publish_file_1",
+    "after_publish_middle_file",
+    "before_post_publish_verify",
+    "before_work_cleanup",
+)
+FAULT_ENV = "PRESTO_CLEAN_DELIVERY_FAULT"
 
 
 class DeliveryError(RuntimeError):
@@ -174,6 +185,13 @@ class DeliverySession:
         self.run_name = f"run-{secrets.token_hex(8)}"
         self.run_root = self.root / ".work" / self.run_name
         self._lock_owned = False
+        self._preflight_delta: BundleDelta | None = None
+        self._candidate: dict[str, dict[str, bytes]] = {}
+        self._current: dict[str, dict[str, bytes]] = {}
+        self._old_bytes: dict[str, bytes] = {}
+        self._history_sequence: str | None = None
+        self._history_stems: tuple[str, ...] = ()
+        self._mutation_started = False
 
     def __enter__(self) -> DeliverySession:
         missing = _secure_io_capabilities()
@@ -324,6 +342,266 @@ class DeliverySession:
         self.rollback_fd = os.open("rollback", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.run_fd)
         self.evidence_fd = os.open("evidence", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.run_fd)
 
+    def candidate_path(self, name: str) -> Path:
+        if name not in self.spec.managed_names:
+            raise DeliveryError("candidate name is outside the explicit managed registry")
+        return self.run_root / "candidate" / name
+
+    def _candidate_bytes(self) -> dict[str, dict[str, bytes]]:
+        assert self.candidate_fd is not None
+        entries = self._directory_entries(self.candidate_fd)
+        unknown = [name for name in entries if name not in self.spec.managed_names]
+        if unknown:
+            raise DeliveryError(f"unknown candidate entry: {unknown[0]}")
+        entry_set = set(entries)
+        candidate: dict[str, dict[str, bytes]] = {}
+        for stem in self.spec.safe_stems:
+            names = _triple_names(stem)
+            present = tuple(name for name in names if name in entry_set)
+            if present and present != names:
+                raise DeliveryError(f"candidate stem must be one complete triple: {stem}")
+            if present:
+                candidate[stem] = {name: self._read_regular(name, directory_fd=self.candidate_fd) for name in names}
+        if not candidate:
+            raise DeliveryError("candidate requires at least one complete triple")
+        return candidate
+
+    @staticmethod
+    def _snapshot_digest(
+        delta: BundleDelta,
+        current: Mapping[str, Mapping[str, bytes]],
+    ) -> str:
+        snapshot = {
+            "unchanged": delta.unchanged,
+            "added": delta.added,
+            "updated": delta.updated,
+            "removed": delta.removed,
+            "current": {
+                stem: {
+                    name: hashlib.sha256(payload).hexdigest()
+                    for name, payload in sorted(files.items())
+                }
+                for stem, files in sorted(current.items())
+            },
+        }
+        return hashlib.sha256(
+            json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+
+    def preflight(self) -> BundleDelta:
+        candidate = self._candidate_bytes()
+        current = self._inspect_current(allow_owned_work=True)
+        comparison_current = current if self.spec.mode == "authority" else {
+            stem: current[stem] for stem in candidate if stem in current
+        }
+        delta = classify_bundle_delta(candidate, comparison_current, mode=self.spec.mode)
+        approval_digest = self._snapshot_digest(delta, current)
+        delta = BundleDelta(delta.unchanged, delta.added, delta.updated, delta.removed, approval_digest)
+        self._candidate = candidate
+        self._current = current
+        self._preflight_delta = delta
+        return delta
+
+    @staticmethod
+    def _write_bytes(name: str, payload: bytes, *, directory_fd: int) -> None:
+        descriptor = os.open(
+            name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+            0o600,
+            dir_fd=directory_fd,
+        )
+        try:
+            view = memoryview(payload)
+            while view:
+                written = os.write(descriptor, view)
+                if written <= 0:
+                    raise OSError("short write")
+                view = view[written:]
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+    def _fault(self, name: str) -> None:
+        if name not in FAULT_NAMES:
+            raise DeliveryError(f"invalid fault point: {name}")
+        if os.environ.get(FAULT_ENV) == name:
+            raise DeliveryError(f"injected delivery fault: {name}")
+
+    def _next_history_sequence(self) -> str:
+        assert self.root_fd is not None
+        try:
+            history_fd = os.open("history", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.root_fd)
+        except FileNotFoundError:
+            return "001"
+        try:
+            values: list[int] = []
+            for name in self._directory_entries(history_fd):
+                if len(name) < 3 or not name.isdigit():
+                    raise DeliveryError(f"invalid history entry: {name}")
+                values.append(int(name))
+            return f"{max(values, default=0) + 1:03d}"
+        finally:
+            os.close(history_fd)
+
+    def _create_history(self, stems: tuple[str, ...]) -> None:
+        assert self.root_fd is not None
+        try:
+            os.mkdir("history", 0o700, dir_fd=self.root_fd)
+        except FileExistsError:
+            pass
+        history_fd = os.open("history", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.root_fd)
+        try:
+            sequence = self._next_history_sequence()
+            os.mkdir(sequence, 0o700, dir_fd=history_fd)
+            self._history_sequence = sequence
+            self._history_stems = stems
+            sequence_fd = os.open(sequence, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=history_fd)
+            try:
+                for stem in stems:
+                    os.mkdir(stem, 0o700, dir_fd=sequence_fd)
+                    stem_fd = os.open(stem, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=sequence_fd)
+                    try:
+                        for name, payload in self._current[stem].items():
+                            self._write_bytes(name, payload, directory_fd=stem_fd)
+                        os.fsync(stem_fd)
+                    finally:
+                        os.close(stem_fd)
+                os.fsync(sequence_fd)
+            finally:
+                os.close(sequence_fd)
+        finally:
+            os.close(history_fd)
+
+    def _remove_history_sequence(self) -> None:
+        if self.root_fd is None or self._history_sequence is None:
+            return
+        try:
+            history_fd = os.open("history", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=self.root_fd)
+        except FileNotFoundError:
+            self._history_sequence = None
+            return
+        try:
+            sequence_fd = os.open(
+                self._history_sequence,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                dir_fd=history_fd,
+            )
+            try:
+                for stem in self._history_stems:
+                    try:
+                        stem_fd = os.open(stem, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=sequence_fd)
+                    except FileNotFoundError:
+                        continue
+                    try:
+                        for name in _triple_names(stem):
+                            try:
+                                os.unlink(name, dir_fd=stem_fd)
+                            except FileNotFoundError:
+                                pass
+                    finally:
+                        os.close(stem_fd)
+                    try:
+                        os.rmdir(stem, dir_fd=sequence_fd)
+                    except FileNotFoundError:
+                        pass
+            finally:
+                os.close(sequence_fd)
+            os.rmdir(self._history_sequence, dir_fd=history_fd)
+            if not self._directory_entries(history_fd):
+                os.close(history_fd)
+                history_fd = -1
+                os.rmdir("history", dir_fd=self.root_fd)
+        except FileNotFoundError:
+            pass
+        finally:
+            if history_fd >= 0:
+                os.close(history_fd)
+        self._history_sequence = None
+        self._history_stems = ()
+
+    def _flatten(self, bundles: Mapping[str, Mapping[str, bytes]]) -> dict[str, bytes]:
+        return {name: payload for files in bundles.values() for name, payload in files.items()}
+
+    def _rollback(self) -> None:
+        if not self._mutation_started or self.root_fd is None or self.rollback_fd is None:
+            return
+        self._assert_root_identity()
+        for name in self.spec.managed_names:
+            try:
+                os.unlink(name, dir_fd=self.root_fd)
+            except FileNotFoundError:
+                pass
+        for name in self._old_bytes:
+            os.replace(name, name, src_dir_fd=self.rollback_fd, dst_dir_fd=self.root_fd)
+        self._remove_history_sequence()
+        os.fsync(self.root_fd)
+        restored = self._inspect_current(allow_owned_work=True)
+        if self._flatten(restored) != self._old_bytes:
+            raise DeliveryError("rollback verification failed")
+        self._mutation_started = False
+
+    def publish(self, *, approval_digest: str | None = None) -> str:
+        assert self.root_fd is not None and self.candidate_fd is not None and self.rollback_fd is not None
+        delta = self.preflight()
+        if self.spec.mode == "authority" and approval_digest != delta.approval_digest:
+            raise DeliveryError("authority publication requires an unchanged approval digest")
+        self._fault("after_candidate_validation")
+        if not delta.changed:
+            self._fault("before_work_cleanup")
+            return "identical"
+        self._old_bytes = self._flatten(self._current)
+        for name, payload in self._old_bytes.items():
+            self._write_bytes(name, payload, directory_fd=self.rollback_fd)
+        previous_handlers: dict[int, signal.Handlers] = {}
+
+        def interrupt_handler(signum: int, _frame: object) -> None:
+            raise DeliveryError(f"delivery interrupted by signal {signum}")
+
+        try:
+            for signum in (signal.SIGINT, signal.SIGTERM):
+                previous_handlers[signum] = signal.signal(signum, interrupt_handler)
+            self._mutation_started = True
+            archived_stems = tuple(sorted((*delta.updated, *delta.removed)))
+            if archived_stems:
+                self._create_history(archived_stems)
+                self._fault("after_history_reservation")
+                self._inspect_history()
+                self._fault("after_archive_snapshot")
+            mutation_names = tuple(
+                name
+                for stem in (*delta.updated, *delta.added, *delta.removed)
+                for name in _triple_names(stem)
+            )
+            candidate_flat = self._flatten(self._candidate)
+            for index, name in enumerate(mutation_names, start=1):
+                if name in candidate_flat:
+                    os.replace(name, name, src_dir_fd=self.candidate_fd, dst_dir_fd=self.root_fd)
+                else:
+                    os.unlink(name, dir_fd=self.root_fd)
+                if index == 1:
+                    self._fault("after_publish_file_1")
+                if index == max(1, len(mutation_names) // 2):
+                    self._fault("after_publish_middle_file")
+            os.fsync(self.root_fd)
+            self._fault("before_post_publish_verify")
+            observed = self._inspect_current(allow_owned_work=True)
+            expected = dict(self._current)
+            if self.spec.mode == "authority":
+                expected = dict(self._candidate)
+            else:
+                expected.update(self._candidate)
+            if observed != expected:
+                raise DeliveryError("post-publish exact-set verification failed")
+            self._fault("before_work_cleanup")
+            self._mutation_started = False
+            return "changed" if self._current else "first"
+        except BaseException:
+            self._rollback()
+            raise
+        finally:
+            for signum, handler in previous_handlers.items():
+                signal.signal(signum, handler)
+
     def _close_fd(self, attribute: str) -> None:
         descriptor = getattr(self, attribute)
         if descriptor is not None:
@@ -334,6 +612,18 @@ class DeliverySession:
             setattr(self, attribute, None)
 
     def close(self) -> None:
+        if self.candidate_fd is not None:
+            for name in self.spec.managed_names:
+                try:
+                    os.unlink(name, dir_fd=self.candidate_fd)
+                except OSError:
+                    pass
+        if self.rollback_fd is not None:
+            for name in self._old_bytes:
+                try:
+                    os.unlink(name, dir_fd=self.rollback_fd)
+                except OSError:
+                    pass
         self._close_fd("candidate_fd")
         self._close_fd("rollback_fd")
         self._close_fd("evidence_fd")
