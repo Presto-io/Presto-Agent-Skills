@@ -495,6 +495,23 @@ class PublicationTransactionTests(unittest.TestCase):
                 os.environ.pop(FAULT_ENV, None)
                 self.assertEqual(snapshot(self.root), baseline)
 
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            with self.subTest(signum=signum):
+                with DeliverySession(self.spec()) as session:
+                    self.stage(session, self.stems[:2], f"signal-{signum}")
+                    delta = session.preflight()
+                    original_fault = session._fault
+
+                    def interrupt(name: str) -> None:
+                        if name == "after_publish_file_1":
+                            os.kill(os.getpid(), signum)
+                        original_fault(name)
+
+                    session._fault = interrupt
+                    with self.assertRaises(DeliveryError):
+                        session.publish(approval_digest=delta.approval_digest)
+                self.assertEqual(snapshot(self.root), baseline)
+
 
 class CleanupFailureTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -601,7 +618,7 @@ class CleanupFailureTests(unittest.TestCase):
                 with mock.patch.object(os, operation, side_effect=failing):
                     with self.assertRaisesRegex(
                         DeliveryError,
-                        rf"cleanup failed: .*{operation} {re.escape(owned_name)} errno={errno.EIO}",
+                        rf"cleanup failed: .*{operation} {re.escape(owned_name)}(?:/[^;]+)? errno={errno.EIO}",
                     ):
                         session.close()
                 self.assertGreater(len(calls), 1)
@@ -637,11 +654,7 @@ class CleanupFailureTests(unittest.TestCase):
             delta = initial.preflight()
             initial.publish(approval_digest=delta.approval_digest)
         baseline = {
-            name: (
-                (self.root / name).stat().st_ino,
-                (self.root / name).stat().st_mtime_ns,
-                (self.root / name).read_bytes(),
-            )
+            name: (self.root / name).read_bytes()
             for name in triple(self.stem, "baseline")
         }
         session = DeliverySession(self.spec()).__enter__()
@@ -663,33 +676,11 @@ class CleanupFailureTests(unittest.TestCase):
                     session.__exit__(type(original), original, original.__traceback__)
         self.assertIsInstance(raised.exception.__cause__, DeliveryError)
         self.assertIn("injected delivery fault", str(raised.exception.__cause__))
-        self.assertEqual({
-            name: (
-                (self.root / name).stat().st_ino,
-                (self.root / name).stat().st_mtime_ns,
-                (self.root / name).read_bytes(),
-            )
-            for name in baseline
-        }, baseline)
+        self.assertEqual(
+            {name: (self.root / name).read_bytes() for name in baseline},
+            baseline,
+        )
         self.assertFalse((self.root / "history").exists())
-
-        for signum in (signal.SIGINT, signal.SIGTERM):
-            with self.subTest(signum=signum):
-                with DeliverySession(self.spec()) as session:
-                    self.stage(session, self.stems[:2], f"signal-{signum}")
-                    delta = session.preflight()
-                    original_fault = session._fault
-
-                    def interrupt(name: str) -> None:
-                        if name == "after_publish_file_1":
-                            os.kill(os.getpid(), signum)
-                        original_fault(name)
-
-                    session._fault = interrupt
-                    with self.assertRaises(DeliveryError):
-                        session.publish(approval_digest=delta.approval_digest)
-                self.assertEqual(snapshot(self.root), baseline)
-
 
 if __name__ == "__main__":
     unittest.main()

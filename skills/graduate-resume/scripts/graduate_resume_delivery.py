@@ -241,6 +241,7 @@ class DeliverySession:
         self._history_sequence: str | None = None
         self._history_stems: tuple[str, ...] = ()
         self._mutation_started = False
+        self._closed = False
 
     def __enter__(self) -> DeliverySession:
         missing = _secure_io_capabilities()
@@ -259,8 +260,11 @@ class DeliverySession:
             self._open_work()
             self._create_run_tree()
             return self
-        except BaseException:
-            self.close()
+        except BaseException as original:
+            try:
+                self.close()
+            except DeliveryError as cleanup_error:
+                raise cleanup_error from original
             raise
 
     def _assert_root_identity(self) -> None:
@@ -687,56 +691,104 @@ class DeliverySession:
             for signum, handler in previous_handlers.items():
                 signal.signal(signum, handler)
 
-    def _close_fd(self, attribute: str) -> None:
+    @staticmethod
+    def _record_cleanup_failure(
+        failures: list[str],
+        operation: str,
+        owned_name: str,
+        error: OSError,
+    ) -> None:
+        error_number = error.errno if isinstance(error.errno, int) else 0
+        failures.append(f"{operation} {owned_name} errno={error_number}")
+
+    def _close_fd(
+        self,
+        attribute: str,
+        owned_name: str,
+        failures: list[str],
+    ) -> None:
         descriptor = getattr(self, attribute)
         if descriptor is not None:
             try:
                 os.close(descriptor)
-            except OSError:
-                pass
+            except OSError as error:
+                self._record_cleanup_failure(failures, "close", owned_name, error)
             setattr(self, attribute, None)
 
     def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        failures: list[str] = []
         if self.candidate_fd is not None:
             for name in self.spec.managed_names:
                 try:
                     os.unlink(name, dir_fd=self.candidate_fd)
-                except OSError:
-                    pass
+                except FileNotFoundError:
+                    continue
+                except OSError as error:
+                    self._record_cleanup_failure(
+                        failures,
+                        "unlink",
+                        f"candidate/{name}",
+                        error,
+                    )
         if self.rollback_fd is not None:
             for name in self._old_bytes:
                 try:
                     os.unlink(name, dir_fd=self.rollback_fd)
-                except OSError:
-                    pass
-        self._close_fd("candidate_fd")
-        self._close_fd("rollback_fd")
-        self._close_fd("evidence_fd")
+                except FileNotFoundError:
+                    continue
+                except OSError as error:
+                    self._record_cleanup_failure(
+                        failures,
+                        "unlink",
+                        f"rollback/{name}",
+                        error,
+                    )
+        self._close_fd("candidate_fd", "candidate", failures)
+        self._close_fd("rollback_fd", "rollback", failures)
+        self._close_fd("evidence_fd", "evidence", failures)
         if self.run_fd is not None:
             for name in ("candidate", "rollback", "evidence"):
                 try:
                     os.rmdir(name, dir_fd=self.run_fd)
-                except OSError:
-                    pass
-        self._close_fd("run_fd")
+                except FileNotFoundError:
+                    continue
+                except OSError as error:
+                    self._record_cleanup_failure(failures, "rmdir", name, error)
+        self._close_fd("run_fd", "run", failures)
         if self.work_fd is not None:
             try:
                 os.rmdir(self.run_name, dir_fd=self.work_fd)
-            except OSError:
+            except FileNotFoundError:
                 pass
+            except OSError as error:
+                self._record_cleanup_failure(failures, "rmdir", "run", error)
             if self._lock_owned:
                 try:
                     os.unlink(".lock", dir_fd=self.work_fd)
-                except OSError:
+                except FileNotFoundError:
                     pass
+                except OSError as error:
+                    self._record_cleanup_failure(failures, "unlink", ".lock", error)
                 self._lock_owned = False
-        self._close_fd("work_fd")
+        self._close_fd("work_fd", ".work", failures)
         if self.root_fd is not None:
             try:
                 os.rmdir(".work", dir_fd=self.root_fd)
-            except OSError:
+            except FileNotFoundError:
                 pass
-        self._close_fd("root_fd")
+            except OSError as error:
+                self._record_cleanup_failure(failures, "rmdir", ".work", error)
+        self._close_fd("root_fd", ".", failures)
+        if failures:
+            raise DeliveryError(f"cleanup failed: {'; '.join(failures)}")
 
     def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
-        self.close()
+        try:
+            self.close()
+        except DeliveryError as cleanup_error:
+            if isinstance(exc, BaseException):
+                raise cleanup_error from exc
+            raise
