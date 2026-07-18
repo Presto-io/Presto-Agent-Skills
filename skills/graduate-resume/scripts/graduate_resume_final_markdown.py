@@ -22,6 +22,9 @@ _FIELDS = (
     "page_count", "photo_mode", "selected_fact_ids", "overrides", "trace",
     "conditions", "body_sha256", "binding_sha256",
 )
+_SOURCE_URL_RE = re.compile(
+    r"(?i)^(?:[a-z][a-z0-9+.-]*://|www\.|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/?#].*)?$)"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +141,8 @@ def emit_final_markdown(
             "source": projection.target_source, "as_of": projection.target_as_of,
         }
         if any(not isinstance(value, str) or not value for value in target_data.values()):
+            raise _error()
+        if _SOURCE_URL_RE.match(target_data["source"].strip()):
             raise _error()
     body = _body(projection.selected_fact_ids, facts)
     metadata: dict[str, Any] = {

@@ -32,8 +32,8 @@ _SAFE_RE = re.compile(r"[^\w\u3400-\u9fff-]+", re.UNICODE)
 _EVIDENCE_NAME_RE = re.compile(r"evidence-[0-9a-f]{64}-[0-9a-f]{64}-[0-9a-f]{64}\.json")
 _HEX64_RE = re.compile(r"[0-9a-f]{64}")
 _EMAIL_RE = re.compile(r"(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}")
-_PHONE_RE = re.compile(r"(?<!\d)(?:\+?86[- ]?)?1[3-9]\d{9}(?!\d)")
-_ID_CARD_RE = re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)")
+_PHONE_RE = re.compile(r"(?<!\d)(?:\+\d{1,3}(?:[- ]?\d){7,14}|(?:\+?\d{1,3}[- ]?)?(?:1[3-9]\d{9}|0\d{2,3}[- ]?\d{7,8}))(?!\d)")
+_ID_CARD_RE = re.compile(r"(?<!\d)(?:\d{15}|\d{17}[0-9Xx])(?!\d)")
 _URL_RE = re.compile(r"(?i)[a-z][a-z0-9+.-]*://")
 
 
@@ -211,10 +211,56 @@ class EvidenceSink:
             os.fsync(descriptor)
         finally:
             os.close(descriptor)
-        os.rename(temporary, name, src_dir_fd=self.descriptor, dst_dir_fd=self.descriptor)
-        os.fsync(self.descriptor)
-        self.assert_identity()
+        renamed = False
+        try:
+            os.rename(temporary, name, src_dir_fd=self.descriptor, dst_dir_fd=self.descriptor)
+            renamed = True
+            os.fsync(self.descriptor)
+            self.assert_identity()
+        except BaseException:
+            if renamed:
+                try:
+                    os.unlink(name, dir_fd=self.descriptor)
+                    os.fsync(self.descriptor)
+                except OSError:
+                    pass
+            raise
         return name
+
+    def persist_many(
+        self,
+        records: Iterable[tuple[str, VersionProjection, Mapping[str, Any]]],
+    ) -> tuple[str, ...]:
+        """Persist one publication's evidence and remove its new files on failure."""
+        created: list[str] = []
+        names: list[str] = []
+        try:
+            for canonical_hash, projection, condition_evidence in records:
+                name = (
+                    f"evidence-{canonical_hash}-{projection.digest}-{projection.condition_digest}.json"
+                )
+                try:
+                    self._read(name)
+                    existed = True
+                except FileNotFoundError:
+                    existed = False
+                names.append(self.persist(
+                    canonical_hash=canonical_hash,
+                    projection=projection,
+                    condition_evidence=condition_evidence,
+                ))
+                if not existed:
+                    created.append(name)
+        except BaseException:
+            for name in reversed(created):
+                try:
+                    os.unlink(name, dir_fd=self.descriptor)
+                except FileNotFoundError:
+                    pass
+            if created:
+                os.fsync(self.descriptor)
+            raise
+        return tuple(names)
 
 
 @dataclass(frozen=True, slots=True)

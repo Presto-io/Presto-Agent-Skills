@@ -129,6 +129,8 @@ class PublicCliContractTests(unittest.TestCase):
         cases = {
             "duplicate": original.replace("- 专业：机电一体化技术", "- 专业：机电一体化技术\n- 专业：工业机器人技术", 1),
             "source-url": original.replace("- 来源：校园宣讲会资料", "- 来源：https://jobs.example.test/private?id=123"),
+            "source-www": original.replace("- 来源：校园宣讲会资料", "- 来源：www.jobs.example.test/private?id=123"),
+            "source-bare-domain": original.replace("- 来源：校园宣讲会资料", "- 来源：jobs.example.test/path?target=robot"),
             "requirements-missing": original.replace("- 招聘要求：持有低压电工证\n", ""),
             "nested-non-string": original.replace("  directions:\n    - 设备运维\n", "  directions: [123]\n"),
         }
@@ -707,6 +709,41 @@ class PublicCliContractTests(unittest.TestCase):
                 "--generic", "--delivery-root", str(root / "generic-delivery"),
                 "--photo-mode", "no-photo",
             ))["target_conditions"], {})
+
+    def test_second_evidence_write_failure_rolls_back_delivery_history_and_new_evidence(self) -> None:
+        from graduate_resume_render import EvidenceSink
+
+        source = SKILL_ROOT / "fixtures" / "targeting" / "multi-state-targets.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            delivery = root / "delivery"
+            evidence = root / "evidence"
+            evidence.mkdir()
+            arguments = (
+                "batch", "--input", str(source), "--delivery-root", str(delivery),
+                "--evidence-root", str(evidence), "--photo-mode", "no-photo",
+                "--allow-gap-target", "target-device-002",
+            )
+            preview = run_cli(*arguments)
+            self.assertEqual(preview.returncode, 0, preview.stderr)
+            with mock.patch.object(sys, "argv", ["graduate-resume.sh", *arguments, "--confirm", "--approval-digest", str(parse_json(preview)["approval_digest"])]):
+                args = cli.parse_args()
+            original_persist = EvidenceSink.persist
+            calls = 0
+
+            def fail_on_second(self: EvidenceSink, **kwargs: object) -> str:
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise cli.CliError("EVIDENCE_WRITE_FAILED", "injected evidence write failure")
+                return original_persist(self, **kwargs)  # type: ignore[arg-type]
+
+            with mock.patch.object(EvidenceSink, "persist", autospec=True, side_effect=fail_on_second):
+                with self.assertRaises(cli.CliError):
+                    cli._command_publication(args, batch=True)
+            self.assertEqual(calls, 2)
+            self.assertEqual(recursive_snapshot(delivery), {})
+            self.assertEqual(recursive_snapshot(evidence), {})
 
     def test_target_publication_requires_separate_non_symlink_evidence_root(self) -> None:
         source = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
