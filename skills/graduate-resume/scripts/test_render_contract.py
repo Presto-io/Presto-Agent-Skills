@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import replace
 import sys
 import tempfile
 import unittest
@@ -65,6 +66,38 @@ class FinalMarkdownContractTests(unittest.TestCase):
                 with self.assertRaises(cli.CliError):
                     load_final_resume(path)
 
+    def test_declined_fact_remains_canonical_but_cannot_cross_final_checkpoint(self) -> None:
+        from graduate_resume_final_markdown import emit_final_markdown, load_final_resume
+
+        declined = cli.load_resume(str(self.source))
+        declined.data["education"][0]["status"] = "declined"
+        self.assertEqual(cli.validate_document(declined)["status"], "passed")
+        with self.assertRaises(cli.CliError):
+            emit_final_markdown(
+                declined.data,
+                self.projection,
+                canonical_hash=hashlib.sha256(self.source.read_bytes()).hexdigest(),
+                theme_key="conservative",
+                theme_label="保守稳妥",
+                page_count=1,
+                photo_mode="no-photo",
+            )
+
+        payload = emit_final_markdown(
+            self.document.data,
+            self.projection,
+            canonical_hash=hashlib.sha256(self.source.read_bytes()).hexdigest(),
+            theme_key="conservative",
+            theme_label="保守稳妥",
+            page_count=1,
+            photo_mode="no-photo",
+        ).replace(b'"status":"verified"', b'"status":"declined"', 1)
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "resume.md"
+            path.write_bytes(payload)
+            with self.assertRaises(cli.CliError):
+                load_final_resume(path)
+
 
 class TypstConsumerContractTests(unittest.TestCase):
     def test_layout_and_typst_consume_only_reopened_selected_facts(self) -> None:
@@ -104,6 +137,38 @@ class TypstConsumerContractTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first[16:24], (413).to_bytes(4, "big") + (579).to_bytes(4, "big"))
         self.assertNotIn(b"EXIF", first)
+
+    def test_typst_rejects_candidate_controlled_container_id(self) -> None:
+        from graduate_resume_final_markdown import emit_final_markdown, load_final_resume
+        from graduate_resume_layout import build_frozen_resume_plan, resolve_theme
+        from graduate_resume_typst import emit_typst
+
+        source = SKILL_ROOT / "fixtures" / "valid-no-photo.md"
+        document = cli.load_resume(str(source))
+        projection = _projection(document)
+        payload = emit_final_markdown(
+            document.data, projection,
+            canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
+            theme_key="modern", theme_label="现代简洁", page_count=1,
+            photo_mode="no-photo",
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "resume.md"
+            path.write_bytes(payload)
+            final = load_final_resume(path)
+            plan = build_frozen_resume_plan(
+                final.fact_view(), resolve_theme("modern"), "no-photo", None,
+                "a" * 64, "auto",
+            )
+            malicious = 'x");#panic("injected");#("'
+            containers = (replace(plan.containers[0], id=malicious), *plan.containers[1:])
+            pages = tuple(
+                replace(page, containers=tuple(malicious if item == plan.containers[0].id else item for item in page.containers))
+                for page in plan.pages
+            )
+            poisoned = replace(plan, containers=containers, pages=pages)
+            with self.assertRaises(cli.CliError):
+                emit_typst(poisoned, final)
 
 
 class RenderMatrixContractTests(unittest.TestCase):
