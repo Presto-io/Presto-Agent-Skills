@@ -1,0 +1,31 @@
+{
+  "policy_version": "graduate-resume-targeting/v1",
+  "module_order": [
+    "candidate",
+    "education",
+    "skills",
+    "certificates",
+    "projects",
+    "training",
+    "experience"
+  ],
+  "score_weights": {
+    "role_exact": 40,
+    "role_expansion": 20,
+    "requirement_exact": 15,
+    "direction_exact": 10
+  },
+  "exact_term_expansions": {
+    "机器人": ["机器人", "示教器", "工作站", "联调"],
+    "调试": ["调试", "联调", "排故"],
+    "运维": ["运维", "巡检", "维护"],
+    "储能": ["储能", "电池", "电气"],
+    "自动化": ["自动化", "PLC", "控制"]
+  },
+  "predicate_registry": [
+    "education_level",
+    "major_exact",
+    "certificate_exact",
+    "fresh_graduate_status"
+  ]
+}
