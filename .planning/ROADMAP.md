@@ -71,8 +71,13 @@ Plans:
 **UI hint**: yes
 
 Plans:
+**Wave 1**
 - [ ] 47-01: 定义三种受控主题与照片/无照片变体的可读性边界。
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 47-02: 建立冻结布局计划、模块不可拆规则与 1/2 页收敛/失败条件。
+
+**Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 47-03: 用一页、两页、照片、无照片和内容压力样张锁定密度与双页锚点。
 
 ### Phase 48: 确定性定向渲染与干净批量交付
