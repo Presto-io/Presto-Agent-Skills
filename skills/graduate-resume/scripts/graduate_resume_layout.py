@@ -9,6 +9,7 @@ import os
 import shutil
 import stat
 import subprocess
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
@@ -23,6 +24,49 @@ LAYOUT_PLAN_INVALID = "LAYOUT_PLAN_INVALID"
 _LIST_SECTIONS = frozenset(("projects", "training", "experience", "certificates"))
 _FACT_SECTIONS = frozenset(("candidate", "summary", "education", "skills"))
 _SECTION_LABELS = {"candidate": "个人信息", "summary": "个人概述", "education": "教育经历", "skills": "专业技能", "certificates": "证书与资格", "projects": "项目经历", "training": "实训经历", "experience": "相关经历"}
+_CONTACT_FIELDS = (
+    ("phone", "电话"), ("email", "邮箱"), ("city", "城市"),
+    ("address", "地址"), ("website", "网站"), ("github", "GitHub"),
+    ("wechat", "微信"),
+)
+_DISPLAY_FIELDS = {
+    "candidate": (
+        ("name", "姓名", "string"), ("headline", "求职标题", "string"),
+        ("summary", "个人概述", "string"), ("contact", "联系方式", "contact"),
+        ("directions", "求职方向", "list"),
+    ),
+    "education": (
+        ("school", "学校", "string"), ("major", "专业", "string"),
+        ("degree", "学历", "string"), ("start", "开始时间", "string"),
+        ("end", "结束时间", "string"), ("courses", "核心课程", "list"),
+        ("honors", "荣誉", "list"),
+    ),
+    "skills": (
+        ("group", "技能方向", "string"), ("items", "技能", "list"),
+        ("note", "说明", "string"),
+    ),
+    "certificates": (
+        ("name", "证书", "string"), ("issuer", "发证机构", "string"),
+        ("issued_on", "取得日期", "string"), ("expires_on", "有效期至", "string"),
+        ("note", "说明", "string"),
+    ),
+    "projects": (
+        ("title", "项目", "string"), ("role", "角色", "string"),
+        ("start", "开始时间", "string"), ("end", "结束时间", "string"),
+        ("summary", "项目概述", "string"), ("outcomes", "成果", "list"),
+        ("tools", "工具", "list"),
+    ),
+    "training": (
+        ("title", "实训", "string"), ("organization", "单位", "string"),
+        ("start", "开始时间", "string"), ("end", "结束时间", "string"),
+        ("summary", "项目概述", "string"), ("outcomes", "成果", "list"),
+    ),
+    "experience": (
+        ("title", "经历", "string"), ("organization", "单位", "string"),
+        ("start", "开始时间", "string"), ("end", "结束时间", "string"),
+        ("summary", "项目概述", "string"), ("outcomes", "成果", "list"),
+    ),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,13 +244,53 @@ def _height(values: tuple[str, ...]) -> float:
     return round(6.0 + lines * 5.4, 2)
 
 
+def _display_string(value: Any) -> str:
+    if not isinstance(value, str) or not value.strip() or any(
+        unicodedata.category(character).startswith("C") for character in value
+    ):
+        raise CliError(LAYOUT_PLAN_INVALID, "展示字段必须是非空安全字符串。")
+    return value.strip()
+
+
+def _display_fields(section: str, item: Mapping[str, Any]) -> tuple[tuple[str, str], ...]:
+    schema = _DISPLAY_FIELDS.get(section)
+    if schema is None or set(item) - {"id", "status"} - {field for field, _, _ in schema}:
+        raise CliError(LAYOUT_PLAN_INVALID, "展示事实包含未登记字段。")
+    fields: list[tuple[str, str]] = []
+    for field, label, kind in schema:
+        if field not in item:
+            continue
+        value = item[field]
+        if kind == "string":
+            fields.append((field, f"{label}：{_display_string(value)}"))
+        elif kind == "list":
+            if not isinstance(value, (list, tuple)):
+                raise CliError(LAYOUT_PLAN_INVALID, "展示列表字段类型无效。")
+            fields.extend(
+                (f"{field}[{index}]", f"{label}：{_display_string(entry)}")
+                for index, entry in enumerate(value, start=1)
+            )
+        elif kind == "contact":
+            if not isinstance(value, Mapping) or set(value) - {key for key, _ in _CONTACT_FIELDS}:
+                raise CliError(LAYOUT_PLAN_INVALID, "联系方式字段无效。")
+            fields.extend(
+                (f"contact.{key}", f"{contact_label}：{_display_string(value[key])}")
+                for key, contact_label in _CONTACT_FIELDS
+                if key in value
+            )
+        else:
+            raise CliError(LAYOUT_PLAN_INVALID, "展示字段类型无效。")
+    return tuple(fields)
+
+
 def project_containers(verified_data: dict[str, Any], overrides: dict[str, str] | None = None) -> tuple[ContainerPlan, ...]:
     overrides = overrides or {}
     containers: list[ContainerPlan] = []
     profile = verified_data.get("candidate")
     if not isinstance(profile, dict) or not profile:
         raise CliError(LAYOUT_PLAN_INVALID, "已验证资料缺少个人信息。")
-    containers.append(ContainerPlan("profile", "fact-block", "candidate", ("profile",), tuple((key, value) for key, value in profile.items() if isinstance(value, str) and value), 1, _height(_strings(profile))))
+    profile_fields = _display_fields("candidate", profile)
+    containers.append(ContainerPlan("profile", "fact-block", "candidate", ("profile",), profile_fields, 1, _height(tuple(value for _, value in profile_fields))))
     for section in ("education", "skills", "certificates", "projects", "training", "experience"):
         raw = verified_data.get(section, ())
         if not raw: continue
@@ -214,13 +298,15 @@ def project_containers(verified_data: dict[str, Any], overrides: dict[str, str] 
             continue
         items = raw if isinstance(raw, list) else [raw]
         for index, item in enumerate(items):
-            if not isinstance(item, dict): continue
+            if not isinstance(item, dict):
+                raise CliError(LAYOUT_PLAN_INVALID, "展示事实必须是映射。")
             fact_id = str(item.get("id") or f"{section}-{index + 1}")
-            fields = tuple((key, value) for key, value in item.items() if key not in {"id", "status"} and isinstance(value, str) and value)
-            if not fields and not _strings(item): continue
+            fields = _display_fields(section, item)
+            if not fields:
+                raise CliError(LAYOUT_PLAN_INVALID, "展示事实缺少可见内容。")
             kind = overrides.get(section, "list-entry" if section in _LIST_SECTIONS else "fact-block")
             if kind not in {"fact-block", "list-entry"}: raise CliError(LAYOUT_PLAN_INVALID, "容器覆盖无效。")
-            containers.append(ContainerPlan(fact_id, kind, section, (fact_id,), fields, 1, _height(_strings(item))))
+            containers.append(ContainerPlan(fact_id, kind, section, (fact_id,), fields, 1, _height(tuple(value for _, value in fields))))
     return tuple(containers)
 
 

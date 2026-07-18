@@ -175,7 +175,7 @@ class TypstConsumerContractTests(unittest.TestCase):
         import fitz
 
         from graduate_resume_final_markdown import emit_final_markdown, load_final_resume
-        from graduate_resume_layout import build_frozen_resume_plan, resolve_theme
+        from graduate_resume_layout import _height, build_frozen_resume_plan, project_containers, resolve_theme
         from graduate_resume_typst import emit_typst
 
         source = SKILL_ROOT / "templates" / "graduate-resume.md"
@@ -210,6 +210,19 @@ class TypstConsumerContractTests(unittest.TestCase):
             frozen_text = "\n".join(value for container in plan.containers for _, value in container.fields)
             for marker in markers:
                 self.assertIn(marker, frozen_text)
+            for container in plan.containers:
+                self.assertEqual(
+                    container.height_mm,
+                    _height(tuple(value for _, value in container.fields)),
+                )
+            reordered = final.fact_view()
+            reordered["candidate"] = dict(reversed(tuple(reordered["candidate"].items())))
+            for section in ("education", "skills", "certificates", "projects", "training", "experience"):
+                reordered[section] = [dict(reversed(tuple(item.items()))) for item in reordered[section]]
+            self.assertEqual(
+                tuple((item.id, item.fields, item.height_mm) for item in project_containers(reordered)),
+                tuple((item.id, item.fields, item.height_mm) for item in project_containers(final.fact_view())),
+            )
             typst = emit_typst(plan, final)
             typst_path = root / "resume.typ"
             pdf_path = root / "resume.pdf"
