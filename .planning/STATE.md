@@ -4,14 +4,14 @@ milestone: v1.19
 milestone_name: 毕业生高级简历生成器
 status: executing
 stopped_at: Completed 47-01-PLAN.md
-last_updated: "2026-07-18T02:20:54.063Z"
+last_updated: "2026-07-18T02:40:51.036Z"
 last_activity: 2026-07-18 -- Phase 47 planning complete
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # State: Presto Agent Skills
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-17)
 ## Current Position
 
 Phase: 47 — 受控主题、照片与冻结布局
-Plan: —
+Plan: 03
 Status: Ready to execute
-Last activity: 2026-07-18 -- Phase 47 planning complete
+Last activity: 2026-07-18 -- Completed 47-02 frozen layout plan
 
 ## Workflow Preferences
 
@@ -51,6 +51,8 @@ Phase order:
 ## Accumulated Context
 
 ### Decisions
+
+- [Phase 47]: 页数门槛只读取版本化测量配置并将其 SHA-256 冻结在计划中；强制双页不以最低利用率拒绝，公开 plan 投影只公开布局元数据和字段名。
 
 - [Phase 46]: `graduate-resume/v2` 的唯一事实源使用混合 Markdown/YAML：首页信息栏 `profile`、可选本地 `photo` 路径与派生 `preferences` 在 YAML，教育、技能、证书、项目、实训、经历和目标在 Markdown 正文；缺少 `photo` 即无照片，正文顺序不构成事实语义，布局容器由渲染器派生。
 - [Phase 45]: Teaching Design Package expected_public_filenames is the sole dynamic mutation authority; current discovery accepts zero or one complete old prefix group and fails closed on ambiguity.
@@ -167,13 +169,14 @@ None. Phase 46 shipped; Phase 47 may proceed.
 | Phase 45 P08 | 20 min | 2 tasks | 5 files |
 | Phase 45 P09 | 2h 50m | 3 tasks | 5 plan-owned files |
 | Phase 47 P01 | 37 min | 3 tasks | 10 files |
+| Phase 47 P02 | 28 min | 3 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-07-18T02:20:54.057Z
-Stopped at: Completed 47-01-PLAN.md
+Last session: 2026-07-18T02:40:51.030Z
+Stopped at: Completed 47-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Execute Phase 47 with /gsd-execute-phase 47
+- Execute Phase 47 Plan 03 with /gsd-execute-phase 47
