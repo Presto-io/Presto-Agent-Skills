@@ -1,89 +1,57 @@
 ---
 phase: 48-deterministic-targeted-rendering-clean-batch-delivery
-fixed_at: 2026-07-18T19:08:21Z
+fixed_at: 2026-07-18T19:32:07Z
 review_path: .planning/phases/48-deterministic-targeted-rendering-clean-batch-delivery/48-REVIEW.md
-iteration: 1
-findings_in_scope: 10
-fixed: 10
-skipped: 0
-status: all_fixed
+iteration: 2
+findings_in_scope: 4
+fixed: 3
+skipped: 1
+status: partial
 ---
 
 # Phase 48: Code Review Fix Report
 
-**Fixed at:** 2026-07-18T19:08:21Z
+**Fixed at:** 2026-07-18T19:32:07Z
 **Source review:** `.planning/phases/48-deterministic-targeted-rendering-clean-batch-delivery/48-REVIEW.md`
-**Iteration:** 1
+**Iteration:** 2
 
 **Summary:**
-- Findings in scope: 10
-- Fixed: 10
-- Skipped: 0
+- Findings in scope: 4
+- Fixed: 3
+- Skipped: 1
 
 ## Fixed Issues
 
-### CR-01: 招聘来源 URL 被公开到预检与正式 Markdown
+### CR-01: 裸域名招聘 URL 仍可写入正式 Markdown
 
-**Files modified:** `graduate_resume_cli.py`, `test_phase48_cli.py`
-**Commit:** `5a880a1`
-**Applied fix:** canonical 校验拒绝 URL 来源描述，并覆盖 CLI 负例。
+**Files modified:** `skills/graduate-resume/scripts/graduate_resume_cli.py`, `skills/graduate-resume/scripts/graduate_resume_final_markdown.py`, `skills/graduate-resume/scripts/test_phase48_cli.py`
+**Commit:** `91a63f4`
+**Applied fix:** 将来源校验收紧为 scheme、`www.`、裸域名及路径/查询串均拒绝；最终 Markdown 投影再次断言该边界。
 
-### CR-02: 安全 stem 未检测电话、邮箱或身份证信息
+### CR-02: stem 敏感信息检测仍遗漏座机和旧版身份证号
 
-**Files modified:** `graduate_resume_render.py`, `test_render_contract.py`
-**Commit:** `f26100d`
-**Applied fix:** stem 组件拒绝敏感标识，并以 UTF-8 字节预算截断 CJK 组件。
+**Files modified:** `skills/graduate-resume/scripts/graduate_resume_render.py`, `skills/graduate-resume/scripts/test_render_contract.py`
+**Commit:** `91a63f4`
+**Applied fix:** 文件名组件现在拒绝中国座机、带 `+` 的国际号码、15 位与 18 位身份证，并保留已有移动电话、邮箱和 URL 检测。
 
-### CR-03: 重复 Markdown 字段静默覆盖已解析事实
+### CR-03: 证据持久化失败发生在 delivery 提交之后，无法回滚正式产物
 
-**Files modified:** `graduate_resume_cli.py`, `test_phase48_cli.py`
-**Commit:** `5a880a1`
-**Applied fix:** 同一条目重复规范字段改为稳定 `MARKDOWN_INVALID` 失败。
+**Files modified:** `skills/graduate-resume/scripts/graduate_resume_cli.py`, `skills/graduate-resume/scripts/graduate_resume_delivery.py`, `skills/graduate-resume/scripts/graduate_resume_render.py`, `skills/graduate-resume/scripts/test_phase48_cli.py`
+**Commit:** `91a63f4`
+**Applied fix:** 证据批量写入移入 `DeliverySession.publish()` 的事务边界；第二次写入失败时会清除本批新证据并回滚 current/history。回归测试覆盖第二个 target 失败后 delivery、history 和 evidence 均恢复原快照。
 
-### CR-04: `validate` 接受渲染器必然拒绝的嵌套值
+## Skipped Issues
 
-**Files modified:** `graduate_resume_cli.py`, `test_phase48_cli.py`
-**Commit:** `5a880a1`
-**Applied fix:** 对 contact、可选列表和条目字段统一验证安全字符串类型。
+### CR-04: Typst 快照仍存在校验到执行之间的可替换竞态
 
-### CR-05: 未确认预检会覆盖既有隐藏证据记录
+**File:** `skills/graduate-resume/scripts/graduate_resume_typst_runtime.py:123`
+**Reason:** 当前 Darwin 25.5.0 / Python 3.14.6 不提供 `os.fexecve`，系统 libc 也不导出 `fexecve`；实测以 `pass_fds` 执行 `/dev/fd/<fd>` 返回 `EACCES`。在同 UID 攻击模型下，保留路径执行、用户可撤销的权限位或 `/dev/fd` 路径替代均无法消除 check-to-exec 替换窗口，故未降级安全边界。
+**Original issue:** 快照在校验后仍按路径交给 `subprocess.run()`，可在 exec 前被同 UID 攻击者原地覆写。
 
-**Files modified:** `graduate_resume_render.py`, `graduate_resume_cli.py`, `test_render_contract.py`, `test_phase48_cli.py`, `targeted-render-delivery-contract.md`
-**Commit:** `1e17ee6`, `6b2462b`
-**Applied fix:** 证据文件绑定 canonical/projection/condition 摘要且冲突 fail-closed；预检不写证据，确认发布后才持久化。
-
-### CR-06: Typst 快照只校验 inode，版本门禁后仍可被原地篡改执行
-
-**Files modified:** `graduate_resume_typst_runtime.py`, `test_render_contract.py`
-**Commit:** `cc27cb1`
-**Applied fix:** 每次执行前复验快照类型、身份、权限、大小和 SHA-256，并覆盖同 inode 原地覆写。
-
-### WR-01: CJK 长度按字符截断却按字节拒绝
-
-**Files modified:** `graduate_resume_render.py`, `test_render_contract.py`
-**Commit:** `f26100d`
-**Applied fix:** 组件截断改为 UTF-8 字节预算。
-
-### WR-02: 定向照片 fixture 引用了不存在的资产
-
-**Files modified:** `fixtures/render/media/source-photo.jpg`, `test_phase48_cli.py`
-**Commit:** `19de15e`
-**Applied fix:** 提供受控照片副本并执行真实定向照片渲染。
-
-### WR-03: 主题测试在源码模板目录使用固定探针文件
-
-**Files modified:** `test_theme_contract.py`
-**Commit:** `f135174`
-**Applied fix:** 探针与 PDF 均移动到 `TemporaryDirectory()`，模板副本在临时目录内编译。
-
-### WR-04: 已确认 target 可绕过结构化招聘要求进入发布
-
-**Files modified:** `graduate_resume_cli.py`, `test_phase48_cli.py`, `fixtures/*.md`
-**Commit:** `5a880a1`
-**Applied fix:** confirmed target 的 `requirements` 现在必须为非空安全字符串列表。
+安全替代方案：在提供真实 `fexecve`/等价内核 descriptor-exec 的受支持平台运行，或引入经系统安装、非当前用户可写的受控原生 helper，由该 helper 在不可篡改的权限域内完成校验与 descriptor exec；在具备其中一种能力前，不应声称此项已修复。
 
 ---
 
-_Fixed: 2026-07-18T19:08:21Z_
-_Fixer: the agent (gsd-code-fixer)_
-_Iteration: 1_
+_Fixed: 2026-07-18T19:32:07Z_
+_Fixer: gsd-code-fixer_
+_Iteration: 2_
