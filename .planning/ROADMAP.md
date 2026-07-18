@@ -110,7 +110,7 @@ Plans:
 - [x] 48-06: 关闭逐条件公开投影、隐藏 evidence、历史连续性与跨进程 approval digest 缺口。
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 48-07: 关闭 metadata 状态提升与 canonical 多次读取造成的快照错绑。
+- [x] 48-07: 关闭 metadata 状态提升与 canonical 多次读取造成的快照错绑。
 - [ ] 48-09: 收紧投递根 allowlist，并让 cleanup failure 可观测、可测试。
 
 **Wave 7** *(blocked on Wave 6 completion)*
@@ -139,7 +139,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 46. 资料契约、字体与可验证夹具 | 3/3 | Completed | 2026-07-18 |
 | 47. 受控主题、照片与冻结布局 | 3/3 | Complete   | 2026-07-18 |
-| 48. 确定性定向渲染与干净批量交付 | 6/6 | Gaps found |  |
+| 48. 确定性定向渲染与干净批量交付 | 7/9 | In Progress|  |
 | 49. 聚合验证、跨 Runtime 与发布验收 | 0/2 | Not started | - |
 
 ## Traceability Coverage
