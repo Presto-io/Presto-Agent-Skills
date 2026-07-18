@@ -643,7 +643,7 @@ def resolve_photo_mode(photo: dict[str, Any], preferences: dict[str, Any]) -> st
 
 def command_plan(args: argparse.Namespace) -> int:
     # Keep layout-only imports out of the Phase 46 validation path.
-    from graduate_resume_layout import build_frozen_resume_plan, resolve_layout_photo, resolve_theme, validate_font_manifest
+    from graduate_resume_layout import PhotoAsset, build_frozen_resume_plan, resolve_layout_photo, resolve_theme, validate_font_manifest
 
     document = load_resume(args.input)
     validate_document(document)
@@ -654,7 +654,8 @@ def command_plan(args: argparse.Namespace) -> int:
     theme = resolve_theme(args.theme or preferences.get("theme"))
     assets_root = Path(args.assets_root).expanduser() if args.assets_root else document.path.parent
     requested_photo_mode = resolve_photo_mode(photo, preferences) if args.photo_mode == "auto" else args.photo_mode
-    photo_asset = resolve_layout_photo(document.path, assets_root, photo, {"photo_mode": requested_photo_mode})
+    resolved_photo = resolve_layout_photo(document.path, assets_root, photo, {"photo_mode": requested_photo_mode})
+    photo_asset = None if resolved_photo is None else PhotoAsset("embedded-normalized.png")
     font_manifest_hash = validate_font_manifest(default_skill_root() / "fonts")
     frozen_plan = build_frozen_resume_plan(data, theme, requested_photo_mode, photo_asset, font_manifest_hash, args.pages)
     payload = {
@@ -742,7 +743,7 @@ def _resolve_publication_photo(args: argparse.Namespace, document: ResumeDocumen
     feedback_photo = None
     photo_mode = "no-photo"
     if resolved is not None:
-        photo_bytes = (assets_root.resolve(strict=True) / resolved.logical_path).read_bytes()
+        photo_bytes = resolved.source_bytes
         feedback_photo = PhotoAsset("embedded-normalized.png")
         photo_mode = "photo"
     font_hash = validate_font_manifest(default_skill_root() / "fonts")
