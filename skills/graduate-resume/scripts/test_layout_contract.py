@@ -23,6 +23,7 @@ from graduate_resume_layout import (
     build_frozen_resume_plan,
     resolve_theme,
 )
+from graduate_resume_typst import emit_typst, typst_content
 
 
 class LayoutContractTests(unittest.TestCase):
@@ -68,6 +69,19 @@ class LayoutContractTests(unittest.TestCase):
         plan = build_frozen_resume_plan(self.document.data, resolve_theme("conservative"), "no-photo", None, self.font_hash, "auto")
         with self.assertRaises(cli.CliError) as raised:
             plan.validate({**self.document.data, "candidate": {}})
+        self.assertEqual(raised.exception.code, LAYOUT_PLAN_INVALID)
+
+    def test_typst_emitter_uses_only_verified_frozen_plan(self) -> None:
+        plan = build_frozen_resume_plan(self.document.data, resolve_theme("conservative"), "no-photo", None, self.font_hash, "auto")
+        facts = {"__verified__": True, **self.document.data}
+        output = emit_typst(plan, facts)
+        self.assertNotIn("image(", output)
+        self.assertNotIn("student-photo.jpg", output)
+        self.assertNotIn("EXIF", output)
+        self.assertIn("#pagebreak()", emit_typst(build_frozen_resume_plan(self.document.data, resolve_theme("conservative"), "no-photo", None, self.font_hash, "2"), facts))
+        self.assertEqual(typst_content("#[\\]" + "\n"), r"\#\[\\\]#linebreak()")
+        with self.assertRaises(cli.CliError) as raised:
+            emit_typst(plan, self.document.data)
         self.assertEqual(raised.exception.code, LAYOUT_PLAN_INVALID)
 
 
