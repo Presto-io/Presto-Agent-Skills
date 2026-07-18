@@ -335,8 +335,12 @@ def resolve_layout_photo(input_path: Path, assets_root: Path, photo: dict[str, A
     pure = PurePosixPath(raw)
     if pure.is_absolute() or "\\" in raw or ":" in raw or any(part in {"", ".", ".."} for part in raw.split("/")): raise _photo_error()
     try:
-        root = assets_root.resolve(strict=True); candidate = root.joinpath(*pure.parts)
-        if not candidate.is_file() or candidate.is_symlink() or not candidate.resolve().is_relative_to(root): raise ValueError
+        root = assets_root.resolve(strict=True); candidate = root
+        for part in pure.parts:
+            candidate = candidate / part
+            if candidate.is_symlink(): raise ValueError
+        mode = candidate.stat().st_mode
+        if not stat.S_ISREG(mode) or mode & 0o444 == 0 or not candidate.resolve().is_relative_to(root): raise ValueError
         prefix = candidate.read_bytes()[:16]
         if not ((candidate.suffix.lower() in {".jpg", ".jpeg"} and prefix.startswith(b"\xff\xd8")) or (candidate.suffix.lower() == ".png" and prefix.startswith(b"\x89PNG\r\n\x1a\n"))): raise ValueError
     except (OSError, ValueError) as exc: raise _photo_error() from exc
