@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.19
 milestone_name: 毕业生高级简历生成器
 status: executing
-stopped_at: Completed 48-05-PLAN.md
-last_updated: "2026-07-18T12:44:06.034Z"
+stopped_at: Completed 48-06-PLAN.md
+last_updated: "2026-07-18T13:28:04.746Z"
 last_activity: 2026-07-18
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 9
-  completed_plans: 9
+  completed_plans: 10
   percent: 100
 ---
 
@@ -26,8 +26,8 @@ See: `.planning/PROJECT.md` (updated 2026-07-17)
 ## Current Position
 
 Phase: 48 (确定性定向渲染与干净批量交付) — EXECUTING
-Plan: 5 of 6
-Status: Ready to execute
+Plan: 6 of 6
+Status: Ready for verification
 Last activity: 2026-07-18
 
 ## Workflow Preferences
@@ -141,6 +141,9 @@ Phase order:
 - [Phase 48]: 事实 ID 使用统一稳定 grammar，profile 固定为 profile，canonical、resolver、final Markdown 与 Typst 四层复验。
 - [Phase 48]: ContainerPlan.fields 同时驱动高度、分页和 Typst/PDF。
 - [Phase 48]: 显式 photo 必须绑定 provided 安全本地资产，只有 auto 可降级 no-photo。
+- [Phase 48]: 含 target 的正式 render/batch 必须显式授权独立 evidence root；generic-only publication 不创建隐藏证据。
+- [Phase 48]: 历史 stem 以 verified canonical 姓名生成的冻结 owner_prefix、独立结构和登记主题校验，不依赖当前 authority membership。
+- [Phase 48]: patch 与 authority 统一要求 reviewed approval digest，摘要绑定完整 candidate/current bytes、canonical hash 和 delivery/evidence root path+inode。
 
 ### Pending Todos
 
@@ -189,11 +192,12 @@ None. Phases 46 and 47 are complete; Phase 48 is ready for discussion.
 | Phase 48 P03 | 11min | 2 tasks | 2 files |
 | Phase 48 P04 | 23min | 3 tasks | 5 files |
 | Phase 48 P05 | 39min | 3 tasks | 8 files |
+| Phase 48 P06 | 37min | 3 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-07-18T12:43:01.530Z
-Stopped at: Completed 48-05-PLAN.md
+Last session: 2026-07-18T13:28:04.740Z
+Stopped at: Completed 48-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
