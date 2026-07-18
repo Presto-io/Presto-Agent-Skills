@@ -75,11 +75,30 @@ def _source_identity(metadata: os.stat_result) -> tuple[int, int, int, int, int,
     )
 
 
+def _snapshot_identity_and_digest(path: Path) -> tuple[os.stat_result, str]:
+    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode) or not 0 < metadata.st_size <= MAX_EXECUTABLE_BYTES:
+            raise _runtime_error()
+        digest = hashlib.sha256()
+        while True:
+            chunk = os.read(descriptor, COPY_CHUNK_BYTES)
+            if not chunk:
+                break
+            digest.update(chunk)
+        return metadata, digest.hexdigest()
+    finally:
+        os.close(descriptor)
+
+
 @dataclass(frozen=True)
 class TypstExecutable:
     snapshot_path: Path
     snapshot_dev: int
     snapshot_ino: int
+    snapshot_size: int
+    snapshot_mode: int
     snapshot_sha256: str
     version: str
     _snapshot_root: Path = field(repr=False, compare=False)
@@ -101,8 +120,12 @@ class TypstExecutable:
         if self._closed or not isinstance(arguments, (tuple, list)) or any(not isinstance(item, str) for item in arguments):
             raise _runtime_error()
         try:
-            metadata = self.snapshot_path.stat()
-            if (metadata.st_dev, metadata.st_ino) != (self.snapshot_dev, self.snapshot_ino):
+            metadata, digest = _snapshot_identity_and_digest(self.snapshot_path)
+            if (
+                (metadata.st_dev, metadata.st_ino, metadata.st_size, stat.S_IMODE(metadata.st_mode))
+                != (self.snapshot_dev, self.snapshot_ino, self.snapshot_size, self.snapshot_mode)
+                or digest != self.snapshot_sha256
+            ):
                 raise _runtime_error()
             completed = subprocess.run(
                 [str(self.snapshot_path), *arguments],
@@ -205,6 +228,8 @@ def resolve_typst_executable(
             snapshot_path=snapshot_path,
             snapshot_dev=snapshot_metadata.st_dev,
             snapshot_ino=snapshot_metadata.st_ino,
+            snapshot_size=snapshot_metadata.st_size,
+            snapshot_mode=stat.S_IMODE(snapshot_metadata.st_mode),
             snapshot_sha256=digest.hexdigest(),
             version=EXPECTED_TYPST_VERSION,
             _snapshot_root=snapshot_root,
