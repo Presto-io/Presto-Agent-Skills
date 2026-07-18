@@ -86,6 +86,73 @@ def run_phase48_acceptance_registry() -> dict[str, object]:
 
 
 class PublicCliContractTests(unittest.TestCase):
+    def test_render_and_batch_share_bounded_target_conditions_and_persist_private_evidence(self) -> None:
+        source = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            render_evidence = root / "render-evidence"
+            batch_evidence = root / "batch-evidence"
+            rendered = run_cli(
+                "render", "--input", str(source), "--target", "target-robot-001",
+                "--delivery-root", str(root / "render-delivery"),
+                "--evidence-root", str(render_evidence), "--photo-mode", "no-photo",
+            )
+            batched = run_cli(
+                "batch", "--input", str(source),
+                "--delivery-root", str(root / "batch-delivery"),
+                "--evidence-root", str(batch_evidence), "--photo-mode", "no-photo",
+            )
+            self.assertEqual(rendered.returncode, 0, rendered.stderr)
+            self.assertEqual(batched.returncode, 0, batched.stderr)
+            render_payload = parse_json(rendered)
+            batch_payload = parse_json(batched)
+            target_id = "target-robot-001"
+            self.assertEqual(
+                render_payload["target_conditions"][target_id],
+                batch_payload["target_conditions"][target_id],
+            )
+            public_projection = render_payload["target_conditions"][target_id]
+            self.assertEqual(
+                set(public_projection),
+                {"target_id", "conditions", "counts", "warning_count", "gap_allowed", "evidence_digest"},
+            )
+            self.assertTrue(public_projection["conditions"])
+            self.assertTrue(all(
+                set(row) == {"condition_id", "predicate", "state"}
+                for row in public_projection["conditions"]
+            ))
+            self.assertNotIn("reason", rendered.stdout)
+            self.assertNotIn("evidence_fact_ids", rendered.stdout)
+            self.assertTrue(tuple(render_evidence.iterdir()))
+            self.assertTrue(tuple(batch_evidence.iterdir()))
+            self.assertEqual(parse_json(run_cli(
+                "render", "--input", str(SKILL_ROOT / "fixtures" / "valid-no-photo.md"),
+                "--generic", "--delivery-root", str(root / "generic-delivery"),
+                "--photo-mode", "no-photo",
+            ))["target_conditions"], {})
+
+    def test_target_publication_requires_separate_non_symlink_evidence_root(self) -> None:
+        source = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            delivery = root / "delivery"
+            missing = run_cli(
+                "render", "--input", str(source), "--target", "target-robot-001",
+                "--delivery-root", str(delivery), "--photo-mode", "no-photo",
+            )
+            self.assertNotEqual(missing.returncode, 0)
+            delivery.mkdir()
+            (root / "evidence-link").symlink_to(root / "real-evidence", target_is_directory=True)
+            for evidence in (delivery, delivery / "private", root / "evidence-link"):
+                with self.subTest(evidence=evidence):
+                    completed = run_cli(
+                        "render", "--input", str(source), "--target", "target-robot-001",
+                        "--delivery-root", str(delivery), "--evidence-root", str(evidence),
+                        "--photo-mode", "no-photo",
+                    )
+                    self.assertNotEqual(completed.returncode, 0)
+                    self.assertEqual(recursive_snapshot(delivery), {})
+
     def test_help_exposes_only_exact_not_applicable_contract(self) -> None:
         completed = run_cli("render", "--help")
         self.assertEqual(completed.returncode, 0, completed.stderr)

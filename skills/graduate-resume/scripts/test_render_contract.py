@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import replace
 import subprocess
 import sys
@@ -16,7 +17,12 @@ SKILL_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import graduate_resume_cli as cli
-from graduate_resume_targeting import LayoutFeedback, PageBudgetRequest, resolve_version_projection
+from graduate_resume_targeting import (
+    LayoutFeedback,
+    PageBudgetRequest,
+    evaluate_hard_conditions,
+    resolve_version_projection,
+)
 
 
 def _projection(document):
@@ -261,6 +267,48 @@ class TypstConsumerContractTests(unittest.TestCase):
 
 
 class RenderMatrixContractTests(unittest.TestCase):
+    def test_target_evidence_is_persisted_outside_candidate_and_digest_bound(self) -> None:
+        from graduate_resume_layout import build_layout_feedback_adapter
+        from graduate_resume_render import render_candidate_matrix
+
+        source = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
+        document = cli.load_resume(str(source))
+        cli.validate_document(document)
+        target = document.data["targets"][0]
+        feedback = build_layout_feedback_adapter(document.data, "no-photo", None, "a" * 64)
+        projection = resolve_version_projection(
+            document.data, target, PageBudgetRequest("auto"), feedback,
+        )
+        evaluation = evaluate_hard_conditions(document.data, target)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            evidence_root = root / "private-evidence"
+            result = render_candidate_matrix(
+                root / "work" / "candidate",
+                document.data,
+                projection,
+                canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
+                target=target,
+                condition_evidence=evaluation.to_evidence_projection(),
+                evidence_root=evidence_root,
+            )
+            evidence_files = tuple(evidence_root.iterdir())
+            self.assertEqual(len(evidence_files), 1)
+            payload = json.loads(evidence_files[0].read_bytes())
+            self.assertEqual(payload["canonical_hash"], hashlib.sha256(source.read_bytes()).hexdigest())
+            self.assertEqual(payload["projection_digest"], projection.digest)
+            self.assertEqual(payload["condition_digest"], projection.condition_digest)
+            matrix_digest = hashlib.sha256(
+                json.dumps(
+                    payload["condition_evidence"]["matrix"],
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            self.assertEqual(matrix_digest, projection.condition_digest)
+            self.assertFalse(any("evidence" in path.name for path in result.candidate_root.iterdir()))
+
     def test_generic_matrix_has_three_complete_safe_triples(self) -> None:
         from graduate_resume_layout import build_layout_feedback_adapter
         from graduate_resume_render import build_render_matrix, render_candidate_matrix
