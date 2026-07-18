@@ -12,7 +12,7 @@ import subprocess
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from graduate_resume_cli import CliError
 
@@ -21,6 +21,8 @@ PHOTO_ASSET_INVALID = "PHOTO_ASSET_INVALID"
 THEME_INVALID = "THEME_INVALID"
 LAYOUT_UNSATISFIABLE = "LAYOUT_UNSATISFIABLE"
 LAYOUT_PLAN_INVALID = "LAYOUT_PLAN_INVALID"
+MAX_PHOTO_BYTES = 20 * 1024 * 1024
+PHOTO_READ_CHUNK = 64 * 1024
 _LIST_SECTIONS = frozenset(("projects", "training", "experience", "certificates"))
 _FACT_SECTIONS = frozenset(("candidate", "summary", "education", "skills"))
 _SECTION_LABELS = {"candidate": "个人信息", "summary": "个人概述", "education": "教育经历", "skills": "专业技能", "certificates": "证书与资格", "projects": "项目经历", "training": "实训经历", "experience": "相关经历"}
@@ -105,6 +107,15 @@ class ThemeSpec:
 class PhotoAsset:
     logical_path: str
     mode: str = "photo"
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedPhotoAsset:
+    logical_path: str
+    source_bytes: bytes
+    source_sha256: str
+    st_dev: int
+    st_ino: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -459,7 +470,47 @@ def validate_font_manifest(fonts_root: Path) -> str:
         _validate_font_visibility(fonts_root, entries); return digest.hexdigest()
     except (OSError, KeyError, ValueError, TypeError, json.JSONDecodeError, subprocess.SubprocessError) as exc: raise _manifest_error() from exc
 def _photo_error() -> CliError: return CliError(PHOTO_ASSET_INVALID, "照片资源无效。")
-def resolve_layout_photo(input_path: Path, assets_root: Path, photo: dict[str, Any], preferences: dict[str, Any]) -> PhotoAsset | None:
+
+
+def _canonical_assets_root(path: Path) -> Path:
+    absolute = Path(os.path.abspath(os.path.normpath(os.fspath(path))))
+    parent = absolute.parent.resolve(strict=True)
+    return parent / absolute.name
+
+
+def _photo_identity(metadata: os.stat_result) -> tuple[int, int, int, int, int, int]:
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_size,
+        metadata.st_mode,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def _valid_photo_bytes(path: PurePosixPath, source: bytes) -> bool:
+    suffix = path.suffix.lower()
+    if suffix in {".jpg", ".jpeg"}:
+        return len(source) >= 4 and source.startswith(b"\xff\xd8") and source.endswith(b"\xff\xd9")
+    if suffix == ".png":
+        return (
+            len(source) >= 20
+            and source.startswith(b"\x89PNG\r\n\x1a\n")
+            and source.endswith(b"\x00\x00\x00\x00IEND\xaeB\x60\x82")
+        )
+    return False
+
+
+def resolve_layout_photo(
+    input_path: Path,
+    assets_root: Path,
+    photo: dict[str, Any],
+    preferences: dict[str, Any],
+    *,
+    _after_leaf_read: Callable[[], None] | None = None,
+    _read_chunk_hook: Callable[[int], None] | None = None,
+) -> ResolvedPhotoAsset | None:
     requested = preferences.get("photo_mode", "auto")
     if requested not in {"auto", "photo", "no-photo"}:
         raise _photo_error()
@@ -474,14 +525,70 @@ def resolve_layout_photo(input_path: Path, assets_root: Path, photo: dict[str, A
         raise _photo_error()
     pure = PurePosixPath(raw)
     if pure.is_absolute() or "\\" in raw or ":" in raw or any(part in {"", ".", ".."} for part in raw.split("/")): raise _photo_error()
+    root_descriptor = -1
+    current_descriptor = -1
+    leaf_descriptor = -1
     try:
-        root = assets_root.resolve(strict=True); candidate = root
-        for part in pure.parts:
-            candidate = candidate / part
-            if candidate.is_symlink(): raise ValueError
-        mode = candidate.stat().st_mode
-        if not stat.S_ISREG(mode) or mode & 0o444 == 0 or not candidate.resolve().is_relative_to(root): raise ValueError
-        prefix = candidate.read_bytes()[:16]
-        if not ((candidate.suffix.lower() in {".jpg", ".jpeg"} and prefix.startswith(b"\xff\xd8")) or (candidate.suffix.lower() == ".png" and prefix.startswith(b"\x89PNG\r\n\x1a\n"))): raise ValueError
-    except (OSError, ValueError) as exc: raise _photo_error() from exc
-    return PhotoAsset(pure.as_posix())
+        root = _canonical_assets_root(assets_root)
+        directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        root_descriptor = os.open(root, directory_flags)
+        root_before = os.fstat(root_descriptor)
+        if not stat.S_ISDIR(root_before.st_mode):
+            raise ValueError
+        current_descriptor = os.dup(root_descriptor)
+        for component in pure.parts[:-1]:
+            child = os.open(component, directory_flags, dir_fd=current_descriptor)
+            os.close(current_descriptor)
+            current_descriptor = child
+        leaf_descriptor = os.open(
+            pure.parts[-1],
+            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0),
+            dir_fd=current_descriptor,
+        )
+        before = os.fstat(leaf_descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_mode & 0o444 == 0
+            or not 8 <= before.st_size <= MAX_PHOTO_BYTES
+        ):
+            raise ValueError
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = os.read(leaf_descriptor, PHOTO_READ_CHUNK)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_PHOTO_BYTES:
+                raise ValueError
+            chunks.append(chunk)
+            if _read_chunk_hook is not None:
+                _read_chunk_hook(total)
+        source = b"".join(chunks)
+        after = os.fstat(leaf_descriptor)
+        if _photo_identity(before) != _photo_identity(after) or total != before.st_size:
+            raise ValueError
+        if not _valid_photo_bytes(pure, source):
+            raise ValueError
+        if _after_leaf_read is not None:
+            _after_leaf_read()
+        root_after = os.fstat(root_descriptor)
+        if (root_before.st_dev, root_before.st_ino, root_before.st_mode) != (
+            root_after.st_dev,
+            root_after.st_ino,
+            root_after.st_mode,
+        ):
+            raise ValueError
+        return ResolvedPhotoAsset(
+            pure.as_posix(),
+            source,
+            hashlib.sha256(source).hexdigest(),
+            before.st_dev,
+            before.st_ino,
+        )
+    except (OSError, ValueError) as exc:
+        raise _photo_error() from exc
+    finally:
+        for descriptor in (leaf_descriptor, current_descriptor, root_descriptor):
+            if descriptor >= 0:
+                os.close(descriptor)
