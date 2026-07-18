@@ -90,12 +90,18 @@ Plans:
   3. 每个版本资料记录实际主题、页数、照片模式、目标单位/岗位和当次招聘信息来源/日期，技能不抓取、猜测或声称招聘信息实时。
   4. 每个成功版本以同 stem 输出正式命名的 Markdown、Typst、PDF 三件套；通用版使用 `通用`，投递根不含诊断或中间件。
   5. 单份与批量任务均先完整预检；任一目标失败不发布部分版本，并保留 candidate-first、bytes no-op、完整 bundle history、rollback 与 unknown/symlink fail-closed 语义。
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
+**Wave 1**
 - [ ] 48-01: 实现 target resolver、硬条件四态和可追溯版本 metadata。
-- [ ] 48-02: 从冻结布局生成正式命名的 Markdown、Typst、PDF 三件套。
 - [ ] 48-03: 实现单份/批量候选发布、完整预检、no-op、归档、rollback 和路径边界。
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 48-02: 从冻结布局生成正式命名的 Markdown、Typst、PDF 三件套。
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 48-04: 接通公开 render/batch CLI、文档契约与 Phase 48 固定验收矩阵。
 
 ### Phase 49: 聚合验证、跨 Runtime 与发布验收
 **Goal**: 用户能以重复的证据确认简历为真实、布局稳定、可在所有承诺 runtime 中离线交付的 1/2 页 A4 PDF。
@@ -120,7 +126,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 46. 资料契约、字体与可验证夹具 | 3/3 | Completed | 2026-07-18 |
 | 47. 受控主题、照片与冻结布局 | 3/3 | Complete   | 2026-07-18 |
-| 48. 确定性定向渲染与干净批量交付 | 0/3 | Not started | - |
+| 48. 确定性定向渲染与干净批量交付 | 0/4 | Not started | - |
 | 49. 聚合验证、跨 Runtime 与发布验收 | 0/2 | Not started | - |
 
 ## Traceability Coverage
