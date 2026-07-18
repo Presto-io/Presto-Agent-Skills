@@ -134,12 +134,14 @@ class ThemeContractTests(unittest.TestCase):
         self.assertIn("if image_handle == none", template)
         self.assertIn("crop_policy == \"controlled\" and policy.allow_controlled_crop", template)
         probe = SKILL_ROOT / "templates" / ".theme-contract-probe.typ"
+        pdf = probe.with_suffix(".pdf")
         try:
             probe.write_text('#import "resume-themes.typ" as resume\n#resume.fact-block("教育经历", [已核实资料])\n#resume.list-entry("项目经历", "project-001", [完整条目])\n', encoding="utf-8")
-            completed = subprocess.run(["typst", "compile", str(probe), "-", "--font-path", str(SKILL_ROOT / "fonts"), "--ignore-system-fonts"], cwd=probe.parent, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            completed = subprocess.run(["typst", "compile", str(probe), str(pdf), "--font-path", str(SKILL_ROOT / "fonts"), "--ignore-system-fonts"], cwd=probe.parent, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             self.assertEqual(completed.returncode, 0, completed.stderr)
         finally:
             probe.unlink(missing_ok=True)
+            pdf.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
