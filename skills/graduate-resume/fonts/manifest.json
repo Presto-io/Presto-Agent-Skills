@@ -1,0 +1,26 @@
+{
+  "family": "Noto Sans Mono CJK SC",
+  "source": {
+    "kind": "upstream-static-otf-copy",
+    "upstream": "https://github.com/notofonts/noto-cjk",
+    "license": "SIL Open Font License 1.1",
+    "license_file": "LICENSE.txt",
+    "license_sha256": "0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb"
+  },
+  "fonts": [
+    {
+      "path": "NotoSansMonoCJKsc-Regular.otf",
+      "family": "Noto Sans Mono CJK SC",
+      "weight": 400,
+      "bytes": 16393784,
+      "sha256": "ec04cc376b34887cedbdf84074e2e226ed2761eeabdcb9173fc1dd7bfd153ef7"
+    },
+    {
+      "path": "NotoSansMonoCJKsc-Bold.otf",
+      "family": "Noto Sans Mono CJK SC",
+      "weight": 600,
+      "bytes": 16958476,
+      "sha256": "a452fedfc0619e43e080b7b861ce34cbd3ec4fbcea495bf8c402a5a02a5dcbdc"
+    }
+  ]
+}
