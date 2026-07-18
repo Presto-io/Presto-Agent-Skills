@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.19
 milestone_name: 毕业生高级简历生成器
 status: executing
-stopped_at: Completed 48-06-PLAN.md
-last_updated: "2026-07-18T14:34:44.210Z"
-last_activity: 2026-07-18 -- Phase 48 planning complete
+stopped_at: Completed 48-07-PLAN.md
+last_updated: "2026-07-18T15:18:27.666Z"
+last_activity: 2026-07-18
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 12
-  completed_plans: 10
-  percent: 83
+  completed_plans: 11
+  percent: 92
 ---
 
 # State: Presto Agent Skills
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-17)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 48 — 确定性定向渲染与干净批量交付
+**Current focus:** Phase 48 — deterministic-targeted-rendering-clean-batch-delivery
 
 ## Current Position
 
-Phase: 48 (确定性定向渲染与干净批量交付) — EXECUTING
-Plan: 6 of 9
+Phase: 48 (deterministic-targeted-rendering-clean-batch-delivery) — EXECUTING
+Plan: 7 of 9
 Status: Ready to execute
-Last activity: 2026-07-18 -- Phase 48 planning complete
+Last activity: 2026-07-18
 
 ## Workflow Preferences
 
@@ -144,6 +144,9 @@ Phase order:
 - [Phase 48]: 含 target 的正式 render/batch 必须显式授权独立 evidence root；generic-only publication 不创建隐藏证据。
 - [Phase 48]: 历史 stem 以 verified canonical 姓名生成的冻结 owner_prefix、独立结构和登记主题校验，不依赖当前 authority membership。
 - [Phase 48]: patch 与 authority 统一要求 reviewed approval digest，摘要绑定完整 candidate/current bytes、canonical hash 和 delivery/evidence root path+inode。
+- [Phase 48]: 非 target metadata 精确且唯一为 id/status，target 精确且唯一为 id；缺失、额外、空值或重复在事实投影前失败。
+- [Phase 48]: canonical 输入以 4 MiB 有界 O_NOFOLLOW 普通文件 descriptor 单次读取，并冻结 source bytes 与 SHA-256。
+- [Phase 48]: canonical path 只用于定位和默认 assets-root；final Markdown、evidence 与 approval payload 统一消费 source_sha256。
 
 ### Pending Todos
 
@@ -193,11 +196,12 @@ None. Phases 46 and 47 are complete; Phase 48 is ready for discussion.
 | Phase 48 P04 | 23min | 3 tasks | 5 files |
 | Phase 48 P05 | 39min | 3 tasks | 8 files |
 | Phase 48 P06 | 37min | 3 tasks | 6 files |
+| Phase 48 P07 | 14min | 2 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-07-18T13:28:04.740Z
-Stopped at: Completed 48-06-PLAN.md
+Last session: 2026-07-18T15:18:27.659Z
+Stopped at: Completed 48-07-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
