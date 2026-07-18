@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.19
 milestone_name: 毕业生高级简历生成器
 status: executing
-stopped_at: Completed 48-07-PLAN.md
-last_updated: "2026-07-18T15:18:27.666Z"
+stopped_at: Completed 48-09-PLAN.md
+last_updated: "2026-07-18T15:37:22.176Z"
 last_activity: 2026-07-18
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 12
-  completed_plans: 11
+  total_plans: 13
+  completed_plans: 12
   percent: 92
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-17)
 ## Current Position
 
 Phase: 48 (deterministic-targeted-rendering-clean-batch-delivery) — EXECUTING
-Plan: 7 of 9
+Plan: 8 of 9
 Status: Ready to execute
 Last activity: 2026-07-18
 
@@ -147,6 +147,9 @@ Phase order:
 - [Phase 48]: 非 target metadata 精确且唯一为 id/status，target 精确且唯一为 id；缺失、额外、空值或重复在事实投影前失败。
 - [Phase 48]: canonical 输入以 4 MiB 有界 O_NOFOLLOW 普通文件 descriptor 单次读取，并冻结 source bytes 与 SHA-256。
 - [Phase 48]: canonical path 只用于定位和默认 assets-root；final Markdown、evidence 与 approval payload 统一消费 source_sha256。
+- [Phase 48]: Phase 48 投递根的 support allowlist 仅保留 history 与 .work；sources/assets 的任何文件系统形态都按 unknown fail closed。 — 防止私密附件或诊断材料被合法 current 吸收。
+- [Phase 48]: close() 固定尽力执行全部 owned cleanup，再以 operation、相对 owned name 与 errno 聚合为一个 bounded DeliveryError。 — 确保清理失败不会被首个错误截断或伪装成成功。
+- [Phase 48]: cleanup 首次失败后 session 进入 closed 状态，重复 close 不重试不确定 syscall，也不产生新的错误。 — 避免 close 失败后的 descriptor 状态不确定性造成二次误操作。
 
 ### Pending Todos
 
@@ -197,11 +200,12 @@ None. Phases 46 and 47 are complete; Phase 48 is ready for discussion.
 | Phase 48 P05 | 39min | 3 tasks | 8 files |
 | Phase 48 P06 | 37min | 3 tasks | 6 files |
 | Phase 48 P07 | 14min | 2 tasks | 2 files |
+| Phase 48 P09 | 12min | 2 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-07-18T15:18:27.659Z
-Stopped at: Completed 48-07-PLAN.md
+Last session: 2026-07-18T15:35:45.632Z
+Stopped at: Completed 48-09-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
