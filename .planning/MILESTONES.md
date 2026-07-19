@@ -1,5 +1,15 @@
 # Milestones
 
+## v1.19 毕业生高级简历生成器 (Closed with verification waivers: 2026-07-20)
+
+**Delivered:** `graduate-resume` now provides a Markdown/YAML source contract, controlled theme and photo layouts, deterministic targeted Markdown/Typst/PDF triples, and candidate-first delivery. The Phase 49 verification foundation was implemented.
+
+**Closeout:** 15/19 requirements are verified. `VERIFY-01..04` and Phase 49-02 were explicitly waived by the operator; this is not a release-verified shipment.
+
+**Archives:** `.planning/milestones/v1.19-ROADMAP.md`, `.planning/milestones/v1.19-REQUIREMENTS.md`, `.planning/milestones/v1.19-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.18 全技能干净交付目录标准化改造 (Shipped: 2026-07-17)
 
 **Delivered:** Six file-writing skills now share candidate-first clean delivery, exact no-op detection, whole-bundle history, handled rollback, and six-runtime boundaries.
