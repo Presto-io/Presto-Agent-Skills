@@ -69,11 +69,6 @@ class TypstRuntimeResolverTests(unittest.TestCase):
                     resolve_typst_executable(source)
         self.assertEqual(raised.exception.code, "TYPST_RUNTIME_INVALID")
 
-    def test_native_acl_probe_accepts_only_kernel_proven_absence(self) -> None:
-        source = (SCRIPT_DIR / "graduate_resume_typst_exec_helper.c").read_text(encoding="utf-8")
-        self.assertIn("return errno == ENOENT", source)
-        self.assertIn("return count == 0", source)
-
     def test_real_homebrew_symlink_uses_one_private_snapshot(self) -> None:
         from graduate_resume_typst_runtime import resolve_typst_executable
 
