@@ -39,8 +39,12 @@ static int secure_node(const char *path) {
   struct stat st;
   if (lstat(path, &st) != 0 || (!S_ISREG(st.st_mode) && !S_ISDIR(st.st_mode))) return 0;
   if (st.st_uid != 0 || st.st_gid != 0 || (st.st_mode & 022) != 0) return 0;
+  errno = 0;
   acl_t acl = acl_get_file(path, ACL_TYPE_EXTENDED);
-  if (acl == NULL) return 0;
+  /* Darwin uses ENOENT to say that this node has no extended ACL at all.
+   * It is a positive, kernel-provided proof of the absence of named-user,
+   * group or everyone ACEs; every other API result remains fail closed. */
+  if (acl == NULL) return errno == ENOENT;
   acl_entry_t entry; int id = ACL_FIRST_ENTRY, count = 0;
   while (acl_get_entry(acl, id, &entry) == 0) { ++count; id = ACL_NEXT_ENTRY; }
   acl_free(acl);
