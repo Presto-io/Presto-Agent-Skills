@@ -198,6 +198,10 @@ class FrozenResumePlan:
     def validate(self, facts: dict[str, Any]) -> None:
         if not all((self.theme_key in THEME_SPECS, self.page_count in (1, 2), self.font_manifest_hash, self.measurement_version, self.measurement_hash, self.pages, self.containers)):
             raise CliError(LAYOUT_PLAN_INVALID, "冻结布局计划缺少必填字段。")
+        if self.photo_mode not in {"photo", "no-photo"} or (self.photo_mode == "photo") != (self.photo is not None):
+            raise CliError(LAYOUT_PLAN_INVALID, "冻结照片模式与资源不一致。")
+        if (self.photo_mode == "photo") != (self.photo_slot is not None):
+            raise CliError(LAYOUT_PLAN_INVALID, "冻结照片模式与槽位不一致。")
         spec = THEME_SPECS[self.theme_key]
         policy = spec.photo_policy
         if (self.photo_fit, self.crop_policy, self.preserve_aspect_ratio, self.allow_stretch, self.allow_controlled_crop, self.subject_safe_area_contract) != (policy.photo_fit, policy.crop_policy, policy.preserve_aspect_ratio, policy.allow_stretch, policy.allow_controlled_crop, policy.subject_safe_area_contract):
@@ -210,9 +214,20 @@ class FrozenResumePlan:
             raise CliError(LAYOUT_PLAN_INVALID, "个人信息必须是首页首位锚点。")
         if len(self.pages) != self.page_count or any(page.number != index + 1 for index, page in enumerate(self.pages)):
             raise CliError(LAYOUT_PLAN_INVALID, "页序列无效。")
-        ids = {container.id for container in self.containers}
-        if any(container_id not in ids for page in self.pages for container_id in page.containers):
-            raise CliError(LAYOUT_PLAN_INVALID, "页面引用未知容器。")
+        container_ids = tuple(container.id for container in self.containers)
+        page_ids = tuple(container_id for page in self.pages for container_id in page.containers)
+        if len(container_ids) != len(set(container_ids)) or len(page_ids) != len(set(page_ids)):
+            raise CliError(LAYOUT_PLAN_INVALID, "冻结布局容器不得重复。")
+        if page_ids != container_ids:
+            raise CliError(LAYOUT_PLAN_INVALID, "冻结布局页面归属不完整或顺序无效。")
+        containers_by_id = {container.id: container for container in self.containers}
+        for page in self.pages:
+            for container_id in page.containers:
+                container = containers_by_id.get(container_id)
+                if container is None:
+                    raise CliError(LAYOUT_PLAN_INVALID, "页面引用未知容器。")
+                if container.page_number != page.number:
+                    raise CliError(LAYOUT_PLAN_INVALID, "容器页码与冻结页面不一致。")
         if not isinstance(facts.get("candidate"), dict) or not facts["candidate"].get("name"):
             raise CliError(LAYOUT_PLAN_INVALID, "布局缺少已验证个人信息。")
         known_ids = {"profile"}
@@ -291,9 +306,6 @@ def _display_fields(section: str, item: Mapping[str, Any]) -> tuple[tuple[str, s
             )
         else:
             raise CliError(LAYOUT_PLAN_INVALID, "展示字段类型无效。")
-    if section != "candidate" and len(fields) > 1:
-        context = fields[0][1]
-        fields = [fields[0], *((key, f"{context} · {value}") for key, value in fields[1:])]
     return tuple(fields)
 
 
@@ -360,7 +372,13 @@ def _paginate(containers: tuple[ContainerPlan, ...], count: int, epsilon: float)
 
 
 def build_frozen_resume_plan(verified_data: dict[str, Any], theme: ThemeSpec, photo_mode: str, photo: PhotoAsset | None, font_manifest_hash: str, page_preference: str, overrides: dict[str, str] | None = None) -> FrozenResumePlan:
-    if page_preference not in {"auto", "1", "2"} or not isinstance(font_manifest_hash, str) or len(font_manifest_hash) != 64:
+    if (
+        page_preference not in {"auto", "1", "2"}
+        or not isinstance(font_manifest_hash, str)
+        or len(font_manifest_hash) != 64
+        or photo_mode not in {"photo", "no-photo"}
+        or (photo_mode == "photo") != (photo is not None)
+    ):
         raise CliError(LAYOUT_PLAN_INVALID, "冻结布局参数无效。")
     values, version, digest = _measurement(theme.key)
     policy = theme.photo_policy
@@ -393,7 +411,7 @@ def build_frozen_resume_plan(verified_data: dict[str, Any], theme: ThemeSpec, ph
         chosen, recommended, comparison, advisory = two, 1 if one else 2, 1 if one else None, "已按强制两页生成；内容更适合一页。" if one else None
     flattened = tuple(item for page in chosen[0] for item in page)
     budgets = tuple(EntryBudget(item.id, item.source_fact_ids[0], item.height_mm) for item in flattened if item.kind == "list-entry")
-    plan = FrozenResumePlan(theme.key, theme.label, page_preference, len(chosen[1]), "photo" if photo else "no-photo", photo, policy.photo_fit, policy.crop_policy, policy.preserve_aspect_ratio, policy.allow_stretch, policy.allow_controlled_crop, policy.subject_safe_area_contract, theme.photo_slot if photo else None, theme.no_photo_behavior, font_manifest_hash, version, digest, chosen[1], flattened, budgets, "preserved-profile-and-education-front" if len(chosen[1]) == 2 else None, PageRecommendation(recommended, page_preference, comparison, advisory))
+    plan = FrozenResumePlan(theme.key, theme.label, page_preference, len(chosen[1]), photo_mode, photo, policy.photo_fit, policy.crop_policy, policy.preserve_aspect_ratio, policy.allow_stretch, policy.allow_controlled_crop, policy.subject_safe_area_contract, theme.photo_slot if photo_mode == "photo" else None, theme.no_photo_behavior, font_manifest_hash, version, digest, chosen[1], flattened, budgets, "preserved-profile-and-education-front" if len(chosen[1]) == 2 else None, PageRecommendation(recommended, page_preference, comparison, advisory))
     plan.validate(verified_data)
     return plan
 

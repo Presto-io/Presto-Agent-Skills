@@ -82,8 +82,13 @@ def verify_rendered_layout(plan: FrozenResumePlan, facts: dict[str, Any], pdf_pa
             for other_index, other_text in enumerate(page_texts):
                 if other_index == index:
                     continue
+                other_expected = {
+                    _compact(str(value))
+                    for other_id in plan.pages[other_index].containers
+                    for _, value in containers[other_id].fields
+                }
                 for _, value in container.fields:
                     expected = _compact(str(value))
-                    if expected and expected in _compact(other_text):
+                    if expected and expected in _compact(other_text) and expected not in other_expected:
                         _fail("PDF 将冻结条目事实放入错误页面。")
         _verify_png_bounds(png_paths[index], (14, 14, 15, 15))

@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -17,8 +18,8 @@ SKILL_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import graduate_resume_cli as cli
-from graduate_resume_layout import LAYOUT_UNSATISFIABLE, THEME_SPECS, build_frozen_resume_plan, resolve_layout_photo
-from graduate_resume_pdf_gate import verify_rendered_layout
+from graduate_resume_layout import LAYOUT_PLAN_INVALID, LAYOUT_UNSATISFIABLE, THEME_SPECS, build_frozen_resume_plan, resolve_layout_photo
+from graduate_resume_pdf_gate import _compact, verify_rendered_layout
 
 
 LAYOUT_FIXTURES = (
@@ -32,7 +33,7 @@ THEME_KEYS = ("conservative", "modern", "expressive")
 PHOTO_SUBJECT_SAFE_AREA = (0, 0, 1, 1)
 
 
-def compile_controlled(plan, document) -> None:
+def compile_controlled(plan, document, check=None) -> None:
     """Compile one fixture only under a disposable evidence root."""
     from graduate_resume_typst import emit_typst
     with tempfile.TemporaryDirectory() as temporary:
@@ -55,7 +56,25 @@ def compile_controlled(plan, document) -> None:
         info = subprocess.run(["pdfinfo", str(pdf_path)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
         if info.returncode or not re.search(rf"^Pages:\s+{plan.page_count}$", info.stdout, re.MULTILINE) or "A4" not in info.stdout:
             raise AssertionError("PDF 不是冻结的 A4 页数")
-        verify_rendered_layout(plan, document.data, pdf_path, sorted(workdir.glob("page-*.png")))
+        png_paths = sorted(workdir.glob("page-*.png"))
+        verify_rendered_layout(plan, document.data, pdf_path, png_paths)
+        if check is not None:
+            check(pdf_path, png_paths)
+
+
+def tampered_topologies(plan):
+    """Return the four page-assignment attacks against a successful two-page plan."""
+    first_page, second_page = plan.pages
+    moved_id = second_page.containers[0]
+    return {
+        "removed": replace(plan, pages=(replace(first_page, containers=first_page.containers[:-1]), second_page)),
+        "duplicated": replace(plan, pages=(replace(first_page, containers=first_page.containers + (first_page.containers[-1],)), second_page)),
+        "moved": replace(plan, pages=(replace(first_page, containers=first_page.containers + (moved_id,)), replace(second_page, containers=second_page.containers[1:]))),
+        "forged-page": replace(plan, containers=tuple(
+            replace(container, page_number=1) if container.id == moved_id else container
+            for container in plan.containers
+        )),
+    }
 
 
 def run_layout_fixture_matrix() -> None:
@@ -147,6 +166,42 @@ class LayoutFixtureTests(unittest.TestCase):
             self.assertTrue(pressure_plan.pages[1].anchors)
             compile_controlled(boundary_plan, boundary)
             compile_controlled(pressure_plan, pressure)
+
+    def test_pressure_evidence_rejects_tampered_topologies_and_displays_each_field_once(self) -> None:
+        from graduate_resume_typst import emit_typst
+
+        pressure = self.load("pressure-two-pages.md")
+        # The source fixture legitimately has two “角色：组员” fields.  Give the
+        # D-05 count test distinct verified values so each source field is observable.
+        pressure.data["projects"][1]["role"] = "独立巡检组员"
+        cli.validate_document(pressure)
+        for key in THEME_KEYS:
+            plan = build_frozen_resume_plan(pressure.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2")
+            facts = {"__verified__": True, **pressure.data}
+            variants = tampered_topologies(plan)
+            for name, tampered in variants.items():
+                with self.subTest(theme=key, tampering=name):
+                    with self.assertRaises(cli.CliError) as raised:
+                        emit_typst(tampered, facts)
+                    self.assertEqual(raised.exception.code, LAYOUT_PLAN_INVALID)
+
+            def check(pdf_path, png_paths):
+                for name, tampered in variants.items():
+                    with self.subTest(theme=key, gate_tampering=name):
+                        with self.assertRaises(cli.CliError) as raised:
+                            verify_rendered_layout(tampered, pressure.data, pdf_path, png_paths)
+                        self.assertEqual(raised.exception.code, LAYOUT_PLAN_INVALID)
+                import fitz
+                with fitz.open(pdf_path) as pdf:
+                    rendered = _compact("".join(page.get_text() for page in pdf))
+                for container in plan.containers:
+                    if container.section not in {"education", "skills", "certificates", "projects", "training", "experience"}:
+                        continue
+                    for field_key, value in container.fields:
+                        with self.subTest(theme=key, container=container.id, field=field_key):
+                            self.assertEqual(rendered.count(_compact(value)), 1)
+
+            compile_controlled(plan, pressure, check)
 
 
 if __name__ == "__main__":
