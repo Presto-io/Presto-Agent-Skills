@@ -348,6 +348,54 @@ class FinalMarkdownContractTests(unittest.TestCase):
             with self.assertRaises(cli.CliError):
                 load_final_resume(path)
 
+    def test_reopen_rejects_rebound_invalid_target_metadata(self) -> None:
+        import yaml
+
+        from graduate_resume_final_markdown import _json_bytes, emit_final_markdown, load_final_resume
+
+        source = SKILL_ROOT / "fixtures" / "valid-multi-target.md"
+        document = cli.load_resume(str(source))
+        cli.validate_document(document)
+        target = document.data["targets"][0]
+        projection = resolve_version_projection(
+            document.data, target, PageBudgetRequest("auto"),
+            lambda theme, selected, request: LayoutFeedback(theme, True, 1, ()),
+        )
+        payload = emit_final_markdown(
+            document.data, projection,
+            canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
+            theme_key="conservative", theme_label="保守稳妥", page_count=1,
+            photo_mode="no-photo", target=target,
+        )
+        frontmatter, body = payload[4:].split(b"---\n", 1)
+        metadata = yaml.safe_load(frontmatter)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "resume.md"
+            for field, value in (
+                ("source", "https://private.example.test/job"),
+                ("company", " "),
+                ("id", "target-shadow-001"),
+            ):
+                with self.subTest(field=field):
+                    tampered = json.loads(json.dumps(metadata))
+                    tampered["target"][field] = value
+                    binding_data = dict(tampered)
+                    binding_data.pop("binding_sha256")
+                    tampered["binding_sha256"] = hashlib.sha256(
+                        _json_bytes(binding_data) + b"\0" + body,
+                    ).hexdigest()
+                    path.write_bytes(
+                        b"---\n"
+                        + yaml.safe_dump(
+                            tampered, allow_unicode=True, sort_keys=False, default_flow_style=False,
+                        ).encode("utf-8")
+                        + b"---\n"
+                        + body,
+                    )
+                    with self.assertRaises(cli.CliError):
+                        load_final_resume(path)
+
 
 class TypstConsumerContractTests(unittest.TestCase):
     def test_layout_and_typst_consume_only_reopened_selected_facts(self) -> None:
