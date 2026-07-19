@@ -6,9 +6,9 @@
 
 **Shipped:** 2026-07-17
 
-**Active milestone:** v1.19 毕业生高级简历生成器
+**Latest closed milestone:** v1.19 毕业生高级简历生成器（验证豁免，非 release-verified）
 
-**Status:** Phase 48 已完成并通过目标验证；Phase 49 待执行聚合验证、跨 runtime 与发布验收。
+**Status:** v1.19 已由操作者接受关闭；Phase 49-02 的六 runtime 证据与非开发环境 UAT 未执行，详见 `.planning/milestones/v1.19-MILESTONE-AUDIT.md`。
 
 **Delivered in v1.18:**
 - Standardized candidate-first clean delivery for all six current file-writing skills.
@@ -33,9 +33,9 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ## Current Focus
 
-Define and build a portable graduate-resume skill while preserving the v1.18 clean-delivery contract and six-runtime compatibility.
+Define the next milestone. v1.19 的 runtime portability 与 cross-environment UAT 仍可作为后续恢复范围，但不得视为已验证交付。
 
-## Current Milestone: v1.19 毕业生高级简历生成器
+## Archived Milestone: v1.19 毕业生高级简历生成器
 
 **Goal:** 为电气相关工科大专毕业生提供 Markdown-first 的高级简历技能，支持纯 CLI 批量生成主题化、定向且版式稳定的 Typst/PDF 简历。
 
@@ -44,6 +44,8 @@ Define and build a portable graduate-resume skill while preserving the v1.18 cle
 - 实现 `Markdown → Typst → PDF` 三件套、1/2 页 A4 收敛和双页逻辑分页保护。
 - 支持通用版、多个单位/岗位定向版、照片/无照片版和硬性条件缺口提示。
 - 将已标准化资料后的验证、定向、主题切换和批量渲染保持为零 token CLI 工作流，并将 AI 限定在可选资料整理模式。
+
+**Closeout note:** Phase 46-48 已完成；Phase 49-01 交付了验证基础。Phase 49-02 和 `VERIFY-01..04` 被操作者豁免，未构成 verified PASS。
 
 ## Latest Milestone: v1.18 全技能干净交付目录标准化改造
 
@@ -255,7 +257,7 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 
 ## Next Milestone Goals
 
-v1.19 聚焦毕业生高级简历生成器；阶段编号从 Phase 46 继续。
+待定义。若恢复 v1.19 未验证范围，继续使用 Phase 49 的既有计划，不将其重写为已完成需求。
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.

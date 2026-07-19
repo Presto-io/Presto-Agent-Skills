@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.19
-milestone_name: 毕业生高级简历生成器
-status: executing
-stopped_at: Phase 49 accepted by operator with verification waived
-last_updated: "2026-07-20T03:15:00+08:00"
-last_activity: 2026-07-20 -- Phase 49 accepted by operator; runtime/UAT verification waived
+milestone: none
+milestone_name: none
+status: closed_with_waivers
+stopped_at: v1.19 closed by operator with Phase 49 verification waived
+last_updated: "2026-07-20T03:25:00+08:00"
+last_activity: 2026-07-20 -- v1.19 archived with verification waivers
 progress:
   total_phases: 4
   completed_phases: 1
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-18)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** Phase 49 — 聚合验证、跨 Runtime 与发布验收
+**Current focus:** 定义下一个里程碑，或恢复 v1.19 的 Phase 49 验证豁免项。
 
 ## Current Position
 
-Phase: 49 (聚合验证、跨 Runtime 与发布验收) — ACCEPTED BY OPERATOR
-Plan: 1 of 2 completed; plan 2 waived by operator
-Status: Accepted without verification evidence; not a release-verified PASS
-Last activity: 2026-07-20 -- Phase 49 accepted by operator; runtime/UAT verification waived
+Milestone: v1.19 — CLOSED WITH WAIVERS
+Phase 49: 1 of 2 plans completed; 49-02 waived by operator
+Status: Not a release-verified PASS; see `.planning/milestones/v1.19-MILESTONE-AUDIT.md`
+Last activity: 2026-07-20 -- v1.19 archived with verification waivers
 
 ## Workflow Preferences
 
@@ -215,5 +215,5 @@ Resume file: .planning/phases/48-deterministic-targeted-rendering-clean-batch-de
 
 ## Operator Next Steps
 
-- Phase 49-02 was explicitly waived by the operator on 2026-07-20. The six-runtime installation evidence and non-development-environment human UAT remain unperformed; this is an operator acceptance, not a release-verified PASS.
-- Resume with `/gsd:execute-phase 49` after providing real Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent execution environments plus a non-development UAT observer.
+- v1.19 is closed with verification waivers. Phase 49-02, `VERIFY-01..04`, six-runtime installation evidence, and non-development-environment human UAT remain unperformed.
+- To restore those requirements, resume `/gsd:execute-phase 49` with real Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent environments plus a non-development UAT observer.
