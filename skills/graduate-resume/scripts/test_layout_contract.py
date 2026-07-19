@@ -9,6 +9,7 @@ import io
 import json
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -19,6 +20,7 @@ import graduate_resume_cli as cli
 from graduate_resume_layout import (
     LAYOUT_PLAN_INVALID,
     LAYOUT_UNSATISFIABLE,
+    PhotoAsset,
     THEME_SPECS,
     build_frozen_resume_plan,
     resolve_theme,
@@ -70,6 +72,54 @@ class LayoutContractTests(unittest.TestCase):
         with self.assertRaises(cli.CliError) as raised:
             plan.validate({**self.document.data, "candidate": {}})
         self.assertEqual(raised.exception.code, LAYOUT_PLAN_INVALID)
+
+    def test_frozen_page_topology_and_photo_mode_must_match_plan(self) -> None:
+        pressure = cli.load_resume(str(SKILL_ROOT / "fixtures" / "layout" / "pressure-two-pages.md"))
+        cli.validate_document(pressure)
+        plan = build_frozen_resume_plan(
+            pressure.data, resolve_theme("conservative"), "no-photo", None,
+            self.font_hash, "2",
+        )
+        facts = {"__verified__": True, **pressure.data}
+        first_page, second_page = plan.pages
+        moved_id = second_page.containers[0]
+        forged_container = next(container for container in plan.containers if container.id == moved_id)
+        variants = {
+            "removed": replace(plan, pages=(replace(first_page, containers=first_page.containers[:-1]), second_page)),
+            "duplicated": replace(plan, pages=(replace(first_page, containers=first_page.containers + (first_page.containers[-1],)), second_page)),
+            "moved": replace(plan, pages=(replace(first_page, containers=first_page.containers + (moved_id,)), replace(second_page, containers=second_page.containers[1:]))),
+            "forged-page": replace(plan, containers=tuple(
+                replace(container, page_number=1) if container.id == forged_container.id else container
+                for container in plan.containers
+            )),
+        }
+        for name, tampered in variants.items():
+            with self.subTest(tampering=name):
+                for entrypoint in (lambda: tampered.validate(pressure.data), lambda: emit_typst(tampered, facts)):
+                    with self.assertRaises(cli.CliError) as raised:
+                        entrypoint()
+                    self.assertEqual(raised.exception.code, LAYOUT_PLAN_INVALID)
+        for photo_mode, photo in (("photo", None), ("no-photo", PhotoAsset("media/student-photo.jpg"))):
+            with self.subTest(photo_mode=photo_mode):
+                with self.assertRaises(cli.CliError) as raised:
+                    build_frozen_resume_plan(self.document.data, resolve_theme("conservative"), photo_mode, photo, self.font_hash, "auto")
+                self.assertEqual(raised.exception.code, LAYOUT_PLAN_INVALID)
+
+    def test_verified_fields_are_independent_and_unique_per_container(self) -> None:
+        pressure = cli.load_resume(str(SKILL_ROOT / "fixtures" / "layout" / "pressure-two-pages.md"))
+        cli.validate_document(pressure)
+        plan = build_frozen_resume_plan(
+            pressure.data, resolve_theme("modern"), "no-photo", None,
+            self.font_hash, "2",
+        )
+        for section in ("education", "skills", "certificates", "projects", "training", "experience"):
+            containers = [container for container in plan.containers if container.section == section]
+            self.assertTrue(containers, section)
+            for container in containers:
+                values = [value for _, value in container.fields]
+                self.assertEqual(len(values), len(set(values)))
+                if len(values) > 1:
+                    self.assertTrue(all(values[0] not in value for value in values[1:]))
 
     def test_typst_emitter_uses_only_verified_frozen_plan(self) -> None:
         plan = build_frozen_resume_plan(self.document.data, resolve_theme("conservative"), "no-photo", None, self.font_hash, "auto")
