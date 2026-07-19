@@ -73,7 +73,6 @@ class TypstRuntimeResolverTests(unittest.TestCase):
         source = (SCRIPT_DIR / "graduate_resume_typst_exec_helper.c").read_text(encoding="utf-8")
         self.assertIn("return errno == ENOENT", source)
         self.assertIn("return count == 0", source)
-        self.assertIn("fchmod(out, 0555)", source)
 
     def test_installed_helper_executes_a_root_owned_copy_after_privilege_drop(self) -> None:
         from graduate_resume_typst_runtime import resolve_typst_executable

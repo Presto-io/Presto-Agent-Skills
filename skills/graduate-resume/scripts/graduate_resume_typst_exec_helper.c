@@ -62,9 +62,7 @@ static int copy_verified(int source, const char *expected, char output[PATH_MAX]
   if (fstat(source, &st) || !S_ISREG(st.st_mode) || st.st_size <= 0 || st.st_size > MAX_BYTES) return 0;
   if (snprintf(output, PATH_MAX, "%s", COPY_NAME) >= PATH_MAX) return 0;
   int out = mkstemp(output);
-  /* The child permanently drops to the real caller before exec.  It therefore
-   * needs execute, but never write, permission on this root-owned copy. */
-  if (out < 0 || fchmod(out, 0555) || fchown(out, 0, 0)) { if (out >= 0) close(out); unlink(output); return 0; }
+  if (out < 0 || fchmod(out, 0500) || fchown(out, 0, 0)) { if (out >= 0) close(out); unlink(output); return 0; }
   CC_SHA256_CTX ctx; CC_SHA256_Init(&ctx); unsigned char buffer[65536]; ssize_t n; size_t total = 0;
   while ((n = read(source, buffer, sizeof buffer)) > 0) {
     total += (size_t)n; if (total > MAX_BYTES || write(out, buffer, (size_t)n) != n) { close(out); unlink(output); return 0; }
