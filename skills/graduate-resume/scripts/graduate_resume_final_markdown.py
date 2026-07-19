@@ -25,6 +25,7 @@ _FIELDS = (
 _SOURCE_URL_RE = re.compile(
     r"(?i)^(?:[a-z][a-z0-9+.-]*://|www\.|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/?#].*)?$)"
 )
+_TARGET_FIELDS = {"id", "company", "role", "source", "as_of"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,6 +120,17 @@ def _trace_summary(projection: VersionProjection) -> dict[str, int]:
     }
 
 
+def _validate_target_metadata(
+    target: Mapping[str, Any], version_id: Any, *, exact_fields: bool,
+) -> None:
+    if not isinstance(target, Mapping) or (exact_fields and set(target) != _TARGET_FIELDS):
+        raise _error()
+    if any(not isinstance(target.get(field), str) or not target[field].strip() for field in _TARGET_FIELDS):
+        raise _error()
+    if target["id"] != version_id or _SOURCE_URL_RE.match(target["source"].strip()):
+        raise _error()
+
+
 def emit_final_markdown(
     facts: Mapping[str, Any], projection: VersionProjection, *, canonical_hash: str,
     theme_key: str, theme_label: str | None = None, page_count: int,
@@ -140,10 +152,7 @@ def emit_final_markdown(
             "id": projection.target_id, "company": target.get("company"), "role": target.get("role"),
             "source": projection.target_source, "as_of": projection.target_as_of,
         }
-        if any(not isinstance(value, str) or not value for value in target_data.values()):
-            raise _error()
-        if _SOURCE_URL_RE.match(target_data["source"].strip()):
-            raise _error()
+        _validate_target_metadata(target_data, projection.version_id, exact_fields=True)
     body = _body(projection.selected_fact_ids, facts)
     metadata: dict[str, Any] = {
         "schema": FINAL_SCHEMA,
@@ -216,8 +225,8 @@ def load_final_resume(path: Path | str) -> FinalResumeDocument:
             raise ValueError
         if version["kind"] == "generic" and target is not None:
             raise ValueError
-        if version["kind"] == "target" and (not isinstance(target, dict) or set(target) != {"id", "company", "role", "source", "as_of"}):
-            raise ValueError
+        if version["kind"] == "target":
+            _validate_target_metadata(target, version["id"], exact_fields=True)
         if set(theme) != {"key", "label"} or theme["key"] not in _THEMES or theme["label"] != _THEMES[theme["key"]]:
             raise ValueError
         if metadata["page_count"] not in (1, 2) or metadata["photo_mode"] not in {"photo", "no-photo"}:
