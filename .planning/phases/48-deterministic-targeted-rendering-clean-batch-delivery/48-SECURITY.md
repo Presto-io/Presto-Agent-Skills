@@ -1,8 +1,8 @@
 ---
 phase: 48
 slug: deterministic-targeted-rendering-clean-batch-delivery
-status: blocked
-threats_open: 1
+status: passed
+threats_open: 0
 asvs_level: 2
 created: 2026-07-19
 ---
@@ -58,7 +58,7 @@ created: 2026-07-19
 | T-48-G07-SC | Tampering | package supply chain | accept | closed | 计划 `48-07-PLAN.md` 不新增安装/联网；见 Accepted Risks Log。 |
 | T-48-G08-01 | Tampering | photo asset | mitigate | closed | `graduate_resume_layout.py:531-579` held root + descriptor-relative O_NOFOLLOW + bounded snapshot。 |
 | T-48-G08-02 | Spoofing | Typst source | mitigate | closed | `graduate_resume_typst_runtime.py:38-64,176-247` bounded symlink chain、source fd、exact version。 |
-| T-48-G08-03 | Tampering | executable substitution | mitigate | open | `graduate_resume_typst_runtime.py:123-138` 在 identity/SHA-256 复验后仍将 `snapshot_path` 传给 `subprocess.run`；同 UID 可在 check-to-exec 窗口原地覆写。`48-REVIEW.md` CR-04 与 `48-REVIEW-FIX.md` 均确认未修复。 |
+| T-48-G08-03 | Tampering | executable substitution | accept | closed | 用户于 2026-07-20 明确接受同 UID 在本机校验后替换 Typst 快照的风险。`graduate_resume_typst_runtime.py` 仍在启动前验证快照 identity/SHA-256、版本及输出上限，但普通路径执行不承诺关闭该竞态。见 AR-48-07。 |
 | T-48-G08-04 | Information Disclosure | final Typst | mitigate | closed | `graduate_resume_typst.py` 只消费 normalized PNG bytes；照片/路径泄露回归通过。 |
 | T-48-G08-05 | Denial of Service | photo/tool output | mitigate | closed | `graduate_resume_typst_runtime.py:22-25,141-144` 限制 executable/run output；照片读取有上限。 |
 | T-48-G08-06 | Repudiation | cleanup CLI result | mitigate | closed | `graduate_resume_delivery.py:704-795` 聚合 cleanup error；CLI cleanup 回归通过。 |
@@ -80,6 +80,7 @@ created: 2026-07-19
 | AR-48-04 | T-48-G07-SC | No package installation, networking, or external dependency. | Phase 48 plan threat register | 2026-07-18 |
 | AR-48-05 | T-48-G08-SC | No package installation; only the declared local Typst 0.15.0 runtime. | Phase 48 plan threat register | 2026-07-18 |
 | AR-48-06 | T-48-G09-SC | No package installation or network dependency. | Phase 48 plan threat register | 2026-07-18 |
+| AR-48-07 | T-48-G08-03 | 同一登录用户主动篡改本机 Typst 的校验后替换窗口不属于 Phase 48 必须缓解的攻击模型；保持与其他技能一致的普通 Typst 路径调用，避免引入特权 helper 与管理员安装前置条件。 | 用户 | 2026-07-20 |
 
 注：`T-48-SC` 在计划 01-04 中重复登记，以上同一接受决策覆盖四条同 ID 登记项。
 
@@ -92,15 +93,16 @@ created: 2026-07-19
 | Audit Date | Threats Total | Closed | Open | Auditor |
 |---|---:|---:|---:|---|
 | 2026-07-19 | 54 | 53 | 1 | gsd-security-auditor |
+| 2026-07-20 | 54 | 54 | 0 | 用户接受风险后重新审计 |
 
-## Blocking Finding
+## Accepted Runtime Risk
 
-`T-48-G08-03` 是阻断项。私有目录的 `0700/0500` 权限不能消除同 UID 对快照文件的原地替换；必须采用 descriptor-exec 或不受当前 UID 写入的受控执行域，且新增在摘要校验完成后触发替换的同步回归，才可关闭。
+`T-48-G08-03` 的技术描述仍成立：私有目录的 `0700/0500` 权限不能消除同 UID 对快照文件的原地替换。用户已将其明确列为 Phase 48 可接受风险，因此本阶段使用普通用户权限下的已验证 Typst 快照路径启动。该决定不削弱 candidate-first、正式文件投递、证据、history 或 rollback 的安全边界。
 
 ## Sign-Off
 
 - [x] 每项计划威胁均有 disposition 和审计状态。
 - [x] 所有计划声明的接受风险已记录。
-- [ ] `threats_open: 0`。
+- [x] `threats_open: 0`。
 
-**Approval:** blocked — 2026-07-19
+**Approval:** passed with accepted risk AR-48-07 — 2026-07-20

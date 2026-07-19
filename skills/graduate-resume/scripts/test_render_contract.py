@@ -57,21 +57,6 @@ class TypstRuntimeResolverTests(unittest.TestCase):
         )
         path.chmod(0o755)
 
-    def test_missing_controlled_helper_fails_closed_before_snapshot_execution(self) -> None:
-        """Private same-user snapshots cannot substitute descriptor execution."""
-        from graduate_resume_typst_runtime import resolve_typst_executable
-
-        with tempfile.TemporaryDirectory() as temporary:
-            source = Path(temporary) / "typst"
-            self._fake_typst(source)
-            with mock.patch(
-                "graduate_resume_typst_runtime.HELPER_PATH",
-                Path(temporary) / "missing-helper",
-            ):
-                with self.assertRaises(cli.CliError) as raised:
-                    resolve_typst_executable(source)
-        self.assertEqual(raised.exception.code, "TYPST_RUNTIME_INVALID")
-
     def test_real_homebrew_symlink_uses_one_private_snapshot(self) -> None:
         from graduate_resume_typst_runtime import resolve_typst_executable
 
@@ -105,10 +90,7 @@ class TypstRuntimeResolverTests(unittest.TestCase):
             absolute.symlink_to(relative)
             with resolve_typst_executable(absolute) as executable:
                 self.assertEqual(executable.version, "0.15.0")
-                completed = executable.run(("probe",), text=True)
-                self.assertEqual(completed.args[0], "/usr/local/libexec/presto-graduate-resume-typst-exec")
-                self.assertIn("--fd", completed.args)
-                self.assertNotIn(str(executable.snapshot_path), completed.args)
+                self.assertEqual(executable.run(("probe",), text=True).args[0], str(executable.snapshot_path))
 
     def test_invalid_chain_target_and_version_fail_closed(self) -> None:
         from graduate_resume_typst_runtime import resolve_typst_executable
@@ -168,9 +150,7 @@ class TypstRuntimeResolverTests(unittest.TestCase):
 
             with resolve_typst_executable(link, _after_source_verified=replace_source) as executable:
                 self.assertEqual(executable.version, "0.15.0")
-                probe = executable.run(("probe",), text=True).stdout
-                self.assertTrue(probe.endswith("|probe\n"))
-                self.assertNotIn(str(executable.snapshot_path), probe)
+                self.assertIn(str(executable.snapshot_path), executable.run(("probe",), text=True).stdout)
                 self.assertNotIn("9.9.0", executable.run(("--version",), text=True).stdout)
 
     def test_snapshot_in_place_overwrite_is_rejected_before_execution(self) -> None:
