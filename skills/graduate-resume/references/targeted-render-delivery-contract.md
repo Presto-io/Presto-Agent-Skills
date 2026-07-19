@@ -34,6 +34,12 @@
 - **D-18 patch 与 no-op：** `render` 固定 `mode=patch`，只能新增或更新所选版本，保留其他 current stems 且不得产生 removals。相同输入为 true no-op，不创建 history，不改变 current inode 或 mtime。
 - **D-19 authority 与 rollback：** `batch` 固定 `mode=authority`，确认后发布 candidate exact set 并移除 obsolete stems。事务使用 held directory、no-follow 检查、owned `.work`、完整旧 current rollback 和发布后 exact-set/bytes 验证；unknown、partial、symlink、stale work、collision 或批准摘要漂移均在 mutation 前失败。
 
+## D-20：Typst 受控执行域
+
+`plan`、`render`、`batch` 只可通过 `/usr/local/libexec/presto-graduate-resume-typst-exec` 启动已冻结的 Typst bytes。Python 仅传递 held snapshot fd、SHA-256、协议版本和受限 argv；helper 从 `getuid()`/`getgid()` 获取真实调用者、清空补充组并永久降权后运行 Typst，不接收 caller uid/gid。未安装 helper、root:wheel/4755 或完整父目录链不合格、mode 可写，或 Darwin ACL/等价扩展权限不能以真实调用者证明不可写时，必须在任何 Typst、candidate、current 或 history mutation 前以 `TYPST_RUNTIME_INVALID` fail closed。
+
+此能力只能由管理员显式审阅 C source 的固定 SHA-256 后安装；安装脚本不调用 `sudo`，从同一 held source descriptor 冻结 root-owned staging，以经系统信任链核验的绝对编译器和 `env -i` 受控环境构建。任何 source、compiler、环境、staging、编译、owner/mode/ACL 或 probe 失败都必须保留旧 helper。修复 `TYPST_RUNTIME_INVALID` 后，先以原参数重跑不含 `--confirm` 的预检，再在成功预检上追加相同确认参数；不得手工绕过 helper 或发布 partial triple。该本地前置条件不宣称完成 Phase 49 runtime 安装验收。
+
 ## 照片自包含契约
 
 照片必须来自用户明确提供的本地 JPEG/PNG。使用锁定的 Typst 0.15.0 在零边距白底页面上执行 contain、保持宽高比、允许等比放大、禁止拉伸和裁切，并以 `--format png --ppi 300 --creation-timestamp 0` 生成 `413 × 579`、300 PPI 栅格基准的 PNG。输出重新解码验证 IHDR，移除 EXIF、方向、源文件名和路径 metadata。
