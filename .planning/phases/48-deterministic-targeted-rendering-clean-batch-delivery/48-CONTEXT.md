@@ -1,6 +1,6 @@
 # Phase 48: 确定性定向渲染与干净批量交付 - Context
 
-**Gathered:** 2026-07-18
+**Gathered:** 2026-07-20
 **Status:** Ready for planning
 
 <domain>
@@ -40,6 +40,9 @@
 - **D-18:** no-op 以本次受影响版本的精确 managed path set 与逐文件 bytes 相等判定；完全相同的版本不发布、不归档，也不改变 current。
 - **D-19:** 沿用 v1.18 的 candidate-first、handled error/INT/TERM rollback、held directory identity、unknown/symlink/partial/stale-work fail-closed 语义。单份更新不得破坏其他 current 版本，批量失败必须保持整个原 current 集合不变。
 
+### Typst Local Threat Model
+- **D-20:** Phase 48 不将“同一登录用户在本机校验后替换 Typst 快照”的 TOCTOU 视为必须缓解的攻击模型。保留冻结副本、运行前 identity/SHA-256、版本、输出上限与候选发布检查；Typst 通过已校验的快照路径以普通用户权限启动，不引入 setuid helper、系统安装或 ACL 前置条件。
+
 ### Claude's Discretion
 - 定向评分权重、同分稳定排序规则和模块相关性词表可由研究与规划阶段确定，但必须离线、确定、可解释，并受稳定 ID 追溯约束。
 - CLI 参数的具体拼写、metadata 字段名、隐藏 JSON schema、终端表格样式和安全文件名规范化细节由后续规划决定。
@@ -69,6 +72,7 @@
 - skills/graduate-resume/scripts/graduate_resume_cli.py — 已有 validate/target/plan/verify 命令、target 归一化、照片解析及 render/batch 保留入口。
 - skills/graduate-resume/scripts/graduate_resume_layout.py — 冻结容器、主题、照片、页数和安全本地资产解析。
 - skills/graduate-resume/scripts/graduate_resume_typst.py — 现有 Typst 内容转义和冻结布局消费面。
+- .planning/phases/48-deterministic-targeted-rendering-clean-batch-delivery/48-SECURITY.md — 记录 T-48-G08-03 的用户接受风险及本次重新审计结果。
 
 ### Reusable Clean Delivery Pattern
 - skills/tiaokedan/scripts/delivery_transaction.py — 可复用的 descriptor-relative candidate、history、rollback、no-op、fault hook 和 fail-closed 事务模式。
@@ -118,4 +122,4 @@
 ---
 
 *Phase: 48-确定性定向渲染与干净批量交付*
-*Context gathered: 2026-07-18*
+*Context gathered: 2026-07-20*
