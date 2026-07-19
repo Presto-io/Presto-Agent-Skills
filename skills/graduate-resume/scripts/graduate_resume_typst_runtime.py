@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import secrets
 import shutil
 import stat
 import subprocess
@@ -23,11 +24,36 @@ MAX_EXECUTABLE_BYTES = 128 * 1024 * 1024
 COPY_CHUNK_BYTES = 1024 * 1024
 MAX_RUN_OUTPUT_BYTES = 1024 * 1024
 MAX_VERSION_OUTPUT_BYTES = 4096
+HELPER_PATH = Path("/usr/local/libexec/presto-graduate-resume-typst-exec")
+HELPER_PROBE_OUTPUT = "PRESTO_TYPST_HELPER_V1\n"
+HELPER_BACKEND_PREFIX = "PRESTO_TYPST_HELPER_BACKEND:"
 _VERSION_RE = re.compile(r"typst 0\.15\.0(?: \([^\r\n]*\))?\Z")
 
 
 def _runtime_error() -> CliError:
     return CliError(TYPST_RUNTIME_INVALID, "受控 Typst 0.15.0 运行时无效。")
+
+
+def _controlled_helper() -> Path:
+    """Return the fixed privileged backend only after its native probe succeeds.
+
+    Python deliberately does not attempt to interpret Darwin ACLs.  That proof is
+    performed by the root-owned native helper using the real caller credentials;
+    an unavailable or inconclusive probe is a capability failure.
+    """
+    try:
+        helper = HELPER_PATH.resolve(strict=True)
+        if helper != HELPER_PATH or not helper.is_file():
+            raise _runtime_error()
+        completed = subprocess.run(
+            [str(helper), "--probe"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=False, check=False, timeout=5,
+        )
+        if completed.returncode != 0 or completed.stdout != HELPER_PROBE_OUTPUT.encode("ascii"):
+            raise _runtime_error()
+        return helper
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise _runtime_error() from exc
 
 
 def _lexical_absolute(path: Path) -> Path:
@@ -102,6 +128,7 @@ class TypstExecutable:
     snapshot_sha256: str
     version: str
     _snapshot_root: Path = field(repr=False, compare=False)
+    _helper: Path = field(repr=False, compare=False)
     _closed: bool = field(default=False, init=False, repr=False, compare=False)
 
     def __enter__(self) -> "TypstExecutable":
@@ -127,14 +154,33 @@ class TypstExecutable:
                 or digest != self.snapshot_sha256
             ):
                 raise _runtime_error()
-            completed = subprocess.run(
-                [str(self.snapshot_path), *arguments],
+            descriptor = os.open(self.snapshot_path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+            try:
+                held = os.fstat(descriptor)
+                if (held.st_dev, held.st_ino, held.st_size) != (self.snapshot_dev, self.snapshot_ino, self.snapshot_size):
+                    raise _runtime_error()
+                proof = secrets.token_hex(32)
+                completed = subprocess.run(
+                [str(self._helper), "--fd", str(descriptor), "--sha256", self.snapshot_sha256,
+                 "--proof", proof, "--", *arguments],
                 cwd=cwd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=text,
                 check=False,
                 timeout=timeout,
+                pass_fds=(descriptor,),
+            )
+            finally:
+                os.close(descriptor)
+            stderr_bytes = completed.stderr.encode("utf-8") if isinstance(completed.stderr, str) else completed.stderr
+            expected_proof = f"{HELPER_BACKEND_PREFIX}{proof}\n".encode("ascii")
+            if not stderr_bytes.startswith(expected_proof):
+                raise _runtime_error()
+            remaining_stderr = stderr_bytes[len(expected_proof):]
+            completed = subprocess.CompletedProcess(
+                completed.args, completed.returncode, completed.stdout,
+                remaining_stderr.decode("utf-8", "strict") if isinstance(completed.stderr, str) else remaining_stderr,
             )
         except (OSError, subprocess.SubprocessError) as exc:
             raise _runtime_error() from exc
@@ -166,6 +212,7 @@ def resolve_typst_executable(
     _copy_chunk_hook: Callable[[int], None] | None = None,
 ) -> TypstExecutable:
     """Freeze one executable candidate and verify the snapshot reports Typst 0.15.0."""
+    helper = _controlled_helper()
     if candidate is None:
         discovered = shutil.which("typst")
         if discovered is None:
@@ -233,6 +280,7 @@ def resolve_typst_executable(
             snapshot_sha256=digest.hexdigest(),
             version=EXPECTED_TYPST_VERSION,
             _snapshot_root=snapshot_root,
+            _helper=helper,
         )
         completed = executable.run(("--version",), text=True)
         version_output = completed.stdout
