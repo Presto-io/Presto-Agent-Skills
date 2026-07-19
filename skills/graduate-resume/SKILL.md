@@ -54,8 +54,8 @@ metadata:
 管理员须先审阅 `scripts/graduate_resume_typst_exec_helper.c` 和固定 SHA-256，再以管理员已明确授权的 shell 显式运行（脚本**不会**自行调用 `sudo`）：
 
 ```sh
-shasum -a 256 skills/graduate-resume/scripts/graduate_resume_typst_exec_helper.c
-skills/graduate-resume/scripts/install_typst_exec_helper.sh skills/graduate-resume/scripts/graduate_resume_typst_exec_helper.c <上述 SHA-256>
+shasum -a 256 scripts/graduate_resume_typst_exec_helper.c
+scripts/install_typst_exec_helper.sh scripts/graduate_resume_typst_exec_helper.c <上述 SHA-256>
 ```
 
 安装程序从同一已持有 source descriptor 冻结 root-owned staging，使用经系统签名验证的绝对 `/usr/bin/cc` 与 `env -i` 构建；source、compiler、环境、staging、编译或权限核验任一失败都会保留旧 helper。安装后管理员必须核验 helper 为 `root:wheel`、mode `4755`，并核验完整父目录链和 Darwin ACL 对真实调用用户不可写；ACL API 或语义无法证明即视为安装失败。出现 `TYPST_RUNTIME_INVALID` 时，先修复该执行域，再用完全相同参数重新运行不含 `--confirm` 的预检，预检成功后才追加 `--confirm`。这不构成 Phase 49 的跨 runtime 安装验收。
