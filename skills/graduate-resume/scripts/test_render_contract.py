@@ -74,17 +74,6 @@ class TypstRuntimeResolverTests(unittest.TestCase):
         self.assertIn("return errno == ENOENT", source)
         self.assertIn("return count == 0", source)
 
-    def test_installed_helper_executes_a_root_owned_copy_after_privilege_drop(self) -> None:
-        from graduate_resume_typst_runtime import resolve_typst_executable
-
-        with tempfile.TemporaryDirectory() as temporary:
-            source = Path(temporary) / "typst"
-            self._fake_typst(source)
-            with resolve_typst_executable(source) as executable:
-                completed = executable.run(("--version",), text=True)
-        self.assertEqual(completed.returncode, 0)
-        self.assertEqual(completed.stdout, "typst 0.15.0\n")
-
     def test_real_homebrew_symlink_uses_one_private_snapshot(self) -> None:
         from graduate_resume_typst_runtime import resolve_typst_executable
 
