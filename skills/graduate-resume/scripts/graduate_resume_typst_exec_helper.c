@@ -51,10 +51,17 @@ static int secure_node(const char *path) {
   return count == 0;
 }
 
+static int secure_helper(void) {
+  struct stat st;
+  return secure_node("/usr/local/libexec/presto-graduate-resume-typst-exec") &&
+         lstat("/usr/local/libexec/presto-graduate-resume-typst-exec", &st) == 0 &&
+         (st.st_mode & S_ISUID) != 0 && (st.st_mode & 07777) == 04755;
+}
+
 static int secure_domain(void) {
   return secure_node("/usr") && secure_node("/usr/local") &&
          secure_node("/usr/local/libexec") &&
-         secure_node("/usr/local/libexec/presto-graduate-resume-typst-exec");
+         secure_helper();
 }
 
 static int copy_verified(int source, const char *expected, char output[PATH_MAX]) {
@@ -94,7 +101,13 @@ int main(int argc, char **argv) {
   if (child == 0) {
     if (setgroups(0, NULL) || setgid(real_gid) || setuid(real_uid) || geteuid() != real_uid || getegid() != real_gid) _exit(125);
     dprintf(STDERR_FILENO, "PRESTO_TYPST_HELPER_BACKEND:%s\n", argv[6]);
-    execv(copy, &argv[8]); _exit(125);
+    /* execv requires argv[0] to name the program.  The protocol delimiter is
+     * not part of the Typst argv, so copy the bounded user arguments after it. */
+    char *exec_argv[MAX_ARGS + 2];
+    exec_argv[0] = copy;
+    for (int index = 8; index < argc; ++index) exec_argv[index - 7] = argv[index];
+    exec_argv[argc - 7] = NULL;
+    execv(copy, exec_argv); _exit(125);
   }
   int status = 125; if (waitpid(child, &status, 0) < 0 || unlink(copy)) return fail();
   if (WIFEXITED(status)) return WEXITSTATUS(status);

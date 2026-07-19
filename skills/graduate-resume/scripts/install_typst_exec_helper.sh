@@ -45,5 +45,6 @@ GOT=$(/bin/cat /dev/fd/3 | /usr/bin/tee "$STAGE/helper.c" | /usr/bin/shasum -a 2
 /usr/sbin/chown root:wheel "$DOMAIN/.presto-graduate-resume-typst-exec.new" || die
 /bin/chmod 4755 "$DOMAIN/.presto-graduate-resume-typst-exec.new" || die
 /bin/mv -f "$DOMAIN/.presto-graduate-resume-typst-exec.new" "$HELPER" || die
+[ "$(/usr/bin/stat -f %OLp "$HELPER")" = 4755 ] || die
 "$HELPER" --probe >/dev/null || die
 printf '%s\n' 'Installed presto graduate-resume Typst execution helper.'
