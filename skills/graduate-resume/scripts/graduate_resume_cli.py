@@ -153,12 +153,9 @@ def parse_args() -> argparse.Namespace:
     batch = subparsers.add_parser("batch", help="预检并权威发布通用版与全部已确认目标的三主题矩阵。")
     _add_publication_arguments(batch)
 
-    verify = subparsers.add_parser("verify", help="运行 Phase 46 fixture 回归与依赖探测。")
-    verify.add_argument(
-        "--fixtures-root",
-        default=str(default_skill_root() / "fixtures"),
-        help="fixture 根目录，默认使用 skills/graduate-resume/fixtures。",
-    )
+    verify = subparsers.add_parser("verify", help="在调用方授权目录中运行 Phase 49 固定验收。")
+    verify.add_argument("--workdir", required=True, help="调用方授权的 verify 证据目录。")
+    verify.add_argument("--resume", help="继续根 active-run.json 指定的 32 位运行 ID。")
     return parser.parse_args()
 
 
@@ -1005,39 +1002,13 @@ def command_batch(args: argparse.Namespace) -> int:
 
 
 def command_verify(args: argparse.Namespace) -> int:
-    fixtures_root = Path(args.fixtures_root).expanduser().resolve()
-    if not fixtures_root.is_dir():
-        raise CliError("FIXTURES_NOT_FOUND", f"fixtures 目录不存在: {fixtures_root}")
-    results: list[dict[str, Any]] = []
-    for fixture_name in VALID_FIXTURES:
-        summary = validate_document(load_resume(str(fixtures_root / fixture_name)))
-        results.append({"fixture": fixture_name, "expected": "pass", "actual": summary["status"]})
-    for fixture_name in INVALID_FIXTURES:
-        try:
-            validate_document(load_resume(str(fixtures_root / fixture_name)))
-        except CliError as exc:
-            if exc.code != "VALIDATION_FAILED":
-                raise
-            results.append({"fixture": fixture_name, "expected": "fail", "actual": "failed"})
-        else:
-            raise CliError("VERIFY_FAILED", f"负例 fixture 意外通过: {fixture_name}")
-    # The Phase 47 matrix is intentionally literal and uses disposable evidence
-    # roots; it cannot discover user fixtures or publish delivery artifacts.
-    from test_layout_fixtures import LAYOUT_FIXTURES, run_layout_fixture_matrix
-    run_layout_fixture_matrix()
-    results.extend({"fixture": f"layout/{fixture_name}", "expected": "pass", "actual": "passed"} for fixture_name in LAYOUT_FIXTURES[:-1])
-    results.append({"fixture": f"layout/{LAYOUT_FIXTURES[-1]}", "expected": "fail", "actual": "failed"})
-    payload = {
-        "status": "passed",
-        "fixtures_root": str(fixtures_root),
-        "valid_fixture_count": len(VALID_FIXTURES),
-        "invalid_fixture_count": len(INVALID_FIXTURES),
-        "layout_fixture_count": len(LAYOUT_FIXTURES),
-        "results": results,
-        "runtime_probe": runtime_probe(),
-    }
+    from graduate_resume_verify import VerifyFailure, run_phase49_acceptance
+    try:
+        payload = run_phase49_acceptance(args.workdir, resume=args.resume)
+    except VerifyFailure as exc:
+        raise CliError(exc.code, "Phase 49 验收证据目录或 active run 无效。") from exc
     print(json.dumps(payload, ensure_ascii=False, indent=2))
-    return 0
+    return 0 if payload["status"] in {"passed", "human_needed"} else 2
 
 
 def main() -> int:
