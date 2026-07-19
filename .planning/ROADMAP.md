@@ -50,7 +50,7 @@ v1.19 为电气相关工科大专毕业生交付离线、Markdown-first 的 `gra
   2. `validate` 会拒绝未知字段、重复事实、缺失必填资料或待确认事实，并说明为何不能生成最终投递件。
   3. 可选 AI 整理只产生待审阅草稿；`validate`、`target`、`plan`、`render`、`batch`、`verify` 均离线、零 token。
   4. 用户可提供多个单位、岗位及招聘信息；明确不提供后，技能仅询问一次并继续生成通用版。
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
 - [x] 46-01: 定义 skill-local schema、稳定事实 ID 与受限校验规则。
@@ -79,6 +79,9 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [x] 47-03: 用一页、两页、照片、无照片和内容压力样张锁定密度与双页锚点。
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 47-05: 关闭冻结计划完整唯一页码归属、D-05 字段去重与真实 PDF/PNG 对抗门禁缺口。
 
 ### Phase 48: 确定性定向渲染与干净批量交付
 **Goal**: 用户能离线生成通用版及多个透明、可追溯的定向简历三件套，并在失败时保持当前成功交付。
@@ -141,7 +144,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 46. 资料契约、字体与可验证夹具 | 3/3 | Completed | 2026-07-18 |
-| 47. 受控主题、照片与冻结布局 | 3/3 | Complete   | 2026-07-18 |
+| 47. 受控主题、照片与冻结布局 | 4/4 | Complete    | 2026-07-19 |
 | 48. 确定性定向渲染与干净批量交付 | 9/9 | Complete    | 2026-07-18 |
 | 49. 聚合验证、跨 Runtime 与发布验收 | 0/2 | Not started | - |
 
