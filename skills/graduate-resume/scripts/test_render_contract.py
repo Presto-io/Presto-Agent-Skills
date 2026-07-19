@@ -57,6 +57,21 @@ class TypstRuntimeResolverTests(unittest.TestCase):
         )
         path.chmod(0o755)
 
+    def test_missing_controlled_helper_fails_closed_before_snapshot_execution(self) -> None:
+        """Private same-user snapshots cannot substitute descriptor execution."""
+        from graduate_resume_typst_runtime import resolve_typst_executable
+
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "typst"
+            self._fake_typst(source)
+            with mock.patch(
+                "graduate_resume_typst_runtime.HELPER_PATH",
+                Path(temporary) / "missing-helper",
+            ):
+                with self.assertRaises(cli.CliError) as raised:
+                    resolve_typst_executable(source)
+        self.assertEqual(raised.exception.code, "TYPST_RUNTIME_INVALID")
+
     def test_real_homebrew_symlink_uses_one_private_snapshot(self) -> None:
         from graduate_resume_typst_runtime import resolve_typst_executable
 
