@@ -5,6 +5,7 @@ status: passed
 threats_open: 0
 asvs_level: 2
 created: 2026-07-19
+revalidated: 2026-07-20T03:03:00Z
 ---
 
 # Phase 48 — Security
@@ -94,6 +95,24 @@ created: 2026-07-19
 |---|---:|---:|---:|---|
 | 2026-07-19 | 54 | 53 | 1 | gsd-security-auditor |
 | 2026-07-20 | 54 | 54 | 0 | 用户接受风险后重新审计 |
+
+## Revalidated Source Hashes
+
+下列 Phase 48 审计范围内的安全关键源码已在当前 checkout 逐一重算；哈希清单与本报告的结论绑定。
+
+| Path | SHA-256 |
+|---|---|
+| `skills/graduate-resume/scripts/graduate_resume_cli.py` | `a047c7845c01bdcf9dc384fe7cbe70e970f80b0a867afe9f089c498de88483a2` |
+| `skills/graduate-resume/scripts/graduate_resume_delivery.py` | `7f95c135c68f2fd6760b0b44e7c3829b549e04292580655f90a8ba15e48d710a` |
+| `skills/graduate-resume/scripts/graduate_resume_final_markdown.py` | `8cd9558f939fe26e8d31ee8074fae04b3db4eb7b3e222ea0edf5851fa18cba5e` |
+| `skills/graduate-resume/scripts/graduate_resume_layout.py` | `2ca460b0e36e1f76e178e80d0a92bf399ff30b862ce227fec7a0339c25d3edd8` |
+| `skills/graduate-resume/scripts/graduate_resume_render.py` | `49060f2d50471d0f2239f79357046da4583ec35550dacbf74a25e595f50f77a3` |
+| `skills/graduate-resume/scripts/graduate_resume_targeting.py` | `f6f94ab25d28a888a73d61a804d24db5ab2a81c6e48c5eff0012c4e7a5fa5356` |
+| `skills/graduate-resume/scripts/graduate_resume_typst.py` | `6d4dfc4831b3a095318ac72c8ce5f1c008d7e4d82cff84419af045f265b764a7` |
+| `skills/graduate-resume/scripts/graduate_resume_typst_runtime.py` | `f829cda5379eb40bf64972bc4252d9cbcd51d70760b82bfe324bfebf073a5b91` |
+| `skills/graduate-resume/scripts/test_delivery_transaction.py` | `ca5f92df14a29d3a7f4f2f0c58fb766c6854604ee78a3f168b6b1a4e0c9bfcea` |
+| `skills/graduate-resume/scripts/test_phase48_cli.py` | `18e7ebf7c93d6fd618f39fc2bbbf2724fd4ef2425ad0894eb5fef3039dc5be69` |
+| `skills/graduate-resume/scripts/test_render_contract.py` | `9325a7d94cd74fd45c0889f5de2c5399ea26230765fdf485f9eca5deaba293cf` |
 
 ## Accepted Runtime Risk
 
