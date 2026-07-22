@@ -130,7 +130,7 @@ emit_code_block() {
 }
 
 render_body() {
-  local total="${#BODY_LINES[@]}" i=0 line next next2 noindent=false in_comment=false code lang rows caption j last_list_kind="" marker_output
+  local total="${#BODY_LINES[@]}" i=0 line next next2 noindent=false in_comment=false code lang rows caption j last_list_kind="" marker_output canonical_title
   HAS_SEEN_HEADER=false
   TABLE_COUNTER=0
   FIGURE_COUNTER=0
@@ -167,6 +167,17 @@ render_body() {
       emit_code_block "$lang" "$code"
       last_list_kind=""
       continue
+    fi
+
+    if [[ "$line" =~ ^#[[:space:]]+(.*)$ ]]; then
+      normalize_heading_text "${BASH_REMATCH[1]}"
+      local heading_title="$NORMALIZED_HEADING_TEXT"
+      canonical_title="${FM_TITLE//|/ }"
+      normalize_heading_text "$canonical_title"
+      if [[ "$heading_title" == "$NORMALIZED_HEADING_TEXT" ]]; then
+        ((i++))
+        continue
+      fi
     fi
 
     if [[ "$line" =~ ^(#{2,5})[[:space:]]+(.*)$ ]]; then

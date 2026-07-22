@@ -7,7 +7,21 @@ FIXTURE_DIR="$SKILL_DIR/references/fixtures"
 RENDERER="$SKILL_DIR/scripts/gongwen.sh"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/gongwen-heading-test.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT
-mkdir "$TMP_DIR/clean" "$TMP_DIR/numbered"
+mkdir "$TMP_DIR/clean" "$TMP_DIR/numbered" "$TMP_DIR/title"
+
+cat > "$TMP_DIR/title/title.md" <<'EOF'
+---
+title: "标题编号归一化测试"
+author: "测试单位"
+date: "2026-06-13"
+template: "gongwen"
+signature: false
+---
+
+# 标题编号归一化测试
+
+正文内容。
+EOF
 
 "$RENDERER" render \
   --input "$FIXTURE_DIR/heading-normalization-clean.md" \
@@ -25,6 +39,18 @@ cmp -s "$TMP_DIR/clean/heading.typ" "$TMP_DIR/numbered/heading.typ" || {
 grep -Fq '#let FONT_HEI = ("SimHei", "STHeiti", "Heiti SC", "Noto Sans CJK SC", "Source Han Sans SC", "思源黑体", "Microsoft YaHei")' "$TMP_DIR/clean/heading.typ"
 grep -Fq '#let FONT_SONG = ("SimSun", "NSimSun", "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "思源宋体")' "$TMP_DIR/clean/heading.typ"
 grep -Fq '#let FONT_XBS = ("FZXiaoBiaoSong-B05", "FZXiaoBiaoSong-B05S", "FZXiaoBiaoSongS-B-GB", "方正小标宋简体", "方正小标宋_GBK")' "$TMP_DIR/clean/heading.typ"
+
+"$RENDERER" render \
+  --input "$TMP_DIR/title/title.md" \
+  --typ "$TMP_DIR/title/title.typ" >/dev/null
+[[ "$(grep -Fc '标题编号归一化测试' "$TMP_DIR/title/title.typ")" -eq 1 ]] || {
+  printf '与 frontmatter 标题相同的 Markdown 一级标题未被剥离。\n' >&2
+  exit 1
+}
+if grep -Fq '\\# 标题编号归一化测试' "$TMP_DIR/title/title.typ"; then
+  printf 'Markdown 一级标题被错误输出为 Typst 正文。\n' >&2
+  exit 1
+fi
 
 if grep '^#let FONT_HEI' "$TMP_DIR/clean/heading.typ" | grep -Eq 'SimSun|STSong|Serif|宋体'; then
   printf '黑体 fallback 中出现了宋体类字体。\n' >&2
