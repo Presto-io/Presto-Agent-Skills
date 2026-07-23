@@ -206,10 +206,10 @@ A skill authored in the canonical repository format can be understood, reviewed,
 
 ### Active
 
-- [ ] 新建面向电气、机电、智能制造、发电厂与新能源方向大专毕业生的高级简历生成技能。
-- [ ] 建立主题无关的简历 Markdown schema、可扩展主题契约和纯 CLI 批量渲染接口。
-- [ ] 生成可打印的 Markdown、Typst、PDF 三件套，并保证 1/2 页 A4 的可读性和分页完整性。
-- [ ] 支持通用版、多个单位/岗位定向版、照片/无照片版与透明的资格缺口提示。
+- [ ] 以 `standard-school` 的 manifest/template 为唯一视觉事实源，新增受控的 `hero-evidence`、`annotated-image`、`process-overlay`、`kpi-evidence` 与图集预设。
+- [ ] 在 mechanical emitter 之前冻结可复算 VisualPlan，保持 Markdown 不控制坐标、字体、颜色、裁切或动画。
+- [ ] 让图片只承担证据层，所有信息层继续生成可编辑的 PowerPoint/WPS 原生对象。
+- [ ] 用完整 fixture、固定自动验证和 hash-bound PowerPoint/WPS UAT 验证视觉多样性、主体风格与可编辑性。
 
 ### Out of Scope
 
