@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.20
 milestone_name: School PPTX Visual Enrichment
 status: planning
-last_updated: "2026-07-23T08:44:29.863Z"
+last_updated: "2026-07-23T09:03:45.558Z"
 last_activity: 2026-07-23
 progress:
   total_phases: 0
@@ -20,14 +20,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-23)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** 定义 v1.20 `school-pptx` 视觉增强的需求与路线图。
+**Current focus:** 规划 v1.20 `school-pptx` 视觉增强的 Phase 50。
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 50 — 受控视觉合同与模板预设 (ready to plan)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-07-23 — Milestone v1.20 started
+Status: Ready to plan
+Last activity: 2026-07-23 — v1.20 requirements and roadmap completed
 
 ## Workflow Preferences
 
