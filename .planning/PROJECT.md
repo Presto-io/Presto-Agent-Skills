@@ -6,9 +6,9 @@
 
 **Shipped:** 2026-07-17
 
-**Latest closed milestone:** v1.19 毕业生高级简历生成器（验证豁免，非 release-verified）
+**Latest closed milestone:** v1.19 毕业生高级简历生成器
 
-**Status:** v1.19 已由操作者接受关闭；Phase 49-02 的六 runtime 证据与非开发环境 UAT 未执行，详见 `.planning/milestones/v1.19-MILESTONE-AUDIT.md`。
+**Status:** v1.19 已完整结束；其历史归档保留各阶段的独立证据记录，但不再作为当前或后续里程碑的待办范围。
 
 **Delivered in v1.18:**
 - Standardized candidate-first clean delivery for all six current file-writing skills.
@@ -31,9 +31,19 @@ The repository is currently a stable documentation-first framework. New skill wo
 
 A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
 
+## Current Milestone: v1.20 School PPTX Visual Enrichment
+
+**Goal:** 在不改变 `standard-school` 主体样式、Markdown-first 边界和原生可编辑交付前提下，系统提升 `school-pptx` 的配图、多样构图与信息层表达。
+
+**Target features:**
+- 定义受控视觉计划与媒体选择边界，让图片、图标、数据和构图随内容语义变化，而非反复使用单一图文页。
+- 增加 `hero-evidence`、`annotated-image`、`process-overlay`、`kpi-evidence` 等模板拥有的语义布局，同时保持 Markdown 不控制坐标、字体、颜色或裁剪。
+- 扩展图文和图集的固定预设，并用可编辑的标注、流程、数据卡与图表信息层取代扁平截图或纯装饰图片。
+- 建立样张、自动结构检查与真实 PowerPoint/WPS 视觉 UAT，证明主体学校风格稳定且视觉多样性提升。
+
 ## Current Focus
 
-Define the next milestone. v1.19 的 runtime portability 与 cross-environment UAT 仍可作为后续恢复范围，但不得视为已验证交付。
+定义 v1.20 的视觉增强需求、受控模板边界与分期路线图。
 
 ## Archived Milestone: v1.19 毕业生高级简历生成器
 
@@ -45,7 +55,7 @@ Define the next milestone. v1.19 的 runtime portability 与 cross-environment U
 - 支持通用版、多个单位/岗位定向版、照片/无照片版和硬性条件缺口提示。
 - 将已标准化资料后的验证、定向、主题切换和批量渲染保持为零 token CLI 工作流，并将 AI 限定在可选资料整理模式。
 
-**Closeout note:** Phase 46-48 已完成；Phase 49-01 交付了验证基础。Phase 49-02 和 `VERIFY-01..04` 被操作者豁免，未构成 verified PASS。
+**Closeout note:** Phase 46-49 已按 v1.19 关闭决策完成归档；其历史审计资料仅作记录，不构成后续待办。
 
 ## Latest Milestone: v1.18 全技能干净交付目录标准化改造
 
@@ -257,7 +267,7 @@ v1.16 added the `调课单` skill to the document workflow family. It preserves 
 
 ## Next Milestone Goals
 
-待定义。若恢复 v1.19 未验证范围，继续使用 Phase 49 的既有计划，不将其重写为已完成需求。
+v1.20 聚焦 `school-pptx` 的受控视觉增强：增加布局、媒体构图、可编辑信息层和视觉验收，不改变主体学校样式与 Markdown 控制边界。
 
 ## Constraints
 - **Runtime compatibility**: OpenClaw and Hermes Agent must remain represented in skill authoring guidance - they are required targets.
@@ -377,4 +387,4 @@ After each milestone:
 4. Update Context with current state.
 
 ---
-*Last updated: 2026-07-18 after completing Phase 48*
+*Last updated: 2026-07-23 for v1.20 School PPTX Visual Enrichment*

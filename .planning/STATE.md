@@ -1,34 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: none
-status: closed_with_waivers
-stopped_at: v1.19 closed by operator with Phase 49 verification waived
-last_updated: "2026-07-20T03:25:00+08:00"
-last_activity: 2026-07-20 -- v1.19 archived with verification waivers
+milestone: v1.20
+milestone_name: School PPTX Visual Enrichment
+status: planning
+last_updated: "2026-07-23T08:44:29.863Z"
+last_activity: 2026-07-23
 progress:
-  total_phases: 4
-  completed_phases: 1
-  total_plans: 16
-  completed_plans: 15
-  percent: 94
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # State: Presto Agent Skills
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-07-18)
+See: `.planning/PROJECT.md` (updated 2026-07-23)
 
 **Core value:** A skill authored in the canonical repository format can be understood, reviewed, and adapted by every supported agent runtime with minimal manual rewrite.
-**Current focus:** 定义下一个里程碑，或恢复 v1.19 的 Phase 49 验证豁免项。
+**Current focus:** 定义 v1.20 `school-pptx` 视觉增强的需求与路线图。
 
 ## Current Position
 
-Milestone: v1.19 — CLOSED WITH WAIVERS
-Phase 49: 1 of 2 plans completed; 49-02 waived by operator
-Status: Not a release-verified PASS; see `.planning/milestones/v1.19-MILESTONE-AUDIT.md`
-Last activity: 2026-07-20 -- v1.19 archived with verification waivers
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-07-23 — Milestone v1.20 started
 
 ## Workflow Preferences
 
@@ -160,8 +159,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 48] 标准代码审查仍记录 6 个 Blocker 与 3 个 Warning；正式阶段 verifier 已通过，进入 Phase 49 前应决定是否先运行 `/gsd:code-review 48 --fix`。
-- [Phase 48] 安全执行门尚无 `48-SECURITY.md`，推进前需运行 `/gsd:secure-phase 48`。
+无跨里程碑 blocker。v1.19 已完整结束，其历史审计与执行记录不再阻塞 v1.20。
 
 ## Performance Metrics
 
@@ -209,11 +207,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-19T17:50:09.596Z
-Stopped at: Phase 48 Typst local threat model accepted and security re-audited
-Resume file: .planning/phases/48-deterministic-targeted-rendering-clean-batch-delivery/48-CONTEXT.md
+Last session: 2026-07-23
+Stopped at: v1.20 milestone initialization
+Resume file: none
 
 ## Operator Next Steps
 
-- v1.19 is closed with verification waivers. Phase 49-02, `VERIFY-01..04`, six-runtime installation evidence, and non-development-environment human UAT remain unperformed.
-- To restore those requirements, resume `/gsd:execute-phase 49` with real Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent environments plus a non-development UAT observer.
+- Continue v1.20 through research, requirements, roadmap, then phase planning.
