@@ -28,7 +28,7 @@ v1.20 为 `school-pptx` 增加受控的教学视觉表达，同时保持 `standa
   2. 每种新增构图都具有明确的教学语义和非空、彼此可区分的原生对象角色，而非改名的普通图文页。
   3. 作者可为 `gallery` 和既有图文页面使用 1–4 项固定媒体预设及一致图注，页面不再一律退化为左右图文构图。
   4. 任何试图越过 `standard-school` manifest 覆盖主题、几何、样式或裁切的 Markdown 都收到清晰拒绝。
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
 
 ### Phase 51: 冻结视觉规划与物理映射
@@ -71,7 +71,7 @@ v1.20 为 `school-pptx` 增加受控的教学视觉表达，同时保持 `standa
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 50. 受控视觉合同与模板预设 | 0/TBD | Not started | - |
+| 50. 受控视觉合同与模板预设 | 2/2 | Planned | - |
 | 51. 冻结视觉规划与物理映射 | 0/TBD | Not started | - |
 | 52. 原生对象与受控媒体发射 | 0/TBD | Not started | - |
 | 53. 完整验证、Runtime 文档与真人 UAT | 0/TBD | Not started | - |
