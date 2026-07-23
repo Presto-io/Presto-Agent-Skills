@@ -77,9 +77,75 @@ def validate_emit_inputs(plan: FrozenResumePlan, document: FinalResumeDocument |
     return facts
 
 
-def _container_text(container: Any) -> str:
-    values = [value for _, value in container.fields]
-    return "\n".join(values)
+def _content(value: str) -> str:
+    return f"[{typst_content(value)}]"
+
+
+def _content_tuple(values: list[str]) -> str:
+    rendered = ", ".join(_content(value) for value in values)
+    return f"({rendered},)" if rendered else "()"
+
+
+def _field_map(container: Any) -> dict[str, list[str]]:
+    fields: dict[str, list[str]] = {}
+    for key, value in container.fields:
+        base = key.split("[", 1)[0]
+        fields.setdefault(base, []).append(value)
+    return fields
+
+
+def _join(values: list[str], separator: str = " · ") -> str:
+    return separator.join(values)
+
+
+def _emit_profile(container: Any, photo: str, theme: str) -> str:
+    fields = _field_map(container)
+    name = _content(_join(fields.get("name", [""])))
+    headline = _content(_join(fields.get("headline", [""])))
+    summary = _content(_join(fields.get("summary", [""])))
+    contact = _content(_join(fields.get("contact", []), "   "))
+    directions = _content(_join(fields.get("directions", []), " / "))
+    return (
+        "#identity-block("
+        f'"{typst_content(theme)}", name: {name}, headline: {headline}, '
+        f"summary: {summary}, contact: {contact}, directions: {directions}, photo: {photo})"
+    )
+
+
+def _emit_entry(container: Any, theme: str, show_heading: bool) -> str:
+    fields = _field_map(container)
+    if container.section == "education":
+        title = _join(fields.get("school", []))
+        meta = _join(fields.get("major", []) + fields.get("degree", []) + fields.get("start", []) + fields.get("end", []))
+        summary = _join(fields.get("courses", []) + fields.get("honors", []), "；")
+    else:
+        title = _join(fields.get("title", []) or fields.get("name", []))
+        meta = _join(fields.get("organization", []) + fields.get("role", []) + fields.get("issuer", []) + fields.get("start", []) + fields.get("end", []) + fields.get("issued_on", []) + fields.get("expires_on", []))
+        summary = _join(fields.get("summary", []) + fields.get("note", []) + fields.get("tools", []), "；")
+    outcomes = fields.get("outcomes", [])
+    outcome_content = _content_tuple(outcomes)
+    return (
+        "#resume-entry("
+        f'"{typst_content(theme)}", "{typst_content(container.section)}", "{typst_content(container.id)}", '
+        f"title: {_content(title)}, meta: {_content(meta)}, summary: {_content(summary)}, outcomes: {outcome_content}, show-heading: {'true' if show_heading else 'false'})"
+    )
+
+
+def _emit_fact_block(container: Any, theme: str, show_heading: bool) -> str:
+    fields = _field_map(container)
+    if container.section == "skills":
+        group = _join(fields.get("group", []))
+        items = fields.get("items", [])
+        note = _join(fields.get("note", []))
+        item_content = _content_tuple(items)
+        return f'#skills-block("{typst_content(theme)}", "{typst_content(container.section)}", group: {_content(group)}, items: {item_content}, note: {_content(note)}, show-heading: {'true' if show_heading else 'false'})'
+    values = []
+    for key, field_values in fields.items():
+        if key in {"name", "title", "summary", "outcomes", "items"}:
+            continue
+        values.extend(field_values)
+    content = _content_tuple(values)
+    return f'#fact-block("{typst_content(theme)}", "{typst_content(container.section)}", {content}, show-heading: {'true' if show_heading else 'false'})'
 
 
 def emit_typst(plan: FrozenResumePlan, document: FinalResumeDocument | dict[str, Any]) -> str:
@@ -91,21 +157,6 @@ def emit_typst(plan: FrozenResumePlan, document: FinalResumeDocument | dict[str,
     by_id = {container.id: container for container in plan.containers}
     pages: list[str] = []
     for page_index, page in enumerate(plan.pages):
-        body: list[str] = []
-        previous_section: str | None = None
-        for container_id in page.containers:
-            container = by_id[container_id]
-            heading = typst_content(container.section)
-            content = typst_content(_container_text(container))
-            if container.kind == "list-entry":
-                show_heading = "true" if container.section != previous_section else "false"
-                fact_id = typst_content(container.id)
-                body.append(f'#list-entry("{heading}", "{fact_id}", [{content}], show-heading: {show_heading})')
-            else:
-                body.append(f'#fact-block("{heading}", [{content}])')
-            previous_section = container.section
-        # The frozen plan owns the theme and photo decision.  The template only
-        # realizes that decision; it never chooses another layout or asset.
         photo = "none"
         if page_index == 0 and plan.photo is not None:
             if isinstance(document, FinalResumeDocument):
@@ -115,10 +166,41 @@ def emit_typst(plan: FrozenResumePlan, document: FinalResumeDocument | dict[str,
                 photo = f'image(bytes(({values})), format: "png", fit: "contain")'
             else:
                 photo = f'image("{plan.photo.logical_path}", fit: "contain")'
+        rendered: list[tuple[Any, str]] = []
+        previous_section: str | None = None
+        for container_id in page.containers:
+            container = by_id[container_id]
+            show_heading = container.section != previous_section
+            if container.section == "candidate":
+                item = _emit_profile(container, photo if page_index == 0 else "none", plan.theme_key)
+            elif container.kind == "list-entry" or container.section == "education":
+                item = _emit_entry(container, plan.theme_key, show_heading)
+            else:
+                item = _emit_fact_block(container, plan.theme_key, show_heading)
+            rendered.append((container, item))
+            previous_section = container.section
+        header: list[str] = []
+        sidebar: list[str] = []
+        main: list[str] = []
+        for container, item in rendered:
+            if container.section == "candidate":
+                header.append(item)
+            elif plan.theme_key == "modern" and page_index == 0 and container.section in {"skills", "certificates"}:
+                sidebar.append(item)
+            elif plan.theme_key == "expressive" and page_index == 0 and container.section in {"education", "skills", "certificates"}:
+                sidebar.append(item)
+            else:
+                main.append(item)
+        # The frozen plan owns facts, page membership, and photo choice. The
+        # renderer only maps those verified containers into a theme's slots.
         pages.append(
-            f'#theme-layout("{plan.theme_key}", photo: {photo})[\n'
-            + "\n".join(body)
-            + "\n]"
+            f'#resume-page("{plan.theme_key}", continuation: {'true' if page_index else 'false'}, header: [\n'
+            + "\n".join(header)
+            + "\n], sidebar: [\n"
+            + "\n".join(sidebar)
+            + "\n], main: [\n"
+            + "\n".join(main)
+            + "\n])"
         )
     prefix = template.read_text(encoding="utf-8") + "\n// compatibility marker: #resume.theme-layout(\n"
     return prefix + "\n#pagebreak()\n".join(pages) + "\n"

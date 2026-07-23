@@ -11,7 +11,7 @@ import fitz
 from PIL import Image
 
 from graduate_resume_cli import CliError
-from graduate_resume_layout import FrozenResumePlan
+from graduate_resume_layout import FrozenResumePlan, _SECTION_LABELS
 from graduate_resume_final_markdown import load_final_resume
 from graduate_resume_render import build_stem
 
@@ -74,7 +74,7 @@ def verify_rendered_layout(plan: FrozenResumePlan, facts: dict[str, Any], pdf_pa
             _fail("首页没有以个人信息锚点开始。")
         if index > 0:
             first = containers[page.containers[0]]
-            if not text.startswith(_compact(first.section)):
+            if not text.startswith(_compact(_SECTION_LABELS[first.section])):
                 _fail("第二页没有以合法模块标题开始。")
         for container_id in page.containers:
             container = containers[container_id]
@@ -92,7 +92,11 @@ def verify_rendered_layout(plan: FrozenResumePlan, facts: dict[str, Any], pdf_pa
                 }
                 for _, value in container.fields:
                     expected = _compact(str(value))
-                    if expected and expected in _compact(other_text) and expected not in other_expected:
+                    # A short verified phrase may naturally occur inside a longer fact
+                    # on another page (for example, "设备维护" inside a project title).
+                    # That is not a duplicated field; only reject an unaccounted-for
+                    # full value.
+                    if expected and expected in _compact(other_text) and not any(expected in other for other in other_expected):
                         _fail("PDF 将冻结条目事实放入错误页面。")
         _verify_png_bounds(png_paths[index], (14, 14, 15, 15))
 

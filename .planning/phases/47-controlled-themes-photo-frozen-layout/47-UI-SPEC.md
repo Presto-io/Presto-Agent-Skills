@@ -75,14 +75,13 @@ Exceptions: 只有印刷安全边距、栏间距、照片槽位和条目防拆�
 
 ## Typography
 
-仅允许以下四个字号与两种字重。主题可以改变它们的色彩和位置，不能增加字号、字重或以缩放规避分页。
+每个主题使用下列受控字号组与两种字重。字号随栏宽和构图调整，但不能在运行时为了分页继续缩小；正文和元数据保持可读，条目不得通过缩放规避分页。
 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
-| Metadata | 9pt | 400 | 1.35 |
-| Body | 10.5pt | 400 | 1.45 |
-| Heading | 14pt | 600 | 1.20 |
-| Display (candidate name) | 22pt | 600 | 1.10 |
+| 保守稳妥 | Metadata 9pt / Body 10.1pt / Heading 12.6pt / Display 23pt | 400 / 600 | Body 1.44 |
+| 现代简洁 | Metadata 8.5pt / Body 9.45pt / Heading 12pt / Display 18pt | 400 / 600 | Body 1.42 |
+| 个性设计 | Metadata 8.7pt / Body 9.8pt / Heading 12.5pt / Display 21pt | 400 / 600 | Body 1.46 |
 
 标题之后必须紧跟至少一行所属内容；技能组标题必须与至少一项技能同页。正文、成果、职责和日期不能用小于 9pt 的脚注或压缩字距呈现。所有文本字距为 0。
 

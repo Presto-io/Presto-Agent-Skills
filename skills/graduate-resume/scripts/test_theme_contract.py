@@ -140,7 +140,7 @@ class ThemeContractTests(unittest.TestCase):
             probe = Path(temporary) / "probe.typ"
             pdf = probe.with_suffix(".pdf")
             shutil.copy2(SKILL_ROOT / "templates" / "resume-themes.typ", probe.parent / "resume-themes.typ")
-            probe.write_text('#import "resume-themes.typ" as resume\n#resume.fact-block("教育经历", [已核实资料])\n#resume.list-entry("项目经历", "project-001", [完整条目])\n', encoding="utf-8")
+            probe.write_text('#import "resume-themes.typ" as resume\n#resume.theme-layout("conservative")[\n  #resume.fact-block("conservative", "education", ([已核实资料],))\n  #resume.resume-entry("conservative", "projects", "project-001", title: [完整条目])\n]\n', encoding="utf-8")
             completed = subprocess.run(["typst", "compile", str(probe), str(pdf), "--font-path", str(SKILL_ROOT / "fonts"), "--ignore-system-fonts"], cwd=probe.parent, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             self.assertEqual(completed.returncode, 0, completed.stderr)
 

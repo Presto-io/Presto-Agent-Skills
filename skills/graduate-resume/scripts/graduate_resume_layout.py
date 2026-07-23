@@ -149,11 +149,12 @@ class PagePlan:
     usable_height_mm: float
     used_height_mm: float
     utilization: float
+    elastic_gap_mm: float
     anchors: tuple[str, ...]
     containers: tuple[str, ...]
 
     def to_projection(self) -> dict[str, Any]:
-        return {"number": self.number, "usable_height_mm": self.usable_height_mm, "used_height_mm": self.used_height_mm, "utilization": self.utilization, "anchors": list(self.anchors), "containers": list(self.containers)}
+        return {"number": self.number, "usable_height_mm": self.usable_height_mm, "used_height_mm": self.used_height_mm, "utilization": self.utilization, "elastic_gap_mm": self.elastic_gap_mm, "anchors": list(self.anchors), "containers": list(self.containers)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -241,11 +242,11 @@ class FrozenResumePlan:
                 raise CliError(LAYOUT_PLAN_INVALID, "续页不得以无标题内容开始。")
 
 
-_COMMON = {"safe_margins_mm": (14, 14, 15, 15), "typography_pt": (9, 10.5, 14, 22), "spacing_tokens": ("xs", "sm", "md", "lg", "xl"), "photo_policy": PhotoFitPolicy()}
+_COMMON = {"safe_margins_mm": (14, 14, 15, 15), "spacing_tokens": ("xs", "sm", "md", "lg", "xl"), "photo_policy": PhotoFitPolicy()}
 THEME_SPECS = {
-    "conservative": ThemeSpec("conservative", "保守稳妥", "single-column-right-photo", PhotoSlot(32, 42, "top-right"), "remove-slot-and-decoration", **_COMMON, column_ratio=(100, 0), palette=("#FFFFFF", "#F2F4F7", "#1F4E79")),
-    "modern": ThemeSpec("modern", "现代简洁", "sidebar-photo", PhotoSlot(28, 36, "left-sidebar"), "move-sidebar-content-up", **_COMMON, column_ratio=(31, 69), palette=("#FFFFFF", "#EFF5F4", "#0F766E")),
-    "expressive": ThemeSpec("expressive", "个性设计", "header-photo", PhotoSlot(30, 40, "header-right"), "expand-identity-bar", **_COMMON, column_ratio=(38, 62), palette=("#FFFEFA", "#F3F1EA", "#8A6A20")),
+    "conservative": ThemeSpec("conservative", "保守稳妥", "single-column-right-photo", PhotoSlot(32, 42, "top-right"), "remove-slot-and-decoration", **_COMMON, column_ratio=(100, 0), palette=("#FFFFFF", "#F2F4F7", "#1F4E79"), typography_pt=(9, 10.1, 12.6, 23)),
+    "modern": ThemeSpec("modern", "现代简洁", "sidebar-photo", PhotoSlot(28, 36, "left-sidebar"), "move-sidebar-content-up", **_COMMON, column_ratio=(31, 69), palette=("#FFFFFF", "#EFF5F4", "#0F766E"), typography_pt=(8.5, 9.45, 12, 18)),
+    "expressive": ThemeSpec("expressive", "个性设计", "header-photo", PhotoSlot(30, 40, "header-right"), "expand-identity-bar", **_COMMON, column_ratio=(38, 62), palette=("#FFFEFA", "#F3F1EA", "#8A6A20"), typography_pt=(8.7, 9.8, 12.5, 21)),
 }
 _ALIASES = {spec.label: key for key, spec in THEME_SPECS.items()}
 
@@ -267,7 +268,10 @@ def _strings(value: Any) -> tuple[str, ...]:
 def _height(values: tuple[str, ...]) -> float:
     width = 32
     lines = sum(max(1, math.ceil(len(value) / width)) for value in values)
-    return round(19.0 + lines * 5.4, 2)
+    # Calibrated against the controlled Typst compositions. The former flat
+    # 19mm container surcharge made normal graduate resumes spill into a thin,
+    # artificial second page even though their real A4 render fit cleanly.
+    return round(9.0 + lines * 5.0, 2)
 
 
 def _display_string(value: Any) -> str:
@@ -288,19 +292,19 @@ def _display_fields(section: str, item: Mapping[str, Any]) -> tuple[tuple[str, s
             continue
         value = item[field]
         if kind == "string":
-            fields.append((field, f"{label}：{_display_string(value)}"))
+            fields.append((field, _display_string(value)))
         elif kind == "list":
             if not isinstance(value, (list, tuple)):
                 raise CliError(LAYOUT_PLAN_INVALID, "展示列表字段类型无效。")
             fields.extend(
-                (f"{field}[{index}]", f"{label}：{_display_string(entry)}")
+                (f"{field}[{index}]", _display_string(entry))
                 for index, entry in enumerate(value, start=1)
             )
         elif kind == "contact":
             if not isinstance(value, Mapping) or set(value) - {key for key, _ in _CONTACT_FIELDS}:
                 raise CliError(LAYOUT_PLAN_INVALID, "联系方式字段无效。")
             fields.extend(
-                (f"contact.{key}", f"{contact_label}：{_display_string(value[key])}")
+                (f"contact.{key}", _display_string(value[key]))
                 for key, contact_label in _CONTACT_FIELDS
                 if key in value
             )
@@ -366,8 +370,27 @@ def _paginate(containers: tuple[ContainerPlan, ...], count: int, epsilon: float)
         movable = pages[0][-1:]
         if not movable or movable[0].id == "profile": raise CliError(LAYOUT_UNSATISFIABLE, "无法生成有效第二页。")
         pages[0] = pages[0][:-1]; pages[1] = movable; used[0] -= movable[0].height_mm; used[1] += movable[0].height_mm
+    # A forced two-page resume must read like two deliberate pages. When the
+    # normal overflow leaves only a thin tail, move one complete final entry
+    # forward. This preserves fact order and atomicity without inventing space.
+    if count == 2 and used[1] / usable < 0.40 and len(pages[0]) > 2:
+        movable = pages[0][-1]
+        if movable.kind == "list-entry" and movable.section in _LIST_SECTIONS:
+            pages[0] = pages[0][:-1]
+            pages[1] = [movable, *pages[1]]
+            used[0] -= movable.height_mm
+            used[1] += movable.height_mm
     frozen = tuple(tuple(ContainerPlan(item.id, item.kind, item.section, item.source_fact_ids, item.fields, number + 1, item.height_mm) for item in items) for number, items in enumerate(pages))
-    plans = tuple(PagePlan(index + 1, usable, round(used[index], 2), (round(used[index], 2) + epsilon) / usable, ("profile",) if index == 0 else (f"section:{frozen[index][0].section}",), tuple(item.id for item in frozen[index])) for index in range(count))
+    plans = tuple(
+        PagePlan(
+            index + 1, usable, round(used[index], 2), (round(used[index], 2) + epsilon) / usable,
+            # Composition uses its own typography and section rhythm. Never
+            # spread sparse content with artificial inter-entry whitespace.
+            0.0,
+            ("profile",) if index == 0 else (f"section:{frozen[index][0].section}",), tuple(item.id for item in frozen[index]),
+        )
+        for index in range(count)
+    )
     return frozen, plans
 
 

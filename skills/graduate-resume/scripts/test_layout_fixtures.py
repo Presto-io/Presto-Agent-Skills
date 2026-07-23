@@ -171,9 +171,13 @@ class LayoutFixtureTests(unittest.TestCase):
         from graduate_resume_typst import emit_typst
 
         pressure = self.load("pressure-two-pages.md")
-        # The source fixture legitimately has two “角色：组员” fields.  Give the
-        # D-05 count test distinct verified values so each source field is observable.
-        pressure.data["projects"][1]["role"] = "独立巡检组员"
+        # The source fixture has deliberately short Chinese values such as “设备维护”
+        # that also occur inside longer titles.  Use non-overlapping verified values
+        # so this D-05 probe measures duplicate emission rather than substring overlap.
+        pressure.data["education"][0]["courses"] = ["课程甲唯一值", "课程乙唯一值", "课程丙唯一值", "课程丁唯一值"]
+        pressure.data["skills"][0]["items"] = ["技能甲唯一值", "技能乙唯一值", "技能丙唯一值", "技能丁唯一值", "技能戊唯一值", "技能己唯一值"]
+        pressure.data["projects"][0]["role"] = "控制柜装配执行者"
+        pressure.data["projects"][1]["role"] = "独立巡检执行者"
         cli.validate_document(pressure)
         for key in THEME_KEYS:
             plan = build_frozen_resume_plan(pressure.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2")

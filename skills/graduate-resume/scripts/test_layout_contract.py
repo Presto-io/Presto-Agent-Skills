@@ -51,6 +51,7 @@ class LayoutContractTests(unittest.TestCase):
         self.assertEqual(plan.measurement_hash, hashlib.sha256(raw).hexdigest())
         self.assertEqual(plan.pages[0].utilization, (plan.pages[0].used_height_mm + 0.1) / plan.pages[0].usable_height_mm)
         self.assertEqual(plan.pages[0].containers[0], "profile")
+        self.assertEqual(plan.pages[0].elastic_gap_mm, 0)
         self.assertTrue(any(container.section == "education" for container in plan.containers))
 
     def test_forced_two_pages_can_be_sparse(self) -> None:
