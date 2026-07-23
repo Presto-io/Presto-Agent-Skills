@@ -23,6 +23,10 @@ REQUIRED_LAYOUTS = [
     "timeline",
     "gallery",
     "code",
+    "hero-evidence",
+    "annotated-image",
+    "process-overlay",
+    "kpi-evidence",
     "closing",
 ]
 TEXT_BUDGET_KEYS = ["max_chars", "max_lines", "font_size_min", "font_size_max", "overflow"]
@@ -310,6 +314,119 @@ def validate_subregions(
     return evidence
 
 
+def validate_media_presets(layout_id: str, slot: dict, parent: dict, failures: list[str], renderer_regions: list[dict[str, object]]) -> None:
+    presets = slot.get("item_presets")
+    if not isinstance(presets, dict) or set(presets) != {1, 2, 3, 4}:
+        failures.append(f"{layout_id}.item_presets 必须完整定义 1/2/3/4 项。")
+        return
+    for count in range(1, 5):
+        cards = presets[count]
+        if not isinstance(cards, list) or len(cards) != count:
+            failures.append(f"{layout_id} {count} 项 preset 的卡片数量不正确。")
+            continue
+        card_geometries: list[dict] = []
+        for index, card in enumerate(cards, start=1):
+            if not isinstance(card, dict) or any(not valid_geometry(card.get(key)) for key in ("card", "picture", "caption")):
+                failures.append(f"{layout_id} {count} 项 preset 第 {index} 张卡片结构无效。")
+                continue
+            card_geometry = card["card"]
+            if not contains(parent, card_geometry):
+                failures.append(f"{layout_id} {count} 项 preset 第 {index} 张卡片越界。")
+            if not contains(card_geometry, card["picture"]) or not contains(card_geometry, card["caption"]):
+                failures.append(f"{layout_id} {count} 项 preset 第 {index} 张图片或图注越界。")
+            card_geometries.append(card_geometry)
+            renderer_regions.append({"owner": f"{layout_id}.preset.{count}", "name": str(index), "geometry": card_geometry})
+        for first in range(len(card_geometries)):
+            for second in range(first + 1, len(card_geometries)):
+                if overlaps(card_geometries[first], card_geometries[second]):
+                    failures.append(f"{layout_id} {count} 项 preset 卡片发生重叠。")
+
+
+def validate_card_presets(layout_id: str, slot: dict, parent: dict, counts: set[int], failures: list[str],
+                          renderer_regions: list[dict[str, object]]) -> None:
+    presets = slot.get("item_presets")
+    if not isinstance(presets, dict) or set(presets) != counts:
+        failures.append(f"{layout_id}.item_presets 必须完整定义 {'/'.join(map(str, sorted(counts)))} 项。")
+        return
+    for count in sorted(counts):
+        cards = presets[count]
+        if not isinstance(cards, list) or len(cards) != count:
+            failures.append(f"{layout_id} {count} 项 KPI preset 的卡片数量不正确。")
+            continue
+        geometries: list[dict] = []
+        for index, card in enumerate(cards, start=1):
+            geometry = card.get("card") if isinstance(card, dict) else None
+            if not valid_geometry(geometry):
+                failures.append(f"{layout_id} {count} 项 KPI preset 第 {index} 张卡片结构无效。")
+                continue
+            if not contains(parent, geometry):
+                failures.append(f"{layout_id} {count} 项 KPI preset 第 {index} 张卡片越界。")
+            geometries.append(geometry)
+            renderer_regions.append({"owner": f"{layout_id}.preset.{count}", "name": str(index), "geometry": geometry})
+        for first in range(len(geometries)):
+            for second in range(first + 1, len(geometries)):
+                if overlaps(geometries[first], geometries[second]):
+                    failures.append(f"{layout_id} {count} 项 KPI preset 卡片发生重叠。")
+
+
+def validate_visual_layout(layout_id: str, layout: dict, failures: list[str], renderer_regions: list[dict[str, object]]) -> dict[str, object] | None:
+    required_roles = {
+        "hero-evidence": {"hero-picture", "caption", "kpi-card", "kpi-value", "kpi-unit", "kpi-footnote"},
+        "annotated-image": {"annotated-picture", "caption", "annotation-number", "annotation-label", "annotation-leader", "fixed-anchor"},
+        "process-overlay": {"process-node", "process-connector", "step-number", "step-label", "optional-evidence-picture", "caption"},
+        "kpi-evidence": {"kpi-card", "kpi-value", "kpi-label", "kpi-unit", "kpi-footnote"},
+    }
+    if layout_id not in required_roles:
+        return None
+    roles = layout.get("object_roles")
+    if not isinstance(roles, list) or not roles or len(roles) != len(set(roles)) or not required_roles[layout_id] <= set(roles):
+        failures.append(f"{layout_id}.object_roles 必须为非空、唯一且完整的原生对象角色集合。")
+    slots = {slot.get("id"): slot for slot in layout.get("slots", []) if isinstance(slot, dict)}
+    capacity = layout.get("visual_capacity")
+    if not isinstance(capacity, dict):
+        failures.append(f"{layout_id}.visual_capacity 必须是 manifest 所有的容量映射。")
+        capacity = {}
+    if layout_id == "hero-evidence":
+        if capacity != {"hero_images": 1, "kpi_counts": [2, 3]}:
+            failures.append("hero-evidence 必须固定一张主图和 2/3 项 KPI 容量。")
+        slot = slots.get("kpi_cards")
+        if not isinstance(slot, dict) or not valid_geometry(slot.get("geometry")):
+            failures.append("hero-evidence 必须定义 kpi_cards 槽位。")
+        else:
+            validate_card_presets(layout_id, slot, slot["geometry"], {2, 3}, failures, renderer_regions)
+    elif layout_id == "annotated-image":
+        if capacity != {"hero_images": 1, "annotations": [3, 4, 5]}:
+            failures.append("annotated-image 必须固定一张主图和 3/4/5 个标注容量。")
+        slot = slots.get("annotations")
+        anchors = slot.get("fixed_anchors") if isinstance(slot, dict) else None
+        if not isinstance(slot, dict) or not valid_geometry(slot.get("geometry")) or not isinstance(anchors, dict) or set(anchors) != {1, 2, 3, 4, 5}:
+            failures.append("annotated-image 必须定义 1--5 连续编号固定锚区。")
+        else:
+            for index, geometry in anchors.items():
+                if not valid_geometry(geometry) or not contains(slot["geometry"], geometry):
+                    failures.append(f"annotated-image 固定锚区 {index} 无效或越界。")
+                else:
+                    renderer_regions.append({"owner": "annotated-image.fixed_anchors", "name": str(index), "geometry": geometry})
+    elif layout_id == "process-overlay":
+        if capacity != {"steps": [2, 3, 4, 5, 6], "evidence_images": [0, 1]}:
+            failures.append("process-overlay 必须固定 2--6 步和 0/1 张证据图容量。")
+        nodes = slots.get("process_nodes")
+        media = slots.get("evidence_media")
+        if not isinstance(nodes, dict) or nodes.get("node_counts") != [2, 3, 4, 5, 6]:
+            failures.append("process-overlay 必须定义 2--6 步的流程节点槽位。")
+        if not isinstance(media, dict) or media.get("optional") is not True or media.get("empty_slot") != "hide":
+            failures.append("process-overlay.evidence_media 必须是可选且可隐藏的本地媒体槽位。")
+    else:
+        if capacity != {"kpi_counts": [2, 3, 4]}:
+            failures.append("kpi-evidence 必须固定 2/3/4 项 KPI 容量。")
+        slot = slots.get("kpi_cards")
+        if not isinstance(slot, dict) or not valid_geometry(slot.get("geometry")):
+            failures.append("kpi-evidence 必须定义 kpi_cards 槽位。")
+        else:
+            validate_card_presets(layout_id, slot, slot["geometry"], {2, 3, 4}, failures, renderer_regions)
+    return {"id": layout_id, "object_roles": roles, "visual_capacity": capacity}
+
+
 def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tolerance: int) -> dict[str, object]:
     failures: list[str] = []
     warnings: list[str] = []
@@ -336,6 +453,8 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
         failures.append('未知主题 "{}"。可用主题：{}。'.format(theme_id, "、".join(map(str, available))))
     if available != ["standard-school"]:
         failures.append("available_themes must contain only standard-school")
+    if data.get("ownership", {}).get("markdown_controls") != ["semantic content only"]:
+        failures.append("ownership.markdown_controls 必须只允许 semantic content only。")
 
     manifest_layouts = data.get("layouts")
     if not isinstance(manifest_layouts, dict):
@@ -345,9 +464,9 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
     layout_ids = set(manifest_layouts.keys())
     for layout_id in REQUIRED_LAYOUTS:
         if layout_id not in layout_ids:
-            failures.append(f'模板缺少布局 "{layout_id}"。Phase 41 必须覆盖 11 个受控布局。')
+            failures.append(f'模板缺少布局 "{layout_id}"。Phase 50 必须覆盖 15 个受控布局。')
     for layout_id in sorted(layout_ids - set(REQUIRED_LAYOUTS)):
-        failures.append(f'模板包含不受控布局 "{layout_id}"。Phase 41 只允许 11 个受控布局。')
+        failures.append(f'模板包含不受控布局 "{layout_id}"。Phase 50 只允许 15 个受控布局。')
 
     shape_index = load_shape_index(template_path)
 
@@ -366,7 +485,7 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
             failures.append(f'布局 "{layout_id}" 的 PPTX part path 不存在。')
         fixed_template_page = layout.get("fixed_template_page") is True
         if not isinstance(slot_list, list) or (not slot_list and not fixed_template_page):
-            failures.append(f'模板缺少布局 "{layout_id}"。Phase 41 必须覆盖 11 个受控布局。')
+            failures.append(f'模板缺少布局 "{layout_id}"。Phase 50 必须覆盖 15 个受控布局。')
             slot_list = []
         required_slots = layout.get("required_slots") or []
         slot_ids = [slot.get("id") for slot in slot_list if isinstance(slot, dict)]
@@ -482,32 +601,8 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
                         if region.get("vertical_anchor") not in ALLOWED_VERTICAL_ANCHOR:
                             failures.append(f"timeline.{role}.vertical_anchor 不受支持。")
 
-            if layout_id == "gallery" and slot_id == "gallery_items" and valid_geometry(expected_geometry):
-                presets = slot.get("item_presets")
-                if not isinstance(presets, dict) or set(presets) != {1, 2, 3, 4}:
-                    failures.append("gallery.item_presets 必须完整定义 1/2/3/4 项。")
-                else:
-                    for count in range(1, 5):
-                        cards = presets[count]
-                        if not isinstance(cards, list) or len(cards) != count:
-                            failures.append(f"gallery {count} 项 preset 的卡片数量不正确。")
-                            continue
-                        card_geometries: list[dict] = []
-                        for index, card in enumerate(cards, start=1):
-                            if not isinstance(card, dict) or any(not valid_geometry(card.get(key)) for key in ("card", "picture", "caption")):
-                                failures.append(f"gallery {count} 项 preset 第 {index} 张卡片结构无效。")
-                                continue
-                            card_geometry = card["card"]
-                            if not contains(expected_geometry, card_geometry):
-                                failures.append(f"gallery {count} 项 preset 第 {index} 张卡片越界。")
-                            if not contains(card_geometry, card["picture"]) or not contains(card_geometry, card["caption"]):
-                                failures.append(f"gallery {count} 项 preset 第 {index} 张图片或图注越界。")
-                            card_geometries.append(card_geometry)
-                            renderer_regions.append({"owner": f"gallery.preset.{count}", "name": str(index), "geometry": card_geometry})
-                        for first in range(len(card_geometries)):
-                            for second in range(first + 1, len(card_geometries)):
-                                if overlaps(card_geometries[first], card_geometries[second]):
-                                    failures.append(f"gallery {count} 项 preset 卡片发生重叠。")
+            if (layout_id, slot_id) in {("gallery", "gallery_items"), ("image-text", "media")} and valid_geometry(expected_geometry):
+                validate_media_presets(layout_id, slot, expected_geometry, failures, renderer_regions)
         layout_evidence.append(
             {
                 "id": layout_id,
@@ -517,6 +612,15 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
                 "slot_count": len(slot_list),
             }
         )
+
+    visual_evidence = [
+        result for layout_id in ("hero-evidence", "annotated-image", "process-overlay", "kpi-evidence")
+        if isinstance((layout := manifest_layouts.get(layout_id)), dict)
+        if (result := validate_visual_layout(layout_id, layout, failures, renderer_regions)) is not None
+    ]
+    role_sets = [frozenset(item["object_roles"]) for item in visual_evidence if isinstance(item.get("object_roles"), list)]
+    if len(role_sets) == 4 and len(set(role_sets)) != 4:
+        failures.append("四种新增布局必须拥有互不等同的原生对象角色集合。")
 
     return {
         "theme_id": theme_id,
@@ -537,6 +641,7 @@ def validate_manifest(data: dict, manifest_path: Path, template_path: Path, tole
                 (item["text_budget"] for item in slots_evidence if item["layout"] == "cover" and item["slot"] == "subtitle"),
                 None,
             ),
+            "visual_layouts": visual_evidence,
         },
         "failures": failures,
         "warnings": warnings,

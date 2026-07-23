@@ -204,6 +204,39 @@ theme: standard-school
 <div style="color:red">fenced code</div>
 ```
 :::
+
+::: slide {{layout="hero-evidence"}}
+## 关键成效
+![主图](relative.png)
+| 指标 | 数值 | 单位 | 短脚注 |
+|---|---|---|---|
+| 完成率 | 98 | % | 阶段验收 |
+| 覆盖班级 | 12 | 个 | 本学期 |
+:::
+
+::: slide {{layout="annotated-image"}}
+## 设备识别
+![设备图](relative.png)
+1. 急停按钮
+2. 防护罩
+3. 操作面板
+:::
+
+::: slide {{layout="process-overlay"}}
+## 诊断流程
+| 步骤 | 说明 |
+|---|---|
+| 1 | 检查传感器 |
+| 2 | 记录结果 |
+:::
+
+::: slide {{layout="kpi-evidence"}}
+## 质量数据
+| 指标 | 数值 | 单位 | 短脚注 |
+|---|---|---|---|
+| 合格率 | 95 | % | 本周 |
+| 完成数 | 48 | 件 | 本周 |
+:::
 ''')
     output = work / "positive.json"
     result, model = validate(source, output)
@@ -214,20 +247,57 @@ theme: standard-school
             "contents order failed")
     require(len(model["implicit_slides"]) == 1 and model["implicit_slides"][0]["layout"] == "closing", "implicit closing failed")
     require(set(model["coverage"]["explicit_layouts"]) == {"cover", "contents", "section", "title-content", "two-column",
-                                                               "image-text", "table", "timeline", "gallery", "code"},
-            "ten explicit layouts not covered")
-    require(model["coverage"]["summary"] == "10 个显式布局 + 1 个隐式 closing", "coverage summary failed")
+                                                               "image-text", "table", "timeline", "gallery", "code", "hero-evidence",
+                                                               "annotated-image", "process-overlay", "kpi-evidence"},
+            "fourteen explicit layouts not covered")
+    require(model["coverage"]["summary"] == "14 个显式布局 + 1 个隐式 closing", "coverage summary failed")
     first = model["logical_slides"][2]
     require(first["notes"]["markdown"] == "独立演讲者备注。", "notes missing")
     require(all(block["kind"] != "notes" for block in first["blocks"]), "notes leaked into visible blocks")
     media = [block for slide in model["logical_slides"] for block in slide["blocks"] if block["kind"] == "image"]
     require(any(not item["absolute_authored"] and item["resolved_path"] == str(relative.resolve()) for item in media), "relative media resolution failed")
     require(any(item["absolute_authored"] and item["resolved_path"] == str(absolute.resolve()) for item in media), "absolute media resolution failed")
+    visual = {slide["layout"]: slide["visual_semantics"] for slide in model["logical_slides"] if "visual_semantics" in slide}
+    require(set(visual) == {"hero-evidence", "annotated-image", "process-overlay", "kpi-evidence"}, "visual semantic projections missing")
+    require(visual["hero-evidence"]["kpi_count"] == 2 and visual["annotated-image"]["annotation_count"] == 3,
+            "visual semantic capacities missing")
+    overflow = [item for slide in model["logical_slides"] for item in slide["overflow_evidence"] if item["kind"] == "visual_capacity"]
+    require({item["layout"] for item in overflow} == set(visual), "visual capacity evidence missing")
     first_bytes = output.read_bytes()
     second_output = work / "positive-second.json"
     second_result, second_model = validate(source, second_output)
     require(second_result.returncode == 0 and second_model == model and second_output.read_bytes() == first_bytes,
             "logical JSON is not deterministic")
+
+
+def visual_negative_gate(work: Path) -> None:
+    asset = work / "visual.png"
+    asset.write_bytes(b"visual")
+    cases = {
+        "empty-caption": ("hero-evidence", f"![ ]({asset.name})\n| 指标 | 数值 | 单位 | 短脚注 |\n|---|---|---|---|\n| A | 1 | 个 | 注 |", "MEDIA_CAPTION_REQUIRED"),
+        "bad-kpi": ("kpi-evidence", "| 指标 | 数值 | 单位 | 短脚注 |\n|---|---|---|---|\n| A | 上升 | 个 | 注 |\n| B | 2 | 个 | 注 |", "KPI_VALUE_INVALID"),
+        "trend-kpi": ("kpi-evidence", "| 指标 | 数值 | 单位 | 短脚注 |\n|---|---|---|---|\n| A | ↑12 | 个 | 注 |\n| B | 2 | 个 | 注 |", "KPI_VALUE_INVALID"),
+        "svg-kpi": ("kpi-evidence", "| 指标 | 数值 | 单位 | 短脚注 |\n|---|---|---|---|\n| A | SVG | 个 | 注 |\n| B | 2 | 个 | 注 |", "KPI_VALUE_INVALID"),
+        "bad-annotation": ("annotated-image", f"![图]({asset.name})\n1. A\n3. B\n4. C", "ANNOTATION_LABEL_INVALID"),
+        "free-annotation": ("annotated-image", f"![图]({asset.name})\n1. A\n2. B\n3. C\n这是自由段落", "LAYOUT_SHAPE"),
+        "too-many-annotations": ("annotated-image", f"![图]({asset.name})\n1. A\n2. B\n3. C\n4. D\n5. E\n6. F", "ANNOTATION_COUNT"),
+        "two-hero-images": ("hero-evidence", f"![图一]({asset.name})\n![图二]({asset.name})\n| 指标 | 数值 | 单位 | 短脚注 |\n|---|---|---|---|\n| A | 1 | 个 | 注 |\n| B | 2 | 个 | 注 |", "LAYOUT_SHAPE"),
+        "bad-process": ("process-overlay", "| 阶段 | 说明 |\n|---|---|\n| A | B |", "PROCESS_TABLE_INVALID"),
+        "too-many-steps": ("process-overlay", "| 步骤 | 说明 |\n|---|---|\n| 1 | A |\n| 2 | B |\n| 3 | C |\n| 4 | D |\n| 5 | E |\n| 6 | F |\n| 7 | G |", "PROCESS_TABLE_INVALID"),
+    }
+    for name, (layout, body, expected) in cases.items():
+        source = write_case(work, f"visual-{name}.md", f'''---
+title: "负例"
+theme: standard-school
+---
+::: slide {{layout="{layout}"}}
+## 视觉负例
+{body}
+:::
+''')
+        result, model = validate(source, work / f"visual-{name}.json")
+        require(result.returncode != 0 and expected in codes(model), f"{name} missing {expected}")
+        assert_diagnostics(model)
 
 
 def aggregate_negative_gate(work: Path) -> None:
@@ -635,7 +705,7 @@ def full_fixture_gate(work: Path) -> None:
     initial_sentinels = tree_snapshot(output)
 
     first = run("example", "--out-dir", str(output), expected=0)
-    require("11/11 controlled layout semantics（10 explicit + 1 implicit）" in first.stdout, "example coverage copy missing")
+    require("15/15 controlled layout semantics（14 explicit + 1 implicit）" in first.stdout, "example coverage copy missing")
     require("校验结果：PASS" in first.stdout and "已保留输出目录中的其他文件。" in first.stdout, "example success copy incomplete")
     first_hashes = file_hashes(output)
     second = run("example", "--out-dir", str(output), expected=0)
@@ -782,12 +852,13 @@ def contract_command() -> int:
     with tempfile.TemporaryDirectory(prefix="school-pptx-contract-") as temporary:
         work = Path(temporary)
         positive_gate(work)
+        visual_negative_gate(work)
         aggregate_negative_gate(work)
         fence_gate(work)
         collision_gate(work)
         resource_gate(work)
         regression_gate(work)
-    print("PASS school-pptx Markdown contract: positive, aggregate-negative, fence, collision, resources, Phase 41 regression")
+    print("PASS school-pptx Markdown contract: positive, visual-negative, aggregate-negative, fence, collision, resources, Phase 50 regression")
     return 0
 
 

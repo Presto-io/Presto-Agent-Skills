@@ -71,7 +71,7 @@ v1.20 为 `school-pptx` 增加受控的教学视觉表达，同时保持 `standa
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 50. 受控视觉合同与模板预设 | 2/2 | Planned | - |
+| 50. 受控视觉合同与模板预设 | 2/2 | Executed — awaiting audit | - |
 | 51. 冻结视觉规划与物理映射 | 0/TBD | Not started | - |
 | 52. 原生对象与受控媒体发射 | 0/TBD | Not started | - |
 | 53. 完整验证、Runtime 文档与真人 UAT | 0/TBD | Not started | - |

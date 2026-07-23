@@ -35,6 +35,10 @@ RAW_HTML_RE = re.compile(r"<!--|</?[A-Za-z][^>]*>")
 GENERIC_ATTR_RE = re.compile(r"\{[^}\n]*(?:#|\.|\b(?:id|style|x|y|width|height|crop|footer|font|color|background|coordinate|dimension)\s*=)[^}]*\}", re.I)
 STYLE_RE = re.compile(r"\b(?:style|coordinates?|dimensions?|crop|footer|font(?:-size)?|colou?r|background|width|height|x|y)\s*=", re.I)
 REVIEW_MARKER_RE = re.compile(r"\{\{(?:待补充|AI草稿):\s*[^}\n]+\}\}")
+KPI_HEADERS = ["指标", "数值", "单位", "短脚注"]
+PROCESS_HEADERS = ["步骤", "说明"]
+NUMERIC_LITERAL_RE = re.compile(r"^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$")
+CAPTION_REQUIRED_LAYOUTS = {"image-text", "gallery", "hero-evidence", "annotated-image", "process-overlay"}
 EXAMPLE_OWNED_PATHS = (
     Path("school-pptx-full.md"),
     Path("media/equipment-cell.png"),
@@ -188,6 +192,9 @@ def media_block(line: str, line_no: int, input_path: Path, heading: str | None, 
         return None
     authored = match.group("path").strip()
     caption = match.group("caption")
+    if layout in CAPTION_REQUIRED_LAYOUTS and not caption.strip():
+        collector.add("MEDIA_CAPTION_REQUIRED", "此媒体布局中的每张图片必须提供非空图注。", line_no,
+                      slide=slide, layout=layout, fix="在 ![] 中填写简短图注；必要时可使用文件名。")
     is_network = bool(re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", authored))
     raw_path = Path(authored)
     resolved = raw_path if raw_path.is_absolute() else input_path.parent / raw_path
@@ -348,12 +355,15 @@ def parse_blocks(lines: list[str], base_line: int, input_path: Path, collector: 
         if re.match(r"^\s*(?:[-+*]|\d+[.)])\s+", raw):
             start = line_no
             items: list[str] = []
+            markers: list[str] = []
             while i < len(lines) and re.match(r"^\s*(?:[-+*]|\d+[.)])\s+", lines[i]):
                 scan_forbidden(lines[i], base_line + i, collector, slide_title, layout)
+                marker = re.match(r"^\s*((?:[-+*]|\d+[.)]))\s+", lines[i])
+                markers.append(marker.group(1) if marker else "")
                 items.append(re.sub(r"^\s*(?:[-+*]|\d+[.)])\s+", "", lines[i]))
                 i += 1
             append({"kind": "list", "source_line": start, "items": items,
-                    "inline_spans": [inline_spans(item) for item in items]})
+                    "markers": markers, "inline_spans": [inline_spans(item) for item in items]})
             continue
         start = line_no
         paragraph: list[str] = []
@@ -635,6 +645,12 @@ def overflow_evidence(layout: str | None, blocks: list[dict[str, Any]], layout_m
         evidence.append({"kind": "long_code", "line_count": code.get("line_count", 0),
                          "character_count": len(code.get("text", "")), "max_chars": max_chars, "max_lines": max_lines,
                          "exceeds_budget": len(code.get("text", "")) > max_chars or code.get("line_count", 0) > max_lines})
+    if layout in {"hero-evidence", "annotated-image", "process-overlay", "kpi-evidence"}:
+        relevant = next((block for block in blocks if block.get("kind") in {"table", "list"}), {})
+        evidence.append({"kind": "visual_capacity", "layout": layout,
+                         "source_line": relevant.get("source_line"),
+                         "item_count": len(relevant.get("rows", relevant.get("items", []))),
+                         "capacity": layout_manifest.get("visual_capacity")})
     return evidence
 
 
@@ -676,9 +692,63 @@ def validate_document(document: dict[str, Any], manifest: dict[str, Any], collec
         elif layout == "code" and (len(blocks) != 1 or kinds != ["code"]):
             collector.add("LAYOUT_SHAPE", "code 布局需要且只能有一个 fenced code block。", line, slide=title, layout=layout,
                           fix="只保留一个 fenced code block。")
+        elif layout in {"hero-evidence", "kpi-evidence"}:
+            images = [block for block in blocks if block.get("kind") == "image"]
+            tables = [block for block in blocks if block.get("kind") == "table"]
+            expected_images = 1 if layout == "hero-evidence" else 0
+            if len(blocks) != expected_images + 1 or len(images) != expected_images or len(tables) != 1:
+                collector.add("LAYOUT_SHAPE", f"{layout} 必须使用受限 KPI 表格" + ("和一张主图。" if expected_images else "。"), line, slide=title, layout=layout,
+                              fix="仅保留所需图片和一个四列 KPI 表格。")
+            else:
+                allowed = {2, 3} if layout == "hero-evidence" else {2, 3, 4}
+                validate_kpi_table(tables[0], title, layout, collector, allowed)
+                slide["visual_semantics"] = {"kind": layout, "kpi_line": tables[0]["source_line"], "kpi_count": len(tables[0].get("rows", [])),
+                                             "image_line": images[0]["source_line"] if images else None}
+        elif layout == "annotated-image":
+            images = [block for block in blocks if block.get("kind") == "image"]
+            lists = [block for block in blocks if block.get("kind") == "list"]
+            if len(blocks) != 2 or len(images) != 1 or len(lists) != 1:
+                collector.add("LAYOUT_SHAPE", "annotated-image 需要一张主图和一个编号短标签列表。", line, slide=title, layout=layout,
+                              fix="保留一张带图注图片及连续编号的 3--5 项列表。")
+            else:
+                labels = lists[0]
+                markers = labels.get("markers", [])
+                expected = [f"{index}." for index in range(1, len(markers) + 1)]
+                if not 3 <= len(markers) <= 5:
+                    collector.add("ANNOTATION_COUNT", "annotated-image 必须有 3--5 个标注。", labels["source_line"], slide=title, layout=layout,
+                                  fix="将编号短标签控制在 3 至 5 项。")
+                if markers != expected or any(not item.strip() or len(item.strip()) > 40 for item in labels.get("items", [])):
+                    collector.add("ANNOTATION_LABEL_INVALID", "标注必须是从 1. 开始连续的短标签，不能包含自由段落。", labels["source_line"], slide=title, layout=layout,
+                                  fix="使用 1. 至 N. 的连续短标签；不要提供坐标或说明段落。")
+                slide["visual_semantics"] = {"kind": layout, "image_line": images[0]["source_line"], "annotation_line": labels["source_line"], "annotation_count": len(markers)}
+        elif layout == "process-overlay":
+            images = [block for block in blocks if block.get("kind") == "image"]
+            tables = [block for block in blocks if block.get("kind") == "table"]
+            if len(images) > 1 or len(tables) != 1 or len(blocks) != len(images) + 1:
+                collector.add("LAYOUT_SHAPE", "process-overlay 需要一个流程表格和零或一张证据图。", line, slide=title, layout=layout,
+                              fix="保留步骤 | 说明表格；证据图最多一张且可省略。")
+            else:
+                table = tables[0]
+                if table.get("headers") != PROCESS_HEADERS or not 2 <= len(table.get("rows", [])) <= 6:
+                    collector.add("PROCESS_TABLE_INVALID", "process-overlay 必须使用 2--6 行“步骤 | 说明”表格。", table["source_line"], slide=title, layout=layout,
+                                  fix="将表头改为 步骤 | 说明，并保留 2 至 6 个真实教学步骤。")
+                slide["visual_semantics"] = {"kind": layout, "process_line": table["source_line"], "step_count": len(table.get("rows", [])),
+                                             "evidence_image_line": images[0]["source_line"] if images else None}
         if layout in layouts and layouts[layout].get("markdown_controllable") is False:
             continue
     return collector.sorted()
+
+
+def validate_kpi_table(block: dict[str, Any], title: str | None, layout: str, collector: DiagnosticCollector, allowed: set[int]) -> None:
+    rows = block.get("rows", [])
+    if block.get("headers") != KPI_HEADERS or len(rows) not in allowed:
+        collector.add("KPI_TABLE_INVALID", f"{layout} 必须使用 {'/'.join(map(str, sorted(allowed)))} 行“指标 | 数值 | 单位 | 短脚注”表格。", block["source_line"], slide=title, layout=layout,
+                      fix="使用精确四列表头，并将 KPI 数量控制在允许范围。")
+        return
+    for offset, row in enumerate(rows, start=2):
+        if not NUMERIC_LITERAL_RE.fullmatch(row[1].strip() if len(row) > 1 else ""):
+            collector.add("KPI_VALUE_INVALID", "KPI 数值列只能包含数值字面量；趋势、图表和 SVG 不受支持。", block["source_line"] + offset, slide=title, layout=layout,
+                          fix="将数值写入第二列；单位、标签和短脚注分别放入其余列。")
 
 
 def write_json_safely(document: dict[str, Any], input_path: Path, output_path: Path, collector: DiagnosticCollector) -> bool:
@@ -739,7 +809,7 @@ def validate_command(args: argparse.Namespace) -> int:
         print_diagnostic(item)
     for item in warnings:
         print_diagnostic(item)
-    print("覆盖：10 个显式布局 + 1 个隐式 closing")
+    print(f"覆盖：{document.get('coverage', {}).get('summary', '0 个显式布局 + 1 个隐式 closing')}")
     if output_path and output_written:
         print(f"逻辑 JSON：{output_path}")
     print("下一步：修复以上错误后重新运行 validate。" if errors else "下一步：可将逻辑 JSON 交给 Phase 43。")
@@ -917,7 +987,7 @@ def example_command(args: argparse.Namespace) -> int:
     owned = ", ".join(path.as_posix() for path in EXAMPLE_OWNED_PATHS)
     print(f"示例已生成：{display_root / EXAMPLE_OWNED_PATHS[0]}")
     print(f"配套媒体：{display_root / 'media'}/（4 个固定文件）")
-    print("覆盖范围：11/11 controlled layout semantics（10 explicit + 1 implicit）")
+    print("覆盖范围：15/15 controlled layout semantics（14 explicit + 1 implicit）")
     print("校验结果：PASS")
     print(f"已覆盖命令自有文件：{owned}")
     print("已保留输出目录中的其他文件。")

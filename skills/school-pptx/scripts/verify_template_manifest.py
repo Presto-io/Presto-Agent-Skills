@@ -7,6 +7,7 @@ import json
 import struct
 import subprocess
 import tempfile
+from copy import deepcopy
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
@@ -209,8 +210,37 @@ def canonical_regression(root: Path) -> dict[str, object]:
     output = completed.stdout + completed.stderr
     require(completed.returncode == 0 and "Traceback" not in output, "canonical template-report failed")
     report = json.loads((workdir / "report.json").read_text(encoding="utf-8"))
-    require(len(report["layouts"]) == 11 and not report["failures"], "canonical 11-layout regression failed")
+    require(len(report["layouts"]) == 15 and not report["failures"], "canonical 15-layout regression failed")
+    visual = report["renderer_contract"].get("visual_layouts", [])
+    require({item["id"] for item in visual} == {"hero-evidence", "annotated-image", "process-overlay", "kpi-evidence"},
+            "canonical visual layout evidence failed")
     return {"layouts": len(report["layouts"]), "status": "PASS"}
+
+
+def visual_contract_mutations() -> dict[str, object]:
+    import yaml
+
+    baseline = yaml.safe_load((SKILL_DIR / "templates" / "standard-school.manifest.yaml").read_text(encoding="utf-8"))
+    manifest = SKILL_DIR / "templates" / "standard-school.manifest.yaml"
+
+    def expect(name: str, mutate, expected: str) -> str:
+        candidate = deepcopy(baseline)
+        mutate(candidate)
+        failures = template_report.validate_manifest(candidate, manifest, TEMPLATE_PATH, 2000)["failures"]
+        require(any(expected in failure for failure in failures), f"{name} did not reject {expected}: {failures}")
+        return expected
+
+    return {
+        "missing_layout": expect("missing_layout", lambda data: data["layouts"].pop("hero-evidence"), '模板缺少布局 "hero-evidence"'),
+        "duplicate_role": expect("duplicate_role", lambda data: data["layouts"]["hero-evidence"].__setitem__("object_roles", ["hero-picture", "hero-picture"]), "hero-evidence.object_roles"),
+        "hero_capacity": expect("hero_capacity", lambda data: data["layouts"]["hero-evidence"].__setitem__("visual_capacity", {"hero_images": 2, "kpi_counts": [2, 3]}), "hero-evidence 必须固定"),
+        "anchors": expect("anchors", lambda data: data["layouts"]["annotated-image"]["slots"][2].__setitem__("fixed_anchors", {}), "连续编号固定锚区"),
+        "process_media": expect("process_media", lambda data: data["layouts"]["process-overlay"]["slots"][2].__setitem__("optional", False), "可选且可隐藏"),
+        "kpi_preset": expect("kpi_preset", lambda data: data["layouts"]["kpi-evidence"]["slots"][1].__setitem__("item_presets", {2: []}), "kpi-evidence.item_presets"),
+        "gallery_preset": expect("gallery_preset", lambda data: data["layouts"]["gallery"]["slots"][1].__setitem__("item_presets", {1: []}), "gallery.item_presets"),
+        "image_text_preset": expect("image_text_preset", lambda data: data["layouts"]["image-text"]["slots"][1].__setitem__("item_presets", {1: []}), "image-text.item_presets"),
+        "markdown_control": expect("markdown_control", lambda data: data["ownership"].__setitem__("markdown_controls", ["semantic content only", "geometry"]), "markdown_controls"),
+    }
 
 
 def run() -> dict[str, object]:
@@ -220,6 +250,7 @@ def run() -> dict[str, object]:
             "boundaries": resource_boundaries(),
             "negative_vectors": public_negative_vectors(root),
             "canonical": canonical_regression(root),
+            "visual_contract_mutations": visual_contract_mutations(),
         }
 
 

@@ -40,6 +40,10 @@ required_layouts:
   - timeline
   - gallery
   - code
+  - hero-evidence
+  - annotated-image
+  - process-overlay
+  - kpi-evidence
   - closing
 layouts:
   cover:
@@ -230,6 +234,41 @@ layouts:
         text_budget: {max_chars: 0, max_lines: 0, font_size_min: 0, font_size_max: 0, overflow: fail}
         empty_slot: hide
         continuation: none
+        item_presets:
+          1:
+            - card: {x: 5565140, y: 2227580, width: 5790565, height: 3256915}
+              picture: {x: 5700000, y: 2227580, width: 5520000, height: 2700000}
+              caption: {x: 5700000, y: 5000000, width: 5520000, height: 350000}
+          2:
+            - card: {x: 5565140, y: 2227580, width: 2800000, height: 3256915}
+              picture: {x: 5600000, y: 2227580, width: 2720000, height: 2700000}
+              caption: {x: 5600000, y: 5000000, width: 2720000, height: 350000}
+            - card: {x: 8460000, y: 2227580, width: 2800000, height: 3256915}
+              picture: {x: 8500000, y: 2227580, width: 2720000, height: 2700000}
+              caption: {x: 8500000, y: 5000000, width: 2720000, height: 350000}
+          3:
+            - card: {x: 5565140, y: 2227580, width: 2800000, height: 1600000}
+              picture: {x: 5600000, y: 2227580, width: 2720000, height: 1200000}
+              caption: {x: 5600000, y: 3450000, width: 2720000, height: 250000}
+            - card: {x: 8460000, y: 2227580, width: 2800000, height: 1600000}
+              picture: {x: 8500000, y: 2227580, width: 2720000, height: 1200000}
+              caption: {x: 8500000, y: 3450000, width: 2720000, height: 250000}
+            - card: {x: 7010000, y: 3900000, width: 2800000, height: 1500000}
+              picture: {x: 7050000, y: 3900000, width: 2720000, height: 1100000}
+              caption: {x: 7050000, y: 5050000, width: 2720000, height: 250000}
+          4:
+            - card: {x: 5565140, y: 2227580, width: 2800000, height: 1600000}
+              picture: {x: 5600000, y: 2227580, width: 2720000, height: 1200000}
+              caption: {x: 5600000, y: 3450000, width: 2720000, height: 250000}
+            - card: {x: 8460000, y: 2227580, width: 2800000, height: 1600000}
+              picture: {x: 8500000, y: 2227580, width: 2720000, height: 1200000}
+              caption: {x: 8500000, y: 3450000, width: 2720000, height: 250000}
+            - card: {x: 5565140, y: 3900000, width: 2800000, height: 1500000}
+              picture: {x: 5600000, y: 3900000, width: 2720000, height: 1100000}
+              caption: {x: 5600000, y: 5050000, width: 2720000, height: 250000}
+            - card: {x: 8460000, y: 3900000, width: 2800000, height: 1500000}
+              picture: {x: 8500000, y: 3900000, width: 2720000, height: 1100000}
+              caption: {x: 8500000, y: 5050000, width: 2720000, height: 250000}
       - id: body
         purpose: Supporting text.
         kind: text
@@ -467,6 +506,123 @@ layouts:
         text_budget: {max_chars: 900, max_lines: 22, font_size_min: 10, font_size_max: 14, overflow: paginate}
         empty_slot: preserve
         continuation: paginate
+  hero-evidence:
+    label: 英雄证据
+    purpose: One contained evidence image paired with two or three editable KPI cards.
+    pptx_layout: ppt/slideLayouts/slideLayout3.xml
+    object_roles: [hero-picture, caption, kpi-card, kpi-value, kpi-unit, kpi-footnote]
+    visual_capacity: {hero_images: 1, kpi_counts: [2, 3]}
+    required_slots: [title, hero_media, kpi_cards]
+    slots:
+      - id: title
+        purpose: Hero evidence title.
+        kind: text
+        geometry: {x: 838200, y: 365125, width: 10508615, height: 1325880}
+        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: hero_media
+        purpose: Contained evidence image and visible caption.
+        kind: media
+        geometry: {x: 838200, y: 1825625, width: 6200000, height: 3658870}
+        text_budget: {max_chars: 80, max_lines: 2, font_size_min: 13, font_size_max: 18, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+        placement: contain
+      - id: kpi_cards
+        purpose: Fixed editable KPI card column.
+        kind: kpi-cards
+        geometry: {x: 7250000, y: 1825625, width: 4327600, height: 3658870}
+        text_budget: {max_chars: 120, max_lines: 6, font_size_min: 16, font_size_max: 24, overflow: paginate}
+        empty_slot: fail
+        continuation: paginate
+        item_presets: {2: [{card: {x: 7250000, y: 1900000, width: 4327600, height: 1600000}}, {card: {x: 7250000, y: 3700000, width: 4327600, height: 1600000}}], 3: [{card: {x: 7250000, y: 1850000, width: 4327600, height: 1050000}}, {card: {x: 7250000, y: 3020000, width: 4327600, height: 1050000}}, {card: {x: 7250000, y: 4190000, width: 4327600, height: 1050000}}]}
+  annotated-image:
+    label: 注解图片
+    purpose: One contained image with fixed numbered annotation anchors.
+    pptx_layout: ppt/slideLayouts/slideLayout3.xml
+    object_roles: [annotated-picture, caption, annotation-number, annotation-label, annotation-leader, fixed-anchor]
+    visual_capacity: {hero_images: 1, annotations: [3, 4, 5]}
+    required_slots: [title, annotated_media, annotations]
+    slots:
+      - id: title
+        purpose: Annotated image title.
+        kind: text
+        geometry: {x: 838200, y: 365125, width: 10508615, height: 1325880}
+        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: annotated_media
+        purpose: Contained annotated source image and caption.
+        kind: media
+        geometry: {x: 1600000, y: 1825625, width: 8300000, height: 3658870}
+        text_budget: {max_chars: 80, max_lines: 2, font_size_min: 13, font_size_max: 18, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+        placement: contain
+      - id: annotations
+        purpose: Manifest-indexed annotation anchors; authors cannot provide coordinates.
+        kind: annotations
+        geometry: {x: 838200, y: 1825625, width: 10515600, height: 3658870}
+        text_budget: {max_chars: 200, max_lines: 5, font_size_min: 14, font_size_max: 18, overflow: paginate}
+        empty_slot: fail
+        continuation: paginate
+        fixed_anchors: {1: {x: 1800000, y: 2100000, width: 900000, height: 500000}, 2: {x: 7600000, y: 2200000, width: 900000, height: 500000}, 3: {x: 2800000, y: 3900000, width: 900000, height: 500000}, 4: {x: 7000000, y: 4200000, width: 900000, height: 500000}, 5: {x: 5000000, y: 3000000, width: 900000, height: 500000}}
+  process-overlay:
+    label: 流程叠加
+    purpose: Editable process nodes and connectors with optional local evidence media.
+    pptx_layout: ppt/slideLayouts/slideLayout3.xml
+    object_roles: [process-node, process-connector, step-number, step-label, optional-evidence-picture, caption]
+    visual_capacity: {steps: [2, 3, 4, 5, 6], evidence_images: [0, 1]}
+    required_slots: [title, process_nodes, evidence_media]
+    slots:
+      - id: title
+        purpose: Process title.
+        kind: text
+        geometry: {x: 838200, y: 365125, width: 10508615, height: 1325880}
+        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: process_nodes
+        purpose: Fixed editable node and connector region.
+        kind: process
+        geometry: {x: 838200, y: 1825625, width: 10515600, height: 2400000}
+        text_budget: {max_chars: 300, max_lines: 6, font_size_min: 14, font_size_max: 20, overflow: paginate}
+        empty_slot: fail
+        continuation: paginate
+        node_counts: [2, 3, 4, 5, 6]
+      - id: evidence_media
+        purpose: Optional contained local evidence image and caption.
+        kind: media
+        geometry: {x: 4000000, y: 4400000, width: 4000000, height: 1050000}
+        text_budget: {max_chars: 80, max_lines: 2, font_size_min: 13, font_size_max: 18, overflow: shrink}
+        empty_slot: hide
+        continuation: none
+        placement: contain
+        optional: true
+  kpi-evidence:
+    label: KPI 证据
+    purpose: Two, three, or four editable numeric evidence cards.
+    pptx_layout: ppt/slideLayouts/slideLayout3.xml
+    object_roles: [kpi-card, kpi-value, kpi-label, kpi-unit, kpi-footnote]
+    visual_capacity: {kpi_counts: [2, 3, 4]}
+    required_slots: [title, kpi_cards]
+    slots:
+      - id: title
+        purpose: KPI evidence title.
+        kind: text
+        geometry: {x: 838200, y: 365125, width: 10508615, height: 1325880}
+        text_budget: {max_chars: 28, max_lines: 2, font_size_min: 48, font_size_max: 48, overflow: shrink}
+        empty_slot: fail
+        continuation: none
+      - id: kpi_cards
+        purpose: Fixed editable numeric card region without trends or charts.
+        kind: kpi-cards
+        geometry: {x: 838200, y: 1825625, width: 10515600, height: 3658870}
+        text_budget: {max_chars: 240, max_lines: 8, font_size_min: 16, font_size_max: 28, overflow: paginate}
+        empty_slot: fail
+        continuation: paginate
+        item_presets: {2: [{card: {x: 1600000, y: 2600000, width: 4300000, height: 1800000}}, {card: {x: 6500000, y: 2600000, width: 4300000, height: 1800000}}], 3: [{card: {x: 1200000, y: 2600000, width: 3200000, height: 1800000}}, {card: {x: 4800000, y: 2600000, width: 3200000, height: 1800000}}, {card: {x: 8400000, y: 2600000, width: 2600000, height: 1800000}}], 4: [{card: {x: 1500000, y: 2100000, width: 4300000, height: 1400000}}, {card: {x: 6500000, y: 2100000, width: 4300000, height: 1400000}}, {card: {x: 1500000, y: 3800000, width: 4300000, height: 1400000}}, {card: {x: 6500000, y: 3800000, width: 4300000, height: 1400000}}]}
   closing:
     label: 结束页
     purpose: Fixed template-owned closing page automatically appended at the end of every deck.
