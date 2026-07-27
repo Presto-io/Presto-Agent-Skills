@@ -33,7 +33,18 @@ SCRIPTS_DIR = SKILL_DIR / "scripts"
 MANIFEST_PATH = SKILL_DIR / "templates" / "standard-school.manifest.yaml"
 TEMPLATE_PATH = SKILL_DIR / "templates" / "standard-school.pptx"
 PUBLIC_CLI = SCRIPTS_DIR / "school-pptx.sh"
-FIXTURE_PATH = SKILL_DIR / "fixtures" / "school-pptx-full.md"
+# The Phase 53 fixture is the public, complete renderer specimen.  Phase 43
+# predates the four visual layouts and keeps its own explicit projection below;
+# legacy `build_deck_plan` must never be asked to plan newer layouts.
+FULL_FIXTURE_PATH = SKILL_DIR / "fixtures" / "school-pptx-full.md"
+FIXTURE_PATH = FULL_FIXTURE_PATH
+LEGACY_PROJECTION_LAYOUTS = (
+    "cover", "contents", "section", "title-content", "two-column", "section",
+    "image-text", "table", "timeline", "gallery", "section", "code", "title-content",
+)
+LEGACY_PROJECTION_EXCLUDED_LAYOUTS = (
+    "hero-evidence", "annotated-image", "process-overlay", "kpi-evidence",
+)
 DELIVERY_FIXTURE = SKILL_DIR / "fixtures" / "clean-delivery" / "confirmed-assets.md"
 DELIVERY_FAULTS = (
     "after_candidate_validation",
@@ -44,7 +55,6 @@ DELIVERY_FAULTS = (
     "before_post_publish_verify",
     "before_work_cleanup",
 )
-CANONICAL_PHYSICAL_SLIDES = 26
 MAX_ZIP_ENTRIES = 256
 MAX_ZIP_ENTRY_BYTES = 4 * 1024 * 1024
 MAX_ZIP_TOTAL_BYTES = 32 * 1024 * 1024
@@ -59,6 +69,31 @@ class GateFailure(RuntimeError):
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise GateFailure(message)
+
+
+def legacy_fixture_document(manifest: dict[str, object]) -> dict[str, object]:
+    """Return the fixed Phase 43 projection of the complete canonical fixture.
+
+    The selected and excluded layout sequences are both contractual.  This is
+    a projection, rather than a dynamic fallback: an inserted legacy page, a
+    reordered page, or an unknown future layout fails the Phase 43 gate.
+    """
+    document = parse_document(FULL_FIXTURE_PATH, manifest)
+    require(not document["errors"], f"full fixture parser errors: {document['errors']}")
+    logical = tuple(document["logical_slides"])
+    observed = tuple(slide["layout"] for slide in logical)
+    excluded = tuple(layout for layout in observed if layout in LEGACY_PROJECTION_EXCLUDED_LAYOUTS)
+    retained = tuple(slide for slide in logical if slide["layout"] not in LEGACY_PROJECTION_EXCLUDED_LAYOUTS)
+    require(excluded == LEGACY_PROJECTION_EXCLUDED_LAYOUTS,
+            f"legacy projection excluded layouts changed: {excluded}")
+    require(tuple(slide["layout"] for slide in retained) == LEGACY_PROJECTION_LAYOUTS,
+            "legacy projection retained layouts changed")
+    require(len(retained) + len(excluded) == len(logical), "legacy projection contains an unknown layout")
+    return {
+        **document,
+        "logical_slides": retained,
+        "contents_entries": list(document["contents_entries"]),
+    }
 
 
 def safe_package_entries(path: Path) -> dict[str, bytes]:
@@ -150,7 +185,7 @@ def manifest_renderer_contract_gate(workdir: Path) -> dict[str, object]:
     require(manifest["inline_styles"]["highlight"]["scheme_color"] == "accent1",
             "sixth-version highlight must use theme-blue accent1")
     require(layouts["closing"]["pptx_layout"] == "ppt/slideLayouts/slideLayout8.xml", "closing part path invalid")
-    require(len(report["layouts"]) == 11 and len(report["slots"]) >= 1, "layout regression")
+    require(len(report["layouts"]) == 15 and len(report["slots"]) >= 1, "layout regression")
 
     invalid = copy.deepcopy(manifest)
     invalid_gallery = next(slot for slot in invalid["layouts"]["gallery"]["slots"] if slot["id"] == "gallery_items")
@@ -198,6 +233,179 @@ def model_determinism_gate(workdir: Path) -> dict[str, object]:
     require(first["model_equal"] is True and first["model_immutable"] is True, "frozen model contract failed")
     graph = local_import_graph(SCRIPTS_DIR / "pptx_paginate.py")
     return {"model_equal": True, "model_immutable": True, "import_graph": sorted(path.name for path in graph)}
+
+
+def visual_plan_binding_gate(workdir: Path) -> dict[str, object]:
+    """Phase 51-01: inputs and media bytes are frozen before physical pagination."""
+    manifest_bytes = MANIFEST_PATH.read_bytes()
+    manifest = load_manifest(SKILL_DIR)
+    source = workdir / "reviewed.md"
+    media = workdir / "evidence.png"
+    original_media = (SKILL_DIR / "fixtures" / "media" / "equipment-cell.png").read_bytes()
+    media.write_bytes(original_media)
+    source.write_text(
+        "---\n"
+        'title: "冻结计划"\n'
+        'theme: "standard-school"\n'
+        "---\n\n"
+        '::: slide {layout="image-text"}\n'
+        "## 输入绑定\n\n"
+        "这是受审阅的正文。\n\n"
+        "![受控证据](evidence.png)\n"
+        ":::\n",
+        encoding="utf-8",
+    )
+    document = parse_document(source, manifest)
+    require(not document["errors"], "visual plan fixture did not parse")
+    first = pptx_paginate.build_visual_plan(
+        document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes,
+    )
+    second = pptx_paginate.build_visual_plan(
+        document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes,
+    )
+    first_json = pptx_paginate.canonical_json(first.to_projection())
+    require(first_json == pptx_paginate.canonical_json(second.to_projection()), "visual projection is not byte-identical")
+    require(first.sha256 == second.sha256 and first.slides[0].media_bindings[0].confirmed,
+            "visual plan binding failed")
+    binding = first.slides[0].media_bindings[0]
+    require(binding.payload == original_media and binding.sha256 == hashlib.sha256(original_media).hexdigest(),
+            "media binding did not retain its single-read payload")
+    try:
+        binding.sha256 = "mutated"  # type: ignore[misc]
+    except Exception as exc:
+        require(type(exc).__name__ == "FrozenInstanceError", "media binding is mutable")
+    else:
+        raise GateFailure("media binding is mutable")
+    media.write_bytes((SKILL_DIR / "fixtures" / "media" / "plc-line.png").read_bytes())
+    require(binding.payload == original_media and binding.sha256 == hashlib.sha256(original_media).hexdigest(),
+            "planned media identity followed a replaced path")
+    # Frozen payloads must receive the same Pillow validation as legacy
+    # path-based media before they can bypass that emitter path.
+    for label, payload, expected_code in (
+        ("pixel-error", _minimal_png(20_000, 10_000), "PPTX_MEDIA_PIXEL_LIMIT"),
+        ("pixel-warning", _minimal_png(10_000, 10_000), "PPTX_MEDIA_PIXEL_LIMIT"),
+        ("forged-magic", b"\x89PNG\r\n\x1a\nnot-a-valid-png", "MEDIA_FORMAT_INVALID"),
+    ):
+        media.write_bytes(payload)
+        invalid_visual = pptx_paginate.build_visual_plan(
+            parse_document(source, manifest), manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes,
+        )
+        invalid_binding = invalid_visual.slides[0].media_bindings[0]
+        require(
+            not invalid_binding.confirmed and invalid_binding.payload is None
+            and invalid_binding.diagnostic_code == expected_code,
+            f"{label} media was not rejected by frozen binding: {invalid_binding.diagnostic_code}",
+        )
+    manifest_changed = pptx_paginate.build_visual_plan(
+        document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes + b"\n# binding mutation\n",
+    )
+    template_copy = workdir / "template-copy.pptx"
+    template_copy.write_bytes(TEMPLATE_PATH.read_bytes() + b"binding-mutation")
+    template_changed = pptx_paginate.build_visual_plan(
+        document, manifest, template_path=template_copy, manifest_bytes=manifest_bytes,
+    )
+    source.write_text(source.read_text(encoding="utf-8").replace("冻结计划", "冻结计划变更", 1), encoding="utf-8")
+    markdown_changed = pptx_paginate.build_visual_plan(
+        parse_document(source, manifest), manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes,
+    )
+    require(first.manifest_sha256 != manifest_changed.manifest_sha256, "manifest bytes are not bound")
+    require(first.template_sha256 != template_changed.template_sha256, "template bytes are not bound")
+    require(first.markdown_sha256 != markdown_changed.markdown_sha256, "Markdown bytes are not bound")
+    require(
+        pptx_paginate.canonical_json({"z": 1, "a": 2}) == b'{"a":2,"z":1}',
+        "visual projection JSON keys are not canonical",
+    )
+    return {
+        "projection_sha256": first.sha256,
+        "media_sha256": binding.sha256,
+        "input_binding_changed": ["markdown", "manifest", "template"],
+        "media_path_replacement": "retained-single-read-payload",
+        "invalid_media": {
+            "pixel-error": "PPTX_MEDIA_PIXEL_LIMIT",
+            "pixel-warning": "PPTX_MEDIA_PIXEL_LIMIT",
+            "forged-magic": "MEDIA_FORMAT_INVALID",
+        },
+    }
+
+
+def physical_visual_planning_gate(workdir: Path) -> dict[str, object]:
+    """Phase 51-02: recompute manifest variants and physical mapping from raw fixtures."""
+    manifest = load_manifest(SKILL_DIR)
+    (workdir / "evidence.png").write_bytes((SKILL_DIR / "fixtures" / "media" / "equipment-cell.png").read_bytes())
+    source = workdir / "visual-planning.md"
+    source.write_text(
+        "---\n"
+        'title: "物理映射"\n'
+        'theme: "standard-school"\n'
+        "---\n\n"
+        '::: slide {layout="hero-evidence"}\n'
+        "## 英雄证据\n\n"
+        "![主图](evidence.png)\n\n"
+        "| 指标 | 数值 | 单位 | 短脚注 |\n| --- | --- | --- | --- |\n| 完成率 | 98 | % | 当周 |\n| 合格率 | 96 | % | 当周 |\n"
+        ":::\n\n"
+        '::: slide {layout="annotated-image"}\n'
+        "## 标注图\n\n![设备](evidence.png)\n\n1. 传感器\n2. 控制器\n3. 执行器\n"
+        ":::\n\n"
+        '::: slide {layout="process-overlay"}\n'
+        "## 流程\n\n| 步骤 | 说明 |\n| --- | --- |\n| 识别 | 读取工单 |\n| 配置 | 写入参数 |\n| 验证 | 核验结果 |\n"
+        ":::\n\n"
+        '::: slide {layout="kpi-evidence"}\n'
+        "## KPI\n\n| 指标 | 数值 | 单位 | 短脚注 |\n| --- | --- | --- | --- |\n| 一 | 1 | 个 | 注 |\n| 二 | 2 | 个 | 注 |\n| 三 | 3 | 个 | 注 |\n| 四 | 4 | 个 | 注 |\n"
+        ":::\n\n"
+        '::: slide {layout="gallery"}\n'
+        "## 图集\n\n![一](evidence.png)\n![二](evidence.png)\n![三](evidence.png)\n![四](evidence.png)\n![五](evidence.png)\n"
+        ":::\n\n"
+        '::: slide {layout="image-text"}\n'
+        "## 图文\n\n这是固定正文。\n\n![一](evidence.png)\n![二](evidence.png)\n"
+        ":::\n",
+        encoding="utf-8",
+    )
+    document = parse_document(source, manifest)
+    require(not document["errors"], f"visual planning fixture did not parse: {document['errors']}")
+    manifest_bytes = MANIFEST_PATH.read_bytes()
+    visual = pptx_paginate.build_visual_plan(document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes)
+    first = pptx_paginate.build_physical_deck_plan(document, manifest, visual)
+    second = pptx_paginate.build_physical_deck_plan(document, manifest, visual)
+    require(first.to_projection() == second.to_projection(), "physical visual plan is not deterministic")
+    require(not first.diagnostics, f"valid visual planning fixture failed: {first.diagnostics}")
+    expected = ["hero-evidence:2", "annotated-image:3", "process-overlay:3", "kpi-evidence:4", "gallery:4", "gallery:1", "image-text:2"]
+    require([slide.variant for slide in first.slides] == expected, "manifest preset variants drifted")
+    require([slide.physical_index for slide in first.slides] == list(range(len(first.slides))), "physical indices are not frozen")
+    require([slide.continuation for slide in first.slides] == [0, 0, 0, 0, 0, 1, 0], "continuations drifted")
+    require(first.logical_to_physical == ((0, (0,)), (1, (1,)), (2, (2,)), (3, (3,)), (4, (4, 5)), (5, (6,))),
+            "logical-to-physical mapping is incomplete or unordered")
+    gallery = first.slides[4:6]
+    require([len(slide.atomic_groups) for slide in gallery] == [4, 1], "longest-prefix media pagination drifted")
+    require([group[0] for slide in gallery for group in slide.atomic_groups] ==
+            ["id=0", "id=1", "id=2", "id=3", "id=4"], "media source order was not preserved")
+    require(all(slide.object_roles for slide in first.slides if slide.layout in {
+        "hero-evidence", "annotated-image", "process-overlay", "kpi-evidence",
+    }), "manifest object roles were not frozen")
+    require(all(slide.media_bindings for slide in first.slides if slide.layout in {
+        "hero-evidence", "annotated-image", "gallery", "image-text",
+    }), "media bindings were not frozen")
+    invalid = copy.deepcopy(document)
+    invalid_slide = invalid["logical_slides"][4]
+    invalid_slide["blocks"] = []
+    invalid_visual = pptx_paginate.build_visual_plan(invalid, manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes)
+    invalid_plan = pptx_paginate.build_physical_deck_plan(invalid, manifest, invalid_visual)
+    require(any(item.code == "VISUAL_VARIANT_UNAVAILABLE" and item.logical_indices == (4,) for item in invalid_plan.diagnostics),
+            "empty atomic group did not fail with a stable visual diagnostic")
+    under_capacity = copy.deepcopy(document)
+    under_capacity["logical_slides"][0]["blocks"][1]["rows"] = under_capacity["logical_slides"][0]["blocks"][1]["rows"][:1]
+    under_capacity_visual = pptx_paginate.build_visual_plan(
+        under_capacity, manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes,
+    )
+    under_capacity_plan = pptx_paginate.build_physical_deck_plan(under_capacity, manifest, under_capacity_visual)
+    require(any(item.code == "VISUAL_VARIANT_UNAVAILABLE" and item.logical_indices == (0,)
+                for item in under_capacity_plan.diagnostics), "unsupported preset count did not fail closed")
+    return {
+        "variants": expected,
+        "logical_to_physical": first.to_projection()["logical_to_physical"],
+        "deterministic": True,
+        "empty_group_failure": "VISUAL_VARIANT_UNAVAILABLE",
+        "unsupported_count_failure": "VISUAL_VARIANT_UNAVAILABLE",
+    }
 
 
 def expect_package_failure(path: Path, expected: str) -> None:
@@ -259,12 +467,205 @@ GATES = {
     "manifest_renderer_contract_gate": manifest_renderer_contract_gate,
     "model_determinism_gate": model_determinism_gate,
     "measurement_gate": measurement_gate,
+    "visual-plan-binding": visual_plan_binding_gate,
+    "physical-visual-planning": physical_visual_planning_gate,
 }
+
+
+def _assert_frozen_emitter_mutation_guard(source: str) -> None:
+    """AST-level guard: a false-green emitter must not bypass the frozen boundary."""
+    tree = ast.parse(source, filename="pptx_emit.py")
+    imported = {
+        alias.name for node in tree.body if isinstance(node, ast.Import) for alias in node.names
+    } | {
+        node.module for node in tree.body if isinstance(node, ast.ImportFrom) and node.module
+    }
+    require("pptx_paginate" not in imported and "pptx_measure" not in imported,
+            "emitter imports a planning or measurement module")
+    functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+    require({"_validate_frozen_plan", "_validate_media_binding", "emit_deck"} <= set(functions),
+            "frozen emitter validation functions are missing")
+    validation_calls = {
+        node.func.id for node in ast.walk(functions["_validate_frozen_plan"])
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+    emission_calls = {
+        node.func.id for node in ast.walk(functions["emit_deck"])
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+    require("_validate_media_binding" in validation_calls,
+            "frozen plan validator no longer verifies bound media")
+    require("expected_integrity_sha256" in source,
+            "frozen plan validator no longer verifies the complete plan binding")
+    require("_validate_frozen_plan" in emission_calls,
+            "emitter can run without frozen plan validation")
+    forbidden = {"build_deck_plan", "build_visual_plan", "build_physical_deck_plan", "_variant_counts"}
+    require(not forbidden & {node.func.id for node in ast.walk(tree)
+                             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)},
+            "emitter contains a visual-selection or pagination call")
+
+
+def frozen_emitter_boundary_gate(workdir: Path) -> dict[str, object]:
+    """Phase 51/52: emit consumes frozen plans and reopens native visual output."""
+    import pptx_emit
+
+    manifest = load_manifest(SKILL_DIR)
+    manifest_bytes = MANIFEST_PATH.read_bytes()
+    media = workdir / "evidence.png"
+    media.write_bytes((SKILL_DIR / "fixtures" / "media" / "equipment-cell.png").read_bytes())
+    source = workdir / "frozen.md"
+    source.write_text(
+        "---\n"
+        'title: "冻结发射"\n'
+        'theme: "standard-school"\n'
+        "---\n\n"
+        '::: slide {layout="hero-evidence"}\n'
+        "## 证据\n\n![图](evidence.png)\n\n"
+        "| 指标 | 数值 | 单位 | 注 |\n| --- | --- | --- | --- |\n| 完成率 | 98 | % | 当周 |\n| 合格率 | 96 | % | 当周 |\n"
+        ":::\n\n"
+        '::: slide {layout="annotated-image"}\n'
+        "## 标注\n\n![图](evidence.png)\n\n1. 传感器\n2. 控制器\n3. 执行器\n"
+        ":::\n\n"
+        '::: slide {layout="process-overlay"}\n'
+        "## 流程\n\n| 步骤 | 说明 |\n| --- | --- |\n| 一 | 识别 |\n| 二 | 配置 |\n| 三 | 验证 |\n"
+        ":::\n\n"
+        '::: slide {layout="kpi-evidence"}\n'
+        "## KPI\n\n| 指标 | 数值 | 单位 | 短脚注 |\n| --- | --- | --- | --- |\n| 一 | 1 | 个 | 注 |\n| 二 | 2 | 个 | 注 |\n"
+        ":::\n",
+        encoding="utf-8",
+    )
+    document = parse_document(source, manifest)
+    visual = pptx_paginate.build_visual_plan(document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes)
+    plan = pptx_paginate.build_physical_deck_plan(document, manifest, visual)
+    require(not plan.diagnostics and plan.visual_plan_sha256 == visual.sha256, "bound plan fixture failed")
+    require(plan.integrity_sha256 == plan.expected_integrity_sha256,
+            "planner did not attach a complete physical-plan integrity binding")
+    markdown_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+
+    def rejected(candidate: object, expected: str = "PPTX_FROZEN_PLAN_INVALID") -> None:
+        try:
+            pptx_emit.emit_deck(candidate, manifest, TEMPLATE_PATH, workdir / "rejected.pptx",  # type: ignore[arg-type]
+                                manifest_bytes=manifest_bytes, markdown_sha256=markdown_hash)
+        except pptx_emit.PptxEmitError as exc:
+            require(exc.code == expected, f"expected {expected}, got {exc.code}")
+            return
+        raise GateFailure("incomplete frozen plan was emitted")
+
+    rejected(replace(plan, schema_version="school-pptx/physical-plan/v0"))
+    rejected(replace(plan, logical_to_physical=()))
+    first = next(slide for slide in plan.slides if slide.layout == "hero-evidence")
+    rejected(replace(plan, slides=(replace(first, variant="hero-evidence:3"),)))
+    binding = first.media_bindings[0]
+    rejected(replace(plan, slides=(replace(first, media_bindings=(replace(binding, payload=b"bad"),)),)))
+    # These mutations preserve the local shape/layout rules that preceded the
+    # integrity binding.  The emitter must reject all of them before creating a
+    # PPTX, without attempting to repaginate or reselect visual presets.
+    rejected(replace(plan, slides=(replace(first, title="被篡改的标题"), *plan.slides[1:])))
+    rejected(replace(plan, slides=(replace(
+        first, fragments=(replace(first.fragments[0], text="被篡改的片段"), *first.fragments[1:]),
+    ), *plan.slides[1:])))
+    rejected(replace(plan, slides=(replace(
+        first, slot_values=(*first.slot_values, ("integrity.tampered", "1")),
+    ), *plan.slides[1:])))
+    font_key, font_value = first.selected_font_sizes[0]
+    rejected(replace(plan, slides=(replace(
+        first, selected_font_sizes=((font_key, font_value + 1.0), *first.selected_font_sizes[1:]),
+    ), *plan.slides[1:])))
+    rejected(replace(plan, slides=(replace(
+        first, media_bindings=(replace(binding, logical_reference="tampered.png"),),
+    ), *plan.slides[1:])))
+    rejected(replace(plan, logical_to_physical=tuple(reversed(plan.logical_to_physical))))
+    output = workdir / "native-visual.pptx"
+    try:
+        dependencies = pptx_emit.require_dependencies()
+    except pptx_emit.PptxEmitError as exc:
+        # Planning-only runtimes are permitted, but only a dependency boundary
+        # may suppress the actual reopen proof.
+        require(exc.code == "PPTX_DEPENDENCY_MISSING", f"unexpected dependency failure: {exc.code}")
+        reopen_evidence: dict[str, object] = {"status": "PPTX_DEPENDENCY_MISSING"}
+    else:
+        emission = pptx_emit.emit_deck(plan, manifest, TEMPLATE_PATH, output,
+                                       manifest_bytes=manifest_bytes, markdown_sha256=markdown_hash)
+        require(output.is_file() and output.stat().st_size > 0, "native visual output is missing or empty")
+        presentation = dependencies["pptx"].Presentation(output)
+        require(len(presentation.slides) == len(plan.slides), "reopened native visual slide count changed")
+        expected_by_layout = {
+            "hero-evidence": {
+                "school-pptx:hero-picture", "school-pptx:hero-caption", "school-pptx:kpi-card:1",
+                "school-pptx:kpi-value:1", "school-pptx:kpi-unit:1", "school-pptx:kpi-footnote:1",
+            },
+            "annotated-image": {
+                "school-pptx:annotated-picture", "school-pptx:annotated-caption", "school-pptx:annotation-number:1",
+                "school-pptx:annotation-label:1", "school-pptx:annotation-leader:1",
+            },
+            "process-overlay": {
+                "school-pptx:process-node:1", "school-pptx:step-number:1", "school-pptx:step-label:1",
+                "school-pptx:process-connector:1",
+            },
+            "kpi-evidence": {
+                "school-pptx:kpi-card:1", "school-pptx:kpi-label:1", "school-pptx:kpi-value:1",
+                "school-pptx:kpi-unit:1", "school-pptx:kpi-footnote:1",
+            },
+        }
+        observed_layouts: dict[str, int] = {}
+        whole_page_pictures = 0
+        picture_type = 13  # MSO_SHAPE_TYPE.PICTURE; avoid widening the module import boundary.
+        for physical, slide in zip(plan.slides, presentation.slides, strict=True):
+            if physical.layout not in expected_by_layout:
+                continue
+            names = {shape.name: shape for shape in slide.shapes}
+            require(expected_by_layout[physical.layout] <= set(names),
+                    f"{physical.layout} lost a native information-layer object after reopen")
+            observed_layouts[physical.layout] = len(names)
+            if physical.layout == "hero-evidence":
+                hero = names["school-pptx:hero-picture"]
+                require(getattr(hero, "shape_type", None) == picture_type, "hero evidence main image is not a picture")
+                require(names["school-pptx:kpi-value:1"].text == "98", "hero KPI value is not editable native text")
+                require(names["school-pptx:hero-caption"].text == "图", "hero caption did not preserve Markdown alt text")
+            if physical.layout == "kpi-evidence":
+                require(names["school-pptx:kpi-value:1"].text == "1", "KPI evidence value is not editable native text")
+            for shape in slide.shapes:
+                if getattr(shape, "shape_type", None) != picture_type:
+                    continue
+                if shape.width * 100 >= presentation.slide_width * 98 and shape.height * 100 >= presentation.slide_height * 98:
+                    whole_page_pictures += 1
+        require(set(observed_layouts) == set(expected_by_layout), "native visual layouts did not all survive PPTX reopen")
+        require(whole_page_pictures == 0, "native visual output contains a whole-slide bitmap")
+        reopen_evidence = {
+            "status": "PASS",
+            "output_bytes": output.stat().st_size,
+            "physical_slides": emission["physical_slides"],
+            "layouts": observed_layouts,
+            "whole_page_pictures": whole_page_pictures,
+        }
+
+    source_text = (SCRIPTS_DIR / "pptx_emit.py").read_text(encoding="utf-8")
+    _assert_frozen_emitter_mutation_guard(source_text)
+    mutated = source_text.replace("bound = _validate_frozen_plan(plan, manifest)", "bound = False", 1)
+    try:
+        _assert_frozen_emitter_mutation_guard(mutated)
+    except GateFailure:
+        pass
+    else:
+        raise GateFailure("emitter validation-bypass mutation was accepted")
+    return {
+        "rejected": [
+            "schema", "mapping", "variant", "media-hash", "title", "fragment",
+            "slot-values", "font", "media-descriptor", "mapping-order",
+        ],
+        "visual_layout": reopen_evidence,
+        "mutation_guard": "AST fail-closed",
+        "phase_52_native_objects": "IMPLEMENTED",
+        "phase_53_fixture_uat": "NOT_IMPLEMENTED",
+    }
+
+
+GATES["frozen-emitter-boundary"] = frozen_emitter_boundary_gate
 
 
 def frozen_slot_content_gate(workdir: Path) -> dict[str, object]:
     manifest = load_manifest(SKILL_DIR)
-    document = parse_document(FIXTURE_PATH, manifest)
+    document = legacy_fixture_document(manifest)
     first = pptx_paginate.build_deck_plan(document, manifest)
     second = pptx_paginate.build_deck_plan(document, manifest)
     require(first.to_projection() == second.to_projection(), "frozen projection is not deterministic")
@@ -324,7 +725,7 @@ GATES["frozen-slot-content"] = frozen_slot_content_gate
 def frozen_numbering_row_heights_gate(workdir: Path) -> dict[str, object]:
     del workdir
     manifest = load_manifest(SKILL_DIR)
-    document = parse_document(FIXTURE_PATH, manifest)
+    document = legacy_fixture_document(manifest)
     plan = pptx_paginate.build_deck_plan(document, manifest)
     contents = [slide for slide in plan.slides if slide.layout == "contents"]
     visible = [item for slide in contents for fragment in slide.fragments for item in fragment.items]
@@ -361,7 +762,7 @@ def frozen_plan_emission_gate(workdir: Path) -> dict[str, object]:
     from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
 
     manifest = load_manifest(SKILL_DIR)
-    document = parse_document(FIXTURE_PATH, manifest)
+    document = legacy_fixture_document(manifest)
     plan = pptx_paginate.build_deck_plan(document, manifest)
     output = workdir / "frozen-plan.pptx"
     pptx_emit.emit_deck(plan, manifest, TEMPLATE_PATH, output, media_root=FIXTURE_PATH.parent)
@@ -653,9 +1054,7 @@ def pagination_full_gate(workdir: Path) -> dict[str, object]:
             require(all(dict(fragment.metadata)["caption_placeholder"] == "true"
                         for fragment in slide.fragments), "PPTX-06 caption placeholder")
 
-    fixture = SKILL_DIR / "fixtures" / "school-pptx-full.md"
-    document = parse_document(fixture, manifest)
-    require(not document["errors"], "full fixture parser errors")
+    document = legacy_fixture_document(manifest)
     first = pptx_paginate.build_deck_plan(document, manifest)
     second = pptx_paginate.build_deck_plan(document, manifest)
     require(first == second, "full fixture plan is not deterministic")
@@ -681,7 +1080,7 @@ def pagination_full_gate(workdir: Path) -> dict[str, object]:
 
     layouts = {slide.layout for slide in first.slides}
     require({"title-content", "two-column", "image-text", "table", "timeline", "gallery", "code"} <= layouts,
-            "full fixture overflow layout coverage")
+            "legacy projection overflow layout coverage")
     image_text = [slide for slide in first.slides if slide.layout == "image-text"]
     require(len(image_text) >= 3 and all(any(fragment.kind == "image" for fragment in slide.fragments)
                                          for slide in image_text), "image-text cartesian planning")
@@ -1527,14 +1926,22 @@ def editable_objects_gate(workdir: Path) -> dict[str, object]:
     slides = (
         PhysicalSlide(
             0, 0, "title-content", "富文本", 0, 1, (rich,), "逐字说明",
-            selected_font_sizes=(("body", 28.0),), affected_pages=(0,), slot_values=body_typography,
+            selected_font_sizes=(("body", 28.0), ("font.title.max", 48.0)), affected_pages=(0,), slot_values=body_typography,
         ),
         PhysicalSlide(1, 1, "table", "原生表格", 0, 2, (table,), None,
-                      selected_font_sizes=(("table", 14.0),), affected_pages=(1,)),
-        PhysicalSlide(2, 2, "timeline", "原生时间线", 0, 3, (timeline,), None, affected_pages=(2,)),
-        PhysicalSlide(3, 3, "gallery", "原生图集", 0, 4, (gallery,), "图集备注", affected_pages=(3,)),
+                      selected_font_sizes=(("table", 14.0), ("font.title.max", 48.0),
+                                           ("font.table.subregions.table_name.max", 18.0)), affected_pages=(1,)),
+        PhysicalSlide(2, 2, "timeline", "原生时间线", 0, 3, (timeline,), None,
+                      selected_font_sizes=(("font.title.max", 48.0),
+                                           ("font.timeline_items.node_template.subregions.time.min", 20.0),
+                                           ("font.timeline_items.node_template.subregions.title.min", 20.0),
+                                           ("font.timeline_items.node_template.subregions.description.min", 16.0)),
+                      affected_pages=(2,)),
+        PhysicalSlide(3, 3, "gallery", "原生图集", 0, 4, (gallery,), "图集备注",
+                      selected_font_sizes=(("font.title.max", 48.0), ("font.caption.min", 13.0)),
+                      affected_pages=(3,)),
         PhysicalSlide(4, 4, "code", "代码", 0, 5, (code,), None,
-                      selected_font_sizes=(("code", 14.0),), affected_pages=(4,),
+                      selected_font_sizes=(("code", 14.0), ("font.title.max", 48.0)), affected_pages=(4,),
                       slot_values=code_typography),
         PhysicalSlide(5, 5, "closing", "", 0, 6, (
             BlockFragment(kind="closing", logical_index=5, block_index=0, fragment_index=0, source_line=6),
@@ -1586,10 +1993,9 @@ def emit_structure_gate(workdir: Path) -> dict[str, object]:
     except ImportError as exc:
         raise GateFailure("PPTX_DEPENDENCY_MISSING") from exc
 
-    fixture = SKILL_DIR / "fixtures" / "school-pptx-full.md"
+    fixture = FULL_FIXTURE_PATH
     manifest = load_manifest(SKILL_DIR)
-    document = parse_document(fixture, manifest)
-    require(not document["errors"], "canonical fixture parser errors")
+    document = legacy_fixture_document(manifest)
     plan = pptx_paginate.build_deck_plan(document, manifest)
     require(plan.slides and plan.slides[-1].layout == "closing", "physical plan closing invalid")
     output = workdir / "full-fixture.pptx"
@@ -2001,6 +2407,20 @@ def semantic_package_inventory(path: Path) -> dict[str, object]:
 GATES["delivery-transaction"] = delivery_transaction_gate
 
 
+def full_fixture_runtime_counts() -> tuple[int, int]:
+    """Derive the public CLI summary from the frozen full-runtime input."""
+    manifest = load_manifest(SKILL_DIR)
+    document = parse_document(FULL_FIXTURE_PATH, manifest)
+    require(not document["errors"], f"full fixture parser errors: {document['errors']}")
+    visual = pptx_paginate.build_visual_plan(
+        document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=MANIFEST_PATH.read_bytes(),
+    )
+    physical = pptx_paginate.build_physical_deck_plan(document, manifest, visual, include_implicit=True)
+    require(not visual.diagnostics and not physical.diagnostics,
+            "full fixture runtime plan has diagnostics")
+    return len(document["logical_slides"]), len(physical.slides)
+
+
 def cli_publication_gate(workdir: Path) -> dict[str, object]:
     output = workdir / "delivery"
     output.mkdir()
@@ -2008,7 +2428,8 @@ def cli_publication_gate(workdir: Path) -> dict[str, object]:
     require(completed.returncode == 0, f"public render failed: {completed.stdout}{completed.stderr}")
     lines = completed.stdout.splitlines()
     require(lines and lines[0] == "渲染成功", "success heading order changed")
-    require(f"逻辑页：13；物理页：{CANONICAL_PHYSICAL_SLIDES}" in completed.stdout,
+    logical_slides, physical_slides = full_fixture_runtime_counts()
+    require(f"逻辑页：{logical_slides}；物理页：{physical_slides}" in completed.stdout,
             "success pagination summary missing")
     require(completed.stdout.rstrip().endswith("校验结果：PASS"), "success validation footer missing")
     markdown = output / "course-deck.md"
@@ -2018,7 +2439,7 @@ def cli_publication_gate(workdir: Path) -> dict[str, object]:
     require(command_owned_files(output) == {"course-deck.md", "course-deck.pptx"},
             "success public root contains non-pair artifacts")
     inventory = semantic_package_inventory(pptx)
-    require(inventory["slides"] == CANONICAL_PHYSICAL_SLIDES and inventory["native_tables"] > 0,
+    require(inventory["slides"] == physical_slides and inventory["native_tables"] > 0,
             "published PPTX did not reopen structurally")
     help_result = subprocess.run([str(PUBLIC_CLI), "--help"], text=True, capture_output=True, check=False)
     require(help_result.returncode == 0 and
@@ -2458,9 +2879,11 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
     source.write_text(_media_markdown("image.png"), encoding="utf-8")
     delivery = race_root / "delivery"
     hook_calls: list[str] = []
+    hook_binding_hashes: list[str | None] = []
 
     def replace_after_validation(reference: object) -> None:
         hook_calls.append("called")
+        hook_binding_hashes.append(getattr(reference, "sha256", None))
         os.replace(replacement_path, media_path)
 
     pptx_objects.MEDIA_AFTER_VALIDATE_HOOK = replace_after_validation
@@ -2468,7 +2891,7 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         race_exit, race_output = invoke_render_module(source, delivery, "deck")
     finally:
         pptx_objects.MEDIA_AFTER_VALIDATE_HOOK = None
-    require(race_exit == 0 and hook_calls == ["called"],
+    require(race_exit == 0 and hook_calls == ["called"] and hook_binding_hashes == [original_hash],
             f"validated-byte replacement render failed: {race_output}")
     embedded_hashes = _embedded_media_hashes(delivery / "deck.pptx")
     require(original_hash in embedded_hashes and replacement_hash not in embedded_hashes,
@@ -2541,7 +2964,13 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
     missing_source = missing_root / "deck.md"
     missing_source.write_text(_media_markdown("image.png"), encoding="utf-8")
     manifest = load_manifest(SKILL_DIR)
-    frozen_plan = pptx_paginate.build_deck_plan(parse_document(missing_source, manifest), manifest)
+    missing_document = parse_document(missing_source, manifest)
+    missing_visual = pptx_paginate.build_visual_plan(
+        missing_document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=MANIFEST_PATH.read_bytes(),
+    )
+    frozen_plan = pptx_paginate.build_physical_deck_plan(
+        missing_document, manifest, missing_visual, include_implicit=True,
+    )
     before_projection = frozen_plan.to_projection()
     missing_delivery = missing_root / "delivery"
 
@@ -2554,11 +2983,12 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         missing_exit, missing_output = invoke_render_module(missing_source, missing_delivery, "deck")
     finally:
         pptx_render.RENDER_POST_PARSE_HOOK = None
-    require(missing_exit != 0 and "MEDIA_MISSING" in missing_output and "受影响逻辑页" in missing_output,
-            f"runtime missing did not report structured diagnostic: {missing_output[:1024]}")
-    require(command_owned_files(missing_delivery) == set() and not (missing_delivery / ".work").exists(),
-            "runtime missing published best-effort current or leaked work")
-    require(frozen_plan.to_projection() == before_projection, "runtime missing mutated frozen plan projection")
+    require(missing_exit == 0 and not missing_media.exists(),
+            f"frozen media payload did not survive source removal: {missing_output[:1024]}")
+    missing_hashes = _embedded_media_hashes(missing_delivery / "deck.pptx")
+    require(original_hash in missing_hashes,
+            "source removal changed embedded frozen media")
+    require(frozen_plan.to_projection() == before_projection, "source removal mutated frozen plan projection")
     projection_before_hash = hashlib.sha256(
         json.dumps(before_projection, ensure_ascii=False, sort_keys=True).encode()
     ).hexdigest()
@@ -2605,6 +3035,7 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
             "embedded_hashes": embedded_hashes,
             "replacement_hash": replacement_hash,
             "hook_called": len(hook_calls),
+            "hook_binding_hashes": hook_binding_hashes,
             "crop": [0.0, 0.0, 0.0, 0.0],
             "artifact_paths": [str(delivery / "deck.md"), str(delivery / "deck.pptx")],
         },
@@ -2617,14 +3048,15 @@ def media_descriptor_binding_gate(workdir: Path) -> dict[str, object]:
         "symlink_failures": symlink_evidence,
         "runtime_missing": {
             "public_exit": missing_exit,
-            "code": "MEDIA_MISSING",
-            "best_effort_generated": "owned work evidence" in missing_output,
+            "code": "FROZEN_MEDIA_PAYLOAD",
+            "source_deleted": not missing_media.exists(),
+            "embedded_hashes": missing_hashes,
             "artifacts": sorted(path.name for path in missing_delivery.iterdir()),
             "projection_before_hash": projection_before_hash,
             "projection_after_hash": projection_after_hash,
             "frozen_projection_equal": projection_before_hash == projection_after_hash,
             "output_bytes": len(missing_output.encode("utf-8")),
-            "artifact_paths": [],
+            "artifact_paths": [str(missing_delivery / "deck.md"), str(missing_delivery / "deck.pptx")],
         },
         "add_picture_fault": {
             "public_exit": fault_exit,
@@ -2642,8 +3074,8 @@ GATES["media-descriptor-binding"] = media_descriptor_binding_gate
 
 def determinism_gate(workdir: Path) -> dict[str, object]:
     manifest = load_manifest(SKILL_DIR)
-    first_document = parse_document(FIXTURE_PATH, manifest)
-    second_document = parse_document(FIXTURE_PATH, manifest)
+    first_document = legacy_fixture_document(manifest)
+    second_document = legacy_fixture_document(manifest)
     first_plan = pptx_paginate.build_deck_plan(first_document, manifest)
     second_plan = pptx_paginate.build_deck_plan(second_document, manifest)
     first_projection = first_plan.to_projection()
@@ -2711,8 +3143,16 @@ def template_reader_security_gate(workdir: Path) -> dict[str, object]:
         "entry_count", "declared_size", "actual_size", "duplicate", "traversal",
         "doctype_entity", "external_relationship",
     }, "template reader public vector set changed")
-    require(evidence["canonical"] == {"layouts": 11, "status": "PASS"},
+    require(evidence["canonical"] == {
+        "layouts": 15,
+        "status": "PASS",
+        "visual_layouts": ["annotated-image", "hero-evidence", "kpi-evidence", "process-overlay"],
+    },
             "canonical template reader regression changed")
+    require(set(evidence["visual_contract_mutations"]) == {
+        "missing_layout", "duplicate_role", "hero_capacity", "anchors", "process_media",
+        "kpi_preset", "gallery_preset", "image_text_preset", "markdown_control",
+    }, "canonical visual-contract mutation coverage changed")
     return evidence
 
 
@@ -3031,13 +3471,14 @@ def run_phase_43() -> dict[str, object]:
         for item in symlinks.values()
     ), "media symlink failure evidence failed")
     runtime_missing = media["runtime_missing"]
-    require(runtime_missing["public_exit"] != 0 and runtime_missing["code"] == "MEDIA_MISSING"
-            and runtime_missing["best_effort_generated"] is True
-            and runtime_missing["artifacts"] == []
+    require(runtime_missing["public_exit"] == 0 and runtime_missing["code"] == "FROZEN_MEDIA_PAYLOAD"
+            and runtime_missing["source_deleted"] is True
+            and media["relative_success"]["validated_hash"] in runtime_missing["embedded_hashes"]
+            and runtime_missing["artifacts"] == ["deck.md", "deck.pptx"]
             and runtime_missing["projection_before_hash"] == runtime_missing["projection_after_hash"]
             and runtime_missing["output_bytes"] < 8192
-            and runtime_missing["artifact_paths"] == [],
-            "runtime missing evidence failed")
+            and len(runtime_missing["artifact_paths"]) == 2,
+            "frozen media source-removal evidence failed")
     add_picture_fault = media["add_picture_fault"]
     require(add_picture_fault["public_exit"] != 0
             and add_picture_fault["code"] == "PPTX_MEDIA_FORMAT_INVALID"
@@ -3129,6 +3570,377 @@ def run_phase_43() -> dict[str, object]:
     return evidence
 
 
+PHASE_51_GATE_ORDER = (
+    "visual-plan-binding",
+    "physical-visual-planning",
+    "frozen-emitter-boundary",
+)
+
+
+def native_visual_emitter_gate(workdir: Path) -> dict[str, object]:
+    """Phase 52: prove visual emission is payload-only and remains editable.
+
+    The structural half always runs.  The reopen half is deliberately gated by
+    python-pptx/Pillow because this repository also supports planning-only hosts.
+    """
+    import pptx_emit
+
+    source_text = (SCRIPTS_DIR / "pptx_emit.py").read_text(encoding="utf-8")
+    tree = ast.parse(source_text)
+    functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+    required = {"_emit_hero_evidence", "_emit_annotated_image", "_emit_process_overlay", "_emit_kpi_cards", "_emit_visual_layout"}
+    require(required <= set(functions), "native visual emitter functions are missing")
+    for name in required - {"_emit_visual_layout"}:
+        calls = {node.func.id for node in ast.walk(functions[name]) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}
+        require("_media_path" not in calls and "add_contain_picture" not in calls,
+                f"{name} reopens media by path")
+    object_text = (SCRIPTS_DIR / "pptx_objects.py").read_text(encoding="utf-8")
+    require("def add_bound_contain_picture(" in object_text and "expected_sha256" in object_text,
+            "payload-only picture helper is missing")
+
+    manifest = load_manifest(SKILL_DIR)
+    manifest_bytes = MANIFEST_PATH.read_bytes()
+    media = workdir / "evidence.png"
+    media.write_bytes((SKILL_DIR / "fixtures" / "media" / "equipment-cell.png").read_bytes())
+    source = workdir / "native.md"
+    source.write_text(
+        "---\ntitle: \"原生对象\"\ntheme: \"standard-school\"\n---\n\n"
+        "::: slide {layout=\"hero-evidence\"}\n## 英雄\n\n![图](evidence.png)\n\n"
+        "| 指标 | 数值 | 单位 | 短脚注 |\n| --- | --- | --- | --- |\n| 一 | 1 | 个 | 注 |\n| 二 | 2 | 个 | 注 |\n:::\n\n"
+        "::: slide {layout=\"annotated-image\"}\n## 标注\n\n![图](evidence.png)\n\n1. 传感器\n2. 控制器\n3. 执行器\n:::\n\n"
+        "::: slide {layout=\"process-overlay\"}\n## 流程\n\n| 步骤 | 说明 |\n| --- | --- |\n| 一 | 识别 |\n| 二 | 配置 |\n| 三 | 验证 |\n:::\n\n"
+        "::: slide {layout=\"kpi-evidence\"}\n## KPI\n\n| 指标 | 数值 | 单位 | 短脚注 |\n| --- | --- | --- | --- |\n| 一 | 1 | 个 | 注 |\n| 二 | 2 | 个 | 注 |\n:::\n",
+        encoding="utf-8",
+    )
+    document = parse_document(source, manifest)
+    require(not document["errors"], f"native fixture did not parse: {document['errors']}")
+    visual = pptx_paginate.build_visual_plan(document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes)
+    plan = pptx_paginate.build_physical_deck_plan(document, manifest, visual)
+    require(not plan.diagnostics, f"native fixture did not plan: {plan.diagnostics}")
+    require(all(binding.payload is not None for physical in plan.slides for binding in physical.media_bindings),
+            "native plan did not retain media payload")
+    try:
+        pptx_emit.require_dependencies()
+    except pptx_emit.PptxEmitError as exc:
+        require(exc.code == "PPTX_DEPENDENCY_MISSING", f"unexpected dependency failure: {exc.code}")
+        return {"static_payload_only": True, "reopen": "PPTX_DEPENDENCY_MISSING"}
+    output = workdir / "native.pptx"
+    evidence = pptx_emit.emit_deck(plan, manifest, TEMPLATE_PATH, output, manifest_bytes=manifest_bytes,
+                                   markdown_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
+    presentation = pptx_emit.require_dependencies()["pptx"].Presentation(output)
+    names = [shape.name for slide in presentation.slides for shape in slide.shapes]
+    require(any(name.startswith("school-pptx:hero-picture") for name in names), "hero picture missing after reopen")
+    require(any(name.startswith("school-pptx:kpi-card") for name in names), "native KPI cards missing after reopen")
+    require(any(name.startswith("school-pptx:annotation-leader") for name in names), "native annotation leaders missing")
+    require(any(name.startswith("school-pptx:process-connector") for name in names), "native process connectors missing")
+    require(all("screenshot" not in name.lower() for name in names), "screenshot object present")
+    return {"static_payload_only": True, "reopen": "PASS", "slides": evidence["physical_slides"], "shapes": len(names)}
+
+
+GATES["native-visual-emitter"] = native_visual_emitter_gate
+
+
+PHASE_52_GATE_ORDER = ("visual-plan-binding", "physical-visual-planning", "frozen-emitter-boundary", "native-visual-emitter")
+
+
+def run_phase_52() -> dict[str, object]:
+    require(len(PHASE_52_GATE_ORDER) == len(set(PHASE_52_GATE_ORDER)), "phase-52 registry contains duplicates")
+    evidence: dict[str, object] = {}
+    called: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="school-pptx-phase-52-") as temporary:
+        root = Path(temporary)
+        for name in PHASE_52_GATE_ORDER:
+            gate_dir = root / name
+            gate_dir.mkdir()
+            evidence[name] = run_named_gate(name, gate_dir)
+            called.append(name)
+    require(tuple(called) == PHASE_52_GATE_ORDER, "phase-52 registry skipped or reordered a gate")
+    return {"gates": evidence, "registry": {"required": PHASE_52_GATE_ORDER, "called": tuple(called), "dynamic_skips": 0},
+            "phase_53_fixture_uat": "NOT_IMPLEMENTED"}
+
+
+# Phase 53 is deliberately a full-runtime registry.  Unlike the earlier
+# planning-only gates, a missing editable-PPTX runtime is an observable failure.
+FULL_FIXTURE_EXPLICIT_LAYOUTS = (
+    "cover", "contents", "section", "title-content", "two-column", "image-text",
+    "table", "timeline", "gallery", "code", "hero-evidence", "annotated-image",
+    "process-overlay", "kpi-evidence",
+)
+PHASE_53_GATE_ORDER = (
+    "full-fixture-frozen-plan",
+    "full-fixture-negative-media",
+    "full-fixture-reopen",
+    "full-fixture-clean-delivery",
+)
+PHASE_53_REQUIRED_GATES = frozenset(PHASE_53_GATE_ORDER)
+PHASE_53_NEGATIVE_MEDIA_ORDER = (
+    "missing-media",
+    "path-traversal",
+    "malformed-media",
+    "over-capacity",
+)
+PHASE_53_NEGATIVE_MEDIA_CODES = {
+    "missing-media": "MEDIA_MISSING",
+    "path-traversal": "MEDIA_MISSING",
+    "malformed-media": "MEDIA_FORMAT_INVALID",
+    "over-capacity": "KPI_TABLE_INVALID",
+}
+
+
+def _full_fixture_plan() -> tuple[dict[str, object], object, object, dict[str, object]]:
+    """Parse the canonical fixture once and freeze its renderer inputs."""
+    manifest = load_manifest(SKILL_DIR)
+    document = parse_document(FIXTURE_PATH, manifest)
+    require(not document["errors"], f"full fixture did not parse: {document['errors']}")
+    observed_layouts = tuple(dict.fromkeys(slide["layout"] for slide in document["logical_slides"]))
+    require(observed_layouts == FULL_FIXTURE_EXPLICIT_LAYOUTS,
+            f"full fixture layouts changed: {observed_layouts}")
+    require(document.get("implicit_slides") == [{"layout": "closing", "position": "end_of_deck", "fixed_template_page": True}],
+            "full fixture implicit closing changed")
+    manifest_bytes = MANIFEST_PATH.read_bytes()
+    visual = pptx_paginate.build_visual_plan(
+        document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=manifest_bytes,
+    )
+    first = pptx_paginate.build_physical_deck_plan(document, manifest, visual, include_implicit=True)
+    second = pptx_paginate.build_physical_deck_plan(document, manifest, visual, include_implicit=True)
+    require(not visual.diagnostics and not first.diagnostics, "full fixture frozen plan has diagnostics")
+    require(first.to_projection() == second.to_projection(), "full fixture frozen plan is nondeterministic")
+    require(first.integrity_sha256 == first.expected_integrity_sha256,
+            "full fixture physical plan lacks an integrity binding")
+    require(first.slides[-1].layout == "closing", "full fixture did not freeze the closing slide")
+    require(tuple(slide.layout for slide in first.slides) == tuple(slide.layout for slide in second.slides),
+            "full fixture physical layout order changed")
+    return document, visual, first, manifest
+
+
+def full_fixture_frozen_plan_gate(workdir: Path) -> dict[str, object]:
+    del workdir
+    document, visual, physical, manifest = _full_fixture_plan()
+    required_media = sorted({
+        binding.sha256
+        for slide in physical.slides for binding in slide.media_bindings
+        if binding.sha256 is not None
+    })
+    require(required_media, "full fixture did not bind local media")
+    expected_visual = {"hero-evidence", "annotated-image", "process-overlay", "kpi-evidence"}
+    physical_visual = {slide.layout for slide in physical.slides if slide.layout in expected_visual}
+    require(physical_visual == expected_visual, "new visual layouts are absent from the frozen plan")
+    require(all(slide.object_roles for slide in physical.slides if slide.layout in expected_visual),
+            "new visual object roles are not frozen")
+    require(all(slide.selected_font_sizes for slide in physical.slides if slide.layout != "closing"),
+            "full fixture contains a non-closing page without frozen emitter fonts")
+    return {
+        "logical_slides": len(document["logical_slides"]),
+        "physical_slides": len(physical.slides),
+        "explicit_layouts": list(FULL_FIXTURE_EXPLICIT_LAYOUTS),
+        "implicit_layout": "closing",
+        "visual_plan_sha256": visual.sha256,
+        "physical_plan_sha256": physical.sha256,
+        "logical_to_physical": physical.to_projection()["logical_to_physical"],
+        "bound_media_sha256": required_media,
+        "deterministic": True,
+        "manifest_theme": manifest["theme_id"],
+    }
+
+
+def full_fixture_negative_media_gate(workdir: Path) -> dict[str, object]:
+    """Exercise invalid paths, malformed local bytes, and unsupported visual capacity."""
+    manifest = load_manifest(SKILL_DIR)
+    source = FIXTURE_PATH.read_text(encoding="utf-8")
+    cases: dict[str, str] = {}
+    vectors = {
+        "missing-media": source.replace("media/equipment-cell.png", "media/not-found.png", 1),
+        "path-traversal": source.replace("media/equipment-cell.png", "../../outside.png", 1),
+        "malformed-media": source.replace("media/equipment-cell.png", "media/malformed.png", 1),
+    }
+    shutil.copytree(FIXTURE_PATH.parent / "media", workdir / "media")
+    (workdir / "media" / "malformed.png").write_bytes(b"not-an-image")
+    for name in PHASE_53_NEGATIVE_MEDIA_ORDER[:-1]:
+        payload = vectors[name]
+        path = workdir / f"{name}.md"
+        path.write_text(payload, encoding="utf-8")
+        parsed = parse_document(path, manifest)
+        codes = {item["code"] for item in parsed["errors"]}
+        if name == "malformed-media":
+            visual = pptx_paginate.build_visual_plan(
+                parsed, manifest, template_path=TEMPLATE_PATH, manifest_bytes=MANIFEST_PATH.read_bytes(),
+            )
+            physical = pptx_paginate.build_physical_deck_plan(parsed, manifest, visual, include_implicit=True)
+            codes.update(item.code for item in (*visual.diagnostics, *physical.diagnostics))
+        expected = PHASE_53_NEGATIVE_MEDIA_CODES[name]
+        require(expected in codes, f"{name} did not fail with {expected}: {sorted(codes)}")
+        cases[name] = expected
+
+    overflow = source.replace(
+        "| 企业复核通过 | 96 | % | 导师抽检 |",
+        "| 企业复核通过 | 96 | % | 导师抽检 |\n| 超量指标 | 1 | 项 | 应失败 |",
+        1,
+    )
+    overflow_path = workdir / "over-capacity.md"
+    overflow_path.write_text(overflow, encoding="utf-8")
+    overflow_document = parse_document(overflow_path, manifest)
+    overflow_visual = pptx_paginate.build_visual_plan(
+        overflow_document, manifest, template_path=TEMPLATE_PATH, manifest_bytes=MANIFEST_PATH.read_bytes(),
+    )
+    overflow_plan = pptx_paginate.build_physical_deck_plan(
+        overflow_document, manifest, overflow_visual, include_implicit=True,
+    )
+    overflow_codes = (
+        {item["code"] for item in overflow_document["errors"]}
+        | {item.code for item in overflow_visual.diagnostics}
+        | {item.code for item in overflow_plan.diagnostics}
+    )
+    require("KPI_TABLE_INVALID" in overflow_codes,
+            f"over-capacity visual items did not fail closed: {sorted(overflow_codes)}")
+    cases["over-capacity"] = "KPI_TABLE_INVALID"
+    require(tuple(cases) == PHASE_53_NEGATIVE_MEDIA_ORDER,
+            "phase-53 negative media registry skipped or reordered a case")
+    require(cases == PHASE_53_NEGATIVE_MEDIA_CODES,
+            "phase-53 negative media stable codes changed")
+    return {
+        "registry": {
+            "required": PHASE_53_NEGATIVE_MEDIA_ORDER,
+            "called": tuple(cases),
+            "unique": True,
+            "dynamic_skips": 0,
+        },
+        "cases": cases,
+    }
+
+
+def full_fixture_reopen_gate(workdir: Path) -> dict[str, object]:
+    """Emit the canonical frozen plan and verify editable native objects after reopen."""
+    import pptx_emit
+    from pptx_model import bind_physical_plan_integrity
+
+    document, visual, physical, manifest = _full_fixture_plan()
+    try:
+        dependencies = pptx_emit.require_dependencies()
+    except pptx_emit.PptxEmitError as exc:
+        # This is intentionally an error, not a planning-only skip: Phase 53 needs a real reopen.
+        raise GateFailure(exc.code) from exc
+    output = workdir / "school-pptx-full.pptx"
+    emitted = pptx_emit.emit_deck(
+        physical, manifest, TEMPLATE_PATH, output, media_root=FIXTURE_PATH.parent,
+        manifest_bytes=MANIFEST_PATH.read_bytes(), markdown_sha256=hashlib.sha256(FIXTURE_PATH.read_bytes()).hexdigest(),
+    )
+    pptx_emit.validate_staged_package(output, expected_slides=len(physical.slides))
+    presentation = dependencies["pptx"].Presentation(output)
+    require(len(presentation.slides) == len(physical.slides), "reopened full fixture slide count changed")
+    expected_parts = [manifest["layouts"][slide.layout]["pptx_layout"] for slide in physical.slides]
+    observed_parts = [slide.slide_layout.part.partname.lstrip("/") for slide in presentation.slides]
+    require(observed_parts == expected_parts, "reopened layout sequence differs from frozen plan")
+
+    expected_names = {
+        "hero-evidence": ("school-pptx:hero-picture", "school-pptx:kpi-card:1", "school-pptx:kpi-value:1"),
+        "annotated-image": ("school-pptx:annotated-picture", "school-pptx:annotation-number:1", "school-pptx:annotation-leader:1"),
+        "process-overlay": ("school-pptx:process-node:1", "school-pptx:process-connector:1", "school-pptx:step-label:1"),
+        "kpi-evidence": ("school-pptx:kpi-card:1", "school-pptx:kpi-label:1", "school-pptx:kpi-value:1"),
+    }
+    editable: dict[str, list[str]] = {}
+    picture_hashes: set[str] = set()
+    for physical_slide, reopened in zip(physical.slides, presentation.slides, strict=True):
+        names = {shape.name: shape for shape in reopened.shapes}
+        if physical_slide.layout in expected_names:
+            require(set(expected_names[physical_slide.layout]) <= set(names),
+                    f"{physical_slide.layout} lost a required editable native object")
+            editable[physical_slide.layout] = sorted(expected_names[physical_slide.layout])
+        for shape in reopened.shapes:
+            if getattr(shape, "shape_type", None) == 13:
+                picture_hashes.add(hashlib.sha256(shape.image.blob).hexdigest())
+                require(not (shape.width * 100 >= presentation.slide_width * 98
+                             and shape.height * 100 >= presentation.slide_height * 98),
+                        "full fixture contains a whole-slide picture")
+    expected_media = {binding.sha256 for slide in physical.slides for binding in slide.media_bindings if binding.sha256}
+    require(expected_media <= picture_hashes, "reopened pictures differ from frozen media bindings")
+    require(any(getattr(shape, "has_table", False) for slide in presentation.slides for shape in slide.shapes),
+            "reopened fixture lost editable native table")
+    require(any(shape.name == "school-pptx:code" for slide in presentation.slides for shape in slide.shapes),
+            "reopened fixture lost editable code textbox")
+    hero = next(slide for slide in physical.slides if slide.layout == "hero-evidence")
+    missing_font_hero = replace(
+        hero,
+        selected_font_sizes=tuple(item for item in hero.selected_font_sizes if item[0] != "font.kpi_cards.min"),
+    )
+    missing_font_plan = bind_physical_plan_integrity(replace(
+        physical,
+        slides=tuple(missing_font_hero if slide is hero else slide for slide in physical.slides),
+    ))
+    try:
+        pptx_emit.emit_deck(
+            missing_font_plan, manifest, TEMPLATE_PATH, workdir / "missing-visual-font.pptx",
+            media_root=FIXTURE_PATH.parent, manifest_bytes=MANIFEST_PATH.read_bytes(),
+            markdown_sha256=hashlib.sha256(FIXTURE_PATH.read_bytes()).hexdigest(),
+        )
+    except pptx_emit.PptxEmitError as exc:
+        require(exc.code == "PPTX_PLAN_FONT_MISSING", "missing visual font did not fail closed")
+    else:
+        raise GateFailure("missing visual font emitted successfully")
+    return {
+        "visual_plan_sha256": visual.sha256,
+        "physical_plan_sha256": physical.sha256,
+        "pptx_sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
+        "physical_slides": emitted["physical_slides"],
+        "reopened_layouts": observed_parts,
+        "editable_native_objects": editable,
+        "media_sha256": sorted(expected_media),
+        "missing_visual_font": "PPTX_PLAN_FONT_MISSING",
+    }
+
+
+def full_fixture_clean_delivery_gate(workdir: Path) -> dict[str, object]:
+    evidence = delivery_transaction_gate(workdir)
+    require(evidence.get("registry", {}).get("dynamic_skips") == 0, "clean-delivery registry skipped a fault")
+    return evidence
+
+
+GATES["full-fixture-frozen-plan"] = full_fixture_frozen_plan_gate
+GATES["full-fixture-negative-media"] = full_fixture_negative_media_gate
+GATES["full-fixture-reopen"] = full_fixture_reopen_gate
+GATES["full-fixture-clean-delivery"] = full_fixture_clean_delivery_gate
+
+
+def run_phase_53() -> dict[str, object]:
+    require(len(PHASE_53_GATE_ORDER) == len(set(PHASE_53_GATE_ORDER)), "phase-53 registry contains duplicates")
+    require(set(PHASE_53_GATE_ORDER) == PHASE_53_REQUIRED_GATES, "phase-53 registry coverage changed")
+    evidence: dict[str, object] = {}
+    called: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="school-pptx-phase-53-") as temporary:
+        root = Path(temporary)
+        for name in PHASE_53_GATE_ORDER:
+            gate_dir = root / name
+            gate_dir.mkdir()
+            evidence[name] = run_named_gate(name, gate_dir)
+            called.append(name)
+    require(tuple(called) == PHASE_53_GATE_ORDER, "phase-53 registry skipped or reordered a gate")
+    return {
+        "gates": evidence,
+        "registry": {"required": PHASE_53_GATE_ORDER, "called": tuple(called), "unique": True, "dynamic_skips": 0},
+        "manual_viewer_uat_claimed": False,
+    }
+
+
+def run_phase_51() -> dict[str, object]:
+    """Run the fixed Phase 51 boundary proof; it intentionally excludes Phase 52/53."""
+    require(len(PHASE_51_GATE_ORDER) == len(set(PHASE_51_GATE_ORDER)), "phase-51 registry contains duplicates")
+    evidence: dict[str, object] = {}
+    called: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="school-pptx-phase-51-") as temporary:
+        root = Path(temporary)
+        for name in PHASE_51_GATE_ORDER:
+            gate_dir = root / name
+            gate_dir.mkdir()
+            evidence[name] = run_named_gate(name, gate_dir)
+            called.append(name)
+    require(tuple(called) == PHASE_51_GATE_ORDER, "phase-51 registry skipped or reordered a gate")
+    return {
+        "gates": evidence,
+        "registry": {"required": PHASE_51_GATE_ORDER, "called": tuple(called), "dynamic_skips": 0},
+        "phase_52_native_objects": "NOT_IMPLEMENTED",
+        "phase_53_fixture_uat": "NOT_IMPLEMENTED",
+    }
+
+
 def run_contract_model() -> dict[str, object]:
     names = ["manifest_renderer_contract_gate", "model_determinism_gate", "measurement_gate"]
     require(len(names) == len(set(names)) == 3, "gate registry must contain three unique contract gates")
@@ -3149,7 +3961,7 @@ def run_contract_model() -> dict[str, object]:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="verify_pptx_renderer.py")
-    parser.add_argument("gate", nargs="?", choices=["contract-model", "pagination", "phase-43", *GATES])
+    parser.add_argument("gate", nargs="?", choices=["contract-model", "pagination", "phase-43", "phase-51", "phase-52", "phase-53", *GATES])
     parser.add_argument("--self-test", choices=["delivery-transaction"])
     return parser.parse_args(argv)
 
@@ -3160,10 +3972,18 @@ def main(argv: list[str]) -> int:
     try:
         if selected == "all":
             evidence = {"phase-43": run_phase_43()}
+            evidence["phase-51"] = run_phase_51()
+            evidence["phase-52"] = run_phase_52()
             with tempfile.TemporaryDirectory(prefix="school-pptx-delivery-transaction-") as temporary:
                 evidence["delivery-transaction"] = run_named_gate("delivery-transaction", Path(temporary))
         elif selected == "phase-43":
             evidence = run_phase_43()
+        elif selected == "phase-51":
+            evidence = run_phase_51()
+        elif selected == "phase-52":
+            evidence = run_phase_52()
+        elif selected == "phase-53":
+            evidence = run_phase_53()
         else:
             with tempfile.TemporaryDirectory(prefix=f"school-pptx-{selected}-") as temporary:
                 evidence = run_named_gate(selected, Path(temporary))

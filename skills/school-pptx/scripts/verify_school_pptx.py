@@ -40,7 +40,7 @@ VERIFY_GATE_ORDER = (
     "template-validation",
     "canonical-render",
     "structural-inspection",
-    "phase-43-regression",
+    "phase-53-regression",
     "negative-cases",
     "evidence-integrity",
 )
@@ -50,7 +50,7 @@ VERIFY_REQUIRED_GATES = frozenset({
     "template-validation",
     "canonical-render",
     "structural-inspection",
-    "phase-43-regression",
+    "phase-53-regression",
     "negative-cases",
     "evidence-integrity",
 })
@@ -70,13 +70,11 @@ NEGATIVE_EXPECTED_CODES = {
     "unresolved-review-marker": "REVIEW_MARKER_UNRESOLVED",
     "template-manifest-mismatch": "TEMPLATE_MANIFEST_MISMATCH",
 }
-PHASE_43_GATE_ORDER = (
-    "contract-model", "pagination", "frozen-slot-content", "frozen-numbering-row-heights",
-    "ooxml-bootstrap", "editable-objects", "code-literal-roundtrip", "mixed-fragment-capacity",
-    "frame-capacity-consistency", "emit-structure", "frozen-plan-emission", "cli-publication",
-    "best-effort", "publication-safety", "publication-descriptor-race", "table-header-only",
-    "object-error-bounded", "media-descriptor-binding", "template-reader-security", "determinism",
-    "phase_41_42_regression",
+PHASE_53_GATE_ORDER = (
+    "full-fixture-frozen-plan",
+    "full-fixture-negative-media",
+    "full-fixture-reopen",
+    "full-fixture-clean-delivery",
 )
 RUN_ID_PATTERN = re.compile(r"^[a-f0-9]{16}$")
 SHA256_PATTERN = re.compile(r"^[a-f0-9]{64}$")
@@ -86,6 +84,10 @@ UAT_ITEM_ORDER = (
 )
 UAT_RESULT_VALUES = frozenset({"PENDING", "PASS", "FAIL", "BLOCKED"})
 UAT_VIEWERS = frozenset({"Microsoft PowerPoint", "WPS Presentation"})
+# This is deliberately not an acceptance result. A program can validate the
+# record's shape and artifact binding, but it cannot establish that a person
+# opened a viewer or performed the recorded actions.
+UAT_LINTED_UNVERIFIED = "UAT_RECORD_LINTED_HUMAN_CLAIM_UNVERIFIED"
 REQUIRED_DEPENDENCIES = (
     ("python-pptx", "pptx"),
     ("Pillow", "PIL"),
@@ -390,6 +392,15 @@ def dependency_readiness_gate(
     pandoc_probe: Callable[[], dict[str, object]] = _pandoc_probe,
 ) -> dict[str, object]:
     observed, missing = observe_dependencies(importer, pandoc_probe)
+    # The public flow reopens an emitted deck, so a merely importable legacy
+    # python-pptx is not a usable dependency. Keep this check aligned with the
+    # emitter rather than allowing the later Phase 53 gate to fail opaquely.
+    try:
+        import pptx_emit
+        pptx_emit.require_dependencies(importer)
+    except (ImportError, ModuleNotFoundError, RuntimeError):
+        if "python-pptx" not in missing:
+            missing.append("python-pptx")
     if missing:
         result = gate_result(
             "failed",
@@ -464,16 +475,33 @@ def validate_candidate(candidate: dict[str, object], *, include_integrity: bool)
             raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
     if include_integrity and candidate.get("status") != _aggregate_status(gates, list(called)):
         raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
-    phase_43 = gates.get("phase-43-regression")
-    if isinstance(phase_43, dict) and phase_43.get("status") == "passed":
-        phase_evidence = phase_43.get("evidence")
+    phase_53 = gates.get("phase-53-regression")
+    if isinstance(phase_53, dict) and phase_53.get("status") == "passed":
+        phase_evidence = phase_53.get("evidence")
         if not isinstance(phase_evidence, dict):
             raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
-        if tuple(phase_evidence.get("required", ())) != PHASE_43_GATE_ORDER:
+        if tuple(phase_evidence.get("required", ())) != PHASE_53_GATE_ORDER:
             raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
-        if tuple(phase_evidence.get("called", ())) != PHASE_43_GATE_ORDER:
+        if tuple(phase_evidence.get("called", ())) != PHASE_53_GATE_ORDER:
             raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
         if phase_evidence.get("unique") is not True or phase_evidence.get("dynamic_skips") != 0:
+            raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
+        negative_registry = phase_evidence.get("negative_registry")
+        negative_cases = phase_evidence.get("negative_cases")
+        if not isinstance(negative_registry, dict) or not isinstance(negative_cases, dict):
+            raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
+        expected_negative_order = ("missing-media", "path-traversal", "malformed-media", "over-capacity")
+        expected_negative_codes = {
+            "missing-media": "MEDIA_MISSING",
+            "path-traversal": "MEDIA_MISSING",
+            "malformed-media": "MEDIA_FORMAT_INVALID",
+            "over-capacity": "KPI_TABLE_INVALID",
+        }
+        if (tuple(negative_registry.get("required", ())) != expected_negative_order
+                or tuple(negative_registry.get("called", ())) != expected_negative_order
+                or negative_registry.get("unique") is not True
+                or negative_registry.get("dynamic_skips") != 0
+                or negative_cases != expected_negative_codes):
             raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
     negative = gates.get("negative-cases")
     if isinstance(negative, dict) and negative.get("status") == "passed":
@@ -718,39 +746,50 @@ def structural_inspection(artifacts: dict[str, object]) -> dict[str, object]:
     from pptx import Presentation
     from pptx.enum.shapes import MSO_SHAPE_TYPE
     from markdown_contract import load_manifest, parse_document
+    import pptx_paginate
 
     source = artifacts["source"]
     pptx_path = artifacts["pptx"]
     document = parse_document(source, load_manifest(DEFAULT_SKILL_ROOT))
     if document["errors"]:
         raise VerifyFailure("VERIFY_EVIDENCE_INVALID", "Canonical source failed reopen parsing.")
+    manifest = load_manifest(DEFAULT_SKILL_ROOT)
+    visual_plan = pptx_paginate.build_visual_plan(
+        document,
+        manifest,
+        template_path=DEFAULT_SKILL_ROOT / "templates" / "standard-school.pptx",
+        manifest_bytes=(DEFAULT_SKILL_ROOT / "templates" / "standard-school.manifest.yaml").read_bytes(),
+    )
+    physical_plan = pptx_paginate.build_physical_deck_plan(document, manifest, visual_plan, include_implicit=True)
+    if visual_plan.diagnostics or physical_plan.diagnostics:
+        raise VerifyFailure("VERIFY_EVIDENCE_INVALID", "Canonical fixture failed frozen visual planning.")
     presentation = Presentation(str(pptx_path))
     slides = list(presentation.slides)
     layout_parts = [slide.slide_layout.part.partname.lstrip("/") for slide in slides]
     slide_texts = [_slide_texts(slide) for slide in slides]
     logical = document["logical_slides"]
-    cursor = 0
-    mappings: list[dict[str, object]] = []
-    manifest = load_manifest(DEFAULT_SKILL_ROOT)
-    for logical_index, item in enumerate(logical, 1):
-        layout = item["layout"]
-        expected_part = manifest["layouts"][layout]["pptx_layout"]
-        expected_title = document["metadata"].get("title") if layout == "cover" else "目录" if layout == "contents" else item["title"]
-        indices: list[int] = []
-        while cursor < len(slides) - 1:
-            first = slide_texts[cursor][0] if slide_texts[cursor] else ""
-            if layout_parts[cursor] != expected_part or (layout != "contents" and first != expected_title):
-                break
-            indices.append(cursor + 1)
-            cursor += 1
-        mappings.append({"logical": logical_index, "layout": layout, "physical_indices": indices})
+    mappings = [
+        {
+            "logical": logical_index + 1,
+            "layout": logical[logical_index]["layout"],
+            "physical_indices": [physical_index + 1 for physical_index in physical_indices],
+        }
+        for logical_index, physical_indices in physical_plan.logical_to_physical
+    ]
+    expected_layouts = [item.layout for item in physical_plan.slides]
+    expected_parts = [manifest["layouts"][layout]["pptx_layout"] for layout in expected_layouts]
     source_contents = list(document["contents_entries"])
-    content_indices = mappings[1]["physical_indices"]
+    content_indices = next(item["physical_indices"] for item in mappings if item["layout"] == "contents")
     reopen_contents: list[str] = []
     for index in content_indices:
-        body = slide_texts[index - 1][0] if slide_texts[index - 1] else ""
+        body_shape = next((shape for shape in slides[index - 1].shapes if shape.name == "school-pptx:body"), None)
+        body = body_shape.text if body_shape is not None else ""
         reopen_contents.extend(re.sub(r"^\d+\.\s*", "", line) for line in body.splitlines() if line.strip())
-    expected_notes = list(range(1, len(slides) + 1))
+    expected_notes = [
+        physical.physical_index + 1
+        for physical in physical_plan.slides
+        if physical.notes_intent
+    ]
     observed_notes = [
         index for index, slide in enumerate(slides, 1)
         if slide.has_notes_slide and slide.notes_slide.notes_text_frame.text.strip()
@@ -759,9 +798,15 @@ def structural_inspection(artifacts: dict[str, object]) -> dict[str, object]:
     tables: list[dict[str, object]] = []
     groups: list[dict[str, object]] = []
     whole_slide_picture_count = 0
+    def reopen_shapes(shapes: object):
+        for shape in shapes:
+            yield shape
+            if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                yield from reopen_shapes(shape.shapes)
+
     for page, slide in enumerate(slides, 1):
         page_groups = 0
-        for shape in slide.shapes:
+        for shape in reopen_shapes(slide.shapes):
             if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                 blob = shape.image.blob
                 crops = [shape.crop_left, shape.crop_top, shape.crop_right, shape.crop_bottom]
@@ -781,16 +826,14 @@ def structural_inspection(artifacts: dict[str, object]) -> dict[str, object]:
     code_source = "\n".join(
         block["text"] for item in logical for block in item["blocks"] if block["kind"] == "code"
     )
-    code_pages = [
-        index for mapping in mappings if mapping["layout"] == "code" for index in mapping["physical_indices"]
-    ]
+    code_pages = [index for mapping in mappings if mapping["layout"] == "code" for index in mapping["physical_indices"]]
     code_frames: list[str] = []
     code_run_properties: list[dict[str, object]] = []
     for page in code_pages:
-        text_shapes = [shape for shape in slides[page - 1].shapes if hasattr(shape, "text") and shape.text.strip()]
-        for shape in text_shapes[1:]:
-            code_frames.append(shape.text)
-            for paragraph in shape.text_frame.paragraphs:
+        code_shape = next((shape for shape in slides[page - 1].shapes if shape.name == "school-pptx:code"), None)
+        if code_shape is not None:
+            code_frames.append(code_shape.text)
+            for paragraph in code_shape.text_frame.paragraphs:
                 for run in paragraph.runs:
                     code_run_properties.append({
                         "page": page,
@@ -823,39 +866,84 @@ def structural_inspection(artifacts: dict[str, object]) -> dict[str, object]:
         "groups": groups, "whole_slide_picture_count": whole_slide_picture_count,
         "transition_mode": transition_mode,
     }
+    expected_media_hashes = sorted({
+        binding.sha256 for physical in physical_plan.slides for binding in physical.media_bindings if binding.sha256
+    })
+    expected_role_layouts = {"hero-evidence", "annotated-image", "process-overlay", "kpi-evidence"}
+    reopened_roles = {
+        physical.layout: [shape.name for shape in slides[physical.physical_index].shapes]
+        for physical in physical_plan.slides if physical.layout in expected_role_layouts
+    }
+    required_role_prefixes = {
+        "hero-evidence": ("school-pptx:hero-picture", "school-pptx:kpi-card", "school-pptx:kpi-value"),
+        "annotated-image": ("school-pptx:annotated-picture", "school-pptx:annotation-number", "school-pptx:annotation-leader"),
+        "process-overlay": ("school-pptx:process-node", "school-pptx:process-connector", "school-pptx:step-label"),
+        "kpi-evidence": ("school-pptx:kpi-card", "school-pptx:kpi-label", "school-pptx:kpi-value"),
+    }
+    roles_valid = all(
+        all(any(name.startswith(prefix) for name in reopened_roles.get(layout, ())) for prefix in prefixes)
+        for layout, prefixes in required_role_prefixes.items()
+    )
     valid = (
         evidence["artifact"]["sha256"] == sha256_path(pptx_path)
-        and evidence["logical_count"] == 13 and evidence["physical_count"] == 26
-        and cursor == len(slides) - 1 and all(item["physical_indices"] for item in mappings)
+        and evidence["logical_count"] == len(logical)
+        and evidence["physical_count"] == len(physical_plan.slides)
+        and layout_parts == expected_parts and all(item["physical_indices"] for item in mappings)
         and source_contents == reopen_contents and expected_notes == observed_notes
         and bool(media) and bool(embedded_hashes) and bool(tables) and bool(code_pages)
         and evidence["code"]["source_sha256"] == evidence["code"]["reopen_sha256"]
+        and set(expected_media_hashes) <= set(embedded_hashes) and roles_valid
         and all(item["crop"] == [0.0, 0.0, 0.0, 0.0] for item in media)
         and whole_slide_picture_count == 0 and transition_mode in {"none", "preserved", "generated"}
     )
+    evidence["frozen_plan"] = {
+        "visual_plan_sha256": visual_plan.sha256,
+        "physical_plan_sha256": physical_plan.sha256,
+        "schema_version": physical_plan.schema_version,
+        "expected_layouts": expected_layouts,
+        "expected_media_hashes": expected_media_hashes,
+        "reopened_roles": reopened_roles,
+        "roles_valid": roles_valid,
+    }
     result = gate_result("passed" if valid else "failed", "OK" if valid else "STRUCTURE_MISMATCH", "Fresh PPTX raw structure was independently reopened and compared.")
     result["evidence"] = evidence
     return result
 
 
-def phase_43_regression() -> dict[str, object]:
+def phase_53_regression() -> dict[str, object]:
     import verify_pptx_renderer
 
     capture = io.StringIO()
     with contextlib.redirect_stdout(capture):
-        evidence = verify_pptx_renderer.run_phase_43()
+        evidence = verify_pptx_renderer.run_phase_53()
     registry = evidence.get("registry", {})
     required = tuple(registry.get("required", ()))
     called = tuple(registry.get("called", ()))
+    nested_gates = evidence.get("gates")
+    negative_evidence = nested_gates.get("full-fixture-negative-media") if isinstance(nested_gates, dict) else None
+    if isinstance(negative_evidence, dict):
+        negative_evidence = negative_evidence.get("full-fixture-negative-media", negative_evidence)
+    negative_registry = negative_evidence.get("registry") if isinstance(negative_evidence, dict) else None
+    negative_cases = negative_evidence.get("cases") if isinstance(negative_evidence, dict) else None
     valid = (
-        required == PHASE_43_GATE_ORDER == called
+        required == PHASE_53_GATE_ORDER == called
         and len(called) == len(set(called))
         and registry.get("unique") is True
         and registry.get("dynamic_skips") == 0
+        and isinstance(nested_gates, dict) and tuple(nested_gates) == PHASE_53_GATE_ORDER
+        and isinstance(negative_registry, dict) and isinstance(negative_cases, dict)
         and len(capture.getvalue().encode()) < PUBLIC_OUTPUT_LIMIT
     )
-    result = gate_result("passed" if valid else "failed", "OK" if valid else "PHASE_43_REGRESSION_FAILED", "Phase 43 fixed registry was executed and revalidated.")
-    result["evidence"] = {"required": list(required), "called": list(called), "unique": len(called) == len(set(called)), "dynamic_skips": registry.get("dynamic_skips"), "capture_bytes": len(capture.getvalue().encode())}
+    result = gate_result("passed" if valid else "failed", "OK" if valid else "PHASE_53_REGRESSION_FAILED", "Phase 53 fixed registry was executed and revalidated.")
+    result["evidence"] = {
+        "required": list(required),
+        "called": list(called),
+        "unique": len(called) == len(set(called)),
+        "dynamic_skips": registry.get("dynamic_skips"),
+        "negative_registry": negative_registry if isinstance(negative_registry, dict) else {},
+        "negative_cases": negative_cases if isinstance(negative_cases, dict) else {},
+        "capture_bytes": len(capture.getvalue().encode()),
+    }
     return result
 
 
@@ -968,8 +1056,8 @@ def build_candidate(
             called.append(name)
         gates["structural-inspection"] = structural_inspection(artifacts)
         called.append("structural-inspection")
-        gates["phase-43-regression"] = phase_43_regression()
-        called.append("phase-43-regression")
+        gates["phase-53-regression"] = phase_53_regression()
+        called.append("phase-53-regression")
         gates["negative-cases"] = negative_cases(tree, skill_root, artifacts)
         called.append("negative-cases")
         artifact_evidence = [
@@ -1011,7 +1099,7 @@ def build_candidate(
     negative_evidence = gates["negative-cases"].get("evidence", {})
     negative_registry = negative_evidence.get("registry", {}) if isinstance(negative_evidence, dict) else {}
     negative_items = negative_evidence.get("cases", []) if isinstance(negative_evidence, dict) else []
-    phase_43_evidence = gates["phase-43-regression"].get("evidence", {})
+    phase_53_evidence = gates["phase-53-regression"].get("evidence", {})
     candidate["canonical"] = {"artifacts": artifact_evidence}
     candidate["negative_registry"] = negative_registry
     candidate["negatives"] = [
@@ -1019,9 +1107,9 @@ def build_candidate(
         for item in negative_items
         if isinstance(item, dict)
     ]
-    candidate["phase_43"] = {
-        "status": gates["phase-43-regression"].get("status"),
-        "registry": phase_43_evidence if isinstance(phase_43_evidence, dict) else {},
+    candidate["phase_53"] = {
+        "status": gates["phase-53-regression"].get("status"),
+        "registry": phase_53_evidence if isinstance(phase_53_evidence, dict) else {},
     }
     validate_candidate(candidate, include_integrity=True)
     return candidate
@@ -1089,9 +1177,13 @@ def _assert_registry_mutations_rejected(candidate: dict[str, object]) -> None:
     oversized["diagnostics"] = ["x" * (MAX_STRING_LENGTH + 1)]
     mutations.append(oversized)
     copied_phase = json.loads(json.dumps(candidate))
-    if "evidence" in copied_phase["gates"]["phase-43-regression"]:
-        copied_phase["gates"]["phase-43-regression"]["evidence"]["called"] = list(PHASE_43_GATE_ORDER[:-1])
+    if "evidence" in copied_phase["gates"]["phase-53-regression"]:
+        copied_phase["gates"]["phase-53-regression"]["evidence"]["called"] = list(PHASE_53_GATE_ORDER[:-1])
         mutations.append(copied_phase)
+    copied_phase_negative = json.loads(json.dumps(candidate))
+    if "evidence" in copied_phase_negative["gates"]["phase-53-regression"]:
+        copied_phase_negative["gates"]["phase-53-regression"]["evidence"]["negative_cases"]["over-capacity"] = "OK"
+        mutations.append(copied_phase_negative)
     for mutation in mutations:
         try:
             validate_candidate(mutation, include_integrity=True)
@@ -1218,10 +1310,33 @@ def canonical_self_test() -> None:
             if any(result["status"] != "passed" for result in gates.values()) or structure["status"] != "passed":
                 raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
             evidence = structure["evidence"]
-            if evidence["logical_count"] != 13 or evidence["physical_count"] != 26:
+            logical_count, physical_count = _full_fixture_counts()
+            if evidence["logical_count"] != logical_count or evidence["physical_count"] != physical_count:
                 raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
             if evidence["transition_mode"] != "none" or evidence["whole_slide_picture_count"] != 0:
                 raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
+
+
+def _full_fixture_counts() -> tuple[int, int]:
+    """Derive the public baseline counts from the canonical fixture and frozen plan."""
+    from markdown_contract import load_manifest, parse_document
+    import pptx_paginate
+
+    manifest = load_manifest(DEFAULT_SKILL_ROOT)
+    fixture = DEFAULT_SKILL_ROOT / "fixtures" / "school-pptx-full.md"
+    document = parse_document(fixture, manifest)
+    if document["errors"]:
+        raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
+    visual = pptx_paginate.build_visual_plan(
+        document,
+        manifest,
+        template_path=DEFAULT_SKILL_ROOT / "templates" / "standard-school.pptx",
+        manifest_bytes=(DEFAULT_SKILL_ROOT / "templates" / "standard-school.manifest.yaml").read_bytes(),
+    )
+    physical = pptx_paginate.build_physical_deck_plan(document, manifest, visual, include_implicit=True)
+    if visual.diagnostics or physical.diagnostics:
+        raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
+    return len(document["logical_slides"]), len(physical.slides)
 
 
 def stable_diagnostics_self_test() -> None:
@@ -1265,10 +1380,19 @@ def negatives_integrity_self_test() -> None:
             gates = {name: flow.get(name, gate_result("passed", "OK", "self-test")) for name in VERIFY_GATE_ORDER[:-1]}
             gates["dependency-readiness"] = gate_result("passed", "OK", "self-test")
             gates["structural-inspection"] = structure
-            gates["phase-43-regression"] = gate_result("passed", "OK", "self-test")
-            gates["phase-43-regression"]["evidence"] = {
-                "required": list(PHASE_43_GATE_ORDER), "called": list(PHASE_43_GATE_ORDER),
+            gates["phase-53-regression"] = gate_result("passed", "OK", "self-test")
+            gates["phase-53-regression"]["evidence"] = {
+                "required": list(PHASE_53_GATE_ORDER), "called": list(PHASE_53_GATE_ORDER),
                 "unique": True, "dynamic_skips": 0,
+                "negative_registry": {
+                    "required": ["missing-media", "path-traversal", "malformed-media", "over-capacity"],
+                    "called": ["missing-media", "path-traversal", "malformed-media", "over-capacity"],
+                    "unique": True, "dynamic_skips": 0,
+                },
+                "negative_cases": {
+                    "missing-media": "MEDIA_MISSING", "path-traversal": "MEDIA_MISSING",
+                    "malformed-media": "MEDIA_FORMAT_INVALID", "over-capacity": "KPI_TABLE_INVALID",
+                },
             }
             gates["negative-cases"] = negative
             gates["evidence-integrity"] = gate_result("passed", "OK", "self-test")
@@ -1359,12 +1483,12 @@ def documentation_integrity_check() -> None:
     _require_documentation(observed_top == expected_top)
     for case_name, code in NEGATIVE_EXPECTED_CODES.items():
         _require_documentation(f"| `{case_name}` | `{code}` |" in verification)
-    authority = verification.split("## Phase 43 Nested Authority", 1)[1].split("## Dependency Semantics", 1)[0]
+    authority = verification.split("## Phase 53 Nested Authority", 1)[1].split("## Dependency Semantics", 1)[0]
     observed_phase = re.findall(r"^\d+\. `([^`]+)`$", authority, re.MULTILINE)
-    _require_documentation(observed_phase == list(PHASE_43_GATE_ORDER))
+    _require_documentation(observed_phase == list(PHASE_53_GATE_ORDER))
     required_verification_terms = (
         "--workdir <caller-workdir>", "python-pptx", "Pillow", "lxml", "PyYAML", "Pandoc",
-        "none|preserved|generated", "13 logical slides → 26 physical slides", "relative",
+        "none|preserved|generated", "17 logical slides → 28 physical slides", "relative",
         "documentation-integrity", "status: failed",
     )
     _require_documentation(all(term in verification for term in required_verification_terms))
@@ -1462,7 +1586,13 @@ def _uat_timestamp_valid(value: str) -> bool:
 
 
 def _uat_source_guard() -> None:
-    tree = ast.parse(SCRIPT_PATH.read_text(encoding="utf-8"))
+    source = SCRIPT_PATH.read_text(encoding="utf-8")
+    # Keep the boundary durable: no future edit may restore a machine verdict
+    # that claims a real viewer UAT was proved from editable Markdown.
+    deprecated_verdict = "UAT_" + "PASSED"
+    if deprecated_verdict in source:
+        raise UATLintFailure("UAT_GUARD_FAILED")
+    tree = ast.parse(source)
     guarded_names = {
         "_parse_uat_frontmatter", "_parse_uat_rows", "_uat_timestamp_valid",
         "_validate_uat_record", "check_uat_evidence",
@@ -1474,7 +1604,7 @@ def _uat_source_guard() -> None:
     if {node.name for node in guarded} != guarded_names:
         raise UATLintFailure("UAT_GUARD_FAILED")
     forbidden_calls = {"write_text", "write_bytes", "unlink", "iso_now"}
-    forbidden_names = {"getpass", "LOGNAME", "USER", "structural_inspection", "phase_43_regression"}
+    forbidden_names = {"getpass", "LOGNAME", "USER", "structural_inspection", "phase_53_regression"}
     for function in guarded:
         for node in ast.walk(function):
             if isinstance(node, ast.Call):
@@ -1534,7 +1664,7 @@ def _validate_uat_record(
         raise UATLintFailure("UAT_BLOCKED")
     if values["status"] != "passed" or not values["signoff"]:
         raise UATLintFailure("UAT_BLOCKED")
-    return "UAT_PASSED"
+    return UAT_LINTED_UNVERIFIED
 
 
 def check_uat_evidence(uat_path: Path, evidence_path: Path) -> str:
@@ -1611,7 +1741,7 @@ def parse_self_test(argv: list[str]) -> argparse.Namespace | None:
     if not argv or argv[0] != "--self-test":
         return None
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--self-test", choices=("foundation", "dependencies", "canonical", "stable-diagnostics", "negatives-integrity", "docs-entry", "docs-portability"), required=True)
+    parser.add_argument("--self-test", choices=("foundation", "dependencies", "canonical", "stable-diagnostics", "negatives-integrity", "docs-entry", "docs-portability", "uat-boundary"), required=True)
     try:
         return parser.parse_args(argv)
     except SystemExit as exc:
@@ -1637,7 +1767,49 @@ def run_self_test(name: str) -> None:
     if name == "docs-portability":
         documentation_integrity_check()
         return
+    if name == "uat-boundary":
+        uat_boundary_self_test()
+        return
     negatives_integrity_self_test()
+
+
+def uat_boundary_self_test() -> None:
+    """A forged all-PASS Markdown record must never become a human-UAT proof."""
+    forged_frontmatter = {
+        "status": "passed",
+        "viewer": "Microsoft PowerPoint",
+        "viewer_version": "forged-version",
+        "operating_system": "forged-os",
+        "fixture_sha256": "a" * 64,
+        "pptx_sha256": "b" * 64,
+        "tested_at": "2026-07-24T12:00:00+08:00",
+        "tester": "forged-free-text",
+        "evidence_source": "build/evidence/verification.json",
+        "delivery_pptx": "build/delivery/canonical.pptx",
+        "signoff": "forged-signoff",
+    }
+    forged_rows = [
+        {
+            "id": item_id,
+            "check": "forged check",
+            "result": "PASS",
+            "objects": "forged slide",
+            "observation": "forged observation",
+            "reference": "forged reference",
+        }
+        for item_id in UAT_ITEM_ORDER
+    ]
+    result = _validate_uat_record(
+        forged_frontmatter,
+        forged_rows,
+        "a" * 64,
+        "b" * 64,
+        "build/evidence/verification.json",
+        "build/delivery/canonical.pptx",
+    )
+    if result != UAT_LINTED_UNVERIFIED or "UNVERIFIED" not in result or "PASSED" in result:
+        raise VerifyFailure("VERIFY_EVIDENCE_INVALID")
+    _uat_source_guard()
 
 
 def run_public(skill_root: Path, workdir: HeldWorkdir) -> int:
@@ -1658,7 +1830,9 @@ def main(argv: list[str]) -> int:
         if uat_args is not None:
             result = check_uat_evidence(uat_args.check_uat, uat_args.evidence)
             print(result)
-            return 0 if result == "UAT_PASSED" else 3
+            # Exit zero means only that a record is structurally consistent
+            # with current machine evidence. It is never a human-UAT verdict.
+            return 0 if result == UAT_LINTED_UNVERIFIED else 3
     except UATLintFailure as failure:
         print(failure.code)
         return 3

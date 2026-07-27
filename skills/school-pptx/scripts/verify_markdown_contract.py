@@ -255,8 +255,14 @@ theme: standard-school
     require(first["notes"]["markdown"] == "独立演讲者备注。", "notes missing")
     require(all(block["kind"] != "notes" for block in first["blocks"]), "notes leaked into visible blocks")
     media = [block for slide in model["logical_slides"] for block in slide["blocks"] if block["kind"] == "image"]
-    require(any(not item["absolute_authored"] and item["resolved_path"] == str(relative.resolve()) for item in media), "relative media resolution failed")
-    require(any(item["absolute_authored"] and item["resolved_path"] == str(absolute.resolve()) for item in media), "absolute media resolution failed")
+    # The parser must retain a lexical media path.  Resolving it here would
+    # erase an intermediate symlink before the descriptor-bound renderer can
+    # reject it; Phase 43 covers those public rejection vectors.
+    expected_relative = str(Path(os.path.abspath(source.resolve().parent / relative.name)))
+    require(any(not item["absolute_authored"] and item["resolved_path"] == expected_relative for item in media),
+            "relative media lexical resolution failed")
+    require(any(item["absolute_authored"] and item["resolved_path"] == str(Path(os.path.abspath(absolute))) for item in media),
+            "absolute media lexical resolution failed")
     visual = {slide["layout"]: slide["visual_semantics"] for slide in model["logical_slides"] if "visual_semantics" in slide}
     require(set(visual) == {"hero-evidence", "annotated-image", "process-overlay", "kpi-evidence"}, "visual semantic projections missing")
     require(visual["hero-evidence"]["kpi_count"] == 2 and visual["annotated-image"]["annotation_count"] == 3,
@@ -720,7 +726,10 @@ def full_fixture_gate(work: Path) -> None:
     result, model = validate(output / "school-pptx-full.md", logical_json)
     require(result.returncode == 0 and model.get("errors") == [], "copied full fixture did not validate")
     require(model.get("metadata", {}).get("theme") == "standard-school", "fixture theme changed")
-    require(set(model["coverage"]["explicit_layouts"]) == {"cover", "contents", "section", "title-content", "two-column", "image-text", "table", "timeline", "gallery", "code"}, "full fixture explicit coverage incomplete")
+    require(set(model["coverage"]["explicit_layouts"]) == {
+        "cover", "contents", "section", "title-content", "two-column", "image-text", "table", "timeline", "gallery", "code",
+        "hero-evidence", "annotated-image", "process-overlay", "kpi-evidence",
+    }, "full fixture explicit coverage incomplete")
     require(model["coverage"]["implicit_layouts"] == ["closing"], "full fixture implicit closing changed")
     slides = model["logical_slides"]
     require(model["contents_entries"] == [
@@ -731,7 +740,7 @@ def full_fixture_gate(work: Path) -> None:
     media = [block for slide in slides for block in slide["blocks"] if block.get("kind") == "image"]
     require(all(block["exists"] for block in media), "full fixture has missing media")
     require({Path(block["authored_path"]).name for block in media} == {Path(path).name for path in OWNED_PATHS if path.startswith("media/")}, "full fixture media set changed")
-    require(any(block["caption"] for block in media) and any(block["caption"] == "" for block in media), "caption or empty-caption evidence missing")
+    require(all(block["caption"] for block in media), "full fixture media caption evidence missing")
     require(any(overflow_item(slide, "long_text")["exceeds_budget"] for slide in slides if slide["layout"] == "title-content"), "long text evidence missing")
     require(any(overflow_item(slide, "column_pairs")["pairs"][-1][1] is None for slide in slides if slide["layout"] == "two-column"), "odd two-column evidence missing")
     require(any(len(overflow_item(slide, "stable_body_images")["image_indexes"]) > 1 for slide in slides if slide["layout"] == "image-text"), "multi-image evidence missing")
@@ -767,8 +776,11 @@ theme: standard-school
     require(model["metadata"] == {"theme": "standard-school"}, "optional metadata placeholders invented")
     require(model["document_title"] == "回退标题" and model["contents_entries"] == [], "# fallback or contents isolation failed")
     media = [block for slide in model["logical_slides"] for block in slide["blocks"] if block["kind"] == "image"]
-    require(any(not block["absolute_authored"] and block["resolved_path"] == str(relative.resolve()) for block in media), "relative media variant failed")
-    require(any(block["absolute_authored"] and block["resolved_path"] == str(absolute.resolve()) for block in media), "absolute media variant failed")
+    expected_relative = str(Path(os.path.abspath(fallback.resolve().parent / relative.name)))
+    require(any(not block["absolute_authored"] and block["resolved_path"] == expected_relative for block in media),
+            "relative media lexical variant failed")
+    require(any(block["absolute_authored"] and block["resolved_path"] == str(Path(os.path.abspath(absolute))) for block in media),
+            "absolute media lexical variant failed")
 
     yaml_title = write_case(work, "yaml-title.md", '''---
 title: YAML 标题

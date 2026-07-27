@@ -214,7 +214,11 @@ def canonical_regression(root: Path) -> dict[str, object]:
     visual = report["renderer_contract"].get("visual_layouts", [])
     require({item["id"] for item in visual} == {"hero-evidence", "annotated-image", "process-overlay", "kpi-evidence"},
             "canonical visual layout evidence failed")
-    return {"layouts": len(report["layouts"]), "status": "PASS"}
+    return {
+        "layouts": len(report["layouts"]),
+        "status": "PASS",
+        "visual_layouts": sorted(item["id"] for item in visual),
+    }
 
 
 def visual_contract_mutations() -> dict[str, object]:
