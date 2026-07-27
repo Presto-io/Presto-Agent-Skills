@@ -303,6 +303,7 @@ def add_plain_lines(
 
 def add_table(
     slide: Any, slot: dict[str, Any], fragment: Any, *, font_size: float,
+    table_name_font_size: float,
     row_heights_emu: tuple[int, ...],
 ) -> tuple[Any, Any]:
     from pptx.dml.color import RGBColor
@@ -317,9 +318,7 @@ def add_table(
     _configure_text_frame(name_shape.text_frame)
     name_shape.text_frame.paragraphs[0].text = table_name
     if name_shape.text_frame.paragraphs[0].runs:
-        name_shape.text_frame.paragraphs[0].runs[0].font.size = Pt(
-            slot["subregions"]["table_name"]["text_budget"]["font_size_max"]
-        )
+        name_shape.text_frame.paragraphs[0].runs[0].font.size = Pt(table_name_font_size)
 
     rows = fragment.rows or (("",),)
     if len(row_heights_emu) != len(rows) or any(not isinstance(value, int) or value <= 0 for value in row_heights_emu):
@@ -493,6 +492,51 @@ def add_contain_picture(
     return picture, False, payload_hash
 
 
+def add_bound_contain_picture(
+    slide: Any, payload: bytes, geometry: dict[str, int], *, expected_sha256: str, expected_format: str, name: str,
+) -> Any:
+    """Add one contain-fitted picture from the immutable planner payload.
+
+    This deliberately has no path argument.  Visual layouts are emitted from the
+    one descriptor-read payload captured in ``MediaBinding``, so neither media
+    discovery nor a second filesystem read can occur at emission time.
+    """
+    from PIL import Image, UnidentifiedImageError
+
+    if not isinstance(payload, bytes) or hashlib.sha256(payload).hexdigest() != expected_sha256:
+        raise PptxObjectError("PPTX_MEDIA_HASH_INVALID")
+    actual_format = "png" if payload.startswith(b"\x89PNG\r\n\x1a\n") else "jpeg" if payload.startswith(b"\xff\xd8\xff") else None
+    if actual_format != expected_format:
+        raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID")
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(payload)) as image:
+                if image.format not in ALLOWED_MEDIA_FORMATS:
+                    raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID")
+                width, height = image.size
+                if width <= 0 or height <= 0 or width * height > MAX_MEDIA_PIXELS:
+                    raise PptxObjectError("PPTX_MEDIA_PIXEL_LIMIT")
+                image.verify()
+        scale = min(geometry["width"] / width, geometry["height"] / height)
+        target_width, target_height = int(width * scale), int(height * scale)
+        left = geometry["x"] + int((geometry["width"] - target_width) / 2)
+        top = geometry["y"] + int((geometry["height"] - target_height) / 2)
+        picture = slide.shapes.add_picture(io.BytesIO(payload), left, top, target_width, target_height)
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise PptxObjectError("PPTX_MEDIA_PIXEL_LIMIT") from None
+    except PptxObjectError:
+        raise
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+        raise PptxObjectError("PPTX_MEDIA_FORMAT_INVALID") from None
+    except Exception:
+        raise PptxObjectError("PPTX_OBJECT_INVALID") from None
+    picture.name = name
+    picture.crop_left = picture.crop_top = picture.crop_right = picture.crop_bottom = 0
+    _apply_picture_shadow(picture)
+    return picture
+
+
 def add_gallery_card(
     slide: Any, preset: dict[str, Any], reference: MediaReference | None, caption: str, *, index: int,
     highlight_scheme: str, font_size: float, paragraph_alignment: str | None = None,
@@ -507,6 +551,25 @@ def add_gallery_card(
     group = slide.shapes.add_group_shape((picture, caption_shape))
     group.name = f"school-pptx:gallery-card:{index}"
     return group, missing, payload_hash
+
+
+def add_bound_gallery_card(
+    slide: Any, preset: dict[str, Any], payload: bytes, caption: str, *, expected_sha256: str,
+    expected_format: str, index: int, highlight_scheme: str, font_size: float,
+    paragraph_alignment: str | None = None,
+) -> Any:
+    """Emit an editable gallery card from a planner-bound media payload."""
+    picture = add_bound_contain_picture(
+        slide, payload, preset["picture"], expected_sha256=expected_sha256,
+        expected_format=expected_format, name=f"school-pptx:gallery-picture:{index}",
+    )
+    caption_shape = add_rich_text(
+        slide, preset["caption"], caption, font_size=font_size, highlight_scheme=highlight_scheme,
+        name=f"school-pptx:gallery-caption:{index}", paragraph_alignment=paragraph_alignment,
+    )
+    group = slide.shapes.add_group_shape((picture, caption_shape))
+    group.name = f"school-pptx:gallery-card:{index}"
+    return group
 
 
 def _set_gradient_fill(shape: Any, start_scheme: str, end_scheme: str) -> None:
@@ -552,7 +615,10 @@ def _interpolate_rgb(start: str, end: str, position: float) -> tuple[int, int, i
     return tuple(round(left + (right - left) * ratio) for left, right in zip(start_channels, end_channels))
 
 
-def add_timeline(slide: Any, slot: dict[str, Any], rows: tuple[tuple[str, ...], ...], *, highlight_scheme: str) -> list[Any]:
+def add_timeline(
+    slide: Any, slot: dict[str, Any], rows: tuple[tuple[str, ...], ...], *, highlight_scheme: str,
+    font_sizes: dict[str, float],
+) -> list[Any]:
     from pptx.dml.color import RGBColor
     from pptx.enum.shapes import MSO_SHAPE
 
@@ -582,10 +648,9 @@ def add_timeline(slide: Any, slot: dict[str, Any], rows: tuple[tuple[str, ...], 
                 "width": max(1, int(local["width"] * node_width / template["geometry"]["width"])),
                 "height": local["height"],
             }
-            budget = template["subregions"][role]["text_budget"]
             region = template["subregions"][role]
             shapes.append(add_rich_text(
-                slide, geometry, value, font_size=budget["font_size_min"], highlight_scheme=highlight_scheme,
+                slide, geometry, value, font_size=font_sizes[role], highlight_scheme=highlight_scheme,
                 name=f"school-pptx:timeline-{role}:{index}",
                 paragraph_alignment=region.get("paragraph_alignment"),
                 vertical_anchor=region.get("vertical_anchor"),

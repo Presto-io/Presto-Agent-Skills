@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import copy
 import fcntl
+import hashlib
 import inspect
 import os
 import re
@@ -19,7 +20,7 @@ from typing import Any, BinaryIO, Callable
 
 from markdown_contract import ManifestError, load_manifest, parse_document, print_diagnostic
 from pptx_emit import PptxEmitError, emit_deck, validate_staged_package
-from pptx_paginate import build_deck_plan
+from pptx_paginate import build_physical_deck_plan, build_visual_plan
 
 
 MAX_PUBLIC_DIAGNOSTICS = 200
@@ -741,6 +742,26 @@ def parser_diagnostic(item: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def public_input_label(input_path: Path) -> str:
+    """Return the non-sensitive input label permitted in public render output."""
+    return input_path.name or "<input>"
+
+
+def print_public_diagnostic(item: dict[str, Any], input_label: str) -> None:
+    """Print a bounded diagnostic without exposing the caller's absolute path."""
+    public_item = dict(item)
+    public_item["path"] = input_label
+    print_diagnostic(public_item)
+
+
+def public_plan_error_code(code: str) -> str:
+    """Normalize planner media failures to the stable public emitter vocabulary."""
+    return {
+        "MEDIA_FORMAT_INVALID": "PPTX_MEDIA_FORMAT_INVALID",
+        "MEDIA_UNREADABLE": "PPTX_MEDIA_PATH_INVALID",
+    }.get(code, code)
+
+
 def affected_slides(document: dict[str, Any], errors: list[dict[str, Any]], plan_errors: list[Any]) -> list[str]:
     titles: list[str] = []
     logical = document.get("logical_slides", ())
@@ -769,8 +790,35 @@ def print_unrecoverable(error: RenderError) -> None:
     print("请按提示修复后重新运行 render。")
 
 
+def run_media_after_validate_hook(plan: Any) -> None:
+    """Run the legacy media race hook after planner payloads are immutable.
+
+    ``MEDIA_AFTER_VALIDATE_HOOK`` is deliberately test-only.  It runs after the
+    VisualPlan and PhysicalDeckPlan have captured validated media bytes, but
+    before emission, so a test can replace the authored pathname and prove the
+    emitter still uses the frozen binding rather than reopening that pathname.
+    """
+    try:
+        from pptx_objects import MEDIA_AFTER_VALIDATE_HOOK
+    except ImportError:
+        return
+    if MEDIA_AFTER_VALIDATE_HOOK is None:
+        return
+    for physical in plan.slides:
+        for binding in physical.media_bindings:
+            if not binding.confirmed:
+                continue
+            try:
+                MEDIA_AFTER_VALIDATE_HOOK(binding)
+            except Exception as exc:
+                # Preserve the historic public fault boundary used by the
+                # descriptor-binding regression without exposing hook details.
+                raise PptxEmitError("PPTX_MEDIA_FORMAT_INVALID", "媒体对象无法安全发射。") from exc
+
+
 def render_command(args: argparse.Namespace) -> int:
     input_path = Path(args.input)
+    input_label = public_input_label(input_path)
     output_root = Path(os.path.abspath(args.out_dir))
     stem = args.stem if args.stem is not None else input_path.stem
     try:
@@ -782,14 +830,22 @@ def render_command(args: argparse.Namespace) -> int:
         manifest = load_manifest(Path(args.skill_dir))
         document = parse_document(input_path, manifest)
         safe_document = safe_document_for_pagination(document, manifest)
-        plan = build_deck_plan(safe_document, manifest)
+        skill_root = Path(args.skill_dir)
+        manifest_path = skill_root / "templates" / "standard-school.manifest.yaml"
+        template_path = skill_root / "templates" / "standard-school.pptx"
+        # This is the only render path: parsing fixes input identity, visual planning
+        # fixes choices/media, and physical planning fixes pagination and mapping.
+        visual_plan = build_visual_plan(
+            safe_document, manifest, template_path=template_path, manifest_bytes=manifest_path.read_bytes(),
+        )
+        plan = build_physical_deck_plan(safe_document, manifest, visual_plan, include_implicit=True)
         frozen_projection = plan.to_projection()
         if RENDER_POST_PARSE_HOOK is not None:
             RENDER_POST_PARSE_HOOK(input_path)
+        run_media_after_validate_hook(plan)
         parser_errors = [parser_diagnostic(item) for item in document.get("errors", ())]
         plan_errors = [item for item in plan.diagnostics if item.severity == "error"]
         warnings = list(document.get("warnings", ())) + [item for item in plan.diagnostics if item.severity == "warning"]
-        template_path = Path(args.skill_dir) / "templates" / "standard-school.pptx"
         assets = managed_asset_references(raw_markdown)
         spec = DeliverySpec(output_root, stem, assets)
         with DeliverySession(spec) as session:
@@ -798,7 +854,10 @@ def render_command(args: argparse.Namespace) -> int:
                 with destination.reserve_pptx() as staged_pptx:
                     if RENDER_PRE_SAVE_HOOK is not None:
                         RENDER_PRE_SAVE_HOOK(destination, staged_pptx)
-                    emit_evidence = emit_deck(plan, manifest, template_path, staged_pptx, media_root=input_path.parent)
+                    emit_evidence = emit_deck(
+                        plan, manifest, template_path, staged_pptx, media_root=input_path.parent,
+                        manifest_bytes=manifest_path.read_bytes(), markdown_sha256=hashlib.sha256(raw_markdown).hexdigest(),
+                    )
                     if plan.to_projection() != frozen_projection:
                         raise RenderError("PPTX_PLAN_MUTATED", "发射阶段修改了冻结物理计划。", "检查 renderer 实现后重试。")
                     destination.assert_temporary("pptx")
@@ -816,20 +875,20 @@ def render_command(args: argparse.Namespace) -> int:
             if parser_errors or plan_errors or runtime_errors:
                 print("渲染完成但输入存在异常")
                 print("本次渲染不成功，命令退出码非零；best-effort deck 未发布为 current。")
-                print(f"输入 Markdown：{input_path}")
+                print(f"输入 Markdown：{input_label}")
                 print(f"主题：{document.get('metadata', {}).get('theme') or manifest.get('theme_id') or '-'}")
                 print(f"错误：{len(parser_errors) + len(plan_errors) + len(runtime_errors)}；警告：{len(warnings)}")
                 print(f"受影响逻辑页：{'、'.join(affected)}")
                 for item in parser_errors[:MAX_PUBLIC_DIAGNOSTICS]:
-                    print_diagnostic(item)
+                    print_public_diagnostic(item, input_label)
                 for item in plan_errors[: max(0, MAX_PUBLIC_DIAGNOSTICS - len(parser_errors))]:
-                    print(f"{input_path}:{item.source_line}:1 [{item.code}] {item.message}")
+                    print(f"{input_label}:{item.source_line}:1 [{public_plan_error_code(item.code)}] {item.message}")
                     print(f"  slide: {','.join(map(str, item.logical_indices)) or 'unknown'}")
                     print("  layout: unknown")
                     print(f"  fix: {item.fix}")
                 remaining = max(0, MAX_PUBLIC_DIAGNOSTICS - len(parser_errors) - len(plan_errors))
                 for item in runtime_errors[:remaining]:
-                    print(f"{input_path}:{item['source_line']}:1 [{item['code']}] {item['message']}")
+                    print(f"{input_label}:{item['source_line']}:1 [{item['code']}] {item['message']}")
                     print(f"  slide: {','.join(map(str, item['logical_indices']))}")
                     print("  layout: unknown")
                     print(f"  fix: {item['fix']}")
@@ -840,7 +899,7 @@ def render_command(args: argparse.Namespace) -> int:
         markdown_output = output_root / f"{stem}.md"
         pptx_output = output_root / f"{stem}.pptx"
         print("渲染成功")
-        print(f"输入 Markdown：{input_path}")
+        print(f"输入 Markdown：{input_label}")
         print(f"主题：{document.get('metadata', {}).get('theme') or manifest.get('theme_id') or '-'}")
         print(f"逻辑页：{len(document.get('logical_slides', ()))}；物理页：{len(plan.slides)}")
         print(f"分页摘要：{len(plan.logical_to_physical)} 个逻辑映射；transition mode：none")

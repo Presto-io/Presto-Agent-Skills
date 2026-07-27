@@ -4,25 +4,477 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import io
 import math
+import os
 import re
+import stat
 import unicodedata
+import warnings
 from dataclasses import FrozenInstanceError, dataclass, replace
+from pathlib import Path
 from typing import Any, Iterator, Sequence
 
-from pptx_model import BlockFragment, PhysicalDeckPlan, PhysicalSlide, RenderDiagnostic, fragment_paragraph_sequence
+from markdown_contract import visual_semantics
+from pptx_model import (
+    BlockFragment, MediaBinding, PhysicalDeckPlan, PhysicalSlide, RenderDiagnostic, VisualPlan, VisualSlide,
+    bind_physical_plan_integrity,
+    canonical_json, fragment_paragraph_sequence,
+)
 
 
 MAX_TEXT_BYTES = 2 * 1024 * 1024
 MAX_LOGICAL_LINES = 2048
 MAX_BLOCKS = 2048
 MAX_PARTITION_STATES = 200_000
+MAX_MEDIA_BYTES = 16 * 1024 * 1024
+MAX_MEDIA_PIXELS = 40_000_000
 EMU_PER_POINT = 12700
 NO_LINE_START = frozenset("，。！？；：、）》】」』〉…,.!?;:%)]}")
 NO_LINE_END = frozenset("《（【「『〈([{“‘")
 STRONG_BREAK = frozenset("。！？!?；;")
 WEAK_BREAK = frozenset("，、：:,")
 TRAILING_CLOSERS = frozenset('"\'”’）》】」』〉)]}')
+
+
+def _stable_capacity(value: object) -> tuple[tuple[str, tuple[int, ...]], ...]:
+    if not isinstance(value, dict):
+        return ()
+    result: list[tuple[str, tuple[int, ...]]] = []
+    for name in sorted(value):
+        raw = value[name]
+        values = raw if isinstance(raw, (list, tuple)) else (raw,)
+        try:
+            result.append((str(name), tuple(int(item) for item in values)))
+        except (TypeError, ValueError):
+            result.append((str(name), ()))
+    return tuple(result)
+
+
+def _read_media_binding(reference: dict[str, Any]) -> MediaBinding:
+    """Read an authored media file once through a no-follow descriptor."""
+    logical_reference = str(reference.get("logical_reference", ""))
+    caption = str(reference.get("caption", "")).strip()
+    source_line = int(reference.get("source_line", 1))
+    placement = str(reference.get("placement", "contain"))
+    path = str(reference.get("resolved_path", ""))
+    if not logical_reference or not path or not bool(reference.get("exists", False)):
+        return MediaBinding(logical_reference, source_line, None, 0, None, placement, False, "MEDIA_MISSING")
+    descriptor = -1
+    descriptors: list[int] = []
+    try:
+        candidate = Path(path)
+        if not candidate.is_absolute():
+            return MediaBinding(logical_reference, source_line, None, 0, None, placement, False, "MEDIA_UNREADABLE")
+        parts = tuple(part for part in candidate.parts if part != candidate.anchor)
+        if not parts or any(part in {"", ".", ".."} for part in parts):
+            return MediaBinding(logical_reference, source_line, None, 0, None, placement, False, "MEDIA_UNREADABLE")
+        descriptors.append(os.open(candidate.anchor, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW))
+        for component in parts[:-1]:
+            descriptors.append(os.open(
+                component, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=descriptors[-1],
+            ))
+        descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=descriptors[-1])
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_size <= 0 or metadata.st_size > MAX_MEDIA_BYTES:
+            return MediaBinding(logical_reference, source_line, None, 0, None, placement, False, "MEDIA_SIZE_INVALID")
+        chunks: list[bytes] = []
+        remaining = MAX_MEDIA_BYTES + 1
+        while remaining:
+            chunk = os.read(descriptor, min(1024 * 1024, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        payload = b"".join(chunks)
+        if len(payload) != metadata.st_size or len(payload) > MAX_MEDIA_BYTES:
+            return MediaBinding(logical_reference, source_line, None, 0, None, placement, False, "MEDIA_READ_INVALID")
+        media_format = "png" if payload.startswith(b"\x89PNG\r\n\x1a\n") else "jpeg" if payload.startswith(b"\xff\xd8\xff") else None
+        if media_format is None:
+            return MediaBinding(logical_reference, source_line, None, len(payload), None, placement, False, "MEDIA_FORMAT_INVALID")
+        # The bound payload replaces the legacy emitter's path-based image
+        # loader, so validate it to the same boundary before freezing it.
+        try:
+            from PIL import Image, UnidentifiedImageError
+        except (ImportError, ModuleNotFoundError):
+            return MediaBinding(
+                logical_reference, source_line, None, len(payload), None, placement, False,
+                "PPTX_DEPENDENCY_MISSING",
+            )
+
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", Image.DecompressionBombWarning)
+                with Image.open(io.BytesIO(payload)) as image:
+                    expected_format = "PNG" if media_format == "png" else "JPEG"
+                    if image.format != expected_format:
+                        return MediaBinding(
+                            logical_reference, source_line, None, len(payload), None, placement, False,
+                            "MEDIA_FORMAT_INVALID",
+                        )
+                    width, height = image.size
+                    if width <= 0 or height <= 0 or width * height > MAX_MEDIA_PIXELS:
+                        return MediaBinding(
+                            logical_reference, source_line, None, len(payload), None, placement, False,
+                            "PPTX_MEDIA_PIXEL_LIMIT",
+                        )
+                    image.verify()
+        except (Image.DecompressionBombError, Image.DecompressionBombWarning):
+            return MediaBinding(
+                logical_reference, source_line, None, len(payload), None, placement, False,
+                "PPTX_MEDIA_PIXEL_LIMIT",
+            )
+        except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+            return MediaBinding(
+                logical_reference, source_line, None, len(payload), None, placement, False,
+                "MEDIA_FORMAT_INVALID",
+            )
+        return MediaBinding(
+            logical_reference, source_line, hashlib.sha256(payload).hexdigest(), len(payload), media_format,
+            placement, True, payload=payload, caption=caption,
+        )
+    except OSError:
+        return MediaBinding(logical_reference, source_line, None, 0, None, placement, False, "MEDIA_UNREADABLE")
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        for open_descriptor in reversed(descriptors):
+            os.close(open_descriptor)
+
+
+def build_visual_plan(
+    document: dict[str, Any], manifest: dict[str, Any], *, template_path: str | os.PathLike[str] | None = None,
+    manifest_bytes: bytes | None = None,
+) -> VisualPlan:
+    """Freeze reviewed input identity and author-order visual semantics before pagination."""
+    markdown_sha256 = document.get("markdown_sha256")
+    if not isinstance(markdown_sha256, str) or len(markdown_sha256) != 64:
+        raise ValueError("visual planning requires parse_document markdown_sha256")
+    manifest_sha256 = hashlib.sha256(manifest_bytes if manifest_bytes is not None else canonical_json(manifest)).hexdigest()
+    if template_path is None:
+        raise ValueError("visual planning requires the controlled template path")
+    descriptor = -1
+    try:
+        descriptor = os.open(template_path, os.O_RDONLY | os.O_NOFOLLOW)
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise OSError("template is not a regular file")
+        digest = hashlib.sha256()
+        while chunk := os.read(descriptor, 1024 * 1024):
+            digest.update(chunk)
+        template_sha256 = digest.hexdigest()
+    except OSError as exc:
+        raise ValueError("visual planning requires a readable controlled template") from exc
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+    slides: list[VisualSlide] = []
+    diagnostics: list[RenderDiagnostic] = []
+    for semantic in visual_semantics(document):
+        layout = semantic["layout"]
+        layout_manifest = manifest.get("layouts", {}).get(layout, {})
+        bindings = tuple(_read_media_binding(reference) for reference in semantic["media"])
+        for binding in bindings:
+            if not binding.confirmed:
+                diagnostics.append(RenderDiagnostic(
+                    code=binding.diagnostic_code or "MEDIA_INVALID", message="媒体未通过冻结计划安全校验。",
+                    severity="error", source_line=binding.source_line,
+                    logical_indices=(int(semantic["logical_index"]),),
+                    fix="恢复受支持的本地 PNG 或 JPEG 媒体后重新规划。",
+                ))
+        semantics = (
+            ("block_kinds", ",".join(semantic["block_kinds"])),
+            ("media_count", str(len(bindings))),
+        )
+        slides.append(VisualSlide(
+            logical_index=int(semantic["logical_index"]), source_line=int(semantic["source_line"]),
+            layout=layout, title=semantic["title"], visual_semantics=semantics,
+            candidate_capacity=_stable_capacity(layout_manifest.get("visual_capacity")),
+            object_roles=tuple(str(role) for role in layout_manifest.get("object_roles", ())),
+            media_bindings=bindings,
+        ))
+    return VisualPlan(markdown_sha256, manifest_sha256, template_sha256, tuple(slides), tuple(diagnostics))
+
+
+_PRESET_LAYOUTS = frozenset({"hero-evidence", "annotated-image", "process-overlay", "kpi-evidence", "gallery", "image-text"})
+
+
+def _visual_diagnostic(
+    code: str, layout: str, logical_index: int, source_line: int, group_index: int, fix: str,
+) -> RenderDiagnostic:
+    """Create a stable, directly actionable visual-planning failure."""
+    return RenderDiagnostic(
+        code=code,
+        message=(f"布局 {layout} 的原子组 {group_index} 无法映射到受控 manifest 预设。"),
+        severity="error",
+        source_line=source_line,
+        logical_indices=(logical_index,),
+        fix=fix,
+    )
+
+
+def _slot_by_id(layout_manifest: dict[str, Any], slot_id: str) -> dict[str, Any]:
+    return next(
+        (slot for slot in layout_manifest.get("slots", ()) if isinstance(slot, dict) and slot.get("id") == slot_id),
+        {},
+    )
+
+
+def _freeze_emitter_font_sizes(layout_manifest: dict[str, Any]) -> tuple[tuple[str, float], ...]:
+    """Freeze every manifest text budget consumed by the native emitter.
+
+    The emitter may use manifest geometry and object presets, but its font choices
+    are part of the reviewed physical projection.  Keep the key path literal so a
+    later emitter call cannot silently introduce an unfrozen fallback.
+    """
+    fonts: list[tuple[str, float]] = []
+
+    def visit(value: object, path: tuple[str, ...]) -> None:
+        if not isinstance(value, dict):
+            return
+        budget = value.get("text_budget")
+        if isinstance(budget, dict):
+            for bound in ("min", "max"):
+                raw = budget.get(f"font_size_{bound}")
+                if isinstance(raw, (int, float)):
+                    fonts.append((f"font.{'.'.join(path)}.{bound}", float(raw)))
+        nested = value.get("subregions")
+        if isinstance(nested, dict):
+            for key, child in nested.items():
+                visit(child, (*path, "subregions", str(key)))
+        node_template = value.get("node_template")
+        if isinstance(node_template, dict):
+            visit(node_template, (*path, "node_template"))
+
+    for slot in layout_manifest.get("slots", ()):
+        if isinstance(slot, dict) and isinstance(slot.get("id"), str):
+            visit(slot, (str(slot["id"]),))
+    return tuple(fonts)
+
+
+def _variant_counts(layout: str, layout_manifest: dict[str, Any]) -> tuple[int, ...]:
+    """Return the manifest-owned item counts in canonical numeric order."""
+    if layout == "hero-evidence":
+        values = _slot_by_id(layout_manifest, "kpi_cards").get("item_presets", {})
+    elif layout == "kpi-evidence":
+        values = _slot_by_id(layout_manifest, "kpi_cards").get("item_presets", {})
+    elif layout == "annotated-image":
+        values = _slot_by_id(layout_manifest, "annotations").get("fixed_anchors", {})
+    elif layout == "process-overlay":
+        values = _slot_by_id(layout_manifest, "process_nodes").get("node_counts", ())
+    elif layout == "gallery":
+        values = _slot_by_id(layout_manifest, "gallery_items").get("item_presets", {})
+    elif layout == "image-text":
+        values = _slot_by_id(layout_manifest, "media").get("item_presets", {})
+    else:
+        return ()
+    if isinstance(values, dict):
+        values = values.keys()
+    try:
+        return tuple(sorted({int(value) for value in values if int(value) > 0}))
+    except (TypeError, ValueError):
+        return ()
+
+
+def _atomic_group(
+    kind: str, group_index: int, source_line: int, *values: str,
+) -> tuple[str, ...]:
+    """A compact immutable group identity; all payload remains in its frozen fragment."""
+    return (f"id={group_index}", f"kind={kind}", f"source_line={source_line}", *values)
+
+
+def _visual_atomic_groups(
+    logical: dict[str, Any], visual_slide: VisualSlide,
+) -> tuple[tuple[tuple[str, ...], ...], tuple[BlockFragment, ...]]:
+    """Build indivisible source-order units for the controlled visual layouts."""
+    layout = visual_slide.layout
+    blocks = tuple(logical.get("blocks", ()))
+    groups: list[tuple[str, ...]] = []
+    fragments: list[BlockFragment] = []
+
+    def add(kind: str, source_line: int, metadata: tuple[tuple[str, str], ...], *identity: str) -> None:
+        group_index = len(groups)
+        groups.append(_atomic_group(kind, group_index, source_line, *identity))
+        fragments.append(BlockFragment(
+            kind="visual-group", logical_index=visual_slide.logical_index, block_index=group_index,
+            fragment_index=0, source_line=source_line, metadata=metadata,
+        ))
+
+    if layout in {"gallery", "image-text"}:
+        for media_index, binding in enumerate(visual_slide.media_bindings):
+            block = next((item for item in blocks if int(item.get("source_line", -1)) == binding.source_line and item.get("kind") == "image"), {})
+            caption = str(block.get("caption", "")).strip()
+            add(
+                "media-caption", binding.source_line,
+                (("media_index", str(media_index)), ("caption", caption), ("media_sha256", binding.sha256 or "")),
+                f"media={media_index}", f"caption={caption}", f"sha256={binding.sha256 or ''}",
+            )
+    elif layout in {"hero-evidence", "kpi-evidence"}:
+        table = next((item for item in blocks if item.get("kind") == "table"), {})
+        for row_index, row in enumerate(table.get("rows", ())):
+            values = tuple(str(value) for value in row)
+            add("kpi-card", int(table.get("source_line", visual_slide.source_line)) + row_index + 2,
+                (("row", "|".join(values)),), f"row={row_index}", f"value={'|'.join(values)}")
+    elif layout == "annotated-image":
+        labels = next((item for item in blocks if item.get("kind") == "list"), {})
+        for label_index, label in enumerate(labels.get("items", ())):
+            source_line = int(labels.get("source_line", visual_slide.source_line)) + label_index
+            add("annotation", source_line, (("label", str(label)),),
+                f"number={label_index + 1}", f"label={str(label)}", f"anchor={label_index + 1}", f"leader={label_index + 1}")
+    elif layout == "process-overlay":
+        table = next((item for item in blocks if item.get("kind") == "table"), {})
+        for step_index, row in enumerate(table.get("rows", ())):
+            values = tuple(str(value) for value in row)
+            source_line = int(table.get("source_line", visual_slide.source_line)) + step_index + 2
+            connector = "none" if step_index == 0 else f"{step_index - 1}->{step_index}"
+            add("process-node", source_line, (("row", "|".join(values)), ("connector", connector)),
+                f"step={step_index}", f"value={'|'.join(values)}", f"connector={connector}")
+    return tuple(groups), tuple(fragments)
+
+
+def _page_ranges(group_count: int, capacities: tuple[int, ...]) -> tuple[tuple[int, int], ...]:
+    """Minimize pages, then greedily take the longest earliest prefix on every page."""
+    if group_count <= 0 or not capacities:
+        return ()
+    maximum = max(capacities)
+    result: list[tuple[int, int]] = []
+    start = 0
+    while start < group_count:
+        end = min(group_count, start + maximum)
+        remaining = group_count - end
+        # A non-final page must leave an expressible non-empty remainder.
+        if remaining and remaining < min(capacities):
+            end -= min(capacities) - remaining
+        if end <= start or end - start not in capacities:
+            # All controlled manifests currently accept every count from 1 to max for media,
+            # or only a single already-validated page for the other layouts.
+            candidates = [count for count in capacities if count <= group_count - start]
+            if not candidates:
+                return ()
+            end = start + max(candidates)
+        result.append((start, end))
+        start = end
+    return tuple(result)
+
+
+def build_physical_deck_plan(
+    document: dict[str, Any], manifest: dict[str, Any], visual_plan: VisualPlan, *, include_implicit: bool = False,
+) -> PhysicalDeckPlan:
+    """Freeze manifest variants, atomic groups and physical mapping before any emission.
+
+    This planner deliberately consumes parser output only.  It never measures text, searches
+    for media again, or selects geometry outside the checked manifest preset set.
+    """
+    diagnostics: list[RenderDiagnostic] = list(visual_plan.diagnostics)
+    slides: list[PhysicalSlide] = []
+    mapping: list[tuple[int, tuple[int, ...]]] = []
+    logical_slides = tuple(document.get("logical_slides", ()))
+    if len(logical_slides) != len(visual_plan.slides):
+        diagnostic = RenderDiagnostic("VISUAL_PLAN_MISMATCH", "VisualPlan 与已审阅逻辑页数量不一致。", "error", 1,
+                                      fix="使用同一份已审阅 Markdown 重新构建 VisualPlan。")
+        return bind_physical_plan_integrity(PhysicalDeckPlan(
+            (), (*diagnostics, diagnostic), (), visual_plan.sha256,
+            visual_plan.markdown_sha256, visual_plan.manifest_sha256, visual_plan.template_sha256,
+        ))
+    for logical, visual_slide in zip(logical_slides, visual_plan.slides):
+        layout = visual_slide.layout
+        logical_index = visual_slide.logical_index
+        source_line = visual_slide.source_line
+        if str(logical.get("layout", "")) != layout or int(logical.get("source_line", 1)) != source_line:
+            diagnostics.append(RenderDiagnostic("VISUAL_PLAN_MISMATCH", "VisualPlan 与逻辑页来源不一致。", "error", source_line,
+                                                (logical_index,), fix="使用同一份已审阅 Markdown 重新构建 VisualPlan。"))
+            continue
+        if any(not binding.confirmed for binding in visual_slide.media_bindings):
+            diagnostics.append(_visual_diagnostic(
+                "VISUAL_MEDIA_BINDING_INVALID", layout, logical_index, source_line, 0,
+                "恢复通过安全校验的本地 PNG 或 JPEG 媒体后重新规划。",
+            ))
+            continue
+        layout_manifest = manifest.get("layouts", {}).get(layout)
+        if not isinstance(layout_manifest, dict):
+            diagnostics.append(_visual_diagnostic("VISUAL_LAYOUT_UNKNOWN", layout, logical_index, source_line, 0,
+                                                  "恢复 manifest 中受支持的布局后重新规划。"))
+            continue
+        if layout not in _PRESET_LAYOUTS:
+            # Existing layouts retain their prior pagination contract; bind the resulting pages
+            # to this VisualPlan without inventing a visual preset.
+            legacy = build_deck_plan({**document, "logical_slides": (logical,), "implicit_slides": ()}, manifest)
+            indices: list[int] = []
+            for continuation, legacy_slide in enumerate(legacy.slides):
+                physical_index = len(slides)
+                indices.append(physical_index)
+                rebound_fragments = tuple(replace(fragment, logical_index=logical_index) for fragment in legacy_slide.fragments)
+                frozen_fonts = _freeze_emitter_font_sizes(layout_manifest)
+                slides.append(replace(legacy_slide, logical_index=logical_index, physical_index=physical_index,
+                                      fragments=rebound_fragments,
+                                      continuation=continuation, affected_pages=(physical_index,),
+                                      selected_font_sizes=(*legacy_slide.selected_font_sizes, *frozen_fonts),
+                                      candidate_capacity=visual_slide.candidate_capacity,
+                                      object_roles=visual_slide.object_roles,
+                                      media_bindings=visual_slide.media_bindings))
+            diagnostics.extend(legacy.diagnostics)
+            mapping.append((logical_index, tuple(indices)))
+            continue
+        groups, fragments = _visual_atomic_groups(logical, visual_slide)
+        capacities = _variant_counts(layout, layout_manifest)
+        ranges = _page_ranges(len(groups), capacities)
+        if not ranges:
+            diagnostics.append(_visual_diagnostic("VISUAL_VARIANT_UNAVAILABLE", layout, logical_index, source_line, 0,
+                                                  "将原子内容数量调整为 manifest 支持的固定预设容量。"))
+            continue
+        indices: list[int] = []
+        for continuation, (start, end) in enumerate(ranges):
+            count = end - start
+            if count not in capacities:
+                group_source_line = int(groups[start][2].split("=", 1)[1])
+                diagnostics.append(_visual_diagnostic("VISUAL_VARIANT_UNAVAILABLE", layout, logical_index,
+                                                      group_source_line, start,
+                                                      "将原子内容数量调整为 manifest 支持的固定预设容量。"))
+                continue
+            physical_index = len(slides)
+            indices.append(physical_index)
+            preset_id = f"{layout}:{count}"
+            slots = (("variant_count", str(count)), ("preset_id", preset_id))
+            frozen_fonts = _freeze_emitter_font_sizes(layout_manifest)
+            # image-text is a fixed media-preset layout, but its editable text
+            # frame still consumes the legacy body typography path at emission.
+            if layout == "image-text":
+                body_typography = _selected_body_typography(_slot(layout_manifest, "body"))
+                frozen_fonts = (("body", body_typography["font_size"]), *frozen_fonts)
+                slots = (*slots, *_typography_slot_values("body", body_typography))
+            slides.append(PhysicalSlide(
+                logical_index=logical_index, physical_index=physical_index, layout=layout, title=visual_slide.title,
+                fragment_index=continuation, source_line=source_line, fragments=fragments[start:end],
+                continuation=continuation, variant=preset_id, preset_id=preset_id,
+                candidate_capacity=visual_slide.candidate_capacity, object_roles=visual_slide.object_roles,
+                atomic_groups=groups[start:end], media_bindings=visual_slide.media_bindings,
+                affected_pages=(physical_index,), slot_values=slots,
+                selected_font_sizes=frozen_fonts,
+            ))
+        if indices:
+            mapping.append((logical_index, tuple(indices)))
+    # The template-owned closing page is still part of the frozen physical deck.  It
+    # has no authored visual choice, but must not be appended by the emitter.
+    closing_specs = ([item for item in document.get("implicit_slides", ()) if item.get("layout") == "closing"]
+                     if include_implicit else [])
+    if closing_specs:
+        physical_index = len(slides)
+        closing_manifest = manifest.get("layouts", {}).get("closing", {})
+        closing_fragment = BlockFragment(
+            kind="closing", logical_index=len(logical_slides), block_index=0, fragment_index=0,
+            source_line=1, metadata=(("pptx_layout", str(closing_manifest.get("pptx_layout", ""))),),
+        )
+        slides.append(PhysicalSlide(
+            logical_index=len(logical_slides), physical_index=physical_index, layout="closing", title="",
+            fragment_index=0, source_line=1, fragments=(closing_fragment,),
+            notes_intent="总结本次汇报的核心内容，邀请听众提问并进入交流答疑。",
+            affected_pages=(physical_index,),
+        ))
+    return bind_physical_plan_integrity(PhysicalDeckPlan(
+        tuple(slides), tuple(diagnostics), tuple(mapping), visual_plan.sha256,
+        visual_plan.markdown_sha256, visual_plan.manifest_sha256, visual_plan.template_sha256,
+    ))
 
 
 @dataclass(frozen=True, slots=True)

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import inspect
 import json
 import os
@@ -138,7 +139,35 @@ def empty_document(input_path: Path) -> dict[str, Any]:
         "errors": [],
         "warnings": [],
         "input": str(input_path),
+        "markdown_sha256": None,
     }
+
+
+def visual_semantics(document: dict[str, Any]) -> tuple[dict[str, Any], ...]:
+    """Expose author-order visual inputs without reparsing Markdown or adding style controls."""
+    result: list[dict[str, Any]] = []
+    for logical_index, slide in enumerate(document.get("logical_slides", ())):
+        media = tuple(
+            {
+                "logical_reference": str(block.get("authored_path", "")),
+                "source_line": int(block.get("source_line", slide.get("source_line", 1))),
+                "resolved_path": str(block.get("resolved_path", "")),
+                "placement": str(block.get("placement", "contain")),
+                "caption": str(block.get("caption", "")),
+                "exists": bool(block.get("exists", False)),
+            }
+            for block in slide.get("blocks", ())
+            if block.get("kind") == "image"
+        )
+        result.append({
+            "logical_index": logical_index,
+            "source_line": int(slide.get("source_line", 1)),
+            "layout": str(slide.get("layout", "")),
+            "title": str(slide.get("title") or document.get("document_title") or ""),
+            "media": media,
+            "block_kinds": tuple(str(block.get("kind", "")) for block in slide.get("blocks", ())),
+        })
+    return tuple(result)
 
 
 def yaml_node_count(node: yaml.Node | None) -> int:
@@ -197,8 +226,14 @@ def media_block(line: str, line_no: int, input_path: Path, heading: str | None, 
                       slide=slide, layout=layout, fix="在 ![] 中填写简短图注；必要时可使用文件名。")
     is_network = bool(re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", authored))
     raw_path = Path(authored)
-    resolved = raw_path if raw_path.is_absolute() else input_path.parent / raw_path
-    resolved = resolved.resolve(strict=False)
+    # Keep the lexical path for the planner's descriptor-by-descriptor no-follow
+    # read.  Resolving here would erase an intermediate symlink before that
+    # security boundary has a chance to reject it.
+    # The Markdown file itself is the trusted starting point for relative media;
+    # canonicalize that parent before appending the authored path so platform
+    # aliases such as macOS /var do not look like attacker-controlled links.
+    resolved = raw_path if raw_path.is_absolute() else input_path.resolve().parent / raw_path
+    resolved = Path(os.path.abspath(resolved))
     exists = (not is_network) and resolved.is_file()
     if not exists:
         collector.add(
@@ -398,6 +433,7 @@ def parse_document(input_path: Path, manifest: dict[str, Any]) -> dict[str, Any]
         collector.add("INPUT_UNREADABLE", "输入文件不存在或不可读取。", fix="提供可读取的普通 Markdown 文件。")
         document["errors"] = [d.to_dict() for d in collector.sorted()]
         return document
+    document["markdown_sha256"] = hashlib.sha256(raw_bytes).hexdigest()
     if len(raw_bytes) > MAX_INPUT_BYTES:
         collector.add("RESOURCE_INPUT_BYTES", "输入超过 2 MiB 限制。", fix="缩小 Markdown 文件后重试。")
         document["errors"] = [d.to_dict() for d in collector.sorted()]

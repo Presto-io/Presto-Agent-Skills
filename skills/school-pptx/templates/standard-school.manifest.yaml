@@ -533,7 +533,7 @@ layouts:
         purpose: Fixed editable KPI card column.
         kind: kpi-cards
         geometry: {x: 7250000, y: 1825625, width: 4327600, height: 3658870}
-        text_budget: {max_chars: 120, max_lines: 6, font_size_min: 16, font_size_max: 24, overflow: paginate}
+        text_budget: {max_chars: 120, max_lines: 6, font_size_min: 12, font_size_max: 20, overflow: paginate}
         empty_slot: fail
         continuation: paginate
         item_presets: {2: [{card: {x: 7250000, y: 1900000, width: 4327600, height: 1600000}}, {card: {x: 7250000, y: 3700000, width: 4327600, height: 1600000}}], 3: [{card: {x: 7250000, y: 1850000, width: 4327600, height: 1050000}}, {card: {x: 7250000, y: 3020000, width: 4327600, height: 1050000}}, {card: {x: 7250000, y: 4190000, width: 4327600, height: 1050000}}]}
