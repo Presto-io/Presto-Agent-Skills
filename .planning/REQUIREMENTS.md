@@ -8,23 +8,23 @@
 
 ### 受控视觉合同
 
-- [ ] **VIS-01**: `standard-school` 继续作为唯一主题；所有新增视觉 token、geometry、裁切与层级均由 manifest/template 拥有，Markdown 不新增坐标、尺寸、字体、颜色、背景、裁切、动画或 raw OOXML 控制面。
-- [ ] **VIS-02**: 作者可通过受限语义为适配内容的页面使用 `hero-evidence`、`annotated-image`、`process-overlay`、`kpi-evidence` 四类新布局，且每类具有独有的非空原生对象角色集合。
-- [ ] **VIS-03**: `gallery` 和既有图文能力拥有 1–4 项的固定视觉预设与一致图注结构，避免所有媒体页退化为同一种左右图文构图。
+- [x] **VIS-01**: `standard-school` 继续作为唯一主题；所有新增视觉 token、geometry、裁切与层级均由 manifest/template 拥有，Markdown 不新增坐标、尺寸、字体、颜色、背景、裁切、动画或 raw OOXML 控制面。
+- [x] **VIS-02**: 作者可通过受限语义为适配内容的页面使用 `hero-evidence`、`annotated-image`、`process-overlay`、`kpi-evidence` 四类新布局，且每类具有独有的非空原生对象角色集合。
+- [x] **VIS-03**: `gallery` 和既有图文能力拥有 1–4 项的固定视觉预设与一致图注结构，避免所有媒体页退化为同一种左右图文构图。
 
 ### 冻结计划与原生对象
 
-- [ ] **PLAN-01**: 渲染器在发射 PPTX 前，将受限视觉意图、variant、容量、逻辑到物理映射、媒体绑定和对象角色冻结到不可变物理计划；emitter 不重新选择布局、分页、裁切或字号。
-- [ ] **PLAN-02**: 同一已审阅 Markdown、确认媒体与 manifest 输入可重复得到相同视觉 projection；任何超量标注、流程步骤或 KPI 卡按固定预算分页或以稳定诊断失败。
-- [ ] **OBJ-01**: 标题、图注、数字、单位、标注、引线、流程节点、数据卡和表格全部以原生可编辑 PowerPoint/WPS 对象生成；整页截图和包含信息层文字的位图为硬失败。
-- [ ] **MEDIA-01**: 新布局只消费已验证的本地媒体，沿用 bounded descriptor-read、允许格式、hash 绑定与 `contain` 策略；不得联网搜图、下载图标、生成图片或在运行期下载字体/模板。
+- [x] **PLAN-01**: 渲染器在发射 PPTX 前，将受限视觉意图、variant、容量、逻辑到物理映射、媒体绑定和对象角色冻结到不可变物理计划；emitter 不重新选择布局、分页、裁切或字号。
+- [x] **PLAN-02**: 同一已审阅 Markdown、确认媒体与 manifest 输入可重复得到相同视觉 projection；任何超量标注、流程步骤或 KPI 卡按固定预算分页或以稳定诊断失败。
+- [x] **OBJ-01**: 标题、图注、数字、单位、标注、引线、流程节点、数据卡和表格全部以原生可编辑 PowerPoint/WPS 对象生成；整页截图和包含信息层文字的位图为硬失败。
+- [x] **MEDIA-01**: 新布局只消费已验证的本地媒体，沿用 bounded descriptor-read、允许格式、hash 绑定与 `contain` 策略；不得联网搜图、下载图标、生成图片或在运行期下载字体/模板。
 
 ### 验证与人工验收
 
-- [ ] **VERIFY-01**: 一份完整 fixture 覆盖旧 11 个布局和四种新布局，并通过 Markdown→frozen-plan→重开 PPTX 的结构/对象/媒体三向验证。
-- [ ] **VERIFY-02**: 固定自动验证 registry 覆盖样式越权、缺失/非法媒体、媒体极端比例、过量视觉项、对象可编辑性、determinism、既有回归和 clean-delivery；不得动态跳过或用截图/像素评分宣称通过。
+- [x] **VERIFY-01**: 一份完整 fixture 覆盖旧 11 个布局和四种新布局，并通过 Markdown→frozen-plan→重开 PPTX 的结构/对象/媒体三向验证。
+- [x] **VERIFY-02**: 固定自动验证 registry 覆盖样式越权、缺失/非法媒体、媒体极端比例、过量视觉项、对象可编辑性、determinism、既有回归和 clean-delivery；不得动态跳过或用截图/像素评分宣称通过。
 - [ ] **UAT-01**: 对本次 artifact SHA-256 绑定的真实 PowerPoint 或 WPS UAT 确认主体样式稳定、四种构图可读、媒体无失真、信息层可编辑/移动/取消组合，且自动 PASS 不代替人工验收。
-- [ ] **DOC-01**: canonical `SKILL.md`、Markdown contract、renderer/verification/UAT references 和六 runtime adapter 准确说明新增受控能力、离线边界、安装验证与人工 UAT 步骤。
+- [x] **DOC-01**: canonical `SKILL.md`、Markdown contract、renderer/verification/UAT references 和六 runtime adapter 准确说明新增受控能力、离线边界、安装验证与人工 UAT 步骤。
 
 ## Deferred Requirements
 
@@ -47,17 +47,17 @@
 
 | Requirement | Phase | Status |
 |---|---|---|
-| VIS-01 | Phase 50 | Pending |
-| VIS-02 | Phase 50 | Pending |
-| VIS-03 | Phase 50 | Pending |
-| PLAN-01 | Phase 51 | Pending |
-| PLAN-02 | Phase 51 | Pending |
-| OBJ-01 | Phase 52 | Pending |
-| MEDIA-01 | Phase 52 | Pending |
-| VERIFY-01 | Phase 53 | Pending |
-| VERIFY-02 | Phase 53 | Pending |
+| VIS-01 | Phase 50 | Complete |
+| VIS-02 | Phase 50 | Complete |
+| VIS-03 | Phase 50 | Complete |
+| PLAN-01 | Phase 51 | Complete |
+| PLAN-02 | Phase 51 | Complete |
+| OBJ-01 | Phase 52 | Complete |
+| MEDIA-01 | Phase 52 | Complete |
+| VERIFY-01 | Phase 53 | Complete |
+| VERIFY-02 | Phase 53 | Complete |
 | UAT-01 | Phase 53 | Pending |
-| DOC-01 | Phase 53 | Pending |
+| DOC-01 | Phase 53 | Complete |
 
 **Coverage:**
 - v1 requirements: 11 total

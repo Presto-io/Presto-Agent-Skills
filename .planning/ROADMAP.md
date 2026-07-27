@@ -12,9 +12,9 @@ v1.20 为 `school-pptx` 增加受控的教学视觉表达，同时保持 `standa
 
 ## Phases
 
-- [ ] **Phase 50: 受控视觉合同与模板预设** - 锁定新增构图的语义、固定预设、容量与 manifest 所有权。
-- [ ] **Phase 51: 冻结视觉规划与物理映射** - 在发射前确定并可复算视觉 variant、分页、媒体和对象角色。
-- [ ] **Phase 52: 原生对象与受控媒体发射** - 从冻结计划生成可编辑信息层和受审计的本地媒体对象。
+- [x] **Phase 50: 受控视觉合同与模板预设** - 锁定新增构图的语义、固定预设、容量与 manifest 所有权。
+- [x] **Phase 51: 冻结视觉规划与物理映射** - 在发射前确定并可复算视觉 variant、分页、媒体和对象角色。
+- [x] **Phase 52: 原生对象与受控媒体发射** - 从冻结计划生成可编辑信息层和受审计的本地媒体对象。
 - [ ] **Phase 53: 完整验证、Runtime 文档与真人 UAT** - 用固定证据链证明新旧布局、离线边界与真实 viewer 可用性。
 
 ## Phase Details
@@ -71,7 +71,7 @@ v1.20 为 `school-pptx` 增加受控的教学视觉表达，同时保持 `standa
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 50. 受控视觉合同与模板预设 | 2/2 | Executed — awaiting audit | - |
-| 51. 冻结视觉规划与物理映射 | 0/TBD | Not started | - |
-| 52. 原生对象与受控媒体发射 | 0/TBD | Not started | - |
-| 53. 完整验证、Runtime 文档与真人 UAT | 0/TBD | Not started | - |
+| 50. 受控视觉合同与模板预设 | 2/2 | Completed | 2026-07-23 |
+| 51. 冻结视觉规划与物理映射 | 3/3 | Completed | 2026-07-23 |
+| 52. 原生对象与受控媒体发射 | 1/1 | Completed | 2026-07-24 |
+| 53. 完整验证、Runtime 文档与真人 UAT | 2/2 | Awaiting human UAT | - |

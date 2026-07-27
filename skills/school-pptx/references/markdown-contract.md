@@ -1,6 +1,6 @@
 # school-pptx Markdown 契约
 
-本文档是 `school-pptx` v1.17 唯一公开的 Markdown 写作契约。Markdown 只描述逻辑内容；布局集合、槽位类型和文字预算以 `templates/standard-school.manifest.yaml` 为机器事实源。
+本文档是 `school-pptx` v1.20 唯一公开的 Markdown 写作契约。Markdown 只描述逻辑内容；布局集合、槽位类型和文字预算以 `templates/standard-school.manifest.yaml` 为机器事实源。
 
 ## 可复制的最小示例
 
@@ -151,6 +151,8 @@ D-13 规定图片与可选图注是不可拆的复合块，后续使用 `contain
 
 `annotated-image` 的编号只映射到 manifest 所有的固定插槽；作者不写坐标，也不写自由段落说明。`process-overlay` 可以没有图片，缺图时使用纯原生流程预设。KPI 的“数值”列只接受数值字面量；单位、标签和短脚注可留空，不支持趋势、图表或 SVG。
 
+新增布局的媒体只能是 Markdown 相对路径或显式绝对路径解析到的本地常规文件。渲染器先在受控路径、大小、格式和解码边界内完成单次 descriptor-read，冻结 SHA-256 与 payload 后才发射图片；后续发射只消费该 payload，不会按路径重读、联网搜索、下载替代图片、字体、图标或模板。媒体始终 `contain`，不允许作者请求裁剪或拉伸。
+
 `gallery` 和 `image-text` 均使用 manifest 固定的 1--4 项媒体预设，图片及图注不能拆开。标题、图注、标注、步骤和 KPI 的溢出仅作为后续冻结分页的输入；本阶段不会缩字、改变预设或承诺物理分页，超过受控能力时将返回可定位错误。
 
 ## 行内语义与禁用面
@@ -193,4 +195,4 @@ D-21 规定两个公开文件分别暂存、验证和替换，发布顺序固定
 
 Phase 43 直接消费 `metadata`、`document_title`、`contents_entries`、`logical_slides`、`implicit_slides`、`coverage`、`errors` 和 `warnings`，以及块、位置、notes、媒体和 overflow evidence；不得重新解释 Markdown。
 
-本契约不公开 PPTX geometry values、坐标、renderer 实现、physical pagination 实现、continuation title、notes XML、模板视觉修改或 package-manager 依赖。Phase 43 负责 PPTX 对象与物理分页；Phase 44 负责 runtime adapters、最终验证与 final UAT。本阶段不实现这些下游工作。
+本契约不公开 PPTX geometry values、坐标、renderer 实现、physical pagination 实现、continuation title、notes XML、模板视觉修改或 package-manager 依赖。renderer 负责 PPTX 对象与物理分页；verification contract 负责自动证据与 runtime 边界；最终接受仍需真人 UAT。本阶段不实现这些下游工作。

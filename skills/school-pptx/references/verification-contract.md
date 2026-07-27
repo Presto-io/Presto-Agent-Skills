@@ -28,7 +28,7 @@ skills/school-pptx/scripts/school-pptx.sh verify --workdir <caller-workdir>
 3. `template-validation`
 4. `canonical-render`
 5. `structural-inspection`
-6. `phase-43-regression`
+6. `phase-53-regression`
 7. `negative-cases`
 8. `evidence-integrity`
 
@@ -53,33 +53,22 @@ skills/school-pptx/scripts/school-pptx.sh verify --workdir <caller-workdir>
 
 这些 gate 只证明 current DeliverySpec 的 exact set+bytes、handled-failure rollback、归档引用和 OOXML 可读性。它们不证明多路径硬原子、`SIGKILL`/断电恢复，也不将 PowerPoint/WPS 人工视觉、编辑、notes 或导出检查标为 PASS。
 
-## Phase 43 Nested Authority
+## Phase 53 Nested Authority
 
-`phase-43-regression` 必须调用既有 21-gate authority，且按下列顺序满足 `required == called`、唯一、`dynamic_skips == 0`：
+`phase-53-regression` 必须调用固定 full-fixture authority，且按下列顺序满足 `required == called`、唯一、`dynamic_skips == 0`：
 
-1. `contract-model`
-2. `pagination`
-3. `frozen-slot-content`
-4. `frozen-numbering-row-heights`
-5. `ooxml-bootstrap`
-6. `editable-objects`
-7. `code-literal-roundtrip`
-8. `mixed-fragment-capacity`
-9. `frame-capacity-consistency`
-10. `emit-structure`
-11. `frozen-plan-emission`
-12. `cli-publication`
-13. `best-effort`
-14. `publication-safety`
-15. `publication-descriptor-race`
-16. `table-header-only`
-17. `object-error-bounded`
-18. `media-descriptor-binding`
-19. `template-reader-security`
-20. `determinism`
-21. `phase_41_42_regression`
+1. `full-fixture-frozen-plan`
+2. `full-fixture-negative-media`
+3. `full-fixture-reopen`
+4. `full-fixture-clean-delivery`
 
-这层是 nested regression，不替代顶层八 gate，也不能复制旧 JSON 作为 fresh result。
+它从唯一完整 fixture 重算 14 个显式布局和模板隐式 `closing`，覆盖既有 11 种受控布局与 `hero-evidence`、`annotated-image`、`process-overlay`、`kpi-evidence`。它验证 Markdown、冻结计划和重开 PPTX 的布局、对象角色和本地媒体 hash；并覆盖路径穿越、缺失/损坏媒体和超量 KPI。`full-fixture-reopen` 需要 `python-pptx` 与 `lxml` 实际可用，缺失时以非零失败关闭，绝不动态跳过或把规划层结果写成 PPTX reopen PASS。
+
+可单独复跑该 authority：
+
+```bash
+python3 skills/school-pptx/scripts/verify_pptx_renderer.py phase-53
+```
 
 ## Dependency Semantics
 
@@ -103,13 +92,13 @@ skills/school-pptx/scripts/school-pptx.sh verify --workdir <caller-workdir>
 - negative registry/cases 与 protected-hash observations；
 - bounded stable diagnostics。
 
-证据禁止绝对用户路径、PPTX/raw Markdown bytes、unbounded text/list、traceback、secret 或 PEM 内容。`transition_mode` 只允许 `none|preserved|generated`；当前 `none` 是合法 observed result。canonical baseline 是 13 logical slides → 26 physical slides，但 aggregate 必须从 fresh source/PPTX raw operands 重算，不能硬编码 PASS。
+证据禁止绝对用户路径、PPTX/raw Markdown bytes、unbounded text/list、traceback、secret 或 PEM 内容。`transition_mode` 只允许 `none|preserved|generated`；当前 `none` 是合法 observed result。canonical baseline 是 17 logical slides → 28 physical slides，但 aggregate 必须从 fresh source/PPTX raw operands 重算，不能硬编码 PASS。
 
 ## Freshness, Exit Rules, and Troubleshooting
 
-- fresh PASS：全部 8/6/21 registry 完整，当前 evidence 从本次 artifacts 观察并通过 integrity。
+- fresh PASS：全部 8/6/4 registry 完整，当前 evidence 从本次 artifacts 观察并通过 integrity。
 - stale/failed：后续失败必须把 current evidence 更新为 failed；历史成功不能覆盖本次状态。
-- public exit `0` 只表示自动验证通过；dependency、render、negative、registry、evidence 或 documentation-integrity 失败均非零。
+- public exit `0` 只表示自动验证通过；dependency、render、negative、registry、evidence 或 documentation-integrity 失败均非零。Phase 53 full-fixture authority 失败不允许被旧 Phase 43 结果掩盖。
 - `VERIFY_DEPENDENCY_MISSING`：在调用方环境补齐 required Python packages，再重跑；verifier 不代为安装。
 - `VERIFY_WORKDIR_UNSAFE`：改用真实、可写、非 symlink 的调用方目录。
 - `VERIFY_EVIDENCE_INVALID`：检查 bounded current evidence、固定 registry、文档 canonical links/runtime rows 与源码 drift。

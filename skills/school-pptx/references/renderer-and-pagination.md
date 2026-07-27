@@ -2,6 +2,22 @@
 
 本 reference 记录 Phase 41–43 已冻结的用户可见行为。Markdown 语法以 [markdown-contract.md](markdown-contract.md) 为准，模板所有权以 [template-contract.md](template-contract.md) 为准；本文件不复制 renderer 实现或重新定义 geometry。
 
+## Frozen Emission Boundary
+
+- renderer 的唯一规划链为 `parse_document -> VisualPlan -> PhysicalDeckPlan -> emit_deck`。公开诊断和投影使用同一份冻结 PhysicalDeckPlan，不在发射阶段重新解析、分页或选择变体。
+- 受绑定的 PhysicalDeckPlan 固定 schema、Markdown/manifest/template SHA-256、VisualPlan SHA-256、连续物理页序号及完整 logical-to-physical mapping。emitter 在创建 PPTX 对象前验证这些字段。
+- 受控视觉布局还固定 manifest object roles、variant/preset、原子组和单次读取的媒体 payload/hash/format。缺失、未知或不匹配统一以 `PPTX_FROZEN_PLAN_INVALID` 拒绝；模板或调用输入哈希不匹配也不允许继续发射。
+- Phase 51 不在 emitter 中补推导、按路径替换冻结媒体、修改字号/裁切，或回退到旧布局分支。尚未实现的受控视觉原生对象稳定返回 `PPTX_VISUAL_NOT_IMPLEMENTED`；这不是渲染成功。
+- 既有未绑定物理计划只兼容既有布局，不能借此进入受控视觉布局。
+
+可运行的阶段验证：
+
+```sh
+python3 skills/school-pptx/scripts/verify_pptx_renderer.py phase-51
+```
+
+该验证只证明 Phase 51 的冻结边界。它明确不证明 Phase 52 的视觉原生对象发射，亦不证明 Phase 53 fixture 或人工 UAT。
+
 ## Logical Slides to Physical Slides
 
 - Markdown 中每个显式 slide 是逻辑页；模板拥有的 `closing` 在末尾隐式追加。
