@@ -31,24 +31,48 @@ die() {
   exit 1
 }
 
+resolve_python() {
+  local candidate
+
+  if [[ -n "${SCHOOL_PPTX_PYTHON:-}" ]]; then
+    candidate="$SCHOOL_PPTX_PYTHON"
+    [[ -x "$candidate" ]] || die "SCHOOL_PPTX_PYTHON is not an executable file: $candidate"
+  elif [[ -n "${VIRTUAL_ENV:-}" ]]; then
+    candidate="$VIRTUAL_ENV/bin/python"
+    [[ -x "$candidate" ]] || die "VIRTUAL_ENV does not contain an executable bin/python: $VIRTUAL_ENV"
+  else
+    candidate="$(command -v python3 || true)"
+    [[ -n "$candidate" ]] || die "python3 was not found; set SCHOOL_PPTX_PYTHON to a ready Python interpreter"
+  fi
+
+  printf '%s\n' "$candidate"
+}
+
 main() {
   local command="${1:-}"
+  local python
   if [[ $# -gt 0 ]]; then
     shift
   fi
 
   case "$command" in
+    validate|example|render|verify|template-report)
+      python="$(resolve_python)"
+      ;;
+  esac
+
+  case "$command" in
     validate|example)
-      "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/markdown_contract.py" "$SKILL_DIR" "$command" "$@"
+      "$python" "$SCRIPT_DIR/markdown_contract.py" "$SKILL_DIR" "$command" "$@"
       ;;
     render)
-      "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/pptx_render.py" "$SKILL_DIR" "$@"
+      "$python" "$SCRIPT_DIR/pptx_render.py" "$SKILL_DIR" "$@"
       ;;
     verify)
-      "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/verify_school_pptx.py" "$SKILL_DIR" "$@"
+      "$python" "$SCRIPT_DIR/verify_school_pptx.py" "$SKILL_DIR" "$@"
       ;;
     template-report)
-      "${SCHOOL_PPTX_PYTHON:-python3}" "$SCRIPT_DIR/template_report.py" "$SKILL_DIR" "$@"
+      "$python" "$SCRIPT_DIR/template_report.py" "$SKILL_DIR" "$@"
       ;;
     info)
       printf 'template: %s\n' "$SKILL_DIR/templates/standard-school.pptx"

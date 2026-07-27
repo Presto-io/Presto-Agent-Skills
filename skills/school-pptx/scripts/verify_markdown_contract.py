@@ -11,6 +11,7 @@ import inspect
 import io
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -698,6 +699,39 @@ def regression_gate(work: Path) -> None:
     require("templates/standard-school.pptx" in info.stdout and "templates/standard-school.manifest.yaml" in info.stdout, "info regression")
     help_result = run("--help", expected=0)
     require("school-pptx.sh validate --input <deck.md> [--out-json <logical-document.json>]" in help_result.stdout, "literal validate usage missing")
+
+    virtual_environment = work / "virtual-environment"
+    (virtual_environment / "bin").mkdir(parents=True)
+    selected_interpreter = virtual_environment / "bin" / "python"
+    selection_marker = work / "virtual-environment-selected"
+    selected_interpreter.write_text(
+        "#!/bin/sh\n"
+        f"printf '%s\\n' \"$0\" > {shlex.quote(str(selection_marker))}\n"
+        f"exec {shlex.quote(sys.executable)} \"$@\"\n",
+        encoding="utf-8",
+    )
+    selected_interpreter.chmod(0o700)
+    environment = os.environ.copy()
+    environment.pop("SCHOOL_PPTX_PYTHON", None)
+    environment["VIRTUAL_ENV"] = str(virtual_environment)
+    virtual_environment_result = subprocess.run(
+        [str(PUBLIC_CLI), "validate", "--input", str(FIXTURE)],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, env=environment,
+    )
+    require(virtual_environment_result.returncode == 0,
+            f"activated virtual environment was not selected: {virtual_environment_result.stdout}{virtual_environment_result.stderr}")
+    require(selection_marker.read_text(encoding="utf-8").strip() == str(selected_interpreter),
+            "virtual environment interpreter was not invoked")
+    require("Traceback" not in virtual_environment_result.stdout + virtual_environment_result.stderr,
+            "virtual environment selection leaked a stack trace")
+
+    environment["SCHOOL_PPTX_PYTHON"] = str(work / "missing-python")
+    explicit_missing_result = subprocess.run(
+        [str(PUBLIC_CLI), "validate", "--input", str(FIXTURE)],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, env=environment,
+    )
+    require(explicit_missing_result.returncode != 0 and "SCHOOL_PPTX_PYTHON is not an executable file" in explicit_missing_result.stderr,
+            "invalid explicit interpreter was not rejected")
 
 
 def full_fixture_gate(work: Path) -> None:
