@@ -7,7 +7,7 @@ FIXTURE_DIR="$SKILL_DIR/references/fixtures"
 RENDERER="$SKILL_DIR/scripts/gongwen.sh"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/gongwen-heading-test.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT
-mkdir "$TMP_DIR/clean" "$TMP_DIR/numbered" "$TMP_DIR/title"
+mkdir "$TMP_DIR/clean" "$TMP_DIR/numbered" "$TMP_DIR/title" "$TMP_DIR/utf8"
 
 cat > "$TMP_DIR/title/title.md" <<'EOF'
 ---
@@ -51,6 +51,14 @@ if grep -Fq '\\# 标题编号归一化测试' "$TMP_DIR/title/title.typ"; then
   printf 'Markdown 一级标题被错误输出为 Typst 正文。\n' >&2
   exit 1
 fi
+
+LC_ALL= LANG= "$RENDERER" render \
+  --input "$FIXTURE_DIR/heading-normalization-clean.md" \
+  --typ "$TMP_DIR/utf8/heading.typ" >/dev/null
+iconv -f UTF-8 -t UTF-8 "$TMP_DIR/utf8/heading.typ" >/dev/null || {
+  printf '无 locale 环境生成的 Typst 不是有效 UTF-8。\n' >&2
+  exit 1
+}
 
 if grep '^#let FONT_HEI' "$TMP_DIR/clean/heading.typ" | grep -Eq 'SimSun|STSong|Serif|宋体'; then
   printf '黑体 fallback 中出现了宋体类字体。\n' >&2

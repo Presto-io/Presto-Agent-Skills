@@ -62,6 +62,12 @@ run_render() {
   PATH="$BIN_DIR:$PATH" "$RENDERER" "${args[@]}" "$@"
 }
 
+run_render_with_typst_bin() {
+  local root="$1" input="$2"
+  TYPST_BIN="$BIN_DIR/typst" PATH="/usr/bin:/bin" "$RENDERER" \
+    render --input "$input" --typ "$root/notice.typ" --pdf "$root/notice.pdf"
+}
+
 snapshot() {
   local root="$1"
   if [[ ! -e "$root" ]]; then
@@ -105,6 +111,12 @@ after_inode="$(stat -f '%i:%m' "$root/notice.typ" 2>/dev/null || stat -c '%i:%Y'
 run_render "$root" "$input_v1" pdf >/dev/null
 [[ -f "$root/notice.pdf" && "$(head -c 5 "$root/notice.pdf")" == '%PDF-' ]] || fail 'optional PDF was not validated and published'
 [[ -f "$root/history/001/notice.md" && -f "$root/history/001/notice.typ" && ! -e "$root/history/001/notice.pdf" ]] || fail 'pair was not archived as a whole bundle'
+
+typst_bin_root="$TMP_DIR/typst-bin"
+mkdir "$typst_bin_root"
+run_render_with_typst_bin "$typst_bin_root" "$input_v1" >/dev/null
+[[ -f "$typst_bin_root/notice.pdf" && "$(head -c 5 "$typst_bin_root/notice.pdf")" == '%PDF-' ]] || fail 'TYPST_BIN fallback did not publish a PDF'
+
 run_render "$root" "$input_v2" pdf >/dev/null
 [[ -f "$root/history/002/notice.pdf" ]] || fail 'triple change did not archive the old triple'
 run_render "$root" "$input_v3" no_pdf >/dev/null

@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ -z "${LC_ALL:-}" && -z "${LANG:-}" ]]; then
+  for locale_name in C.UTF-8 C.utf8; do
+    if locale -a 2>/dev/null | grep -Fxq "$locale_name"; then
+      export LC_ALL="$locale_name"
+      break
+    fi
+  done
+fi
+
 SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
 if [[ "$SCRIPT_DIR" == "${BASH_SOURCE[0]}" ]]; then
   SCRIPT_DIR="."

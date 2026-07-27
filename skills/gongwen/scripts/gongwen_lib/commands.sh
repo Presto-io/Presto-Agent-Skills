@@ -33,8 +33,23 @@ cmd_example() {
   printf 'wrote %s\n' "$output"
 }
 
+resolve_typst_bin() {
+  local typst_bin=""
+  if [[ -n "${TYPST_BIN:-}" ]]; then
+    [[ -x "$TYPST_BIN" ]] || die "TYPST_BIN is not executable: $TYPST_BIN"
+    typst_bin="$TYPST_BIN"
+  elif typst_bin="$(command -v typst 2>/dev/null)"; then
+    :
+  elif [[ -x /opt/data/.bin/typst ]]; then
+    typst_bin="/opt/data/.bin/typst"
+  else
+    die "typst CLI not found; set TYPST_BIN, install typst, or omit --pdf"
+  fi
+  printf '%s' "$typst_bin"
+}
+
 cmd_render() {
-  local input="" typ="" pdf="" expected_typ="" input_parent
+  local input="" typ="" pdf="" expected_typ="" input_parent typst_bin font_path=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --input) input="${2:-}"; shift 2 ;;
@@ -57,11 +72,21 @@ cmd_render() {
     printf 'verified Typst matches %s\n' "$expected_typ"
   fi
   if [[ -n "$pdf" ]]; then
-    command -v typst >/dev/null 2>&1 || die "typst CLI not found; install typst or omit --pdf"
+    typst_bin="$(resolve_typst_bin)"
     input_parent="${input%/*}"
     [[ "$input_parent" != "$input" ]] || input_parent="."
     input_parent="$(cd "$input_parent" && pwd -P)"
-    typst compile --root "$input_parent" - "$DELIVERY_CANDIDATE/$DELIVERY_STEM.pdf" < "$DELIVERY_CANDIDATE/$DELIVERY_STEM.typ"
+    if [[ -n "${TYPST_FONT_PATH:-}" ]]; then
+      [[ -d "$TYPST_FONT_PATH" ]] || die "TYPST_FONT_PATH is not a directory: $TYPST_FONT_PATH"
+      font_path="$TYPST_FONT_PATH"
+    elif [[ -d /opt/data/fonts ]]; then
+      font_path="/opt/data/fonts"
+    fi
+    if [[ -n "$font_path" ]]; then
+      "$typst_bin" compile --font-path "$font_path" --root "$input_parent" - "$DELIVERY_CANDIDATE/$DELIVERY_STEM.pdf" < "$DELIVERY_CANDIDATE/$DELIVERY_STEM.typ"
+    else
+      "$typst_bin" compile --root "$input_parent" - "$DELIVERY_CANDIDATE/$DELIVERY_STEM.pdf" < "$DELIVERY_CANDIDATE/$DELIVERY_STEM.typ"
+    fi
     delivery_is_regular_nonempty "$DELIVERY_CANDIDATE/$DELIVERY_STEM.pdf" || die "typst did not produce a readable non-empty candidate PDF"
     [[ "$(head -c 5 "$DELIVERY_CANDIDATE/$DELIVERY_STEM.pdf")" == "%PDF-" ]] || die "typst produced a candidate with an invalid PDF header"
   fi
