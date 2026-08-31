@@ -40,6 +40,10 @@ This Markdown must be readable and editable by a teacher without understanding p
 
 The Markdown should merge source facts into a coherent course package. Do not preserve source-file fragmentation as separate mini-workflows.
 
+### Punctuation at the end of lesson-plan lines
+
+When the assistant generates the teaching-design source Markdown, do not append punctuation to the end of any lesson-plan line. This includes Chinese and English periods, semicolons, commas, colons, enumeration commas, question marks, exclamation marks, and equivalent punctuation. The rule covers headings, paragraphs, list items, table content, learning-task descriptions, teaching activities, and evaluation text. The converter adds punctuation where required, so generated source lines must retain text only and must not add manual terminal punctuation.
+
 ## YAML / Frontmatter Boundary
 
 Frontmatter is for stable facts a teacher can verify directly:
@@ -85,6 +89,21 @@ Use body content for:
 - review markers and source-derived evidence
 
 The package model extracts schedule rows, activity hours, resources, teaching-design body, review markers, and source-derived facts from the body before validation/rendering. Body evidence should be used before asking the teacher for YAML-like facts.
+
+## Teaching Activity Block Contract
+
+Each `####` teaching activity is a four-block record. Separate the blocks with exactly one blank line and keep every line within a block contiguous
+
+1. 学习内容：the knowledge, drawings, standards, process requirements, or work scope to learn and understand
+2. 学生活动：the learner's concrete reading, discussion, preparation, operation, recording, inspection, reporting, or reflection actions
+3. 教师活动：the teacher's assignment, explanation, demonstration, supervision, correction, safety briefing, inspection, or evaluation actions
+4. 教学方法与手段：short method labels such as情景引入、讲解、图纸识读、实物观察、教师示范、分组实训、巡回指导、过程互检、成果展示、汇报答辩、总结评价
+
+Do not insert blank lines between individual lines in one block. Do not add an extra blank line that creates a fifth block, and do not omit a separator that shifts student or teacher lines into the preceding block. A valid model must report exactly four blocks for every activity and must be reviewed semantically, not only by count
+
+Use the same activity order and titles in `# 授课进度计划` and the corresponding teaching-design stage. Plan rows must describe concrete work rather than generic labels, and task titles must not add prefixes such as“学习任务1”
+
+Use six learning stages in this order unless the teacher explicitly requires another structure: 获取信息、识读图纸制定计划、做出决策、任务实施、检查控制、总结评价. Merge施工前准备、工具材料点检和安全交底 into做出决策 instead of creating a seventh stage
 
 ## Source-Material Orchestration
 
@@ -170,8 +189,10 @@ Phase 33 and later use a real package-owned teaching calendar:
 - `calendar.json` must be inside the `teaching-design-package` skill folder so a standalone copy of that folder can still derive schedule facts.
 - The run-relative model records `calendar.policy: "skill_local_calendar"` and the SHA-256 hash of the calendar file.
 - `first_teaching_day` is required and must exist in `calendar.json`.
-- `DEFAULT_DAILY_HOURS=8` unless a later package-owned configuration surface changes it.
+- `DEFAULT_DAILY_HOURS=6` unless a later package-owned configuration surface changes it.
 - Each `授课进度计划` row ending in `-N` contributes `N` hours.
+- Each activity row uses a positive integer hour value and must not exceed `6H`; split longer work into multiple concrete activity rows under the same stage
+- Prefer `2H` or larger activity units where pedagogically reasonable and avoid a schedule dominated by `1H` rows. A final partial day is allowed when the course total and daily capacity require it
 - Rows consume hours in source order, using only entries from `calendar.json`.
 - Calendar exhaustion, malformed rows, non-positive hours, invalid calendar JSON, or a missing first teaching day is a hard failure.
 - Natural-day sequential scheduling is not valid for Phase 33+ package scheduling. The renderer must not extrapolate with ordinary calendar-day increments when `calendar.json` does not contain enough teaching dates.
@@ -270,6 +291,8 @@ Root-level `.typ`, status files, manifests, stderr logs, model JSON, diagnostics
 6. Invoke the Node publisher once with `expected_public_filenames`; it holds root identity, acquires a same-root lock, rejects unknown/legacy/symlink/partial/ambiguous states, and compares exact path-set+bytes.
 7. For identical bytes, preserve current inode/mtime and create no history. For changed bytes or course prefix, archive the one complete old group under `history/<max+1>/`, then replace the complete candidate.
 8. Post-verify exact names and bytes, then remove this run, evidence, rollback, lock, and empty `.work`.
+
+Never treat a `published` status as sufficient evidence by itself. Re-list the public root and verify the exact expected path set, PDF readability, and absence of stale owned work. If a partial or ambiguous current group or stale `.work` remains, stop and repair only the exact package-owned state before reporting completion; never fill the gap by manually copying individual public files
 
 If more than one old course-prefix group exists, or a group is partial, the
 publisher fails closed rather than choosing by mtime. Existing `001/003` yields

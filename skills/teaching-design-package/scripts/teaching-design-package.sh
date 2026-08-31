@@ -9,7 +9,7 @@ SKILL_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TEMPLATE_MD="${SKILL_DIR}/templates/teaching-design-package-full.md"
 CALENDAR_JSON="${SKILL_DIR}/references/calendar.json"
 STATUS_NAME="status.json"
-DEFAULT_DAILY_HOURS=8
+DEFAULT_DAILY_HOURS=6
 
 usage() {
   while IFS= read -r line; do printf '%s\n' "$line"; done <<'USAGE'

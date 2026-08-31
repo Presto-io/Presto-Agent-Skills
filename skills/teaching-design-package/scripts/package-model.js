@@ -3,7 +3,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const inputPath = process.argv[2];
-const dailyHours = Number(process.argv[3] || 8);
+const dailyHours = Number(process.argv[3] || 6);
 const calendarPath = process.argv[4];
 
 const MODULE_REGISTRY = [
@@ -832,6 +832,16 @@ function buildTeachingDesignModel(designText, scheduleTasks, scheduling) {
         const row = scheduleStage.rows[rowIndex];
         const activity = designStage.activities[rowIndex];
         const designPointer = `task:${taskIndex + 1}/stage:${stageIndex + 1}/activity:${rowIndex + 1}`;
+        if (activity.blocks.length !== 4) {
+          crossModuleFail('teaching_activity_block_count_mismatch', `teaching activity must contain exactly four paragraph blocks at ${designPointer}`, scheduling, {
+            plan_pointer: row.source,
+            design_pointer: designPointer,
+            plan_title: row.title,
+            design_title: activity.validation_title,
+            expected_blocks: 4,
+            actual_blocks: activity.blocks.length,
+          });
+        }
         const activityNorm = compareTitleOrFail('teaching_design_activity_title_mismatch', `activity title mismatch at ${designPointer}`, scheduling, row.title, activity.validation_title, {
           plan_pointer: row.source,
           design_pointer: designPointer,

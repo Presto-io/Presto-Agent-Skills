@@ -6,7 +6,7 @@ textbook_name: "《电工工艺学》"
 class_name: "示例电气2班"
 teachers:
   - "张老师"
-first_teaching_day: "2026-05-11"
+first_teaching_day: "2026-09-02"
 ---
 
 # 授课进度计划
