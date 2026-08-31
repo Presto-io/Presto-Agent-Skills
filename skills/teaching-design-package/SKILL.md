@@ -34,6 +34,7 @@ metadata:
 - `source_materials`: 教师提供的课程说明、课程标准、教材信息、授课进度、活动设计、工作页、考核要求、校内模板要求、教师备注和已有 Markdown 片段。
 - `templates/teaching-design-package-full.md`: 可参考的统一 Markdown 形状。不要把它当成必须复制的旧模板；按教师材料组织课程自己的完整 Markdown。
 - `references/format-and-orchestration.md`: 源材料编排、教师可编辑 Markdown 契约、YAML/正文边界、复核标记、脚本边界与验证规则。
+- `references/calendar-recognition.md`: 提供校历时，读取、识别、复核并更新包内教学日 JSON 的流程。
 - `scripts/teaching-design-package.sh`: 包内脚本，只在 Markdown 定稿后读取调用方传入的 Markdown/output path。
 
 ## Teacher Workflow
@@ -45,6 +46,7 @@ metadata:
 5. **教师审阅/编辑**：暂停让教师审阅、改写、补充或保留复核标记。不要要求教师运行、排序或拼接其他独立技能；不要把脚本状态当成内容审阅。
 6. **定稿 Markdown**：只有当教师确认内容可进入交付，且阻塞性复核标记已解决或明确保留为非最终状态时，才把 Markdown 视为 finalized Markdown。
 7. **脚本验证/渲染**：对定稿 Markdown 运行包内脚本，生成 package-owned data model、unified Typst、PDF 状态和交付证据。脚本只做 finalized Markdown validation/rendering，不承担教师互动和内容组织 UX。
+8. **校历识别**：当教师提供校历时，先按 `references/calendar-recognition.md` 提取页面和文本、识别教学日例外并逐日复核，生成独立候选 JSON；除非维护者明确决定合并或替换，否则不得改动技能内 `references/calendar.json`。
 
 ### 教案行末标点规则
 

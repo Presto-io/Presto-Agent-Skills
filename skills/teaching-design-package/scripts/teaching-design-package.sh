@@ -21,6 +21,8 @@ Usage:
   teaching-design-package.sh manifest --input <package.md> --out-dir <dir>
   teaching-design-package.sh plan-split --input <package.md> --out-dir <dir>
   teaching-design-package.sh render-split --input <package.md> --out-dir <dir>
+  teaching-design-package.sh inspect-calendar --input <school-calendar.pdf> --out-dir <diagnostic-dir>
+  teaching-design-package.sh derive-calendar --output <calendar.json> --term-start <YYYY-MM-DD> --term-end <YYYY-MM-DD> [calendar exceptions]
   teaching-design-package.sh info
   teaching-design-package.sh version
 
@@ -960,6 +962,14 @@ cmd_version() {
   printf 'teaching-design-package.sh 0.6.0-phase36\n'
 }
 
+cmd_inspect_calendar() {
+  "${SCRIPT_DIR}/inspect-calendar-pdf.sh" "$@"
+}
+
+cmd_derive_calendar() {
+  "${SCRIPT_DIR}/derive-calendar.py" "$@"
+}
+
 main() {
   local command="${1:-}"
   [[ -n "$command" ]] || { usage; exit 1; }
@@ -971,6 +981,8 @@ main() {
     manifest) cmd_manifest "$@" ;;
     plan-split|render-split) cmd_compat_render "$@" ;;
     plan-end-of-term|render-end-of-term) die "optional external modules are outside the Phase 30 normal path" ;;
+    inspect-calendar) cmd_inspect_calendar "$@" ;;
+    derive-calendar) cmd_derive_calendar "$@" ;;
     info) cmd_info ;;
     version) cmd_version ;;
     -h|--help|help) usage ;;

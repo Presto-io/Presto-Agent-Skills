@@ -186,6 +186,7 @@ read sibling skill calendars at runtime.
 Phase 33 and later use a real package-owned teaching calendar:
 
 - The active calendar resource is `skills/teaching-design-package/references/calendar.json`.
+- When a new school calendar is supplied, follow `calendar-recognition.md` to inspect the source, derive a reviewed candidate, and verify exceptions before replacing the active resource.
 - `calendar.json` must be inside the `teaching-design-package` skill folder so a standalone copy of that folder can still derive schedule facts.
 - The run-relative model records `calendar.policy: "skill_local_calendar"` and the SHA-256 hash of the calendar file.
 - `first_teaching_day` is required and must exist in `calendar.json`.
