@@ -63,7 +63,7 @@ metadata:
 - 每个教学活动的正文必须严格由四个段落块组成，顺序固定为：学习内容、学生活动、教师活动、教学方法与手段。块与块之间只使用一个空行；同一块内部的多行内容连续书写，不在每行之间插入空行。不要用空行制造第五块或更多块
 - 生成后不仅检查块数，还要检查四块内容的语义归位，尤其确认学生活动没有并入学习内容、教师活动没有并入学生活动、教学方法没有被拆成单独块。模型校验必须显示每个活动恰好四块
 - 活动课时按`1H`或`2H`等整数记录，优先使用`2H`及以上的合理分配，避免大量`1H`活动。单个教学活动不得超过`6H`；超过时在同一学习环节下拆成多个有明确工作内容的活动标题，不得只把大课时写在一个标题下面
-- 在资料包最终渲染前，先让教师审阅统一 Markdown；不要改用 DOCX、外部模板或其他非本技能格式生成交付物。最终公开根目录只发布技能规定的 Markdown、合并 PDF和注册模块 PDF
+- 在资料包最终渲染前，先让教师审阅统一 Markdown；不要改用外部流程生成交付物。最终公开根目录只发布技能规定的 Markdown、合并 PDF、注册模块 PDF，以及按批准模板生成的授课进度计划表 DOCX
 - 发布后必须按`expected_public_filenames`逐项检查根目录实际文件集合和文件可读性；即使脚本返回成功，只要出现孤立PDF、缺少Markdown、残留stale `.work`或部分当前组，都不得向教师报告资料包完成
 
 ## Clarification Strategy
@@ -101,7 +101,7 @@ scripts/teaching-design-package.sh manifest \
 
 如果课程使用专属文件名，把 `--input teaching-design-package-full.md` 换成对应的 `某某某课教学资料.md` 路径。
 
-`render-package --pdf` 是最终交付命令。它先在交付根的 `.work/<run-id>/` 内生成 model、模块 Markdown/Typst、模块 PDF、merge plan/status 和完整 public candidate；所有 registry/order、PDF header、non-empty、merge 和 final-ready gate 通过后，才由 `public_delivery.expected_public_filenames` 驱动的 publisher 一次发布 dynamic `1 + 1 + N`。失败只返回有界诊断并清理本次 owned run，旧 current、history 和 `sources/` 保持不变。
+`render-package --pdf` 是最终交付命令。它先在交付根的 `.work/<run-id>/` 内生成 model、模块 Markdown/Typst、模块 PDF、计划 DOCX、merge plan/status 和完整 public candidate；所有 registry/order、PDF header、DOCX OOXML、non-empty、merge 和 final-ready gate 通过后，才由 `public_delivery.expected_public_filenames` 驱动的 publisher 一次发布 dynamic `1 + 1 + N + 1`。失败只返回有界诊断并清理本次 owned run，旧 current、history 和 `sources/` 保持不变。
 
 `model --out-dir`、`manifest --out-dir`、不带 `--pdf` 的 `render-package`、`plan-split` 和 `render-split` 是诊断/中间命令；其 `--out-dir` 是调用方显式 diagnostic workdir，不是成功交付根，也不产生 current 版本。
 
@@ -122,16 +122,17 @@ scripts/teaching-design-package.sh manifest \
 
 - `teaching-design-package-full.md` 或 `某某某课教学资料.md`：统一、完整、教师可编辑的 Markdown source of truth。
 
-默认成功交付目录只包含课程名前缀 `1 + 1 + N` 公开文件。当前 N=2 时为四个文件：
+默认成功交付目录只包含课程名前缀 `1 + 1 + N + 1` 公开文件。当前 N=2 时为五个文件：
 
 - `课程名教学资料.md`：统一 Markdown 的公开副本，例如 `电气设备控制线路安装与调试教学资料.md`。
 - `课程名教学资料.pdf`：由所有注册模块 PDF 按 module registry 顺序合并得到的整包 PDF。
 - `课程名授课进度计划表.pdf`：`teaching-plan` 注册模块的正式 PDF。
+- `课程名授课进度计划表.docx`：基于技能内批准模板生成的可编辑计划表 DOCX，与计划 PDF 使用同一共享模型。
 - `课程名教学设计方案.pdf`：`teaching-design` 注册模块的正式 PDF。
 
 交付根按需允许 `sources/`、`assets/`、`history/`、`.work/`。当前实现不自动修改 `sources/`，也不自动治理 legacy hidden、`media/` 或 unknown 用户文件。`.work/<run-id>/candidate/` 只保存完整 public candidate，`evidence/` 保存 model/status/debug/module/merge 证据，publisher 按需创建 `rollback/`；成功、no-op 和 handled failure 后清理本次 run 与空 `.work/`。
 
-`expected_public_filenames` 是唯一 dynamic mutation authority。相同 prefix 或 course-name 变化都按 exact path-set+bytes 比较：identical 不创建 history、不触碰 current；changed 把唯一完整旧 `1+1+N` group 放入下一个 `history/<max+1>/` 后发布新组。多个旧 prefix、partial group、unknown、legacy hidden、symlink 或 traversal 均在 mutation 前失败关闭。
+`expected_public_filenames` 是唯一 dynamic mutation authority。相同 prefix 或 course-name 变化都按 exact path-set+bytes 比较：identical 不创建 history、不触碰 current；changed 把唯一完整旧 `1+1+N+1` group 放入下一个 `history/<max+1>/` 后发布新组。多个旧 prefix、partial group、unknown、legacy hidden、symlink 或 traversal 均在 mutation 前失败关闭。
 
 `.typ`、status、manifest、stderr log、model JSON、diagnostics JSON、calendar JSON、模块 Markdown/Typst、merge plan/status、staging 文件、旧英文成功文件名和 failure diagnostics 都不是成功 current。
 
@@ -141,8 +142,8 @@ scripts/teaching-design-package.sh manifest \
 - [ ] `teaching-design-package-full.md` 和课程专属 `某某某课教学资料.md` 都被描述为教师可编辑 source of truth。
 - [ ] `references/format-and-orchestration.md` 说明 teacher-editable Markdown、YAML/frontmatter 边界、正文/body 提取、派生事实、复核标记和 script boundary。
 - [ ] `scripts/teaching-design-package.sh model --input <finalized-markdown>` 输出 package-owned data model。
-- [ ] `scripts/teaching-design-package.sh render-package --pdf --input <finalized-markdown> --out-dir <dir>` 成功后，公开根目录只有 `课程名教学资料.md`、`课程名教学资料.pdf`、`课程名授课进度计划表.pdf`、`课程名教学设计方案.pdf`。
-- [ ] 成功、identical 与 handled failure 后不保留 legacy `.teaching-design-package/` 或本次 `.work/<run-id>`；公开根没有 `.typ`、status、manifest、stderr log、model JSON、diagnostics JSON、calendar JSON、模块/merge 中间产物或旧英文成功文件名。
+- [ ] `scripts/teaching-design-package.sh render-package --pdf --input <finalized-markdown> --out-dir <dir>` 成功后，公开根目录只有 `课程名教学资料.md`、`课程名教学资料.pdf`、`课程名授课进度计划表.pdf`、`课程名授课进度计划表.docx`、`课程名教学设计方案.pdf`。
+- [ ] 成功、identical 与 handled failure 后不保留 legacy `.teaching-design-package/` 或本次 `.work/<run-id>`；公开根没有 `.typ`、status、manifest、stderr log、model JSON、diagnostics JSON、calendar JSON、模块/merge 中间产物或旧英文成功文件名，且 DOCX 是可读取的 OOXML ZIP。
 - [ ] changed 发布把完整旧 dynamic group 放入同一 next history；已有 `001/003` 时 next 为 `004`，course prefix 多组或 partial group 非零失败且零 mutation。
 
 ## Safety
@@ -152,6 +153,6 @@ scripts/teaching-design-package.sh manifest \
 - 不要把外部兼容入口改造成本包内部依赖、资源、验收基准或实现方向。
 - 不要把总课时、学年、学期、起止日期、输出 readiness、诊断状态等派生事实放进教师必须维护的 YAML。
 - 不要从 unified Markdown 一跳声称 PDF 最终通过；`课程名教学资料.pdf` 必须由注册模块 PDF 真实合并得到。
-- 不要把脚本诊断文件混入教师默认交付说明；成功交付根目录只允许课程名前缀 `1 + 1 + N` 公开文件。
+- 不要把脚本诊断文件混入教师默认交付说明；成功交付根目录只允许课程名前缀 `1 + 1 + N + 1` 公开文件。
 - 不要在 candidate 完整验证前删除、覆盖、移动 current，也不要用 glob、find-delete、broad cleanup 或逐文件 final copy 绕过 publisher。
 - 不要宣称 SIGKILL、断电或多文件跨路径硬原子；保证范围是 candidate isolation、逐路径 replace 与 handled error/INT/TERM rollback。

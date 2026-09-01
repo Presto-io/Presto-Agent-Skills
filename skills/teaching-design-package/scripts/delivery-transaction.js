@@ -41,6 +41,10 @@ function validateExpectedNames(packageModel) {
   if (moduleNames.length < 1 || moduleNames.some((name) => !validated.includes(name))) {
     fail('invalid_expected_public_filenames', 'expected_public_filenames must contain every registry-derived module PDF');
   }
+  if (delivery.public_plan_docx_filename !== undefined
+    && (typeof delivery.public_plan_docx_filename !== 'string' || !validated.includes(delivery.public_plan_docx_filename))) {
+    fail('invalid_expected_public_filenames', 'expected_public_filenames must contain the registered plan DOCX');
+  }
   return validated;
 }
 
@@ -177,6 +181,25 @@ function validateCandidate(candidateRoot, expectedNames) {
       }
       if (header.toString('ascii') !== '%PDF-') fail('invalid_pdf_candidate', `${name} lacks a PDF header`);
     }
+    if (name.endsWith('.docx')) {
+      const descriptor = fs.openSync(target, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+      try {
+        const header = Buffer.alloc(2);
+        fs.readSync(descriptor, header, 0, 2, 0);
+        if (header.toString('ascii') !== 'PK') fail('invalid_docx_candidate', `${name} lacks an OOXML ZIP header`);
+      } finally {
+        fs.closeSync(descriptor);
+      }
+      let entries;
+      try {
+        entries = childProcess.execFileSync('unzip', ['-Z1', target], { encoding: 'utf8' }).split(/\n/).filter(Boolean);
+      } catch (error) {
+        fail('invalid_docx_candidate', `${name} is not a readable OOXML package`);
+      }
+      if (!entries.includes('[Content_Types].xml') || !entries.includes('word/document.xml')) {
+        fail('invalid_docx_candidate', `${name} is missing required OOXML parts`);
+      }
+    }
   }
 }
 
@@ -184,7 +207,7 @@ function discoveryContract(packageModel) {
   const delivery = packageModel.public_delivery;
   const prefix = validateComponent(delivery.filename_prefix, 'filename prefix');
   const expectedNames = validateExpectedNames(packageModel);
-  const fixedSuffixes = [delivery.public_markdown_filename, delivery.public_package_pdf_filename].map((name) => {
+  const fixedSuffixes = [delivery.public_markdown_filename, delivery.public_package_pdf_filename, delivery.public_plan_docx_filename].filter((name) => name !== undefined).map((name) => {
     if (!name.startsWith(prefix) || name.length === prefix.length) {
       fail('invalid_expected_public_filenames', `model filename does not start with filename_prefix: ${name}`);
     }
@@ -229,7 +252,7 @@ function discoverCurrent(root, packageModel, ownRunId) {
   const { fixedSuffixes, moduleSuffixSets } = discoveryContract(packageModel);
   const delivery = packageModel.public_delivery;
   const modelPrefix = delivery.filename_prefix;
-  const [markdownSuffix, packageSuffix] = fixedSuffixes;
+  const [markdownSuffix, packageSuffix, planDocxSuffix] = fixedSuffixes;
   const publicFiles = [];
   for (const entry of fs.readdirSync(root).sort()) {
     const target = path.join(root, entry);
@@ -251,9 +274,10 @@ function discoverCurrent(root, packageModel, ownRunId) {
   if (!prefix) fail('partial_group_fail_closed', 'public filename lacks a course prefix');
   if (publicFiles.some((name) => !name.startsWith(prefix))) fail('ambiguous_current_group', 'multiple course-prefix groups found');
   const packageName = `${prefix}${packageSuffix}`;
-  const moduleNames = publicFiles.filter((name) => name !== markdownNames[0] && name !== packageName);
+  const planDocxName = planDocxSuffix ? `${prefix}${planDocxSuffix}` : '';
+  const moduleNames = publicFiles.filter((name) => name !== markdownNames[0] && name !== packageName && name !== planDocxName);
   const moduleSuffixes = moduleNames.map((name) => name.slice(prefix.length, -'.pdf'.length)).sort();
-  if (!publicFiles.includes(packageName) || moduleNames.some((name) => !name.endsWith('.pdf'))
+  if (!publicFiles.includes(packageName) || (planDocxName && !publicFiles.includes(planDocxName)) || moduleNames.some((name) => !name.endsWith('.pdf'))
     || !moduleSuffixSets.some((suffixSet) => pathSetEqual(suffixSet, moduleSuffixes))) {
     fail('partial_group_fail_closed', `current group for ${prefix} is incomplete`);
   }

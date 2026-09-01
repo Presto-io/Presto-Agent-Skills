@@ -7,6 +7,7 @@ if [[ "$SCRIPT_DIR" == "${BASH_SOURCE[0]}" ]]; then
 fi
 SKILL_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TEMPLATE_MD="${SKILL_DIR}/templates/teaching-design-package-full.md"
+TEMPLATE_PLAN_DOCX="${SKILL_DIR}/templates/teaching-plan-template.docx"
 CALENDAR_JSON="${SKILL_DIR}/references/calendar.json"
 STATUS_NAME="status.json"
 DEFAULT_DAILY_HOURS=6
@@ -26,9 +27,9 @@ Usage:
   teaching-design-package.sh info
   teaching-design-package.sh version
 
-The normal path is unified Markdown -> package data model -> course-prefixed 1+1+N delivery.
+The normal path is unified Markdown -> package data model -> course-prefixed 1+1+N+1 delivery.
 Diagnostics, status, stderr logs, split Typst files, and failure evidence stay in an explicit diagnostic workdir or owned .work/<run-id>/evidence/.
-render-package --pdf exits successfully only when all registered module PDFs and the merged package PDF exist and are non-empty.
+render-package --pdf exits successfully only when all registered module PDFs, the merged package PDF, and the approved-format plan DOCX exist and are valid.
 USAGE
 }
 
@@ -164,6 +165,8 @@ const diagnostics = {
     'missing_teaching_design_evaluation_block',
     'teaching_design_formal_render_failed',
     'teaching_design_pdf_compile_failed',
+    'teaching_plan_docx_render_failed',
+    'invalid_docx_candidate',
     'hidden_artifact_write_failure',
     'public_root_leakage',
     'invalid_course_name_for_filename',
@@ -371,6 +374,12 @@ write_teaching_design_typst() {
   node "${SCRIPT_DIR}/teaching-design-renderer.js" "$model_path" "$typ_path"
 }
 
+write_teaching_plan_docx() {
+  local model_path="$1" output_path="$2"
+  need_file "$TEMPLATE_PLAN_DOCX"
+  python3 "${SCRIPT_DIR}/teaching-plan-docx-renderer.py" "$model_path" "$TEMPLATE_PLAN_DOCX" "$output_path"
+}
+
 compile_pdf() {
   local typ="$1" pdf="$2" log="$3"
   rm -f "$pdf" "$log"
@@ -406,11 +415,13 @@ const delivery = model.public_delivery;
 const publicOutputs = {
   unified_markdown: `${outDir}/${delivery.public_markdown_filename}`,
   full_package_pdf: `${outDir}/${delivery.public_package_pdf_filename}`,
+  plan_docx: `${outDir}/${delivery.public_plan_docx_filename}`,
   module_pdfs: Object.fromEntries(delivery.module_pdfs.map((item) => [item.module_id, `${outDir}/${item.public_pdf_filename}`])),
 };
 const expectedPublicOutputs = delivery.expected_public_filenames.map((filename) => `${outDir}/${filename}`);
 const markdownPassed = fs.existsSync(publicOutputs.unified_markdown) && fs.statSync(publicOutputs.unified_markdown).size > 0;
 const mergedPassed = fs.existsSync(publicOutputs.full_package_pdf) && fs.statSync(publicOutputs.full_package_pdf).size > 0;
+const planDocxPassed = fs.existsSync(publicOutputs.plan_docx) && fs.statSync(publicOutputs.plan_docx).size > 0;
 const allModulesPassed = modulePdfStatuses.length === model.modules.registry.length
   && modulePdfStatuses.every((item) => item.status === 'passed' && item.exists === true && item.nonempty === true && item.size > 0);
 const status = {
@@ -449,6 +460,8 @@ const status = {
     evidence_typst: `${runRoot}/${model.modules.items.find((item) => item.id === 'teaching-plan').work_typst}`,
     public_pdf: publicOutputs.module_pdfs['teaching-plan'],
     pdf_compile_status: (modulePdfStatuses.find((item) => item.module_id === 'teaching-plan') || {}).status || 'not_run',
+    plan_docx: publicOutputs.plan_docx,
+    plan_docx_status: planDocxPassed ? 'passed' : 'not_run',
   },
   teaching_design_formal_renderer: {
     status: 'passed',
@@ -475,9 +488,9 @@ const status = {
   },
   public_root_leakage_check: leakageStatus,
   review_markers: model.review_markers,
-  final_ready: pdfRequested && markdownPassed && allModulesPassed && mergedPassed && merge.status === 'passed' && leakageStatus === 'passed' && model.review_markers.length === 0 && model.validation.errors.length === 0,
+  final_ready: pdfRequested && markdownPassed && planDocxPassed && allModulesPassed && mergedPassed && merge.status === 'passed' && leakageStatus === 'passed' && model.review_markers.length === 0 && model.validation.errors.length === 0,
   notes: [
-    'Default successful delivery root is exactly one course-name-prefixed unified Markdown, one merged package PDF, and one PDF per registered module.',
+    'Default successful delivery root is exactly one course-name-prefixed unified Markdown, one merged package PDF, one approved-format plan DOCX, and one PDF per registered module.',
     'The merged package PDF is created from registered module PDFs in module registry order.',
     'Diagnostics, status, stderr logs, module Typst, module Markdown, model JSON, merge files, and failure evidence stay in the owned run evidence directory.',
   ],
@@ -516,6 +529,12 @@ const diagnosticsPath = process.argv[3];
     legacy_surface: 'jiaoan-jihua official five-column table',
     scheduling_source: 'shared_scheduling_model',
     evidence_typst: model.modules.items.find((item) => item.id === 'teaching-plan').work_typst,
+    plan_docx_renderer: {
+      status: 'package_owned_template_renderer',
+      renderer: 'package-owned teaching-plan-docx-renderer.py',
+      template: 'templates/teaching-plan-template.docx',
+      public_filename: model.public_delivery.public_plan_docx_filename,
+    },
   },
   teaching_design_formal_renderer: {
     status: 'passed',
@@ -840,9 +859,15 @@ cmd_render_package() {
   mkdir -p "$candidate_dir" "$staging_dir" "${evidence_dir}/modules" "${evidence_dir}/debug" "${evidence_dir}/failure-diagnostics"
   trap 'node "${SCRIPT_DIR}/delivery-transaction.js" cleanup "$OUT_DIR" "$run_id" >/dev/null 2>&1 || true' EXIT INT TERM
   model_path="$(write_model_file "$INPUT" "$evidence_dir")"
+  local plan_docx_path
+  plan_docx_path="$(node -e 'const fs=require("fs"); const m=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write(`${process.argv[2]}/${m.public_delivery.public_plan_docx_filename}`)' "$model_path" "$staging_dir")"
   write_unified_typst "$model_path" "${evidence_dir}/modules/teaching-design-package.typ"
   write_module_markdown_files "$model_path" "$run_root"
   write_teaching_plan_typst "$model_path" "${evidence_dir}/modules/teaching-plan.typ"
+  if ! write_teaching_plan_docx "$model_path" "$plan_docx_path" 2>"${evidence_dir}/debug/teaching-plan-docx-renderer.stderr.log"; then
+    record_failure "$INPUT" "$evidence_dir" "teaching_plan_docx_render_failed" "package-owned teaching-plan DOCX renderer failed" "${evidence_dir}/debug/teaching-plan-docx-renderer.stderr.log"
+    die "render-package --pdf failed teaching-plan DOCX generation"
+  fi
   if ! write_teaching_design_typst "$model_path" "${evidence_dir}/modules/teaching-design.typ" 2>"${evidence_dir}/debug/teaching-design-renderer.stderr.log"; then
     printf 'TDPKG_DIAGNOSTIC_JSON={"code":"teaching_design_formal_render_failed","mismatch_class":"teaching_design_formal_render_failed","module_id":"teaching-design","message":"package-owned teaching-design renderer failed","source_markdown":"%s"}\n' "$(json_escape "$INPUT")" >>"${evidence_dir}/debug/teaching-design-renderer.stderr.log"
     write_failure_diagnostics "$INPUT" "$evidence_dir" "${evidence_dir}/debug/teaching-design-renderer.stderr.log"
@@ -915,6 +940,7 @@ fs.copyFileSync(input, `${candidateDir}/${delivery.public_markdown_filename}`);
 for (const item of model.modules.items) {
   fs.copyFileSync(`${stagingDir}/${item.pdf_filename}`, `${candidateDir}/${item.public_pdf_filename}`);
 }
+fs.copyFileSync(`${stagingDir}/${delivery.public_plan_docx_filename}`, `${candidateDir}/${delivery.public_plan_docx_filename}`);
 fs.copyFileSync(`${stagingDir}/${delivery.public_package_pdf_filename}`, `${candidateDir}/${delivery.public_package_pdf_filename}`);
 NODE
   write_diagnostics "$model_path" "$evidence_dir"

@@ -103,16 +103,18 @@ function buildPublicDelivery(metadata) {
   return {
     course_name: metadata.course_name,
     filename_prefix: prefix,
-    contract: 'course-name-prefixed-1+1+N',
+    contract: 'course-name-prefixed-1+1+N+plan-docx',
     current_n: modulePdfs.length,
     public_markdown_filename: `${prefix}教学资料.md`,
     public_package_pdf_filename: `${prefix}教学资料.pdf`,
+    public_plan_docx_filename: `${prefix}授课进度计划表.docx`,
     module_pdfs: modulePdfs,
     supported_module_pdf_suffix_sets: [modulePdfs.map((item) => item.public_pdf_suffix)],
     expected_public_filenames: [
       `${prefix}教学资料.md`,
       `${prefix}教学资料.pdf`,
       ...modulePdfs.map((item) => item.public_pdf_filename),
+      `${prefix}授课进度计划表.docx`,
     ],
     work_layout: {
       candidate: 'candidate',

@@ -16,7 +16,7 @@ The skill folder must remain usable when installed by itself. Script commands va
 - `TDPKG-04`: The canonical workflow starts from teacher source materials, clarification, organization, and one reviewable full-package Markdown.
 - `TDPKG-05`: The unified Markdown is the human-editable source of truth before rendering.
 - `TDPKG-06`: Scripts are finalized-Markdown validation and delivery tools, not the teacher's interactive organizing entry.
-- `TDPKG-07`: A successful public delivery directory contains only course-name-prefixed `1 + 1 + N` files: one unified Markdown, one merged package PDF, and one PDF per registered module.
+- `TDPKG-07`: A successful public delivery directory contains only course-name-prefixed `1 + 1 + N + 1` files: one unified Markdown, one merged package PDF, one PDF per registered module, and one approved-format teaching-plan DOCX.
 - `TDPKG-08`: Successful public delivery directories do not contain `.typ`, status, manifest, stderr log, model JSON, diagnostics JSON, calendar JSON, module Markdown/Typst, staging files, old English success filenames, or temporary state files.
 - `TDPKG-09`: Package-owned diagnostics stay in an explicit diagnostic workdir or the owned `.work/<run-id>/evidence/` lifecycle and never become current.
 - `TDPKG-10`: Total hours are derived from body schedule/activity evidence, not YAML.
@@ -255,11 +255,12 @@ The public delivery root contains only the exact model-derived current group and
 the optional support directories `sources/`, `assets/`, `history/`, and `.work/`.
 There is no persistent hidden diagnostic exception.
 
-Default successful `render-package --pdf` uses course-name-prefixed public filenames. The current public contract is `1 + 1 + N`; N is the number of registered modules. Current N=2:
+Default successful `render-package --pdf` uses course-name-prefixed public filenames. The current public contract is `1 + 1 + N + 1`; N is the number of registered modules and the final `+ 1` is the approved-format teaching-plan DOCX. Current N=2:
 
 - `课程名教学资料.md` for the unified Markdown public copy.
 - `课程名教学资料.pdf` for the full package PDF created by merging registered module PDFs.
 - `课程名授课进度计划表.pdf` for the `teaching-plan` module PDF.
+- `课程名授课进度计划表.docx` for the approved-format editable teaching-plan DOCX.
 - `课程名教学设计方案.pdf` for the `teaching-design` module PDF.
 
 For the default template, the public root contains exactly:
@@ -288,7 +289,7 @@ Root-level `.typ`, status files, manifests, stderr logs, model JSON, diagnostics
 2. Write model, diagnostics, module Markdown/Typst and debug-only unified Typst to evidence.
 3. Compile each registered module Typst to evidence and verify registry membership, order, regular/non-symlink type, non-empty bytes, and PDF header.
 4. Merge module PDFs in registry order, record merge plan/status/log, and verify the merged PDF.
-5. Copy only the model-derived exact `1 + 1 + N` set into candidate and pass final-ready validation.
+5. Copy only the model-derived exact `1 + 1 + N + 1` set into candidate and pass final-ready validation.
 6. Invoke the Node publisher once with `expected_public_filenames`; it holds root identity, acquires a same-root lock, rejects unknown/legacy/symlink/partial/ambiguous states, and compares exact path-set+bytes.
 7. For identical bytes, preserve current inode/mtime and create no history. For changed bytes or course prefix, archive the one complete old group under `history/<max+1>/`, then replace the complete candidate.
 8. Post-verify exact names and bytes, then remove this run, evidence, rollback, lock, and empty `.work`.
@@ -337,11 +338,12 @@ and are not runtime dependencies.
 
 ## Public Output Direction
 
-The target delivery direction is course-name-prefixed `1 + 1 + N`:
+The target delivery direction is course-name-prefixed `1 + 1 + N + 1`:
 
 - one unified Markdown
 - one merged package PDF
 - N registered module PDFs
+- one approved-format teaching-plan DOCX
 
 Successful public roots must not contain `.typ`, status, manifest, stderr log, model JSON, diagnostics JSON, calendar JSON, module Markdown/Typst, staging files, old English success filenames, or temporary diagnostic files.
 
@@ -395,7 +397,7 @@ scripts/teaching-design-package.sh render-package \
 Expected results:
 
 - the model command emits JSON with package-owned module and strict sum evidence
-- the render command writes the public course-name-prefixed `1 + 1 + N` files when `--pdf` succeeds
+- the render command writes the public course-name-prefixed `1 + 1 + N + 1` files when `--pdf` succeeds
 - diagnostics, status, module Markdown/Typst, staging files, merge evidence, and stderr logs stay in the explicit diagnostic workdir or owned run evidence, never current
 - successful, identical, and handled-failure final delivery leaves no legacy `.teaching-design-package/` and no current run under `.work/`
 - no normal-path output contains repo sibling paths
