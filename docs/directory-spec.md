@@ -20,6 +20,8 @@
 
 `skills/party-member-study-notes-cn/SKILL.md` 是党员学习笔记、心得体会与组织生活记录的 canonical 写作入口。当前仅需单个入口文件，不预创建模板或脚本目录；默认优先依赖独立 `gongwen` 工作流交付 PDF，不可用时使用已有 PDF 工具兜底，不复制依赖的 renderer，并保留 Markdown 源稿。
 
+职业认定技能分别位于 `skills/vocational-practical-exam/`、`skills/vocational-theory-exam/` 和 `skills/vocational-exam-package/`。实操与理论可单独安装；试卷包需同时发现两项依赖，其职责为工作流复用而非 sibling Python import。各目录的 `references/delivery.md` 定义候选交付流程；它们尚不属于既有六技能自动发布回归覆盖。
+
 | Path | Purpose |
 |------|---------|
 | `skills/<skill-name>/SKILL.md` | canonical 技能源文件 |

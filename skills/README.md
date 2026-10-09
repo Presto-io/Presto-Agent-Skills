@@ -6,6 +6,12 @@ Current skills:
 
 - `party-member-study-notes-cn`: 从学习材料与已确认个人经历起草、审阅党员学习笔记、心得体会和组织生活记录；默认优先依赖 `gongwen` 交付 PDF，不可用时用已有 PDF 工具兜底，并保留 Markdown 源稿，不计入六技能自动发布覆盖。
 
+- `vocational-practical-exam`: 职业技能等级认定实操出题、逐字母版重构、评分表与只读 DOCX 审计。
+- `vocational-theory-exam`: 职业技能等级认定理论命题、多套等值卷及独立答案评分文件。
+- `vocational-exam-package`: 显式依赖并复用前两项技能，统一套号、版本、成员集合与整包验收；安装时需三项完整目录。
+
+职业认定技能安装须携带二进制母版：实操技能内两份用户原始 DOCX，理论技能内考生卷和答案两份派生 DOCX。试卷包复用依赖中的模板，不保留分叉副本；理论派生模板尚待用户人工版式审阅。
+
 - `end-of-term-teaching-materials`: 期末教学提交材料和表格的 Markdown intermediate 到固定模板 Typst/PDF、deterministic table artifacts、calculated score evidence 和 workbook 的工作流。
 - `graduate-resume`: 毕业生简历资料契约与离线生成基线；先冻结 canonical Markdown/YAML 资料、照片/target 一次追问语义、fixtures 和离线 `validate` / `target` / `plan` / `verify` CLI，再进入后续主题、定向与三件套渲染。
 - `gongwen`: 类公文 Markdown intermediate 到 Presto gongwen Typst/PDF 的工作流。

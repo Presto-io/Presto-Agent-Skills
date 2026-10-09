@@ -139,3 +139,7 @@ References:
 
 - [NousResearch Hermes Agent skills catalog](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/skills-catalog.md)
 - [Hermes Agent SKILL.md guide](https://www.agensi.io/learn/how-to-use-skill-md-with-hermes-agent)
+
+# 职业技能等级认定技能安装说明
+
+`vocational-practical-exam` 与 `vocational-theory-exam` 按完整目录独立发现；`vocational-exam-package` 需要同时解析两项技能依赖。三者的六 runtime 注释在各自 `SKILL.md`，OpenClaw/Hermes 的路径、自动发现与权限必须安装时实测。实操审计仅依赖 Python 标准库；文档生成及渲染按实际环境选用现有工具，未提供自动 renderer/publisher 或已实测的跨 runtime 发布保证。fallback 为显式读取入口与引用，实操只读检查使用 `python3 scripts/audit_docx.py`。

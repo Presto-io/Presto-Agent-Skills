@@ -91,6 +91,8 @@ cp -R skills/<skill-name> <runtime-skill-root>/<skill-name>
 
 `skills/party-member-study-notes-cn/` 收纳来自 6800 Hermes 的党员学习笔记工作流，并按 canonical 规范整理为材料阅读、事实澄清、中文起草和审阅；默认优先依赖 `gongwen` 交付 PDF，不可用时用已有工具输出普通 PDF，并保留 Markdown 源稿，尚不属于六技能自动干净交付覆盖。
 
+新增职业技能等级认定工作流：`skills/vocational-practical-exam/` 编制实操卷与评分表并支持逐字模板重构；`skills/vocational-theory-exam/` 编制理论卷及独立答案；`skills/vocational-exam-package/` 显式复用前两者组织完整试卷包。三个入口遵循 Markdown-first 和候选交付契约；当前提供 agent 工作流及实操只读审计工具，尚未提供自动 renderer/publisher，不计入既有六技能自动干净交付回归覆盖。
+
 ```text
 .
 ├── AGENTS.md
