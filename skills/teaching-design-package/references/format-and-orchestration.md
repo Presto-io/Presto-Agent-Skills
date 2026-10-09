@@ -53,6 +53,7 @@ Frontmatter is for stable facts a teacher can verify directly:
 - `course_attribute`
 - `textbook_name`
 - `class_name`
+- `classroom` (optional授课地点)
 - `teachers`
 - `first_teaching_day`
 

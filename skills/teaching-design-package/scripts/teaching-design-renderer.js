@@ -190,6 +190,7 @@ function emitCover(lines) {
     '    measure(text(font: FONT_SONG, size: zh(4), weight: "bold")[课程属性：]).width,',
     '    measure(text(font: FONT_SONG, size: zh(4), weight: "bold")[教材名称：]).width,',
     '    measure(text(font: FONT_SONG, size: zh(4), weight: "bold")[教学班级：]).width,',
+    '    measure(text(font: FONT_SONG, size: zh(4), weight: "bold")[授课地点：]).width,',
     '    measure(text(font: FONT_SONG, size: zh(4), weight: "bold")[计划总课时：]).width,',
     '    measure(text(font: FONT_SONG, size: zh(4), weight: "bold")[教师姓名：]).width,',
     '    measure(text(font: FONT_SONG, size: zh(4), weight: "bold")[使用时间：]).width,',
@@ -211,6 +212,7 @@ function emitCover(lines) {
     ['教师姓名', metadata.teacher_name],
     ['使用时间', normalizeUseTime(model.derived.use_time)],
   ];
+  if (metadata.classroom) rows.splice(4, 0, ['授课地点', metadata.classroom]);
   for (const [label, value] of rows) {
     lines.push(
       `      // cover-label: ${label}`,

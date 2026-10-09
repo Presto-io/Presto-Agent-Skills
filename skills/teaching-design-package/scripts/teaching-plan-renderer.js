@@ -102,6 +102,7 @@ const lines = [
   `    [课程名称：${content(metadata.course_name)}],`,
   `    [授课教师：${content(metadata.teacher_name)}],`,
   `    [授课班级：${content(metadata.class_name)}],`,
+  ...(metadata.classroom ? [`    [授课地点：${content(metadata.classroom)}],`] : []),
   '  )',
   ']',
   '',
