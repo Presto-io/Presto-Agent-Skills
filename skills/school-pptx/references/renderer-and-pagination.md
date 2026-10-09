@@ -20,6 +20,8 @@ python3 skills/school-pptx/scripts/verify_pptx_renderer.py phase-51
 
 ## Logical Slides to Physical Slides
 
+课堂课件还须执行 [语义分页规则](semantic-pagination.md)。下列机械分页保证内容保留，不保证讲述模块完整或比较同步；源稿先划分语义逻辑页，render 后检查实际物理页，发现残句或交错时重写源稿并重新渲染。
+
 - Markdown 中每个显式 slide 是逻辑页；模板拥有的 `closing` 在末尾隐式追加。
 - renderer 在创建 PPTX 对象前完成全部语义拆分，并冻结 logical→physical mapping；emitter 只机械消费冻结计划，不重新分页。
 - `contents` 只展示无编号 `section` 标题并使用固定可读字号分页；普通正文按完整段落序列、列表、标题和代码边界分页。
