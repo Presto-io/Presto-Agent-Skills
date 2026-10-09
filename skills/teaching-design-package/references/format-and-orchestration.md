@@ -53,7 +53,6 @@ Frontmatter is for stable facts a teacher can verify directly:
 - `course_attribute`
 - `textbook_name`
 - `class_name`
-- `classroom` (optional授课地点)
 - `teachers`
 - `first_teaching_day`
 
@@ -269,13 +268,14 @@ For the default template, the public root contains exactly:
 - `电气设备控制线路安装与调试教学资料.md`
 - `电气设备控制线路安装与调试教学资料.pdf`
 - `电气设备控制线路安装与调试授课进度计划表.pdf`
+- `电气设备控制线路安装与调试授课进度计划表.docx`
 - `电气设备控制线路安装与调试教学设计方案.pdf`
 
 The old English filenames `teaching-design-package-full.md`, `teaching-design-package.typ`, `teaching-design-package.pdf`, `teaching-plan.pdf`, and `teaching-design.pdf` are no longer successful public output names. English names may remain internal helper names, staging names, or compatibility command names, but they must not appear at the successful public root.
 
 `public_delivery.expected_public_filenames` is the sole dynamic mutation
 authority. The current value is one unified Markdown, one merged PDF, and one
-PDF for each registry item. Model, status, diagnostics, module Markdown/Typst,
+PDF for each registry item, plus one approved-format teaching-plan DOCX. Model, status, diagnostics, module Markdown/Typst,
 module PDFs before publication, merge plan/status/logs, and failure evidence live
 under `.work/<run-id>/evidence/`; only the complete final set enters
 `.work/<run-id>/candidate/`. The publisher creates `rollback/` only when needed.

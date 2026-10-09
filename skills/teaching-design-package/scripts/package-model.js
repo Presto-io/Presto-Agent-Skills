@@ -33,12 +33,9 @@ const ALLOWED_FRONTMATTER = new Set([
   'course_attribute',
   'textbook_name',
   'class_name',
-  'classroom',
   'teachers',
   'first_teaching_day',
 ]);
-
-const OPTIONAL_FRONTMATTER = new Set(['classroom']);
 
 const FORBIDDEN_FRONTMATTER = new Set([
   'daily_hours',
@@ -164,7 +161,6 @@ function parseFrontmatter(frontmatter) {
   }
   for (const key of ALLOWED_FRONTMATTER) {
     if (!(key in data)) {
-      if (OPTIONAL_FRONTMATTER.has(key)) continue;
       if (key === 'course_name') {
         fail('invalid_course_name_for_filename', 'course_name is required for public delivery filenames', {
           source_markdown: inputPath,
@@ -514,7 +510,6 @@ function buildModuleFrontmatter(metadata, scheduling) {
       course_name: metadata.course_name,
       teacher_name: teacherName,
       class_name: metadata.class_name,
-      classroom: metadata.classroom,
       first_teaching_day: metadata.first_teaching_day,
       daily_hours: scheduling.daily_hours,
       template: 'jiaoan-jihua',
@@ -525,7 +520,6 @@ function buildModuleFrontmatter(metadata, scheduling) {
       course_attribute: metadata.course_attribute,
       textbook_name: metadata.textbook_name,
       class_name: metadata.class_name,
-      classroom: metadata.classroom,
       total_hours: scheduling.total_hours,
       teacher_name: teacherName,
       use_time: scheduling.course.use_time,
@@ -989,7 +983,6 @@ const metadata = {
   course_attribute: unified.course_attribute,
   textbook_name: unified.textbook_name,
   class_name: unified.class_name,
-  classroom: unified.classroom || '',
   teachers: unified.teachers,
   teacher_name: unified.teachers.join('、'),
   first_teaching_day: firstTeachingDay,

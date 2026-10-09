@@ -40,13 +40,13 @@ metadata:
 ## Teacher Workflow
 
 1. **收集源材料**：接收课程标准、教材、任务清单、进度安排、活动过程、评价要求、学校格式约束和教师补充说明。先把可读文本内容作为事实来源；OCR 或任意二进制提取不作为本技能必需能力。
+   教师提供校历时，先按 `references/calendar-recognition.md` 提取页面和文本、识别教学日例外并逐日复核，生成独立候选 JSON；在排课前核对正式校历是否适用，除非维护者明确决定合并或替换，否则不得改动技能内 `references/calendar.json`
 2. **抽取并归一化**：把多份材料映射到一个课程资料包，合并重复事实，保留可追溯的正文证据，不按源文件碎片继续组织。
 3. **澄清/提问**：先从正文证据里找答案；只对缺失、冲突、不确定或依赖教师选择的事实提问。问题按课程身份、班级/教师、时间课时、学习任务、活动设计、资源评价、学校格式和复核标记分组。
 4. **生成统一 Markdown**：产出一份完整的 `teaching-design-package-full.md`，或使用课程专属文件名如 `某某某课教学资料.md`。这份 Markdown 是教师可编辑的 source of truth。
 5. **教师审阅/编辑**：暂停让教师审阅、改写、补充或保留复核标记。不要要求教师运行、排序或拼接其他独立技能；不要把脚本状态当成内容审阅。
 6. **定稿 Markdown**：只有当教师确认内容可进入交付，且阻塞性复核标记已解决或明确保留为非最终状态时，才把 Markdown 视为 finalized Markdown。
 7. **脚本验证/渲染**：对定稿 Markdown 运行包内脚本，生成 package-owned data model、unified Typst、PDF 状态和交付证据。脚本只做 finalized Markdown validation/rendering，不承担教师互动和内容组织 UX。
-8. **校历识别**：当教师提供校历时，先按 `references/calendar-recognition.md` 提取页面和文本、识别教学日例外并逐日复核，生成独立候选 JSON；除非维护者明确决定合并或替换，否则不得改动技能内 `references/calendar.json`。
 
 ### 教案行末标点规则
 

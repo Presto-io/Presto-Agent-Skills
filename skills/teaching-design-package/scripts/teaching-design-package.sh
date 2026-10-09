@@ -267,7 +267,6 @@ const lines = [
   `专业名称：${plain(model.metadata.major_name)}\\`,
   `班级：${plain(model.metadata.class_name)}\\`,
   `教师：${plain(model.metadata.teacher_name)}\\`,
-  ...(model.metadata.classroom ? [`授课地点：${plain(model.metadata.classroom)}\\`] : []),
   `学期：${plain(model.derived.term_label)}\\`,
   `总课时：${plain(model.derived.total_hours_label)}\\`,
   `起止日期：${plain(model.derived.date_range)}`,
