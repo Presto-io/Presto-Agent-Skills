@@ -89,6 +89,8 @@ cp -R skills/<skill-name> <runtime-skill-root>/<skill-name>
 
 ## 仓库结构
 
+`skills/party-member-study-notes-cn/` 收纳来自 6800 Hermes 的党员学习笔记工作流，并按 canonical 规范整理为材料阅读、事实澄清、中文起草和审阅；默认优先依赖 `gongwen` 交付 PDF，不可用时用已有工具输出普通 PDF，并保留 Markdown 源稿，尚不属于六技能自动干净交付覆盖。
+
 ```text
 .
 ├── AGENTS.md

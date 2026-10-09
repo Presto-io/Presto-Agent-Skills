@@ -18,6 +18,8 @@
 
 ## Skill Sources
 
+`skills/party-member-study-notes-cn/SKILL.md` 是党员学习笔记、心得体会与组织生活记录的 canonical 写作入口。当前仅需单个入口文件，不预创建模板或脚本目录；默认优先依赖独立 `gongwen` 工作流交付 PDF，不可用时使用已有 PDF 工具兜底，不复制依赖的 renderer，并保留 Markdown 源稿。
+
 | Path | Purpose |
 |------|---------|
 | `skills/<skill-name>/SKILL.md` | canonical 技能源文件 |

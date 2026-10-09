@@ -53,6 +53,11 @@
 
 ## Runtime Notes
 
+### Party Member Study Notes
+
+- `party-member-study-notes-cn` 是无脚本的内容写作工作流，六种 runtime 均读取同一个 canonical `SKILL.md`；实际发现与输入读取权限仍需安装期核验。
+- 默认优先依赖 `gongwen` 交付 PDF，另行核验其可发现性、依赖和授权目录，按其交付契约执行；不可用时以环境已有 PDF 工具兜底并验证中文与分页。文字起草无外部命令依赖，所有 PDF 能力不可用时如实交付 Markdown 并报告限制。该技能不新增自动 clean-delivery coverage。
+
 ### Teaching Design Package
 
 - `teaching-design-package` 是整包编排 skill：运行时必须能保留 `references/format-and-orchestration.md`、`references/calendar.json`、`templates/teaching-design-package-full.md`、`scripts/teaching-design-package.sh` 以及 package-owned renderer scripts；旧授课计划和实操教案版式规则已迁入本 skill folder，正常运行不得要求读取 sibling skill 支持文件。
