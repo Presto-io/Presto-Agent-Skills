@@ -688,7 +688,7 @@ def command_plan(args: argparse.Namespace) -> int:
         resolved_photo = resolve_layout_photo(document.path, assets_root, photo, {"photo_mode": requested_photo_mode})
         photo_asset = None if resolved_photo is None else PhotoAsset("embedded-normalized.png")
         font_manifest_hash = validate_font_manifest(default_skill_root() / "fonts", typst_executable)
-        frozen_plan = build_frozen_resume_plan(data, theme, requested_photo_mode, photo_asset, font_manifest_hash, args.pages)
+        frozen_plan = build_frozen_resume_plan(data, theme, requested_photo_mode, photo_asset, font_manifest_hash, args.pages, typst_executable=typst_executable)
     payload = {
         "status": "passed",
         "phase": 47,
@@ -870,16 +870,17 @@ def _execute_publication(
     from graduate_resume_layout import build_layout_feedback_adapter
     from graduate_resume_render import EvidenceSink, build_render_matrix, render_candidate_matrix, safe_component
     from graduate_resume_targeting import PageBudgetRequest, evaluate_hard_conditions, resolve_version_projection
+    from graduate_resume_emphasis import job_context
 
     photo_mode, photo_bytes, feedback_photo, font_hash = _resolve_publication_photo(args, document, typst_executable)
     page_budget = PageBudgetRequest(args.pages)
-    feedback = build_layout_feedback_adapter(publication_data, photo_mode, feedback_photo, font_hash)
     overrides = {"retain": args.retain, "exclude": args.exclude, "pin": args.pin}
     projections = []
     condition_evidence: dict[str, dict[str, Any]] = {}
     condition_public: dict[str, dict[str, Any]] = {}
     allowed = tuple(args.allow_gap_target)
     for target in selected:
+        feedback = build_layout_feedback_adapter(publication_data, photo_mode, feedback_photo, font_hash, typst_executable, job_context=job_context(target))
         target_id = None if target is None else str(target["id"])
         target_overrides = () if target_id is None else tuple(not_applicable.get(target_id, ()))
         projection = resolve_version_projection(

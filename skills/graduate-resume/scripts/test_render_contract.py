@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import contextlib
+import re
+import shutil
 from dataclasses import replace
 import subprocess
 import sys
@@ -57,23 +60,27 @@ class TypstRuntimeResolverTests(unittest.TestCase):
         )
         path.chmod(0o755)
 
-    def test_real_homebrew_symlink_uses_one_private_snapshot(self) -> None:
+    def test_real_symlink_uses_one_private_snapshot(self) -> None:
         from graduate_resume_typst_runtime import resolve_typst_executable
 
-        candidate = Path("/opt/homebrew/bin/typst")
-        self.assertTrue(candidate.is_symlink())
-        with resolve_typst_executable(candidate) as executable:
-            snapshot = executable.snapshot_path
-            self.assertEqual(executable.version, "0.15.0")
-            self.assertNotEqual(snapshot, candidate)
-            self.assertNotEqual(snapshot, candidate.resolve())
-            self.assertEqual(snapshot.stat().st_mode & 0o777, 0o500)
-            self.assertEqual(snapshot.stat().st_dev, executable.snapshot_dev)
-            self.assertEqual(snapshot.stat().st_ino, executable.snapshot_ino)
-            self.assertEqual(hashlib.sha256(snapshot.read_bytes()).hexdigest(), executable.snapshot_sha256)
-            completed = executable.run(("--version",), text=True)
-            self.assertEqual(completed.stdout.strip(), "typst 0.15.0 (unknown commit)")
-        self.assertFalse(snapshot.exists())
+        discovered = shutil.which("typst")
+        self.assertIsNotNone(discovered)
+        with tempfile.TemporaryDirectory() as temporary:
+            candidate = Path(temporary) / "typst-link"
+            candidate.symlink_to(Path(discovered).resolve())
+            original_version = subprocess.check_output([str(candidate), "--version"], text=True).strip()
+            with resolve_typst_executable(candidate) as executable:
+                snapshot = executable.snapshot_path
+                self.assertEqual(executable.version, "0.15.0")
+                self.assertNotEqual(snapshot, candidate)
+                self.assertNotEqual(snapshot, candidate.resolve())
+                self.assertEqual(snapshot.stat().st_mode & 0o777, 0o500)
+                self.assertEqual(snapshot.stat().st_dev, executable.snapshot_dev)
+                self.assertEqual(snapshot.stat().st_ino, executable.snapshot_ino)
+                self.assertEqual(hashlib.sha256(snapshot.read_bytes()).hexdigest(), executable.snapshot_sha256)
+                completed = executable.run(("--version",), text=True)
+                self.assertEqual(completed.stdout.strip(), original_version)
+            self.assertFalse(snapshot.exists())
 
     def test_relative_and_absolute_multihop_chains_are_supported(self) -> None:
         from graduate_resume_typst_runtime import resolve_typst_executable
@@ -413,13 +420,13 @@ class TypstConsumerContractTests(unittest.TestCase):
         )
         payload = emit_final_markdown(
             document.data, projection, canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
-            theme_key="modern", theme_label="现代简洁", page_count=1, photo_mode="no-photo",
+            theme_key="conservative", theme_label="保守稳妥", page_count=1, photo_mode="no-photo",
         )
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "resume.md"
             path.write_bytes(payload)
             final = load_final_resume(path)
-            plan = build_frozen_resume_plan(final.fact_view(), resolve_theme("modern"), "no-photo", None, "a" * 64, "auto")
+            plan = build_frozen_resume_plan(final.fact_view(), resolve_theme("conservative"), "no-photo", None, "a" * 64, "auto")
             typst = emit_typst(plan, final)
         self.assertNotIn(document.data["skills"][0]["id"], typst)
         self.assertIn("theme-layout", typst)
@@ -436,6 +443,10 @@ class TypstConsumerContractTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first[16:24], (413).to_bytes(4, "big") + (579).to_bytes(4, "big"))
         self.assertNotIn(b"EXIF", first)
+        from PIL import Image
+        with Image.open(io.BytesIO(first)) as image:
+            self.assertEqual(image.mode, "RGBA")
+            self.assertEqual(image.getpixel((0, 0))[3], 0)
 
     def test_typst_rejects_candidate_controlled_container_id(self) -> None:
         from graduate_resume_final_markdown import emit_final_markdown, load_final_resume
@@ -473,7 +484,7 @@ class TypstConsumerContractTests(unittest.TestCase):
         import fitz
 
         from graduate_resume_final_markdown import emit_final_markdown, load_final_resume
-        from graduate_resume_layout import _height, build_frozen_resume_plan, project_containers, resolve_theme
+        from graduate_resume_layout import build_frozen_resume_plan, project_containers, resolve_theme
         from graduate_resume_typst import emit_typst
 
         source = SKILL_ROOT / "templates" / "graduate-resume.md"
@@ -509,10 +520,8 @@ class TypstConsumerContractTests(unittest.TestCase):
             for marker in markers:
                 self.assertIn(marker, frozen_text)
             for container in plan.containers:
-                self.assertEqual(
-                    container.height_mm,
-                    _height(tuple(value for _, value in container.fields)),
-                )
+                self.assertGreater(container.height_mm, 0)
+                self.assertLess(container.height_mm, plan.pages[0].usable_height_mm)
             reordered = final.fact_view()
             reordered["candidate"] = dict(reversed(tuple(reordered["candidate"].items())))
             for section in ("education", "skills", "certificates", "projects", "training", "experience"):
@@ -537,7 +546,7 @@ class TypstConsumerContractTests(unittest.TestCase):
             with fitz.open(pdf_path) as pdf:
                 pdf_text = "\n".join(page.get_text() for page in pdf)
             for marker in markers:
-                self.assertIn(marker, typst)
+                self.assertIn(marker, re.sub(r"#strong\[([^\[\]]*)\]", r"\1", typst))
                 self.assertIn(marker, pdf_text)
 
     def test_structured_display_fields_reject_unregistered_or_unsafe_values(self) -> None:

@@ -15,7 +15,9 @@ Presto Agent Skills 是一个面向多类 AI agent 的技能仓库框架。它�
 
 其中 OpenClaw 和 Hermes Agent 是 v1 必须支持的目标。
 
-`graduate-resume` 技能现已完成 Phase 46 基线：沉淀毕业生简历资料契约、照片/target 一次追问语义、fixture 基线，以及离线 `validate` / `target` / `plan` / `verify` CLI。
+`graduate-resume` 技能当前为 `0.3.2`：支持毕业生真实资料校验、岗位定向、三主题 Markdown/Typst/PDF 生成和事务交付，包含实际排版测量、强制双栏主题、网格信息栏、本地图标及岗位词组强调。离线 CLI 提供 `validate` / `target` / `plan` / `render` / `batch` / `verify`；Phase 49 完整验收及六 runtime 安装、人工 UAT 证据尚未齐备，不能据此宣称完整发布验收通过。
+
+**严禁提交任何真实学生的简历资料、照片、预览或成品。** 仓库只保留通用技能和完全虚构的测试夹具；真实资料及制作目录必须位于仓库外。提交前遵守[简历技能仓库发布规则](skills/graduate-resume/references/repository-publication.md)，审查暂存区内容，不只检查文件名。
 
 ## 给 Agent 说的话
 
@@ -107,7 +109,9 @@ cp -R skills/<skill-name> <runtime-skill-root>/<skill-name>
 │   ├── README.md
 │   ├── graduate-resume/
 │   │   ├── SKILL.md
+│   │   ├── assets/
 │   │   ├── fixtures/
+│   │   ├── fonts/
 │   │   ├── references/
 │   │   ├── scripts/
 │   │   └── templates/
@@ -186,7 +190,7 @@ cp -R skills/<skill-name> <runtime-skill-root>/<skill-name>
 ## 已有技能
 
 - `end-of-term-teaching-materials`：用于整理期末教学提交材料和表格，先输出可复核 Markdown intermediate，再以固定四件套事务发布 Markdown、Typst、PDF 和 XLSX；model、manifest 与评分证据不属于 current。Artifact contract 见 `skills/end-of-term-teaching-materials/references/data-contract.md` 和 `skills/end-of-term-teaching-materials/references/workflow-and-artifacts.md`。
-- `graduate-resume`：用于整理毕业生简历的主题无关 canonical 资料，先冻结个人资料、教育、技能、项目、实训、目标岗位和照片状态，再进入后续主题、定向和离线 Markdown/Typst/PDF 生成。Phase 46 当前提供 `SKILL.md`、模板、fixtures、schema/reference 文档，以及可执行的离线 `validate` / `target` / `plan` / `verify` CLI。
+- `graduate-resume`：整理毕业生简历的主题无关 canonical 资料，在真实事实校验后生成通用或定向的保守稳妥、现代简洁、个性设计三主题 Markdown/Typst/PDF，支持预检、确认发布、完整三件套历史与失败回滚。安装时保留整个技能目录，包括字体、图标及许可；排版回归与 Phase 49 完整验收分别报告，不能把样张成功当作六 runtime 和人工 UAT 全部通过。
 - `gongwen`：用于写作、归一化和验证类公文文体文档，最终交付目录为 `documents/YYYYMMDD 事项名称/`，只保留同级 `标题.md`、`标题.typ`、`标题.pdf`；署名和日期由 YAML frontmatter 自动落款。Artifact contract 见 `skills/gongwen/references/format-and-rendering.md`。
 - `school-presentation`：用于整理学校正式汇报、课程展示、培训课件、招生宣讲或项目答辩材料，先输出 `school-presentation-full.md` 结构的 Markdown logical-slide intermediate，再生成带学校视觉识别的离线 HTML 演示文稿。生成的 deck 内置 preview workspace、overview、playback、presenter markup、课堂 reveal/mask/peek/排序/结构化版式，以及一键最终 PDF 导出；PDF 会展开揭示内容、保留答案/强调/排序最终态、支持目录链接和 reader outline，并按当前章节页预览状态包含或跳过章节分隔页。Authoring、export 和 verification contract 分别见 `skills/school-presentation/references/authoring-and-layout.md`、`skills/school-presentation/references/playback-and-export.md` 和 `skills/school-presentation/references/verification-contract.md`。
 - `school-pptx`：把已审阅的 Markdown logical slides 通过受控 `standard-school` template 生成原生可编辑 PowerPoint；[canonical skill](skills/school-pptx/SKILL.md) 支持受限的 hero、标注图、流程与 KPI 构图，以及离线 hash-bound 本地媒体，提供 review-before-render、public `verify --workdir` 和完整 fixture 回归入口。自动结构 PASS 之后仍须在真实 Microsoft PowerPoint 或 WPS Presentation 中完成人工 UAT，不能由代理自动批准。

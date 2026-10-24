@@ -14,6 +14,7 @@ from graduate_resume_cli import CliError
 from graduate_resume_layout import FrozenResumePlan, _SECTION_LABELS
 from graduate_resume_final_markdown import load_final_resume
 from graduate_resume_render import build_stem
+from graduate_resume_profile import personal_fields
 
 LAYOUT_RENDER_MISMATCH = "LAYOUT_RENDER_MISMATCH"
 
@@ -74,12 +75,22 @@ def verify_rendered_layout(plan: FrozenResumePlan, facts: dict[str, Any], pdf_pa
             _fail("首页没有以个人信息锚点开始。")
         if index > 0:
             first = containers[page.containers[0]]
+            sidebar_first = next((containers[container_id] for container_id in page.containers if page.composition.is_sidebar(containers[container_id])), None)
+            if sidebar_first is not None:
+                first = sidebar_first
             if not text.startswith(_compact(_SECTION_LABELS[first.section])):
                 _fail("第二页没有以合法模块标题开始。")
         for container_id in page.containers:
             container = containers[container_id]
-            for _, value in container.fields:
+            for key, value in container.fields:
+                personal = personal_fields(str(value)) if container.section == "candidate" and key == "summary" else ()
+                if personal:
+                    if any(_compact(field_value) not in text for _, field_value in personal):
+                        _fail("PDF 缺少个人信息字段。")
+                    continue
                 expected = _compact(str(value))
+                if key.split("[", 1)[0] in {"summary", "outcomes", "items", "note", "courses", "honors", "tools"}:
+                    expected = expected.rstrip("。.;；,，、:：")
                 if expected and expected not in text:
                     _fail("PDF 缺少冻结条目事实。")
             for other_index, other_text in enumerate(page_texts):
@@ -99,6 +110,18 @@ def verify_rendered_layout(plan: FrozenResumePlan, facts: dict[str, Any], pdf_pa
                     if expected and expected in _compact(other_text) and not any(expected in other for other in other_expected):
                         _fail("PDF 将冻结条目事实放入错误页面。")
         _verify_png_bounds(png_paths[index], (14, 14, 15, 15))
+        if page.composition.fill_satisfied:
+            with fitz.open(pdf_path) as document:
+                lines = [line for block in document[index].get_text("dict")["blocks"] for line in block.get("lines", [])]
+                boundary = (15 + page.composition.sidebar_width_mm + 3) * 72 / 25.4
+                columns = [lines] if not page.composition.sidebar_sections else [
+                    [line for line in lines if line["bbox"][0] < boundary],
+                    [line for line in lines if line["bbox"][0] >= boundary],
+                ]
+                for column in columns:
+                    bottom = max((line["bbox"][3] for line in column), default=0) * 25.4 / 72
+                    if not 247 <= bottom <= 282:
+                        _fail("PDF 实际列底未达到铺满标准或超过安全边界。")
 
 
 def observe_rendered_layout(markdown_path: Path, typst_path: Path, pdf_path: Path, png_paths: list[Path]) -> dict[str, Any]:

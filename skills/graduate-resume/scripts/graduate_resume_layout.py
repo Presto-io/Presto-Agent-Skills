@@ -8,8 +8,10 @@ import math
 import os
 import stat
 import subprocess
+import tempfile
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from functools import lru_cache
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping
 
@@ -127,6 +129,7 @@ class ContainerPlan:
     fields: tuple[tuple[str, str], ...]
     page_number: int
     height_mm: float
+    emphasis_terms: tuple[str, ...] = ()
 
     def to_projection(self) -> dict[str, Any]:
         return {"id": self.id, "kind": self.kind, "section": self.section, "source_fact_ids": list(self.source_fact_ids), "field_names": [key for key, _ in self.fields], "page_number": self.page_number, "height_mm": self.height_mm}
@@ -144,6 +147,28 @@ class EntryBudget:
 
 
 @dataclass(frozen=True, slots=True)
+class ColumnComposition:
+    sidebar_sections: tuple[str, ...] = ()
+    sidebar_width_mm: float = 0.0
+    leading_em: float = 0.95
+    sidebar_gap_mm: float = 0.0
+    main_gap_mm: float = 0.0
+    natural_height_mm: float = 0.0
+    sidebar_height_mm: float = 0.0
+    main_height_mm: float = 0.0
+    filled_height_mm: float = 0.0
+    fill_satisfied: bool = False
+    detail_gap_mm: float = 0.0
+    sidebar_container_ids: tuple[str, ...] = ()
+
+    def is_sidebar(self, container: ContainerPlan) -> bool:
+        return container.id in self.sidebar_container_ids if self.sidebar_container_ids else container.section in self.sidebar_sections
+
+    def to_projection(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in self.__dataclass_fields__}
+
+
+@dataclass(frozen=True, slots=True)
 class PagePlan:
     number: int
     usable_height_mm: float
@@ -152,9 +177,10 @@ class PagePlan:
     elastic_gap_mm: float
     anchors: tuple[str, ...]
     containers: tuple[str, ...]
+    composition: ColumnComposition = ColumnComposition()
 
     def to_projection(self) -> dict[str, Any]:
-        return {"number": self.number, "usable_height_mm": self.usable_height_mm, "used_height_mm": self.used_height_mm, "utilization": self.utilization, "elastic_gap_mm": self.elastic_gap_mm, "anchors": list(self.anchors), "containers": list(self.containers)}
+        return {"number": self.number, "usable_height_mm": self.usable_height_mm, "used_height_mm": self.used_height_mm, "utilization": self.utilization, "elastic_gap_mm": self.elastic_gap_mm, "anchors": list(self.anchors), "containers": list(self.containers), "composition": self.composition.to_projection()}
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,6 +249,28 @@ class FrozenResumePlan:
             raise CliError(LAYOUT_PLAN_INVALID, "冻结布局页面归属不完整或顺序无效。")
         containers_by_id = {container.id: container for container in self.containers}
         for page in self.pages:
+            composition = page.composition
+            if self.theme_key != "conservative" and (
+                not composition.sidebar_sections or not composition.sidebar_width_mm
+                or not any(composition.is_sidebar(containers_by_id[container_id]) for container_id in page.containers)
+                or not any(not composition.is_sidebar(containers_by_id[container_id]) and containers_by_id[container_id].section != "candidate" for container_id in page.containers)
+            ):
+                raise CliError(LAYOUT_PLAN_INVALID, "双栏主题的每一页必须同时具有左右两栏正文，禁止退回单栏。")
+            if composition.sidebar_container_ids and (
+                len(set(composition.sidebar_container_ids)) != len(composition.sidebar_container_ids)
+                or not set(composition.sidebar_container_ids) <= set(page.containers) - {"profile"}
+            ):
+                raise CliError(LAYOUT_PLAN_INVALID, "双栏条目归属必须绑定当前页面的完整正文条目。")
+            if (
+                composition.sidebar_width_mm not in ((0, 60, 70, 80, 88) if self.theme_key == "modern" else (0, 70, 80, 88))
+                or not 0 <= composition.sidebar_gap_mm <= 10
+                or not 0 <= composition.main_gap_mm <= 10
+                or composition.detail_gap_mm not in (0, 1.5, 3, 4.5)
+                or composition.leading_em != 0.95
+                or abs(page.used_height_mm - composition.filled_height_mm) > 0.02
+                or page.used_height_mm > page.usable_height_mm
+            ):
+                raise CliError(LAYOUT_PLAN_INVALID, "冻结栏位或间隙超出可读边界。")
             for container_id in page.containers:
                 container = containers_by_id.get(container_id)
                 if container is None:
@@ -244,9 +292,9 @@ class FrozenResumePlan:
 
 _COMMON = {"safe_margins_mm": (14, 14, 15, 15), "spacing_tokens": ("xs", "sm", "md", "lg", "xl"), "photo_policy": PhotoFitPolicy()}
 THEME_SPECS = {
-    "conservative": ThemeSpec("conservative", "保守稳妥", "single-column-right-photo", PhotoSlot(32, 42, "top-right"), "remove-slot-and-decoration", **_COMMON, column_ratio=(100, 0), palette=("#FFFFFF", "#F2F4F7", "#1F4E79"), typography_pt=(9, 10.1, 12.6, 23)),
-    "modern": ThemeSpec("modern", "现代简洁", "sidebar-photo", PhotoSlot(28, 36, "left-sidebar"), "move-sidebar-content-up", **_COMMON, column_ratio=(31, 69), palette=("#FFFFFF", "#EFF5F4", "#0F766E"), typography_pt=(8.5, 9.45, 12, 18)),
-    "expressive": ThemeSpec("expressive", "个性设计", "header-photo", PhotoSlot(30, 40, "header-right"), "expand-identity-bar", **_COMMON, column_ratio=(38, 62), palette=("#FFFEFA", "#F3F1EA", "#8A6A20"), typography_pt=(8.7, 9.8, 12.5, 21)),
+    "conservative": ThemeSpec("conservative", "保守稳妥", "single-column-right-photo", PhotoSlot(32, 42, "top-right"), "remove-slot-and-decoration", **_COMMON, column_ratio=(100, 0), palette=("#FFFFFF", "#F2F4F7", "#183B62"), typography_pt=(9, 10.5, 12, 27)),
+    "modern": ThemeSpec("modern", "现代简洁", "sidebar-photo", PhotoSlot(28, 36, "top-right"), "move-sidebar-content-up", **_COMMON, column_ratio=(33, 67), palette=("#FFFFFF", "#EAF4F2", "#0F766E"), typography_pt=(9, 10.2, 12, 27)),
+    "expressive": ThemeSpec("expressive", "个性设计", "header-photo", PhotoSlot(30, 40, "header-right"), "expand-identity-bar", **_COMMON, column_ratio=(37, 63), palette=("#FFFEFA", "#F0E8D9", "#9A6C18"), typography_pt=(9, 10.2, 12, 27)),
 }
 _ALIASES = {spec.label: key for key, spec in THEME_SPECS.items()}
 
@@ -263,15 +311,6 @@ def _strings(value: Any) -> tuple[str, ...]:
     if isinstance(value, (list, tuple)): return tuple(part for item in value for part in _strings(item))
     if isinstance(value, dict): return tuple(part for item in value.values() for part in _strings(item))
     return ()
-
-
-def _height(values: tuple[str, ...]) -> float:
-    width = 32
-    lines = sum(max(1, math.ceil(len(value) / width)) for value in values)
-    # Calibrated against the controlled Typst compositions. The former flat
-    # 19mm container surcharge made normal graduate resumes spill into a thin,
-    # artificial second page even though their real A4 render fit cleanly.
-    return round(9.0 + lines * 5.0, 2)
 
 
 def _display_string(value: Any) -> str:
@@ -313,14 +352,17 @@ def _display_fields(section: str, item: Mapping[str, Any]) -> tuple[tuple[str, s
     return tuple(fields)
 
 
-def project_containers(verified_data: dict[str, Any], overrides: dict[str, str] | None = None) -> tuple[ContainerPlan, ...]:
+def project_containers(verified_data: dict[str, Any], overrides: dict[str, str] | None = None, *, job_context: str = "") -> tuple[ContainerPlan, ...]:
+    from graduate_resume_emphasis import ordered_courses, relevance, relevant_terms
     overrides = overrides or {}
     containers: list[ContainerPlan] = []
     profile = verified_data.get("candidate")
     if not isinstance(profile, dict) or not profile:
         raise CliError(LAYOUT_PLAN_INVALID, "已验证资料缺少个人信息。")
     profile_fields = _display_fields("candidate", profile)
-    containers.append(ContainerPlan("profile", "fact-block", "candidate", ("profile",), profile_fields, 1, _height(tuple(value for _, value in profile_fields))))
+    terms = relevant_terms(profile, job_context)
+    course_context = job_context or "；".join((str(profile.get("headline", "")), *profile.get("directions", ())))
+    containers.append(ContainerPlan("profile", "fact-block", "candidate", ("profile",), profile_fields, 1, 0.0))
     for section in ("education", "skills", "certificates", "projects", "training", "experience"):
         raw = verified_data.get(section, ())
         if not raw: continue
@@ -332,11 +374,15 @@ def project_containers(verified_data: dict[str, Any], overrides: dict[str, str] 
                 raise CliError(LAYOUT_PLAN_INVALID, "展示事实必须是映射。")
             fact_id = str(item.get("id") or f"{section}-{index + 1}")
             fields = _display_fields(section, item)
+            if section == "education":
+                fields = tuple((key, ordered_courses(value, terms, course_context) if key.split("[", 1)[0] == "courses" else value) for key, value in fields)
+                courses = iter(sorted((value for key, value in fields if key.split("[", 1)[0] == "courses"), key=lambda value: -relevance(value, terms, course_context)))
+                fields = tuple((key, next(courses) if key.split("[", 1)[0] == "courses" else value) for key, value in fields)
             if not fields:
                 raise CliError(LAYOUT_PLAN_INVALID, "展示事实缺少可见内容。")
             kind = overrides.get(section, "list-entry" if section in _LIST_SECTIONS else "fact-block")
             if kind not in {"fact-block", "list-entry"}: raise CliError(LAYOUT_PLAN_INVALID, "容器覆盖无效。")
-            containers.append(ContainerPlan(fact_id, kind, section, (fact_id,), fields, 1, _height(tuple(value for _, value in fields))))
+            containers.append(ContainerPlan(fact_id, kind, section, (fact_id,), fields, 1, 0.0, terms))
     return tuple(containers)
 
 
@@ -354,47 +400,141 @@ def _measurement(theme_key: str) -> tuple[dict[str, float], str, str]:
         raise CliError(LAYOUT_PLAN_INVALID, "布局测量配置无效。") from exc
 
 
-def _paginate(containers: tuple[ContainerPlan, ...], count: int, epsilon: float) -> tuple[tuple[ContainerPlan, ...], tuple[PagePlan, ...]]:
-    usable = 269.0
-    pages: list[list[ContainerPlan]] = [[] for _ in range(count)]
-    used = [0.0] * count
-    page = 0
-    for container in containers:
-        if container.height_mm > usable: raise CliError(LAYOUT_UNSATISFIABLE, "单个完整条目超过可读页面边界。")
-        if used[page] + container.height_mm > usable:
-            page += 1
-            if page >= count: raise CliError(LAYOUT_UNSATISFIABLE, "内容无法在请求页数内完整排入。")
-        pages[page].append(container)
-        used[page] += container.height_mm
-    if count == 2 and not pages[1]:
-        movable = pages[0][-1:]
-        if not movable or movable[0].id == "profile": raise CliError(LAYOUT_UNSATISFIABLE, "无法生成有效第二页。")
-        pages[0] = pages[0][:-1]; pages[1] = movable; used[0] -= movable[0].height_mm; used[1] += movable[0].height_mm
-    # A forced two-page resume must read like two deliberate pages. When the
-    # normal overflow leaves only a thin tail, move one complete final entry
-    # forward. This preserves fact order and atomicity without inventing space.
-    if count == 2 and used[1] / usable < 0.40 and len(pages[0]) > 2:
-        movable = pages[0][-1]
-        if movable.kind == "list-entry" and movable.section in _LIST_SECTIONS:
-            pages[0] = pages[0][:-1]
-            pages[1] = [movable, *pages[1]]
-            used[0] -= movable.height_mm
-            used[1] += movable.height_mm
-    frozen = tuple(tuple(ContainerPlan(item.id, item.kind, item.section, item.source_fact_ids, item.fields, number + 1, item.height_mm) for item in items) for number, items in enumerate(pages))
+@lru_cache(maxsize=64)
+def _query_layout_heights(source: str, font_hash: str, executable: TypstExecutable) -> tuple[dict[str, float], ...]:
+    fonts = Path(__file__).resolve().parent.parent / "fonts"
+    with tempfile.TemporaryDirectory(prefix="resume-measure-") as temporary:
+        probe = Path(temporary) / "measure.typ"
+        probe.write_text(source, encoding="utf-8")
+        completed = executable.run((
+            "query", "--font-path", str(fonts), "--ignore-system-fonts",
+            str(probe), "<resume-measurement>", "--field", "value",
+        ), text=True)
+        if completed.returncode:
+            raise CliError(LAYOUT_PLAN_INVALID, "Typst 实际栏宽测量失败。")
+        try:
+            heights = tuple({key: float(value[key]) for key in ("header", "sidebar", "main")} for value in json.loads(completed.stdout))
+            if not heights or any(not math.isfinite(height) or height < 0 for record in heights for height in record.values()):
+                raise ValueError
+            return heights
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise CliError(LAYOUT_PLAN_INVALID, "Typst 实际高度测量无效。") from exc
+
+
+def _measure_compositions(containers: tuple[ContainerPlan, ...], theme: ThemeSpec, photo_mode: str, font_hash: str, executable: TypstExecutable | None) -> tuple[tuple[ContainerPlan, ...], tuple[ColumnComposition, ...]]:
+    from graduate_resume_typst import emit_page_body
+    from graduate_resume_typst_runtime import resolve_typst_executable
+
+    template = Path(__file__).resolve().parent.parent / "templates" / "resume-themes.typ"
+    compositions = [(containers, False)]
+    for split in range(1, len(containers)):
+        compositions.extend(((containers[:split], False), (containers[split:], True)))
+    compositions.extend(((container,), False) for container in containers)
+    probes = []
+    options_by_page = []
+    for items, continuation in compositions:
+        photo = 'rect(width: 100%, height: 100%, fill: white)' if photo_mode == "photo" and items[0].id == "profile" else "none"
+        options = []
+        section_sets = [()] if theme.key == "conservative" else [
+            ("education", "skills", "certificates"),
+            ("skills", "certificates", "training"),
+            ("skills", "certificates"),
+        ]
+        for sections in section_sets:
+            has_sidebar = any(item.section in sections for item in items)
+            has_main = any(item.section not in (*sections, "candidate") for item in items)
+            if sections and not (has_sidebar and has_main):
+                continue
+            widths = (60.0, 70.0, 80.0, 88.0) if theme.key == "modern" else (70.0, 80.0, 88.0)
+            for width in (widths if sections else (0.0,)):
+                for detail_gap in (0.0, 1.5, 3.0, 4.5):
+                    option = ColumnComposition(sections, width, 0.95, detail_gap_mm=detail_gap)
+                    options.append(option)
+        if theme.key != "conservative":
+            body = tuple(item for item in items if item.section != "candidate")
+            for split in range(1, len(body)):
+                left = body[:split]
+                sections = tuple(dict.fromkeys(item.section for item in left))
+                for detail_gap in (0.0, 1.5, 3.0, 4.5):
+                    options.append(ColumnComposition(sections, 88.0, 0.95, detail_gap_mm=detail_gap, sidebar_container_ids=tuple(item.id for item in left)))
+        if not options:
+            options = [ColumnComposition()]
+        options_by_page.append(options)
+        for option in options:
+            probes.append(emit_page_body(items, theme.key, photo, continuation, "resume-metrics", option))
+    source = template.read_text(encoding="utf-8") + "\n" + "\n".join(probes)
+    if executable is None:
+        with resolve_typst_executable() as measured_executable:
+            heights = _query_layout_heights(source, font_hash, measured_executable)
+    else:
+        heights = _query_layout_heights(source, font_hash, executable)
+    if len(heights) != sum(len(options) for options in options_by_page):
+        raise CliError(LAYOUT_PLAN_INVALID, "Typst 栏位测量集合不完整。")
+    choices = []
+    offset = 0
+    target = 252.0
+    for (items, _), options in zip(compositions, options_by_page):
+        candidates = []
+        for option, metric in zip(options, heights[offset:offset + len(options)]):
+            header, side, main = (metric[key] for key in ("header", "sidebar", "main"))
+            side_count = sum(option.is_sidebar(item) for item in items)
+            main_count = sum(not option.is_sidebar(item) and item.section != "candidate" for item in items)
+            natural = header + max(side, main)
+            body_target = max(side, main, target - header)
+            side_gap = min(10.0, max(0.0, (body_target - side) / max(1, side_count - 1))) if side_count > 1 else 0.0
+            main_gap = min(10.0, max(0.0, (body_target - main) / max(1, main_count - 1))) if main_count > 1 else 0.0
+            filled_side = side + side_gap * max(0, side_count - 1)
+            filled_main = main + main_gap * max(0, main_count - 1)
+            filled = header + max(filled_side, filled_main)
+            minimum = header + min(filled_side, filled_main) if side_count else filled
+            satisfied = minimum >= 240.0 and filled <= 265.0
+            choice = replace(option, sidebar_gap_mm=round(side_gap, 4), main_gap_mm=round(main_gap, 4), natural_height_mm=natural, sidebar_height_mm=side, main_height_mm=main, filled_height_mm=filled, fill_satisfied=satisfied)
+            score = (natural > 265.0, not satisfied, max(0.0, 240.0 - minimum), bool(option.sidebar_container_ids), not bool(option.sidebar_sections) if theme.key != "conservative" else False, abs(filled_side - filled_main) if side_count else 0.0, option.detail_gap_mm, side_gap + main_gap)
+            candidates.append((score, choice))
+        choices.append(min(candidates, key=lambda item: item[0])[1])
+        offset += len(options)
+    measured = tuple(replace(container, height_mm=round(choice.natural_height_mm, 3)) for container, choice in zip(containers, choices[-len(containers):]))
+    return measured, tuple(choices[:1 + 2 * (len(containers) - 1)])
+
+
+def _paginate(containers: tuple[ContainerPlan, ...], count: int, epsilon: float, heights: tuple[ColumnComposition, ...], *, require_columns: bool = False) -> tuple[tuple[ContainerPlan, ...], tuple[PagePlan, ...]]:
+    usable = 267.0
+    if count == 1:
+        pages = (containers,)
+        compositions = (heights[0],)
+        if require_columns and not compositions[0].sidebar_sections:
+            raise CliError(LAYOUT_UNSATISFIABLE, "当前内容无法组成左右两栏，禁止退回单栏。")
+    else:
+        candidates = []
+        for split in range(1, len(containers)):
+            first, second = heights[2 * split - 1:2 * split + 1]
+            if require_columns and (not first.sidebar_sections or not second.sidebar_sections):
+                continue
+            if any(item.section == "education" for item in containers) and not any(item.section == "education" for item in containers[:split]):
+                continue
+            if max(first.filled_height_mm, second.filled_height_mm) + epsilon <= usable:
+                deficit = sum(max(0.0, 240.0 - item.filled_height_mm) for item in (first, second))
+                candidates.append((not (first.fill_satisfied and second.fill_satisfied), deficit, abs(first.natural_height_mm - second.natural_height_mm), split, first, second))
+        if not candidates:
+            raise CliError(LAYOUT_UNSATISFIABLE, "内容无法在两页内保持完整条目与可读边界。")
+        _, _, _, split, first, second = min(candidates)
+        pages, compositions = (containers[:split], containers[split:]), (first, second)
+    used = tuple(item.filled_height_mm for item in compositions)
+    if max(used) + epsilon > usable:
+        raise CliError(LAYOUT_UNSATISFIABLE, "实际排版高度超过页面可读边界。")
+    frozen = tuple(tuple(replace(item, page_number=number + 1) for item in items) for number, items in enumerate(pages))
     plans = tuple(
         PagePlan(
             index + 1, usable, round(used[index], 2), (round(used[index], 2) + epsilon) / usable,
-            # Composition uses its own typography and section rhythm. Never
-            # spread sparse content with artificial inter-entry whitespace.
-            0.0,
-            ("profile",) if index == 0 else (f"section:{frozen[index][0].section}",), tuple(item.id for item in frozen[index]),
+            max(compositions[index].sidebar_gap_mm, compositions[index].main_gap_mm),
+            ("profile",) if index == 0 else (f"section:{frozen[index][0].section}",), tuple(item.id for item in frozen[index]), compositions[index],
         )
         for index in range(count)
     )
     return frozen, plans
 
 
-def build_frozen_resume_plan(verified_data: dict[str, Any], theme: ThemeSpec, photo_mode: str, photo: PhotoAsset | None, font_manifest_hash: str, page_preference: str, overrides: dict[str, str] | None = None) -> FrozenResumePlan:
+def build_frozen_resume_plan(verified_data: dict[str, Any], theme: ThemeSpec, photo_mode: str, photo: PhotoAsset | None, font_manifest_hash: str, page_preference: str, overrides: dict[str, str] | None = None, *, typst_executable: TypstExecutable | None = None, job_context: str = "") -> FrozenResumePlan:
     if (
         page_preference not in {"auto", "1", "2"}
         or not isinstance(font_manifest_hash, str)
@@ -407,31 +547,29 @@ def build_frozen_resume_plan(verified_data: dict[str, Any], theme: ThemeSpec, ph
     policy = theme.photo_policy
     if policy.allow_stretch or (policy.crop_policy == "controlled" and not (policy.allow_controlled_crop and policy.subject_safe_area_contract)):
         raise CliError(LAYOUT_PLAN_INVALID, "主题照片策略无效。")
-    containers = project_containers(verified_data, overrides)
+    containers, heights = _measure_compositions(project_containers(verified_data, overrides, job_context=job_context), theme, photo_mode, font_manifest_hash, typst_executable)
     one: tuple[tuple[ContainerPlan, ...], tuple[PagePlan, ...]] | None = None
     two: tuple[tuple[ContainerPlan, ...], tuple[PagePlan, ...]] | None = None
-    try: one = _paginate(containers, 1, values["epsilon_mm"])
+    try: one = _paginate(containers, 1, values["epsilon_mm"], heights, require_columns=theme.key != "conservative")
     except CliError: pass
-    try: two = _paginate(containers, 2, values["epsilon_mm"])
+    try: two = _paginate(containers, 2, values["epsilon_mm"], heights, require_columns=theme.key != "conservative")
     except CliError: pass
     if page_preference == "auto":
-        if one and one[1][0].utilization <= values["one_page_clear_max"]:
+        if one:
             chosen, recommended, comparison, advisory = one, 1, None, None
         elif not one and two and all(page.utilization >= values["two_page_min_page_utilization"] for page in two[1]):
             chosen, recommended, comparison, advisory = two, 2, None, None
-        elif one and one[1][0].utilization <= values["one_page_critical_max"] and two:
-            chosen, recommended, comparison, advisory = one, 1, 2, "内容处于临界区，已保留两页对照方案。"
-        elif one and two:
-            chosen, recommended, comparison, advisory = two, 2, 1, "内容接近单页上限，建议使用两页。"
-        elif two:
+        elif two and all(page.composition.fill_satisfied for page in two[1]):
             chosen, recommended, comparison, advisory = two, 2, None, None
-        else: raise CliError(LAYOUT_UNSATISFIABLE, "内容无法在一页或两页可读边界内完整排入。")
+        else: raise CliError(LAYOUT_UNSATISFIABLE, "内容无法在指定主题的一页或两页结构内完整排入；双栏主题禁止退回单栏。")
     elif page_preference == "1":
         if not one: raise CliError(LAYOUT_UNSATISFIABLE, "强制一页无法保持完整条目与可读边界。")
-        chosen, recommended, comparison, advisory = one, 2 if two else 1, 2 if two else None, "已按强制一页生成；建议同时审阅两页对照方案。" if two else None
+        chosen, recommended, comparison, advisory = one, 1, None, None
     else:
         if not two: raise CliError(LAYOUT_UNSATISFIABLE, "强制两页无法保持完整条目与页首规则。")
         chosen, recommended, comparison, advisory = two, 1 if one else 2, 1 if one else None, "已按强制两页生成；内容更适合一页。" if one else None
+    if not all(page.composition.fill_satisfied for page in chosen[1]):
+        advisory = "资料不足以在受控间隙内达到逐栏铺满标准；保留真实内容。" + ("用户强制双页产生留白，建议改单页。" if page_preference == "2" else "不自动扩展为双页。")
     flattened = tuple(item for page in chosen[0] for item in page)
     budgets = tuple(EntryBudget(item.id, item.source_fact_ids[0], item.height_mm) for item in flattened if item.kind == "list-entry")
     plan = FrozenResumePlan(theme.key, theme.label, page_preference, len(chosen[1]), photo_mode, photo, policy.photo_fit, policy.crop_policy, policy.preserve_aspect_ratio, policy.allow_stretch, policy.allow_controlled_crop, policy.subject_safe_area_contract, theme.photo_slot if photo_mode == "photo" else None, theme.no_photo_behavior, font_manifest_hash, version, digest, chosen[1], flattened, budgets, "preserved-profile-and-education-front" if len(chosen[1]) == 2 else None, PageRecommendation(recommended, page_preference, comparison, advisory))
@@ -462,6 +600,8 @@ def selected_fact_view(facts: Mapping[str, Any], selected_fact_ids: tuple[str, .
 def build_layout_feedback_adapter(
     facts: Mapping[str, Any], photo_mode: str, photo: PhotoAsset | None,
     font_manifest_hash: str,
+    typst_executable: TypstExecutable | None = None,
+    *, job_context: str = "",
 ):
     """Return the Phase 48 real feedback callback for the shared fact tuple."""
     from graduate_resume_targeting import LayoutFeedback
@@ -471,7 +611,7 @@ def build_layout_feedback_adapter(
         try:
             plan = build_frozen_resume_plan(
                 view, resolve_theme(theme_key), photo_mode, photo, font_manifest_hash,
-                request.requested_pages,
+                request.requested_pages, typst_executable=typst_executable, job_context=job_context,
             )
             return LayoutFeedback(theme_key, True, plan.page_count, ())
         except CliError as exc:

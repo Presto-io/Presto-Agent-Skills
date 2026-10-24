@@ -106,6 +106,13 @@ class LayoutFixtureTests(unittest.TestCase):
         document = self.load("short-no-photo.md")
         for key in THEME_KEYS:
             auto = build_frozen_resume_plan(document.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "auto")
+            self.assertEqual(auto.page_count, 1)
+            if key != "conservative":
+                self.assertTrue(auto.pages[0].composition.sidebar_sections)
+                with self.assertRaises(cli.CliError) as raised:
+                    build_frozen_resume_plan(document.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2")
+                self.assertEqual(raised.exception.code, LAYOUT_UNSATISFIABLE)
+                continue
             forced = build_frozen_resume_plan(document.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2")
             self.assertEqual(auto.page_count, 1)
             self.assertEqual(forced.page_count, 2)
@@ -148,11 +155,47 @@ class LayoutFixtureTests(unittest.TestCase):
 
     def test_each_theme_compiles_controlled_photo_and_no_photo_evidence(self) -> None:
         photo_document = self.load("standard-photo.md")
-        no_photo_document = self.load("short-no-photo.md")
+        no_photo_document = self.load("pressure-two-pages.md")
         photo = resolve_layout_photo(photo_document.path, self.root, photo_document.data["photo"], photo_document.data["preferences"])
         for key in THEME_KEYS:
             compile_controlled(build_frozen_resume_plan(photo_document.data, THEME_SPECS[key], "photo", photo, self.font_hash, "auto"), photo_document)
             compile_controlled(build_frozen_resume_plan(no_photo_document.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2"), no_photo_document)
+
+    def test_sidebar_resume_fits_one_page_and_keeps_contacts_visible(self) -> None:
+        import fitz
+
+        document = self.load("pressure-two-pages.md")
+        document.data["candidate"]["contact"] = {"phone": "13812345678", "email": "student@example.com", "city": "陕西西安"}
+        document.data["skills"][0]["items"] = [
+            "熟悉电气原理图绘制，掌握继电器、接触器、断路器等元件选型与接线。",
+            "掌握西门子PLC梯形图编程，能完成程序编写、下载、在线调试与故障排查。",
+            "熟悉变频器参数设置与多段速控制，了解触摸屏画面组态及生产线日常维护。",
+            "熟练使用办公软件进行宣传物料设计与文档处理。",
+        ]
+        for key in THEME_KEYS:
+            plan = build_frozen_resume_plan(document.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "auto")
+            self.assertEqual(plan.page_count, 1)
+
+            def check(pdf_path, png_paths):
+                with fitz.open(pdf_path) as pdf:
+                    page = pdf[0]
+                    text = _compact(page.get_text())
+                    self.assertEqual(text.count("13812345678"), 1)
+                    self.assertEqual(text.count("student@example.com"), 1)
+                    for block in page.get_text("dict")["blocks"]:
+                        for line in block.get("lines", []):
+                            bounds = fitz.Rect(line["bbox"])
+                            self.assertGreaterEqual(bounds.x0, 42)
+                            self.assertLessEqual(bounds.x1, 554)
+                            self.assertGreaterEqual(bounds.y0, 35)
+                            self.assertLessEqual(bounds.y1, 803)
+                    if plan.pages[0].composition.sidebar_sections:
+                        skills = page.search_for("专业技能")[0]
+                        projects = page.search_for("项目经历")[0]
+                        self.assertGreater(projects.x0 - skills.x0, 120)
+                        self.assertLess(abs(skills.y0 - projects.y0), 190)
+
+            compile_controlled(plan, document, check)
 
     def test_boundary_and_pressure_fixtures_compile_for_every_theme(self) -> None:
         boundary = self.load("boundary-content.md")
@@ -166,6 +209,39 @@ class LayoutFixtureTests(unittest.TestCase):
             self.assertTrue(pressure_plan.pages[1].anchors)
             compile_controlled(boundary_plan, boundary)
             compile_controlled(pressure_plan, pressure)
+
+    def test_dense_two_pages_fill_each_page_and_sparse_request_warns(self) -> None:
+        document = self.load("pressure-two-pages.md")
+        for index in range(5):
+            document.data["projects"].append({
+                "id": f"project-dense-{index}", "status": "verified",
+                "title": f"综合设备调试项目{index}",
+                "summary": "依据电气图纸完成接线与检查，使用仪表核对供电和信号，记录设备运行状态并分析异常原因。" * 3,
+                "outcomes": ["完成接线复核与试运行记录。"],
+            })
+        for key in THEME_KEYS:
+            if key == "modern":
+                for index in range(5, 11):
+                    document.data["projects"].append({
+                        "id": f"project-dense-{index}", "status": "verified",
+                        "title": f"综合设备调试项目{index}",
+                        "summary": "依据电气图纸完成接线与检查，使用仪表核对供电和信号，记录设备运行状态并分析异常原因。" * 3,
+                        "outcomes": ["完成接线复核与试运行记录。"],
+                    })
+            plan = build_frozen_resume_plan(document.data, THEME_SPECS[key], "no-photo", None, self.font_hash, "2")
+            self.assertEqual(plan.page_count, 2)
+            for page in plan.pages:
+                if key != "conservative":
+                    self.assertTrue(page.composition.sidebar_sections)
+                    self.assertGreater(page.composition.sidebar_width_mm, 0)
+                self.assertTrue(page.composition.fill_satisfied)
+                self.assertGreaterEqual(page.used_height_mm, 240)
+                self.assertLessEqual(page.used_height_mm, 265)
+                self.assertLessEqual(page.elastic_gap_mm, 10)
+            compile_controlled(plan, document)
+        sparse = self.load("short-no-photo.md")
+        forced = build_frozen_resume_plan(sparse.data, THEME_SPECS["conservative"], "no-photo", None, self.font_hash, "2")
+        self.assertIn("强制双页", forced.recommendation.advisory)
 
     def test_pressure_evidence_rejects_tampered_topologies_and_displays_each_field_once(self) -> None:
         from graduate_resume_typst import emit_typst

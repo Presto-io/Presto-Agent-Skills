@@ -29,13 +29,15 @@
 | `skills/<skill-name>/scripts/` | 技能需要调用的辅助脚本 |
 | `skills/<skill-name>/templates/` | 技能输出模板或文件模板 |
 | `skills/<skill-name>/fixtures/` | skill-local canonical fixture；仅当该技能需要版本化样例、负例或 companion asset 时创建 |
+| `skills/<skill-name>/fonts/` | 技能需要的受控字体、清单及许可，存在时须随完整技能安装 |
+| `skills/<skill-name>/assets/` | 生成输出使用的通用静态资源及许可，不得存放学生资料或照片 |
 | `skills/school-pptx/fixtures/` | `school-pptx` skill-local canonical Markdown 与 companion media；由 public `example` 复制，不是通用模板目录 |
 
 `skills/` 下的 `SKILL.md` 是 semantic source of truth。它应该保留触发意图、目标、输入、核心流程、脚本调用入口、输出概览、验证入口、安全边界和 `Runtime Adapter Notes`。长格式规则、完整字段表、示例、renderer notes、artifact 明细、UAT 清单和排障说明应放进同一技能的 `references/`，并从 `SKILL.md` 显式链接。技能正文应该尽量 runtime-neutral；遇到 runtime 差异时，写在同一个 `SKILL.md` 的 `Runtime Adapter Notes` 中。v1 不维护独立 adapter 文件，也不要复制出多份语义不同的技能。
 
 `references/` 是 skill-local progressive disclosure 区域，不是新的 canonical skill body。引用文件可以很详细，但必须服务 owning skill 的 workflow；不要把某个模板的 metadata fields、renderer rules 或 fixture 细节提升为全仓库通用 schema。`scripts/` 只放可调用辅助命令或内部模块；大型脚本可以拆成 CLI dispatch、parsing、rendering、artifact writing、verification/reporting 等 skill-local modules，但外层公共命令、常用 flags、输出文件名、manifest keys 和行为契约必须保持稳定。`templates/` 只放生成输出时复制、渲染或填充的文件模板，不要把长说明文档混进模板目录。
 
-这些路径描述的是 canonical repository ownership，不是用户 delivery root。安装技能时复制整个 `skills/<skill-name>/`，保留 `SKILL.md` 及实际存在的 `references/`、`scripts/`、`templates/` 和 skill-local fixture；不要为 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 或 Hermes Agent 创建 runtime-specific adapter folder，也不要复制分叉 workflow。
+这些路径描述的是 canonical repository ownership，不是用户 delivery root。安装技能时复制整个 `skills/<skill-name>/`，保留 `SKILL.md` 及实际存在的 `references/`、`scripts/`、`templates/`、`fonts/`、`assets/` 和 skill-local fixture；不要为 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 或 Hermes Agent 创建 runtime-specific adapter folder，也不要复制分叉 workflow。真实学生简历、照片、预览和成品必须位于仓库外，不属于技能资源。
 
 ## User Delivery Roots
 
@@ -94,12 +96,20 @@ runtime 差异优先写进 canonical `SKILL.md` 的 `Runtime Adapter Notes`。�
 |------|---------|
 | `references/scheduling-contract.md` | v1.11 integrated teaching-design package 的共享排课合同，供后续 package skill 组合授课计划、教案和可选期末材料时引用 |
 | `test/1.11/scheduling-contract/` | 排课合同 fixture evidence，包含可审阅 source、确定性 JSON 和 Markdown 调度证据 |
-| `skills/graduate-resume/SKILL.md` | 毕业生简历 skill 入口；先冻结主题无关资料契约、照片/target 一次追问语义、fixture 基线和离线 CLI 边界，再进入后续主题与定向阶段 |
+| `skills/graduate-resume/SKILL.md` | 毕业生简历 skill 入口；真实资料校验、通用/定向三主题渲染、预检与事务交付，以及完整验收边界 |
 | `skills/teaching-design-package/SKILL.md` | 教学设计整包 skill 入口；它用 package-owned model、skill-local calendar 和包内 renderer 生成授课进度计划表、教学设计方案及可选整包交付，正常运行不依赖 sibling skill folders |
 | `skills/graduate-resume/references/schema-and-review-contract.md` | 毕业生简历字段职责、稳定 ID、复核状态、照片/target 契约与阻断规则 |
 | `skills/graduate-resume/references/phase-46-baseline.md` | 毕业生简历在 Phase 46 的命令边界、fixture 基线和后续阶段交接说明 |
+| `skills/graduate-resume/references/targeted-render-delivery-contract.md` | 定向条件、三件套、照片自包含、强制双栏、排版测量与干净事务交付契约 |
+| `skills/graduate-resume/references/job-focused-writing.md` | 面向岗位证据的文案整理、课程排序、成绩与关键词强调边界 |
+| `skills/graduate-resume/references/phase-49-verification-contract.md` | 完整验收的固定 gate、证据目录与发布、六 runtime、人工 UAT 边界 |
+| `skills/graduate-resume/references/repository-publication.md` | 仓库发布隐私边界：真实学生资料外置、虚构夹具、合成媒体和暂存区审查 |
 | `skills/graduate-resume/templates/graduate-resume.md` | 毕业生简历 canonical 混合资料模板：YAML `profile`/可选 `photo`/`preferences` 加 Markdown 事实正文 |
-| `skills/graduate-resume/scripts/graduate-resume.sh` | 毕业生简历公开 helper command 骨架 |
+| `skills/graduate-resume/templates/resume-themes.typ` | 三主题生产与测量共用的自包含 Typst 模板，含信息栏、行内图标和正文排版 |
+| `skills/graduate-resume/scripts/graduate-resume.sh` | 毕业生简历公开离线入口：`validate`、`target`、`plan`、`render`、`batch`、`verify` |
+| `skills/graduate-resume/fonts/` | 受控字体、SHA-256 清单和字体许可；不得省略或依赖系统字体替代 |
+| `skills/graduate-resume/assets/icons/lucide/` | 模块图标原始 SVG 与 ISC 许可，须与生产模板内嵌映射同步 |
+| `skills/graduate-resume/scripts/test_publication_contract.py` | 发布包回归：仅生产 Typst 模板、无简历成品、照片夹具无身份信息 |
 | `skills/teaching-design-package/references/format-and-orchestration.md` | 整包长规则、模块交接、manifest/status 和 TDP traceability |
 | `skills/teaching-design-package/templates/teaching-design-package-full.md` | 整包 Markdown intermediate 模板 |
 | `skills/teaching-design-package/scripts/teaching-design-package.sh` | 整包公开 helper command |

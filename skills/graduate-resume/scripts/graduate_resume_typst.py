@@ -8,9 +8,11 @@ from pathlib import Path
 from typing import Any
 
 from graduate_resume_cli import CliError, is_stable_fact_id
-from graduate_resume_layout import FrozenResumePlan, LAYOUT_PLAN_INVALID
+from graduate_resume_layout import ColumnComposition, FrozenResumePlan, LAYOUT_PLAN_INVALID
 from graduate_resume_final_markdown import FinalResumeDocument
 from graduate_resume_typst_runtime import TypstExecutable
+from graduate_resume_profile import personal_fields, paragraph_text
+from graduate_resume_emphasis import emphasis_spans
 
 
 def typst_content(value: str) -> str:
@@ -36,7 +38,7 @@ def normalize_photo_bytes(source: bytes, typst_executable: TypstExecutable, *, m
         raise CliError(LAYOUT_PLAN_INVALID, "照片规范化输入格式无效。")
     values = ",".join(str(value) for value in source)
     text = (
-        '#set page(width: 35mm, height: 49mm, margin: 0pt, fill: white)\n'
+        '#set page(width: 35mm, height: 49mm, margin: 0pt, fill: none)\n'
         f'#align(center + horizon, image(bytes(({values})), fit: "contain", width: 100%, height: 100%))\n'
     )
     with tempfile.TemporaryDirectory() as temporary:
@@ -77,12 +79,19 @@ def validate_emit_inputs(plan: FrozenResumePlan, document: FinalResumeDocument |
     return facts
 
 
-def _content(value: str) -> str:
-    return f"[{typst_content(value)}]"
+def _content(value: str, terms: tuple[str, ...] = (), *, academic: bool = False) -> str:
+    pieces = []
+    position = 0
+    for start, end in emphasis_spans(value, terms, academic):
+        pieces.append(typst_content(value[position:start]))
+        pieces.append(f"#strong[{typst_content(value[start:end])}]")
+        position = end
+    pieces.append(typst_content(value[position:]))
+    return "[" + "".join(pieces) + "]"
 
 
-def _content_tuple(values: list[str]) -> str:
-    rendered = ", ".join(_content(value) for value in values)
+def _content_tuple(values: list[str], terms: tuple[str, ...] = ()) -> str:
+    rendered = ", ".join(_content(value, terms) for value in values)
     return f"({rendered},)" if rendered else "()"
 
 
@@ -102,32 +111,50 @@ def _emit_profile(container: Any, photo: str, theme: str) -> str:
     fields = _field_map(container)
     name = _content(_join(fields.get("name", [""])))
     headline = _content(_join(fields.get("headline", [""])))
-    summary = _content(_join(fields.get("summary", [""])))
-    contact = _content(_join(fields.get("contact", []), "   "))
-    directions = _content(_join(fields.get("directions", []), " / "))
+    summary_value = _join(fields.get("summary", [""]))
+    personal_values = personal_fields(summary_value)
+    summary = "[]" if personal_values else _content(paragraph_text(summary_value))
+    def detail_pairs(values: Any) -> str:
+        pairs = ", ".join(f"({_content(label)}, {_content(value)})" for label, value in values)
+        return f"({pairs},)" if pairs else "()"
+    personal = detail_pairs(personal_values)
+    labels = {"phone": "电话", "email": "邮箱", "city": "现居地", "address": "地址", "website": "网站", "github": "GitHub", "wechat": "微信"}
+    contact_values = [
+        (labels[key.split('.', 1)[1]], value)
+        for key, value in container.fields if key.startswith("contact.")
+    ]
+    contact = detail_pairs(contact_values)
+    headline_values = fields.get("headline", [])
+    directions = _content(_join([value for value in fields.get("directions", []) if value not in headline_values], " / "))
     return (
         "#identity-block("
         f'"{typst_content(theme)}", name: {name}, headline: {headline}, '
-        f"summary: {summary}, contact: {contact}, directions: {directions}, photo: {photo})"
+        f"summary: {summary}, contact: {contact}, personal: {personal}, directions: {directions}, photo: {photo})"
     )
 
 
 def _emit_entry(container: Any, theme: str, show_heading: bool) -> str:
     fields = _field_map(container)
+    terms = container.emphasis_terms
     if container.section == "education":
         title = _join(fields.get("school", []))
         meta = _join(fields.get("major", []) + fields.get("degree", []) + fields.get("start", []) + fields.get("end", []))
-        summary = _join(fields.get("courses", []) + fields.get("honors", []), "；")
+        academic_lines = []
+        for key, label in (("honors", "成绩与荣誉"), ("courses", "相关课程")):
+            if fields.get(key):
+                academic_lines.append(_content(label + "：" + paragraph_text(_join(fields[key], "；")), terms, academic=True)[1:-1])
+        summary_content = "[" + "#linebreak()".join(academic_lines) + "]"
     else:
         title = _join(fields.get("title", []) or fields.get("name", []))
         meta = _join(fields.get("organization", []) + fields.get("role", []) + fields.get("issuer", []) + fields.get("start", []) + fields.get("end", []) + fields.get("issued_on", []) + fields.get("expires_on", []))
         summary = _join(fields.get("summary", []) + fields.get("note", []) + fields.get("tools", []), "；")
+        summary_content = _content(paragraph_text(summary), terms)
     outcomes = fields.get("outcomes", [])
-    outcome_content = _content_tuple(outcomes)
+    outcome_content = _content_tuple([paragraph_text(value) for value in outcomes], terms)
     return (
         "#resume-entry("
         f'"{typst_content(theme)}", "{typst_content(container.section)}", "{typst_content(container.id)}", '
-        f"title: {_content(title)}, meta: {_content(meta)}, summary: {_content(summary)}, outcomes: {outcome_content}, show-heading: {'true' if show_heading else 'false'})"
+        f"title: {_content(title)}, meta: {_content(meta)}, summary: {summary_content}, outcomes: {outcome_content}, show-heading: {'true' if show_heading else 'false'})"
     )
 
 
@@ -137,15 +164,43 @@ def _emit_fact_block(container: Any, theme: str, show_heading: bool) -> str:
         group = _join(fields.get("group", []))
         items = fields.get("items", [])
         note = _join(fields.get("note", []))
-        item_content = _content_tuple(items)
-        return f'#skills-block("{typst_content(theme)}", "{typst_content(container.section)}", group: {_content(group)}, items: {item_content}, note: {_content(note)}, show-heading: {'true' if show_heading else 'false'})'
+        item_content = _content_tuple([paragraph_text(value) for value in items], container.emphasis_terms)
+        return f'#skills-block("{typst_content(theme)}", "{typst_content(container.section)}", group: {_content(group)}, items: {item_content}, note: {_content(paragraph_text(note), container.emphasis_terms)}, show-heading: {'true' if show_heading else 'false'})'
     values = []
     for key, field_values in fields.items():
         if key in {"name", "title", "summary", "outcomes", "items"}:
             continue
-        values.extend(field_values)
-    content = _content_tuple(values)
+        values.extend(paragraph_text(value) if key == "note" else value for value in field_values)
+    content = _content_tuple(values, container.emphasis_terms)
     return f'#fact-block("{typst_content(theme)}", "{typst_content(container.section)}", {content}, show-heading: {'true' if show_heading else 'false'})'
+
+
+def emit_page_body(containers: tuple[Any, ...], theme: str, photo: str = "none", continuation: bool = False, function: str = "resume-body", composition: ColumnComposition | None = None) -> str:
+    slots: dict[str, list[str]] = {"header": [], "sidebar": [], "main": []}
+    previous_sections: dict[str, str] = {}
+    sidebar_sections = {"skills", "certificates"} if theme == "modern" else {"education", "skills", "certificates"} if theme == "expressive" else set()
+    if composition is not None:
+        sidebar_sections = set(composition.sidebar_sections)
+    for container in containers:
+        is_sidebar = container.section in sidebar_sections if composition is None else composition.is_sidebar(container)
+        slot = "header" if container.section == "candidate" else "sidebar" if is_sidebar else "main"
+        show_heading = container.section != previous_sections.get(slot)
+        if container.section == "candidate":
+            item = _emit_profile(container, photo, theme)
+        elif container.kind == "list-entry" or container.section == "education":
+            item = _emit_entry(container, theme, show_heading)
+        else:
+            item = _emit_fact_block(container, theme, show_heading)
+        if composition is not None and container.section != "candidate":
+            item = item[:-1] + f", detail-gap: {composition.detail_gap_mm}mm)"
+        gap = 0.0 if composition is None else composition.sidebar_gap_mm if slot == "sidebar" else composition.main_gap_mm if slot == "main" else 0.0
+        if slots[slot] and gap:
+            slots[slot].append(f'#v({gap:.4f}mm, weak: false)')
+        slots[slot].append(item)
+        previous_sections[slot] = container.section
+    arguments = ", ".join(f"{slot}: [\n" + "\n".join(items) + "\n]" for slot, items in slots.items())
+    geometry = "" if composition is None else f", sidebar-width: {composition.sidebar_width_mm}mm, leading: {composition.leading_em}em"
+    return f'#{function}("{theme}", continuation: {"true" if continuation else "false"}, {arguments}{geometry})'
 
 
 def emit_typst(plan: FrozenResumePlan, document: FinalResumeDocument | dict[str, Any]) -> str:
@@ -163,44 +218,9 @@ def emit_typst(plan: FrozenResumePlan, document: FinalResumeDocument | dict[str,
                 if document.normalized_photo_png is None:
                     raise CliError(LAYOUT_PLAN_INVALID, "照片版最终文档缺少规范化照片字节。")
                 values = ",".join(str(value) for value in document.normalized_photo_png)
-                photo = f'image(bytes(({values})), format: "png", fit: "contain")'
+                photo = f'image(bytes(({values})), format: "png", fit: "contain", width: 100%, height: 100%)'
             else:
-                photo = f'image("{plan.photo.logical_path}", fit: "contain")'
-        rendered: list[tuple[Any, str]] = []
-        previous_section: str | None = None
-        for container_id in page.containers:
-            container = by_id[container_id]
-            show_heading = container.section != previous_section
-            if container.section == "candidate":
-                item = _emit_profile(container, photo if page_index == 0 else "none", plan.theme_key)
-            elif container.kind == "list-entry" or container.section == "education":
-                item = _emit_entry(container, plan.theme_key, show_heading)
-            else:
-                item = _emit_fact_block(container, plan.theme_key, show_heading)
-            rendered.append((container, item))
-            previous_section = container.section
-        header: list[str] = []
-        sidebar: list[str] = []
-        main: list[str] = []
-        for container, item in rendered:
-            if container.section == "candidate":
-                header.append(item)
-            elif plan.theme_key == "modern" and page_index == 0 and container.section in {"skills", "certificates"}:
-                sidebar.append(item)
-            elif plan.theme_key == "expressive" and page_index == 0 and container.section in {"education", "skills", "certificates"}:
-                sidebar.append(item)
-            else:
-                main.append(item)
-        # The frozen plan owns facts, page membership, and photo choice. The
-        # renderer only maps those verified containers into a theme's slots.
-        pages.append(
-            f'#resume-page("{plan.theme_key}", continuation: {'true' if page_index else 'false'}, header: [\n'
-            + "\n".join(header)
-            + "\n], sidebar: [\n"
-            + "\n".join(sidebar)
-            + "\n], main: [\n"
-            + "\n".join(main)
-            + "\n])"
-        )
+                photo = f'image("{plan.photo.logical_path}", fit: "contain", width: 100%, height: 100%)'
+        pages.append(emit_page_body(tuple(by_id[container_id] for container_id in page.containers), plan.theme_key, photo, bool(page_index), "resume-page", page.composition))
     prefix = template.read_text(encoding="utf-8") + "\n// compatibility marker: #resume.theme-layout(\n"
     return prefix + "\n#pagebreak()\n".join(pages) + "\n"

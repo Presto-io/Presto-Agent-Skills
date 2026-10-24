@@ -49,7 +49,7 @@
 
 六者都遵守 [clean-delivery contract](clean-delivery-directory-contract.md)：完整 candidate 和最小 gate 先于 current mutation，path-set+bytes identical 是 no-op，changed 使用 `history/<max+1>/` 整包归档，handled failure/`INT`/`TERM` 回滚。`sources/` 不由普通发布修改，只有显式 managed 且持续引用的 assets 随版归档；unknown、legacy、partial、ambiguous 或 symlink 状态必须先走 [audit → confirm → execute](agent-output-cleanup-prompt.md)。不承诺 `SIGKILL`、断电或多文件跨路径原子，也不自动删除 history。
 
-`graduate-resume` 已完成 Phase 46 canonical 基线，但当前不属于已验收的 clean-delivery coverage 集合。它现已冻结 whole-folder 安装、资料 schema、fixtures 和离线 `validate` / `target` / `plan` / `verify` CLI；最终 Markdown/Typst/PDF 事务发布与验证 gate 以后续 phase 验收为准。
+`graduate-resume` 当前版本为 `0.3.2`，已实现离线 `validate` / `target` / `plan` / `render` / `batch` / `verify` CLI、三主题 Markdown/Typst/PDF 生成及 patch/authority 事务交付。当前还包含实际 Typst 排版测量、逐栏铺满检查、现代简洁与个性设计的强制双栏、网格信息栏、透明照片槽位、本地模块图标及岗位词组强调。功能实现和定向回归不等于完整发布验收：Phase 49 的发布前提、六 runtime 安装、人工 UAT 等证据尚未齐备，因此仍不纳入已验收的 clean-delivery coverage 集合，也不宣称六 runtime 均已实测通过。
 
 ## Runtime Notes
 
@@ -65,9 +65,11 @@
 
 ### Graduate Resume
 
-- `graduate-resume` 必须 whole-folder 安装，保留 canonical `skills/graduate-resume/SKILL.md`、`references/`、`templates/`、`fixtures/` 和 `scripts/`；只复制入口会丢失 schema、照片/target 约束和 Phase 46 fixture 基线。
-- 当前 public fallback 是 `skills/graduate-resume/scripts/graduate-resume.sh <command>`；Phase 46 已实现 `validate`、`target`、`plan`、`verify`，并继续冻结 `render`、`batch` 的离线零 token 边界，不声称已完成最终渲染。
-- 所有命令都以离线、零 token 为前提；OpenClaw 与 Hermes Agent 的 whole-folder discovery、frontmatter、权限和 workdir 行为仍需 installation-time verification。
+- `graduate-resume` 必须 whole-folder 安装，保留 canonical `skills/graduate-resume/SKILL.md`、`references/`、`templates/`、`fixtures/`、`scripts/`、`fonts/` 和 `assets/`，包括字体清单及字体、图标许可；只复制入口会丢失校验、测量、渲染与验收所需文件。
+- public fallback 是 `skills/graduate-resume/scripts/graduate-resume.sh <command>`，提供 `validate`、`target`、`plan`、`render`、`batch`、`verify`。`render` 与 `batch` 必须先预检，再以相同参数追加 `--confirm` 发布；`verify --workdir <caller-owned-dir>` 的验收证据不得混入正式交付根。
+- 运行依赖 Bash、Python、PyYAML、PyMuPDF、Pillow、Poppler，以及严格锁定的 Typst `0.15.0`；编译使用 skill-local 字体和 `--ignore-system-fonts`。安装时核验依赖、输入及支持文件读取权限、shell 执行权限和 delivery/workdir 写入边界，不由离线 CLI 联网安装依赖。
+- 所有命令都以离线、零 token 为前提；六 runtime 的 whole-folder discovery、frontmatter、权限和 workdir 行为仍需 installation-time verification，尤其不能假定 OpenClaw 与 Hermes Agent 的安装路径或自动脚本发现行为。完整验收规则见 `skills/graduate-resume/references/phase-49-verification-contract.md`；单次 PDF 生成成功或定向测试通过不能替代完整验收。
+- whole-folder 安装不表示可以把学生工作目录复制到仓库。发布包仅保留通用代码、规则、模板、字体、图标和虚构夹具；真实学生简历、照片和产物不得提交。提交前运行 `test_publication_contract` 并审查暂存区，具体边界见 `skills/graduate-resume/references/repository-publication.md`。
 
 ### Tiaokedan
 

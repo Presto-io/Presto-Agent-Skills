@@ -15,6 +15,11 @@ preferences:
 <!-- resume: id=edu-photo-001 status=verified -->
 - 专业：智能制造装备技术
 
+## 专业技能
+### 设备点检
+<!-- resume: id=skill-photo-001 status=verified -->
+- 技能：按点检表检查设备运行状态
+
 ## 求职目标
 ### 某装备公司
 <!-- resume: id=target-photo-001 -->

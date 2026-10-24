@@ -51,16 +51,30 @@ class LayoutContractTests(unittest.TestCase):
         self.assertEqual(plan.measurement_hash, hashlib.sha256(raw).hexdigest())
         self.assertEqual(plan.pages[0].utilization, (plan.pages[0].used_height_mm + 0.1) / plan.pages[0].usable_height_mm)
         self.assertEqual(plan.pages[0].containers[0], "profile")
-        self.assertEqual(plan.pages[0].elastic_gap_mm, 0)
+        self.assertLessEqual(plan.pages[0].elastic_gap_mm, 10)
+        self.assertGreaterEqual(plan.pages[0].elastic_gap_mm, 0)
         self.assertTrue(any(container.section == "education" for container in plan.containers))
 
     def test_forced_two_pages_can_be_sparse(self) -> None:
-        plan = build_frozen_resume_plan(self.document.data, resolve_theme("modern"), "no-photo", None, self.font_hash, "2")
+        plan = build_frozen_resume_plan(self.document.data, resolve_theme("conservative"), "no-photo", None, self.font_hash, "2")
         self.assertEqual(plan.page_count, 2)
         self.assertEqual(plan.recommendation.recommended_pages, 1)
         self.assertEqual(plan.recommendation.comparison_pages, 1)
         self.assertTrue(plan.recommendation.advisory)
         self.assertEqual(len(plan.pages), 2)
+
+    def test_two_column_themes_never_fall_back_to_single_column(self) -> None:
+        for theme in ("modern", "expressive"):
+            with self.subTest(theme=theme):
+                plan = build_frozen_resume_plan(self.document.data, resolve_theme(theme), "no-photo", None, self.font_hash, "auto")
+                self.assertTrue(all(page.composition.sidebar_sections and page.composition.sidebar_width_mm > 0 for page in plan.pages))
+                bad_page = replace(plan.pages[0], composition=replace(plan.pages[0].composition, sidebar_sections=(), sidebar_width_mm=0))
+                with self.assertRaises(cli.CliError) as tampered:
+                    replace(plan, pages=(bad_page,)).validate(self.document.data)
+                self.assertEqual(tampered.exception.code, LAYOUT_PLAN_INVALID)
+                with self.assertRaises(cli.CliError) as insufficient:
+                    build_frozen_resume_plan(self.document.data, resolve_theme(theme), "no-photo", None, self.font_hash, "2")
+                self.assertEqual(insufficient.exception.code, LAYOUT_UNSATISFIABLE)
 
     def test_theme_photo_policy_and_plan_tampering_fail_closed(self) -> None:
         for theme in THEME_SPECS.values():
@@ -135,7 +149,9 @@ class LayoutContractTests(unittest.TestCase):
         }
         self.assertEqual(len(set(themed_outputs.values())), 3)
         self.assertTrue(all('#resume.theme-layout(' in value for value in themed_outputs.values()))
-        self.assertNotIn("image(", output)
+        emitted_body = output.split("// compatibility marker:", 1)[1]
+        self.assertNotIn("image(", emitted_body)
+        self.assertIn("photo: none", emitted_body)
         self.assertNotIn("student-photo.jpg", output)
         self.assertNotIn("EXIF", output)
         self.assertIn("#pagebreak()", emit_typst(build_frozen_resume_plan(self.document.data, resolve_theme("conservative"), "no-photo", None, self.font_hash, "2"), facts))

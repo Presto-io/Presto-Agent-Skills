@@ -17,6 +17,7 @@
 - 模板只放在 `templates/`，不要把示例内容和模板混在一起。
 - 更新目录约定时，同步更新 `README.md` 和 `docs/directory-spec.md`。
 - 如果新增 runtime 支持，同步更新 `docs/compatibility-matrix.md`。
+- 严禁提交任何真实学生的简历资料、联系方式、照片、预览或成品；仅允许完全虚构的测试资料和不含身份信息的合成媒体。简历技能发布边界见 `skills/graduate-resume/references/repository-publication.md`，提交前检查暂存区文件及内容，不得仅依赖 `.gitignore`。
 
 ## Skill Authoring Rules
 

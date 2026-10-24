@@ -23,6 +23,7 @@ from graduate_resume_layout import (
 from graduate_resume_targeting import VersionProjection
 from graduate_resume_typst import emit_typst, normalize_photo_bytes
 from graduate_resume_typst_runtime import TypstExecutable
+from graduate_resume_emphasis import job_context
 
 RENDER_INPUT_INVALID = "RENDER_INPUT_INVALID"
 RENDER_STEM_COLLISION = "RENDER_STEM_COLLISION"
@@ -396,7 +397,7 @@ def render_candidate_matrix(
         for item in matrix.items:
             if fail_theme == item.theme_key:
                 raise CliError(RENDER_MATRIX_FAILED, "注入的主题渲染失败。")
-            plan = build_frozen_resume_plan(view, resolve_theme(item.theme_key), photo_mode, photo, font_hash, projection.requested_pages)
+            plan = build_frozen_resume_plan(view, resolve_theme(item.theme_key), photo_mode, photo, font_hash, projection.requested_pages, typst_executable=typst_executable, job_context=job_context(target))
             md_path = stage / f"{item.stem}.md"
             md_path.write_bytes(emit_final_markdown(
                 facts, projection, canonical_hash=canonical_hash, theme_key=item.theme_key,
@@ -405,7 +406,7 @@ def render_candidate_matrix(
             final = load_final_resume(md_path)
             if normalized_photo is not None:
                 final = dataclasses.replace(final, normalized_photo_png=normalized_photo)
-            reparsed_plan = build_frozen_resume_plan(final.fact_view(), resolve_theme(item.theme_key), photo_mode, photo, font_hash, projection.requested_pages)
+            reparsed_plan = build_frozen_resume_plan(final.fact_view(), resolve_theme(item.theme_key), photo_mode, photo, font_hash, projection.requested_pages, typst_executable=typst_executable, job_context=job_context(target))
             if reparsed_plan.page_count != final.page_count:
                 raise CliError(RENDER_MATRIX_FAILED, "最终 Markdown 重读后的布局漂移。")
             typ_path = stage / f"{item.stem}.typ"

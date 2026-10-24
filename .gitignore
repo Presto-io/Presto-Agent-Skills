@@ -10,3 +10,14 @@ __pycache__/
 generated/
 output/
 tmp/
+/学生简历/
+*简历*.md
+*简历*.typ
+*简历*.pdf
+/skills/graduate-resume/templates/themes/
+/skills/graduate-resume/**/*.pdf
+/skills/graduate-resume/**/*.png
+/skills/graduate-resume/**/*.jpg
+/skills/graduate-resume/**/*.jpeg
+!/skills/graduate-resume/fixtures/layout/media/student-photo.jpg
+!/skills/graduate-resume/fixtures/render/media/source-photo.jpg
