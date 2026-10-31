@@ -102,3 +102,11 @@ PDF rendering uses the fixed Excel-style grid for the score book body, score sum
 - `score-list.xlsx` has exactly four columns in this order: `学号`、`姓名`、`平时成绩`、`期末成绩`.
 - Score-list rows are sorted by ascending student ID.
 - Uncertain Markdown values such as `87?` and non-empty `## 复核标记` block `deliver`.
+
+## Source Notes and Course Analysis
+
+Only reconstruct components when explicitly authorized by the teacher; retain the method and original targets in a separate source/review note, and validate the formula and 0–100 range. Do not infer missing scores by default. The four analysis fields discuss the course, assessment, student learning and improvement measures, not personnel assignments, data-entry procedures or reconstruction methods. Scorebook remarks are not automatically populated with reconstruction labels.
+
+Display numeric score cells and average scores with at most one decimal (no trailing `.0`). Calculate from the original precision and preserve raw Markdown values; display rounding must not alter weighted totals or verified target scores.
+
+成绩记分册封面保持原样，正文的专业/班级名称一行一个、框内左对齐。成绩记分册中的分数最终按四舍五入（half up）显示整数；汇总表及平均分最多一位小数。此为显示规则，原始值与计算精度不变。专业、班级标签放在名称框外；名称框内每行仅一个完整专业或班级，框内各行左对齐，不将两个名称混排或把单个名称折行。

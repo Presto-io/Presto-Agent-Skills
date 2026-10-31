@@ -19,7 +19,7 @@ from xml.sax.saxutils import escape as xml_escape
 
 from .delivery import CURRENT_NAMES, DeliveryError, DeliverySession, DeliverySpec
 
-VERSION = "0.5.4"
+VERSION = "0.7.4"
 PACKAGE_ARTIFACTS = [
     "成绩记分册",
     "成绩汇总表",
@@ -337,6 +337,47 @@ def ptitle_abs(
     return f"#ptitle_nc({pt(x)}, {pt(y)}, {pt(w)}, {pt(h)}, {size:g}pt, {typst_body(body)}, pos: {pos})"
 
 
+def pscore_abs(x: float, y: float, w: float, h: float, size: float, body: Any) -> str:
+    return f"#pscore({pt(x)}, {pt(y)}, {pt(w)}, {pt(h)}, {size:g}pt, {typst_body(display_score(body))})"
+
+
+def pfit_abs(x: float, y: float, w: float, h: float, size: float, body: Any) -> str:
+    return f"#pfit({pt(x)}, {pt(y)}, {pt(w)}, {pt(h)}, {size:g}pt, {typst_body(body)})"
+
+
+def name_items(value: Any, *, classes: bool = False) -> list[str]:
+    items = [part.strip() for item in list_value(value)
+             for part in re.split(r"[、，,;；\n]+", item) if part.strip()]
+    return [normalized_class_label(item) if classes else item for item in items]
+
+
+def pnames_abs(x: float, y: float, w: float, h: float, size: float, values: list[str]) -> str:
+    names = "(" + "".join(f'"{typst_string(value)}",' for value in values) + ")"
+    return f"#pnames({pt(x)}, {pt(y)}, {pt(w)}, {pt(h)}, {size:g}pt, {names})"
+
+
+def metadata_name_field(x: float, y: float, w: float, h: float, label: str, values: list[str]) -> list[str]:
+    label_w = 35.0
+    return [ptext_abs(x, y, label_w, h, 11.6, label + "：", pos="right + horizon", clip=False),
+            pnames_abs(x + label_w, y, w - label_w, h, 11.6, values)]
+
+
+def scorebook_display_score(value: Any) -> str:
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+    text = scalar(value).strip()
+    if not text:
+        return ""
+    uncertain = text.endswith("?")
+    try:
+        number = Decimal(text[:-1] if uncertain else text)
+        if not number.is_finite():
+            return text
+        result = format(number.quantize(Decimal("1"), rounding=ROUND_HALF_UP), "f")
+    except InvalidOperation:
+        return text
+    return result + ("?" if uncertain else "")
+
+
 def ppara_abs(
     x: float,
     y: float,
@@ -458,25 +499,39 @@ def task_display_name(task: dict[str, Any]) -> str:
 
 
 def task_name_cells(x: float, y: float, w: float, h: float, task: dict[str, Any]) -> list[str]:
-    task_lines = wrap_cjk_label(task_display_name(task), width=4, max_lines=8)
-    if not task_lines:
+    name = task_display_name(task)
+    if not name:
         return []
-    line_h = 14.0
-    total_h = len(task_lines) * line_h
-    start_y = y + max(0.0, (h - total_h) / 2)
-    size = 10.0 if len(task_lines) > 6 else 10.2
-    return [
-        ptext_abs(x, start_y + line_h * line_index, w, line_h, size, label, clip=False)
-        for line_index, label in enumerate(task_lines)
-    ]
+    # One centered box keeps the full label and an explicit readable baseline step.
+    return [pfit_abs(x + 1.0, y + 3.0, w - 2.0, h - 6.0, 10.2, name)]
+
 
 
 def task_score(row: dict[str, str], index: int) -> str:
     return row.get(f"任务{index}", "")
 
 
+def display_score(value: Any) -> str:
+    """Render a score with at most one decimal; retain the unrounded source."""
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+    text = scalar(value).strip()
+    if not text:
+        return ""
+    uncertain = text.endswith("?")
+    numeric = text[:-1] if uncertain else text
+    try:
+        number = Decimal(numeric)
+        if not number.is_finite():
+            return text
+        rounded = number.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    except InvalidOperation:
+        return text
+    label = format(rounded, "f").rstrip("0").rstrip(".")
+    return ("0" if label in ("", "-0") else label) + ("?" if uncertain else "")
+
+
 def scorebook_source_values(row: dict[str, str]) -> list[str]:
-    return [row.get(header, "") for header in TRAILING_SCORE_COLUMNS]
+    return [scorebook_display_score(row.get(header, "")) for header in TRAILING_SCORE_COLUMNS]
 
 
 def student_identity_values(value: str) -> set[str]:
@@ -546,10 +601,16 @@ def cover_line_field(
     size: float = 16.2,
     label_text: str | None = None,
     line_offset: float = 22.00,
+    fit_names: bool = True,
 ) -> None:
     line_y = y + line_offset
     lines.append(ptext_abs(label_x, y, label_w, 22.00, size, label_text or f"{label}：", pos="right + horizon", clip=False))
-    lines.append(ptext_abs(value_x, y, value_w, 22.00, size, value, clip=False))
+    if not fit_names:
+        lines.append(ptext_abs(value_x, y, value_w, 22.00, size, value, clip=False))
+    elif label == "班级":
+        lines.append(pscore_abs(value_x, y, value_w, 22.00, size, normalized_class_label(value)))
+    else:
+        lines.append(pfit_abs(value_x, y, value_w, 22.00, size, value))
     lines.append(hline_abs(value_x, value_x + value_w, line_y))
 
 
@@ -558,7 +619,7 @@ def reference_cover_page(package: MarkdownPackage, title: str, *, fields: list[t
     cover_fields = fields or [
         ("科目", package.meta.get("course_name", "")),
         ("班级", class_label(package)),
-        ("教师", teacher_label(package)),
+        ("教师", "  ".join(list_value(package.meta.get("cover_teachers") or package.meta.get("teachers")))),
     ]
     y = 522.00
     for label, value in cover_fields:
@@ -590,6 +651,7 @@ def scorebook_cover_page(package: MarkdownPackage) -> str:
         value_w=228.00,
         label_text="学　　科：",
         line_offset=22.00,
+        fit_names=False,
     )
     cover_line_field(
         lines,
@@ -601,9 +663,10 @@ def scorebook_cover_page(package: MarkdownPackage) -> str:
         value_x=218.00,
         value_w=228.00,
         line_offset=22.00,
+        fit_names=False,
     )
     cover_center_line(lines, 668.00, date_label(package, spaced=True), size=16.6)
-    return pagebox_abs(lines)
+    return pagebox_abs([line.replace("#ptext_nc(", "#pcover(") for line in lines])
 
 
 def meta_rows(package: MarkdownPackage, extra: dict[str, Any] | None = None) -> str:
@@ -905,14 +968,14 @@ def scorebook_score_page(package: MarkdownPackage, rows: list[dict[str, str]], *
         for value, x, w in zip(scorebook_source_values(row) + [""] * (len(task_x) - len(TRAILING_SCORE_COLUMNS)), task_x, task_w):
             if "?" in value:
                 fills.append(warning_rect_abs(x, top, w, cell_h))
-            lines.append(ptext_abs(x, y_text, w, h, 11.8, value))
+            lines.append(pscore_abs(x, y_text, w, h, 11.8, value))
         derived = derived_score_values(row, package.tasks)
-        lines.append(ptext_abs(371.59, y_text, 43.06, h, 11.8, derived["平时分"]))
-        lines.append(ptext_abs(414.65, y_text, 43.06, h, 11.8, derived["期末分"]))
+        lines.append(pscore_abs(371.59, y_text, 43.06, h, 11.8, derived["平时分"]))
+        lines.append(pscore_abs(414.65, y_text, 43.06, h, 11.8, derived["期末分"]))
         semester_score = derived["学期成绩"]
         if is_below_60(semester_score):
             fills.append(warning_rect_abs(457.71, top, 43.06, cell_h))
-        lines.append(ptext_abs(457.71, y_text, 43.06, h, 11.8, semester_score))
+        lines.append(pscore_abs(457.71, y_text, 43.06, h, 11.8, semester_score))
     if include_stats:
         lines.extend(scorebook_stats_block(package))
     return pagebox_abs(fills + lines)
@@ -944,9 +1007,9 @@ def score_summary_page(package: MarkdownPackage, rows: list[dict[str, str]], *, 
     fills: list[str] = []
     lines: list[str] = [
         ptext_abs(0.00, 89.50, 595.30, 21.04, 16.8, "工学一体化课程/基本技能课程考核成绩汇总表", weight="bold"),
-        ptext_abs(55.69, 123.80, 160.68, 21.00, 11.6, f"专业：  {package.meta.get('major_name', '')}", clip=False),
-        ptext_abs(216.37, 123.80, 160.68, 21.00, 11.6, f"班级：  {class_label(package)}", clip=False),
-        ptext_abs(377.05, 123.80, 160.68, 21.00, 11.6, date_label(package, spaced=True), clip=False),
+        *metadata_name_field(55.69, 115.00, 160.68, 25.00, "专业", name_items(package.meta.get("major_name"))),
+        *metadata_name_field(216.37, 115.00, 160.68, 25.00, "班级", name_items(package.meta.get("class_name"), classes=True)),
+        pfit_abs(377.05, 115.00, 160.68, 25.00, 11.6, date_label(package, spaced=True)),
     ]
     for y in [142.19, 160.90, 326.00, 346.02, 366.04, 386.06, 406.08, 426.09, 446.11, 466.13, 486.15, 506.17, 526.19, 546.21, 566.22, 586.24, 606.26, 626.28, 646.30, 666.32, 686.34, 706.35, 726.37]:
         lines.append(hline_abs(55.69, 537.74, y))
@@ -962,7 +1025,7 @@ def score_summary_page(package: MarkdownPackage, rows: list[dict[str, str]], *, 
             diag_abs(55.69, 160.90, 172.40, 73.28),
             diag_abs(55.69, 160.90, 111.47, 40.54),
             ptext_abs(55.69, 142.19, 84.71, 18.71, 11.8, "课程名称"),
-            ptext_abs(140.40, 142.19, 135.72, 18.71, 10.2, package.meta.get("course_name", "")),
+            pfit_abs(140.40, 142.19, 135.72, 18.71, 10.2, package.meta.get("course_name", "")),
             ptext_abs(276.12, 142.19, 90.32, 18.71, 11.8, "课程类型"),
             ptext_abs(366.45, 142.19, 171.29, 18.71, 11.8, course_type_label(package)),
             ptext_abs(90.00, 164.00, 49.00, 12.00, 10.5, "任务名称", pos="right + horizon", clip=False),
@@ -996,14 +1059,14 @@ def score_summary_page(package: MarkdownPackage, rows: list[dict[str, str]], *, 
         lines.append(ptext_abs(55.69, top, 27.61, 20.02, 10.8, str(start_index + index) if row else ""))
         lines.append(ptext_abs(83.30, top, 57.10, 20.02, 10.8, row.get("姓名", "")))
         for task_index, (x, w) in enumerate(task_cols, start=1):
-            value = task_score(row, task_index)
+            value = display_score(task_score(row, task_index))
             if "?" in value:
                 fills.append(warning_rect_abs(x, top, w, 20.02))
-            lines.append(ptext_abs(x, top, w, 20.02, 10.8, value))
+            lines.append(pscore_abs(x, top, w, 20.02, 10.8, value))
         summary_score = weighted_task_score(row, package.tasks)
         if is_below_60(summary_score):
             fills.append(warning_rect_abs(501.23, top, 36.50, 20.02))
-        lines.append(ptext_abs(501.23, top, 36.50, 20.02, 10.8, summary_score))
+        lines.append(pscore_abs(501.23, top, 36.50, 20.02, 10.8, summary_score))
     lines.append(ptext_abs(74.00, 758.00, 150.00, 14.00, 11.6, "教研室主任签字：", pos="left + horizon", clip=False))
     lines.append(ptext_abs(392.00, 758.00, 120.00, 14.00, 11.6, "教师签字：", pos="left + horizon", clip=False))
     return pagebox_abs(fills + lines)
@@ -1021,7 +1084,7 @@ def analysis_page(package: MarkdownPackage) -> str:
     lines: list[str] = [
         ptext_abs(0.00, 102.00, 595.30, 25.00, 20.0, "成  绩  分  析  表"),
         ptext_abs(55.69, 142.66, 160.68, 16.84, 11.6, school_year_label(package), clip=False),
-        ptext_abs(216.37, 142.66, 160.68, 16.84, 11.6, f"班级：  {class_label(package)}", clip=False),
+        *metadata_name_field(216.37, 135.66, 160.68, 28.84, "班级", name_items(package.meta.get("class_name"), classes=True)),
         ptext_abs(377.05, 142.66, 160.68, 16.84, 11.6, date_label(package, spaced=True), clip=False),
     ]
     for y in [167.44, 192.70, 242.75, 292.79, 317.58, 407.85, 498.12, 587.93, 678.20, 758.18]:
@@ -1049,9 +1112,9 @@ def analysis_page(package: MarkdownPackage) -> str:
     lines.extend(
         [
             ptext_abs(55.69, 167.44, 98.28, 25.26, 11.8, "课程名称"),
-            ptext_abs(153.97, 167.44, 245.24, 25.26, 11.8, package.meta.get("course_name", "")),
+            pfit_abs(153.97, 167.44, 245.24, 25.26, 11.8, package.meta.get("course_name", "")),
             ptext_abs(399.21, 167.44, 49.14, 25.26, 11.8, "教师姓名"),
-            ptext_abs(448.35, 167.44, 89.39, 25.26, 11.8, teacher_label(package, sep="  ")),
+            pfit_abs(448.35, 167.44, 89.39, 25.26, 11.8, teacher_label(package, sep="  ")),
             ptext_abs(55.69, 192.70, 49.14, 50.05, 11.8, "全班人数"),
             ptext_abs(104.83, 192.70, 49.14, 50.05, 11.8, "缺考人数"),
             ptext_abs(153.97, 192.70, 294.38, 24.79, 11.8, "考试成绩、分类、人数及百分比"),
@@ -1107,11 +1170,11 @@ def simple_cover_page(package: MarkdownPackage, title: str) -> str:
         top_y = 590.00
         bottom_y = 624.00
         divider_y = (top_y + 24.00 + bottom_y) / 2
-        lines.append(ptext_abs(left_x, top_y, block_w, 24.00, 16.0, class_label(package), clip=False))
-        lines.append(ptext_abs(right_x, top_y, block_w, 24.00, 16.0, teacher_label(package), clip=False))
+        lines.append(pscore_abs(left_x, top_y, block_w, 24.00, 16.0, class_label(package)))
+        lines.append(pfit_abs(right_x, top_y, block_w, 24.00, 16.0, teacher_label(package)))
         lines.extend(dashed_hline_abs(150.00, 444.00, divider_y, dash=2.00, gap=2.00, stroke=0.58))
-        lines.append(ptext_abs(left_x, bottom_y, block_w, 24.00, 16.0, normalized_class_label(package.meta.get("handover_class_name")), clip=False))
-        lines.append(ptext_abs(right_x, bottom_y, block_w, 24.00, 16.0, "  ".join(list_value(package.meta.get("handover_teachers"))), clip=False))
+        lines.append(pscore_abs(left_x, bottom_y, block_w, 24.00, 16.0, normalized_class_label(package.meta.get("handover_class_name"))))
+        lines.append(pfit_abs(right_x, bottom_y, block_w, 24.00, 16.0, "  ".join(list_value(package.meta.get("handover_teachers")))))
         return pagebox_abs(lines)
     return reference_cover_page(package, title)
 
@@ -1147,7 +1210,7 @@ def summary_stat(package: MarkdownPackage, kind: str) -> str:
     if kind == "min":
         return str(round(min(scores)))
     if kind == "avg":
-        return f"{sum(scores) / len(scores):.2f}"
+        return display_score(sum(scores) / len(scores))
     if kind == "lt60":
         return str(sum(1 for score in scores if score < 60))
     if kind == "gte60":
@@ -1255,7 +1318,7 @@ def score_summary_rows(package: MarkdownPackage) -> list[list[str]]:
                     numeric_values.append(float(value))
                 except ValueError:
                     pass
-    average = "" if not numeric_values else f"{sum(numeric_values) / len(numeric_values):.2f}"
+    average = "" if not numeric_values else display_score(sum(numeric_values) / len(numeric_values))
     return [
         ["学生数", str(len(rows))],
         ["过程考核任务数", str(len(package.tasks))],

@@ -3,7 +3,7 @@ name: "end-of-term-teaching-materials"
 description: "Use when preparing semester-end teaching submission documents and tables from explicit course, class, roster, task, score, assessment, and submission data."
 metadata:
   short-description: "期末教学材料固定模板渲染"
-  version: "0.7.0"
+  version: "0.7.4"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -80,6 +80,14 @@ The normal workflow does not expose JSON, CSV, manifest, task-map, score-summary
 - `score-list.xlsx`: 唯一 Excel，列为 `学号`、`姓名`、`平时成绩`、`期末成绩`，按学号递增排序。
 
 四项 current 是不可拆分的固定 bundle；`sources/` 永不由普通发布变更，当前实现没有 managed assets，`history/` 不自动删除，`.work/` 仅承载本次 candidate/rollback/evidence 并在收尾清理。
+
+## Long-Label Layout
+
+- Use measured font fitting for class/major names and measured wrapping for courses, teachers and tasks; never truncate names or rely on clipping to conceal overflow. Keep the full task name.
+- Preserve the scorebook cover layout. Put 专业： and 班级： outside the body name box. Inside it, place exactly one complete major/class per line, left-align each name inside the box, and fit the longest name without wrapping it.
+- Compile and inspect metadata rows, covers and score cells with long synthetic labels after layout changes. If a field cannot fit at 5pt, fail explicitly and enlarge/reflow it rather than silently losing text.
+- Preserve numerical precision for calculations. Display scorebook score cells as integers rounded half up; summary and average scores use at most one decimal without trailing `.0`. Never round source data before calculation.
+- Analysis discusses course assessment, learning difficulties, attendance impact and improvement measures. Keep score-reconstruction methods and source audits outside the four analysis fields; never auto-label scorebook remarks as “分项推算”.
 
 ## Verification
 

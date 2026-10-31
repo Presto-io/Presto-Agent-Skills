@@ -109,7 +109,15 @@ class DeliverySession:
             raise DeliveryError("delivery root changed during publication")
 
     def _directory_entries(self, directory_fd: int) -> tuple[str, ...]:
-        return tuple(sorted(entry.name for entry in os.scandir(directory_fd)))
+        # Reopen the same directory with a fresh stream offset. Reusing an fd
+        # after an earlier scan can otherwise return EOF even after files arrive.
+        scan_fd = os.open(".", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                          dir_fd=directory_fd)
+        try:
+            with os.scandir(scan_fd) as entries:
+                return tuple(sorted(entry.name for entry in entries))
+        finally:
+            os.close(scan_fd)
 
     def _require_directory(self, name: str, *, directory_fd: int) -> None:
         metadata = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)

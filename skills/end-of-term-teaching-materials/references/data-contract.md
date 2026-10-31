@@ -14,7 +14,8 @@
 | `course_name` | yes | 课程名称。 |
 | `course_type_label` | no | 支持 `一体化`、`基本技能`、`单技能`；缺失时默认 `基本技能`。 |
 | `class_name` | yes | 当前教师所带班级短名称数组。 |
-| `teachers` | yes | 任课教师有序数组。 |
+| `teachers` | yes | 全部任课教师有序数组，成绩记分册等成绩材料保留完整名单。 |
+| `cover_teachers` | no | 教学日志、过程考核评价表封面的教师有序数组；与全部任课教师分别确认，缺省沿用 teachers，不猜测用户身份。 |
 | `handover_class_name` | no | 交接班短名称数组。 |
 | `handover_teachers` | no | 交接班教师有序数组。 |
 
