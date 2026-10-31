@@ -33,6 +33,8 @@ metadata:
 - `assets/`: 图片等资源目录。Markdown 中的相对图片路径必须能从生成的 Typst 文件位置解析。
 - `references/format-and-rendering.md`: frontmatter 字段、控制语法、编号规则、渲染约束和详细验证规则。
 
+需要同时显示标题下署名与文末落款时，在 frontmatter 设置 `title_author: "署名文字"`、`author: "落款单位"` 和 `signature: true`；两处沿用现有样式。省略 `title_author` 保持原有行为，示例见上述 reference。
+
 ## Process
 
 1. 按 `docs/markdown-normalization-contract.md` 把源材料归一化为 `YAML frontmatter + body` 的最终交付 Markdown。

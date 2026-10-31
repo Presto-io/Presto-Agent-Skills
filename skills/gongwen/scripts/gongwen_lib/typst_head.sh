@@ -249,7 +249,9 @@ emit_auto_meta() {
 = #autoTitle.split("|").map(s => s.trim()).join(linebreak())
 
 TYP
-  if [[ "$FM_SIGNATURE" != "true" && "$FM_SIGNATURE" != "yes" ]]; then
+  if [[ -n "$FM_TITLE_AUTHOR" ]]; then
+    printf '\n#name("%s")\n' "$(escape_string "$FM_TITLE_AUTHOR")"
+  elif [[ "$FM_SIGNATURE" != "true" && "$FM_SIGNATURE" != "yes" ]]; then
     printf '\n#name(autoAuthor)\n'
   fi
   printf '\n'

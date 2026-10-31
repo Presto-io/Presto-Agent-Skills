@@ -6,11 +6,27 @@ This reference holds detailed authoring and renderer rules for the `gongwen` ski
 
 - `title`: 公文标题；如需标题中手动换行，用 `|` 标记断点。
 - `author`: 发文单位；可为字符串或字符串数组。
+- `title_author`: 可选的标题下署名字符串；填写时始终在标题下显示，沿用现有署名样式。与 `signature: true` 搭配可同时显示标题下署名和文末落款，文末仍使用 `author`、`date`。未填写或为空时保持原有行为：`signature: false` 在标题下显示 `author`，`signature: true` 仅显示文末落款。括号和空格按输入保留，不自动添加。
 - `date`: `YYYY-MM-DD` 格式日期。
 - `signature`: 是否启用签名信息；使用 `true` 时，落款单位和日期只从 `author`、`date` 生成。
 - `template`: 固定为 `gongwen`。
 
 当 `signature: true` 时，正文严禁再手写落款、日期或署名块。严禁在新文档示例、默认模板、推荐写法或生成指令中展示旧式手工落款；旧 fenced div 只允许作为兼容解析能力存在，不能作为新文档的落款写法。
+
+同时显示标题下署名和文末落款：
+
+```yaml
+---
+title: "工作汇报"
+title_author: "（党委书记  院长  张某某）"
+author: "示例学院"
+date: "2026-10-31"
+signature: true
+template: "gongwen"
+---
+```
+
+`title_author` 只接受单行字符串，不使用数组；无需在正文重复写署名或落款。两处字体、字号、行距和间距均沿用原样。
 
 ## Body Structure
 

@@ -1,5 +1,6 @@
 FM_TITLE="请输入文字"
 FM_AUTHOR="请输入文字"
+FM_TITLE_AUTHOR=""
 FM_DATE=""
 FM_SIGNATURE="false"
 FM_TEMPLATE=""
@@ -10,6 +11,7 @@ parse_input() {
   BODY_LINES=()
   FM_TITLE="请输入文字"
   FM_AUTHOR=""
+  FM_TITLE_AUTHOR=""
   FM_DATE=""
   FM_SIGNATURE=""
   FM_TEMPLATE=""
@@ -32,6 +34,9 @@ parse_input() {
       fi
       if [[ "$line" =~ ^title:[[:space:]]*(.*)$ ]]; then
         FM_TITLE="$(strip_quotes "${BASH_REMATCH[1]}")"
+        in_author=false
+      elif [[ "$line" =~ ^title_author:[[:space:]]*(.*)$ ]]; then
+        FM_TITLE_AUTHOR="$(strip_quotes "${BASH_REMATCH[1]}")"
         in_author=false
       elif [[ "$line" =~ ^date:[[:space:]]*(.*)$ ]]; then
         FM_DATE="$(strip_quotes "${BASH_REMATCH[1]}")"
