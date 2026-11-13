@@ -19,7 +19,7 @@ from xml.sax.saxutils import escape as xml_escape
 
 from .delivery import CURRENT_NAMES, DeliveryError, DeliverySession, DeliverySpec
 
-VERSION = "0.7.4"
+VERSION = "0.8.0"
 PACKAGE_ARTIFACTS = [
     "成绩记分册",
     "成绩汇总表",
@@ -601,17 +601,28 @@ def cover_line_field(
     size: float = 16.2,
     label_text: str | None = None,
     line_offset: float = 22.00,
-    fit_names: bool = True,
-) -> None:
+) -> float:
+    field_height = 22.00
+    text_width = sum(size if ord(character) > 127 else size * 0.6 for character in scalar(value)) + size
+    line_count = max(1, int((text_width - 1) // value_w) + 1)
+    field_height = max(field_height, line_count * size * 1.4)
+    line_offset += field_height - 22.00
     line_y = y + line_offset
     lines.append(ptext_abs(label_x, y, label_w, 22.00, size, label_text or f"{label}：", pos="right + horizon", clip=False))
-    if not fit_names:
-        lines.append(ptext_abs(value_x, y, value_w, 22.00, size, value, clip=False))
-    elif label == "班级":
-        lines.append(pscore_abs(value_x, y, value_w, 22.00, size, normalized_class_label(value)))
-    else:
-        lines.append(pfit_abs(value_x, y, value_w, 22.00, size, value))
+    lines.append(ptext_abs(value_x, y, value_w, field_height, size, value, clip=False))
     lines.append(hline_abs(value_x, value_x + value_w, line_y))
+    return field_height - 22.00
+
+
+def cover_field_geometry(values: list[Any], *, size: float = 16.2) -> dict[str, float]:
+    label_w = 92.00
+    text_width = max(
+        (sum(size if ord(character) > 127 else size * 0.6 for character in scalar(value)) + size for value in values),
+        default=228.00,
+    )
+    value_w = min(max(228.00, text_width), 595.30 - 80.00 - label_w)
+    label_x = (595.30 - label_w - value_w) / 2
+    return {"label_x": label_x, "label_w": label_w, "value_x": label_x + label_w, "value_w": value_w}
 
 
 def reference_cover_page(package: MarkdownPackage, title: str, *, fields: list[tuple[str, Any]] | None = None) -> str:
@@ -621,10 +632,11 @@ def reference_cover_page(package: MarkdownPackage, title: str, *, fields: list[t
         ("班级", class_label(package)),
         ("教师", "  ".join(list_value(package.meta.get("cover_teachers") or package.meta.get("teachers")))),
     ]
+    geometry = cover_field_geometry([value for _, value in cover_fields])
     y = 522.00
     for label, value in cover_fields:
-        cover_line_field(lines, y, label, value)
-        y += 34.00
+        extra_height = cover_line_field(lines, y, label, value, **geometry)
+        y += 34.00 + extra_height
     return pagebox_abs(lines)
 
 
@@ -638,35 +650,28 @@ def cover_center_line(lines: list[str], y: float, value: Any, *, size: float = 1
 
 def scorebook_cover_page(package: MarkdownPackage) -> str:
     lines = cover_title_block("成绩记分册")
+    geometry = cover_field_geometry([package.meta.get("course_name", ""), teacher_label(package)])
     cover_center_line(lines, 500.00, school_year_label(package), size=16.6)
     cover_center_line(lines, 542.00, class_label(package), size=16.6)
-    cover_line_field(
+    course_extra_height = cover_line_field(
         lines,
         584.00,
         "学科",
         package.meta.get("course_name", ""),
-        label_x=126.00,
-        label_w=92.00,
-        value_x=218.00,
-        value_w=228.00,
+        **geometry,
         label_text="学　　科：",
         line_offset=22.00,
-        fit_names=False,
     )
-    cover_line_field(
+    teacher_extra_height = cover_line_field(
         lines,
-        626.00,
+        626.00 + course_extra_height,
         "授课教师",
         teacher_label(package),
-        label_x=126.00,
-        label_w=92.00,
-        value_x=218.00,
-        value_w=228.00,
+        **geometry,
         line_offset=22.00,
-        fit_names=False,
     )
-    cover_center_line(lines, 668.00, date_label(package, spaced=True), size=16.6)
-    return pagebox_abs([line.replace("#ptext_nc(", "#pcover(") for line in lines])
+    cover_center_line(lines, 668.00 + course_extra_height + teacher_extra_height, date_label(package, spaced=True), size=16.6)
+    return pagebox_abs(lines)
 
 
 def meta_rows(package: MarkdownPackage, extra: dict[str, Any] | None = None) -> str:

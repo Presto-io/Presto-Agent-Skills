@@ -3,7 +3,7 @@ name: "end-of-term-teaching-materials"
 description: "Use when preparing semester-end teaching submission documents and tables from explicit course, class, roster, task, score, assessment, and submission data."
 metadata:
   short-description: "期末教学材料固定模板渲染"
-  version: "0.7.4"
+  version: "0.8.0"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -34,6 +34,7 @@ metadata:
 - `review_answers`: 用户对 `## 复核标记` 中不确定成绩、缺失字段或 AI 草稿内容的逐项确认或修正。
 - `out_dir`: 授权交付根；current 固定为 `end-of-term-full.md`、`end-of-term-package.typ`、`end-of-term-package.pdf`、`score-list.xlsx`，一级仅额外允许按需存在的 `sources/`、`assets/`、`history/`、`.work/`。
 - `references/workflow-and-artifacts.md`: 复核链、导出闸门、score/template 规则和成功交付边界。
+- `references/score-reconciliation.md`: 发现总分计算错误、原件识读疑点，或记分册前三类成绩缺失时必读；规定主 agent 与独立子 agent 双核算、自动纠错、按总成绩反推补列及交付说明。
 - `references/rendering-style.md`, `references/cover-template-notes.md`, `references/scorebook-template-notes.md`: 固定模板排版和封面/记分册说明。
 
 ## Script Usage
@@ -55,10 +56,10 @@ The normal workflow does not expose JSON, CSV, manifest, task-map, score-summary
 ## Process
 
 1. Read the uploaded source materials and organize them into `end-of-term-full.md`; do not make JSON/CSV the user-facing source of truth.
-2. Keep all data diagnosis in the Markdown: missing facts and uncertain scores go under `## 复核标记`; analysis revisions go under `## 分析`.
-3. Work with the teacher through multiple turns, editing the Markdown after each confirmation or correction.
-4. Clear review markers one item at a time. Normal final export requires `## 复核标记` to be exactly `无`.
-5. Render with `deliver` only after the review gate is clear. Preserve blank cells, declared task columns, package flags, and fixed-template scoring rules from `references/workflow-and-artifacts.md`.
+2. 先检查原始分项、合计和计分规则。疑似计算错误由主 agent 核算，再由独立子 agent 从原件重新识读并核算；原件清晰、分项与规则均明确且两次结果一致时，直接修正，无须先询问。按 `references/score-reconciliation.md` 执行。
+3. 记分册前三类成绩（考勤、作业、期末测试，对应常用第1、2、3栏）缺失时，按已确定总成绩及计分公式自行反推补齐，保留已知成绩与最终总成绩；不为此例行追问。无可行解或总成绩含义不明时才集中询问。最终四件套不加入纠错或补列说明，证据保存在任务工作目录，交付回复告知处理结果。
+4. 一次性集中列出当前已知的不确定信息、成绩疑点和必要问题，使用编号说明当前值及疑点，便于教师一次回复；不得把已知问题拆成逐条往返。收到回复后逐项更新 Markdown 并清除对应标记。Normal final export requires `## 复核标记` to be exactly `无`.
+5. Render with `deliver` only after the review gate is clear. 除按反推规则补齐的前三类成绩外，其他空成绩保持空白；保留已声明任务列、材料开关及已确定计分规则。分析修订在 `## 分析`，尚未解决的识读、核算或元数据疑点在 `## 复核标记`；已双核算确认的算术错误和可行的反推补列不留作待确认事项。
 6. `deliver` 在 `.work/<run-id>/candidate/` 生成并验证完整四件套后才发布；逐文件 bytes 相同则保持 current inode/mtime 且不建 history，变化则把旧四件套整体归档到下一 `history/<sequence>/`。
 7. Handled failure、`INT` 或 `TERM` 回滚旧四件套并清理本 run；unknown、partial、symlink、legacy hidden 或 stale `.work` 在 mutation 前失败关闭。成功根不得留下 JSON、CSV、manifest、status、model、日志、报告、staging 或失败产物。
 
@@ -72,6 +73,7 @@ The normal workflow does not expose JSON, CSV, manifest, task-map, score-summary
 | OpenCode | 使用适用版本 native skill path 或 Claude-compatible fallback，保持 whole-folder 完整。 | 自动发现不可用时显式调用 shell 入口。 | 需要 Bash、Python 3、Typst；不联网、不自动安装。 | 验证 execute/read/write，不假定继承宿主权限。 | 配置 allowlist/sandbox 读取模板并仅写授权 root/`.work`。 |
 | OpenClaw | exact skill root、frontmatter、support-file discovery 与 whole-folder 完整性必须 installation-time verification。 | automatic discovery 不作保证；installation-time verification 后仍保留显式 shell fallback。 | 安装时核验 Bash、Python 3、Typst；禁止联网与自动安装。 | installation-time verification 覆盖 execute/read/write。 | 安装时实测 allowlist/sandbox 只允许完整 folder、输入、delivery root 与 `.work`。 |
 | Hermes Agent | exact local/global path、frontmatter、support-file discovery 与 whole-folder 完整性必须 installation-time verification。 | automatic discovery 不作保证；明确保留 shell invocation fallback。 | 安装时核验 Bash、Python 3、Typst；禁止联网与自动安装。 | installation-time verification 覆盖 execute/read/write。 | 安装时实测 allowlist/sandbox 和 delivery root/`.work` 写入边界。 |
+
 | DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；核对重名优先级。 | 按精确名称用 `skill` 加载，支持文件相对资源根解析；失败时显式读本文件并调用公开脚本。 | 核验本技能声明的依赖、字体及渲染器，不假定插件提供全部工具。 | 核验输入/支持文件读与授权交付根、owned `.work`、独立 verify workdir 写权限。 | 遵守会话权限与 allowlist；源码核对不等于实机验收。 |
 
 ## Outputs
@@ -85,8 +87,8 @@ The normal workflow does not expose JSON, CSV, manifest, task-map, score-summary
 
 ## Long-Label Layout
 
-- Use measured font fitting for class/major names and measured wrapping for courses, teachers and tasks; never truncate names or rely on clipping to conceal overflow. Keep the full task name.
-- Preserve the scorebook cover layout. Put 专业： and 班级： outside the body name box. Inside it, place exactly one complete major/class per line, left-align each name inside the box, and fit the longest name without wrapping it.
+- Body fields use measured font fitting for class/major names and measured wrapping for courses, teachers and tasks; never truncate names or rely on clipping to conceal overflow. Covers instead preserve font size and expand all information bars together, as specified in `references/cover-template-notes.md`. Keep the full task name.
+- Preserve the scorebook cover title and information order; expand its course and teacher bars together. Put 专业： and 班级： outside the body name box. Inside it, place exactly one complete major/class per line, left-align each name inside the box, and fit the longest name without wrapping it.
 - Compile and inspect metadata rows, covers and score cells with long synthetic labels after layout changes. If a field cannot fit at 5pt, fail explicitly and enlarge/reflow it rather than silently losing text.
 - Preserve numerical precision for calculations. Display scorebook score cells as integers rounded half up; summary and average scores use at most one decimal without trailing `.0`. Never round source data before calculation.
 - Analysis discusses course assessment, learning difficulties, attendance impact and improvement measures. Keep score-reconstruction methods and source audits outside the four analysis fields; never auto-label scorebook remarks as “分项推算”.
@@ -100,6 +102,7 @@ The normal workflow does not expose JSON, CSV, manifest, task-map, score-summary
 - [ ] `score-list.xlsx` contains only `学号`、`姓名`、`平时成绩`、`期末成绩` and is sorted by ascending student ID.
 - [ ] Markdown/Typst are non-empty UTF-8, PDF starts with `%PDF-`, and XLSX reopens with required OOXML members; automated gates do not replace human content/layout review.
 - [ ] Runtime adapter notes mention Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
+- [ ] 算术修正有主 agent 与独立子 agent 的原件识读及计算证据；反推补列后，已知成绩和最终总成绩不变，PDF 与 Excel 一致；四件套不含处理说明，交付回复列明纠错及反推情况。
 
 ## Success Criteria
 
@@ -113,8 +116,8 @@ The normal workflow does not expose JSON, CSV, manifest, task-map, score-summary
 ## Safety
 
 - 不要把真实学生隐私、成绩原件、私有路径、凭据或隐藏 source list 写入可复用模板或 workbook。
-- 不要把空成绩单元格改成 `0`、`-1` 或自动复核项；空白就是空白，除非用户另行说明。
-- 不要根据“看起来合理”补齐缺失成绩、教师、班级、学期或交接信息；缺失项必须显式标记复核。
+- 前三类缺失成绩按 `references/score-reconciliation.md` 的反推规则补齐；其他空成绩不自动改成 `0`、`-1`，不推定为缺考。实际记录的0分必须保留。
+- 不根据“看起来合理”编造成绩或元数据。反推值是满足已确定总分和公式的补列值，不当作新增考勤、考试、作业原始记录；教师、班级、学期、交接信息等缺失项仍须集中复核。
 - 不要在 canonical 主流程写入某个 runtime 的私有语法；差异只放在 `Runtime Adapter Notes`。
 - 不要把自动生成 PDF/workbook 说成替代人工格式验收；它们是从定稿 Markdown 生成的交付产物。
 - 不承诺 SIGKILL、断电或四个路径的跨文件原子性；普通 `deliver` 不迁移 unknown/legacy 文件，也不自动删除 `history/`。
