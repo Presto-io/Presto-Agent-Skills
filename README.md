@@ -12,6 +12,7 @@ Presto Agent Skills 是一个面向多类 AI agent 的技能仓库框架。它�
 - OpenCode
 - OpenClaw
 - Hermes Agent
+- DeepSeek Harness（DSH）
 
 其中 OpenClaw 和 Hermes Agent 是 v1 必须支持的目标。
 
@@ -48,8 +49,21 @@ cp -R skills/<skill-name> <runtime-skill-root>/<skill-name>
 | OpenCode | 优先使用当前版本支持的 native skill path；如使用 Claude-compatible fallback，必须实际验证技能是否被发现。 |
 | OpenClaw | 使用当前安装版本支持的 AgentSkills-compatible 目录，安装前审阅第三方脚本，并验证 frontmatter、allowlist、skill root 和 sandbox。 |
 | Hermes Agent | 使用当前版本支持的 `SKILL.md` skill folder；项目级或全局路径必须在安装环境中实测，不能靠猜测。 |
+| DeepSeek Harness（DSH） | 将完整技能目录置于 `.dsh/skills`、`.agents/skills` 或 filesystem provider 的 `customSkillDirs` 直属层；不递归发现 `skills/**/SKILL.md`，按精确名称通过 `skill` 加载。详见兼容性矩阵。 |
 
-准确的 runtime 差异以目标技能的 `Runtime Adapter Notes` 和 `docs/compatibility-matrix.md` 为准。除 Claude Code 示例外，本仓库不把尚未跨版本验证的路径写成固定事实。
+准确的 runtime 差异以目标技能的 `Runtime Adapter Notes` 和 `docs/compatibility-matrix.md` 为准。DSH 路径与加载行为已经对照官方源码核对，仍需目标安装环境实测；其他尚未跨版本验证的路径不写成固定事实。
+
+### DSH 安装检查
+
+DSH 默认不会扫描本仓库的 `skills/`，需把技能完整目录安装到其直接扫描的技能根，或将本仓库的 `skills/` 配置为 `customSkillDirs`。提供只读检查及显式安装入口（Python 3 + PyYAML）：
+
+```bash
+python3 scripts/install-dsh-skills.py --skill professional-research-report --dest /absolute/path/to/.dsh/skills
+# 检查计划后安装；已有不同内容默认拒绝，显式 --replace 时先保留备份
+python3 scripts/install-dsh-skills.py --skill professional-research-report --dest /absolute/path/to/.dsh/skills --install
+```
+
+可重复 `--skill`，或用 `--all` 选择全部技能。脚本不修改 DSH profile、不安装插件、不读取凭据；只读检查通过和目录复制成功均不代表 DSH 实际发现或依赖验收。安装后须在 DSH 中按精确名称加载，并执行目标技能的公开核验入口。DSH 的默认根、重名优先级和版本依据见 [兼容性矩阵](docs/compatibility-matrix.md#deepseek-harnessdsh)。
 
 ### 如何使用技能
 
@@ -162,7 +176,7 @@ cp -R skills/<skill-name> <runtime-skill-root>/<skill-name>
 
 1. 复制 `templates/skill/SKILL.md` 到 `skills/<skill-name>/SKILL.md`。
 2. 填写 `name`、`description`、目标、触发条件、流程、输出和成功标准。
-3. 在同一个 `SKILL.md` 的 `Runtime Adapter Notes` 中补齐 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 和 Hermes Agent 的最小兼容说明。
+3. 在同一个 `SKILL.md` 的 `Runtime Adapter Notes` 中补齐 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes Agent 和 DeepSeek Harness 的最小兼容说明。
 4. 保持 `SKILL.md` 是 semantic entry：入口里只写 agent 必须先读的 workflow map；完整字段表、格式规则、renderer notes、fixture 说明、长验证清单和排障内容放到 `skills/<skill-name>/references/`，并从入口显式链接。
 5. 把可调用命令放到 `scripts/`；把输出 scaffold、完整 Markdown 样板或渲染模板放到 `templates/`。不要把示例正文和模板、长说明和脚本混在一起。
 6. 文档工作流技能必须先按 `docs/markdown-normalization-contract.md` 把源材料归一化为 Markdown intermediate，再生成 Typst、HTML 或其他目标输出。
@@ -188,6 +202,8 @@ cp -R skills/<skill-name> <runtime-skill-root>/<skill-name>
 - `test/1.11/scheduling-contract/`：Phase 22 排课合同 fixture evidence，包含复用 v1.10 授课计划形状的 fixture source、确定性 `expected-schedule.json` 和教师可复核的 `expected-schedule.md`。
 
 ## 已有技能
+
+- `professional-research-report`：新专业申报调研报告；官方与本校证据核验、直接继承原 Word 母版、简体中文大字插图、图外图注和表格双向居中，正文不放数字引文标记，来源账本单独保存。提供只读 DOCX 审计，实际渲染与视觉检查由宿主可用工具完成。
 
 - `end-of-term-teaching-materials`：用于整理期末教学提交材料和表格，先输出可复核 Markdown intermediate，再以固定四件套事务发布 Markdown、Typst、PDF 和 XLSX；model、manifest 与评分证据不属于 current。Artifact contract 见 `skills/end-of-term-teaching-materials/references/data-contract.md` 和 `skills/end-of-term-teaching-materials/references/workflow-and-artifacts.md`。
 - `graduate-resume`：整理毕业生简历的主题无关 canonical 资料，在真实事实校验后生成通用或定向的保守稳妥、现代简洁、个性设计三主题 Markdown/Typst/PDF，支持预检、确认发布、完整三件套历史与失败回滚。安装时保留整个技能目录，包括字体、图标及许可；排版回归与 Phase 49 完整验收分别报告，不能把样张成功当作六 runtime 和人工 UAT 全部通过。

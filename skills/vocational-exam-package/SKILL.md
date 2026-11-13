@@ -5,7 +5,7 @@ metadata:
   short-description: "复用理论与实操技能的认定试卷包"
   version: "0.1.0"
   portability: "canonical"
-  supported-runtimes: [Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, Hermes Agent]
+  supported-runtimes: [Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, Hermes Agent, DeepSeek Harness]
 ---
 
 # 职业技能等级认定试卷包
@@ -45,5 +45,6 @@ metadata:
 | OpenCode | 验证三项技能 discovery，未发现时显式入口；依赖路径运行时解析，allowlist 覆盖共享授权根与实际命令。 |
 | OpenClaw | 安装时验证三个目录、依赖解析、支持文件、Python/渲染器执行与共享根读写、sandbox/allowlist；未实测不声称自动发现。 |
 | Hermes Agent | 安装时核对三项 local/global 路径和整目录支持文件、execute/read/write、共享根 allowlist；显式入口 fallback。 |
+| DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；`skill` 按精确名称加载，资源相对技能根读取。失败时显式读本文件/调用公开脚本；核验实际依赖、工具插件、输入/支持读、授权交付根/owned `.work`/独立核查目录写权限及 sandbox。源码核对不等于实机验收。 |
 
 验证证据存本次 `.work` 或用户明确指定的 verification workdir，不进入公开成员集合。

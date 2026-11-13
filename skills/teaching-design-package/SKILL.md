@@ -12,6 +12,7 @@ metadata:
     - OpenCode
     - OpenClaw
     - Hermes Agent
+    - DeepSeek Harness
 ---
 
 # Teaching Design Package
@@ -115,6 +116,7 @@ scripts/teaching-design-package.sh manifest \
 | OpenCode | 保持 `references/`、`templates/`、`scripts/` 整体安装；发现失败时使用显式 shell fallback。allowlist 覆盖 Bash/Node/Typst/PDF merge 和授权根读写，unknown/legacy/ambiguous root 仍失败关闭。 |
 | OpenClaw | 仅声明 installation-time verified：安装时验证 whole-folder discovery、support-file 可读、脚本可执行、Bash/Node/Typst/PDF merge 可用、sandbox/allowlist 以及 delivery root/`.work` 写权限；验证失败时只使用显式脚本 fallback。 |
 | Hermes Agent | 仅声明 installation-time verified：核对实际 local/global skill path、whole-folder support discovery、execute/read/write 权限、Bash/Node/Typst/PDF merge 和 delivery root/`.work` allowlist；自动发现不确定时显式调用脚本。 |
+| DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；`skill` 按精确名称加载，资源相对技能根读取。失败时显式读本文件/调用公开脚本；核验实际依赖、工具插件、输入/支持读、授权交付根/owned `.work`/独立核查目录写权限及 sandbox。源码核对不等于实机验收。 |
 
 ## Outputs
 

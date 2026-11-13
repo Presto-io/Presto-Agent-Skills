@@ -33,6 +33,7 @@
 | OpenCode | 使用当前版本验证过的 native skill path；Claude-compatible 路径只能作为实测 install note，失败时保留显式 script fallback。 | allowlist 覆盖实际 Bash/Python/Node/Typst/PPTX/PDF/browser 依赖及 whole-folder read、authorized root/`.work` write。 | 保持一个 canonical workflow；不得因 runtime fallback 放宽 explicit set、history、rollback 或 cleanup confirmation。 |
 | OpenClaw | 仅声明 installation-time verified：逐项验证 exact skill root、frontmatter parser、whole-folder/support/script discovery；任一项不确定时只使用显式 public script fallback，不声明自动发现。 | 安装时审阅第三方脚本并验证 allowlist、sandbox sync、实际外部依赖、input/support read、delivery root/`.work` 与 verify workdir write。 | 安装测试必须证明 candidate/no-op/history/rollback、unknown/symlink fail closed；不得推测跨版本路径或多文件原子能力。 |
 | Hermes Agent | 仅声明 installation-time verified：核对 exact local/global path、project/global behavior、whole-folder/support/script discovery；自动发现不确定时显式调用 public script。 | 安装时验证 tool execute/read/write、实际依赖、support/input read、authorized delivery root/`.work` 与 verify workdir allowlist。 | 保留 canonical cleanup confirmation 与显式 fallback；不得声明未实测自动 discovery、wrapper 或硬原子支持。 |
+| DeepSeek Harness（DSH） | `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 的直属完整 bundle；按精确名称用 `skill` 加载，资源相对返回的技能根读取；失败时显式读 canonical 文件/调用公开脚本。 | 安装时核验 provider/tool 插件、实际命令/包/字体、输入与支持读取、授权交付根/owned `.work`/独立核查目录写权限及 sandbox；不修改 profile 或读取凭据。 | 适配说明与复制助手已提供，源码核对及复制验证不等于 DSH 实机验收，不扩大六技能自动发布覆盖。 |
 
 ## Covered Skill Dependencies
 
@@ -145,3 +146,21 @@ References:
 # 职业技能等级认定技能安装说明
 
 `vocational-practical-exam` 与 `vocational-theory-exam` 按完整目录独立发现；`vocational-exam-package` 需要同时解析两项技能依赖。三者的六 runtime 注释在各自 `SKILL.md`，OpenClaw/Hermes 的路径、自动发现与权限必须安装时实测。实操审计仅依赖 Python 标准库；文档生成及渲染按实际环境选用现有工具，未提供自动 renderer/publisher 或已实测的跨 runtime 发布保证。fallback 为显式读取入口与引用，实操只读检查使用 `python3 scripts/audit_docx.py`。
+
+## DeepSeek Harness（DSH）
+
+2026-11-13 对照 [官方仓库](https://github.com/deepseek-ai/deepseek-harness) 提交 `39163dd30f703a79079e2d2446545cff3c453738`（仓库版本 `0.2.2-rc.3`）的 [filesystem provider](https://github.com/deepseek-ai/deepseek-harness/blob/39163dd30f703a79079e2d2446545cff3c453738/packages/skill/skill-filesystem/README.zh.md)、[实现](https://github.com/deepseek-ai/deepseek-harness/blob/39163dd30f703a79079e2d2446545cff3c453738/packages/skill/skill-filesystem/src/index.ts)及 [skill 工具](https://github.com/deepseek-ai/deepseek-harness/blob/39163dd30f703a79079e2d2446545cff3c453738/packages/skill/tool-skill/README.zh.md)核对以下规则。这是源码与本地复制验证，不是 DSH 实机端到端验收；旧版及自定义 profile 须重新核对。
+
+- DSH 使用 `@deepseek-ai/dsh-skill` 注册表、`@deepseek-ai/dsh-skill-filesystem` 本地提供方和 `@deepseek-ai/dsh-tool-skill` 模型加载工具。安装技能不会自动安装/启用这些插件，不应擅自修改用户 profile。
+- 提供方只扫描 `<root>/<name>/SKILL.md` 或 `<root>/<name>.md`，不递归查找 `**/SKILL.md`。本仓库必须整目录复制所选 `skills/<name>/`，或将仓库的绝对 `skills/` 路径配置到已有 filesystem provider 的 `customSkillDirs`；不能只复制 `SKILL.md` 或把整个仓库当作单个技能 bundle。
+- 默认优先级（小 rank 优先）：最近 `.git` 祖先项目的 `.dsh/skills`（100）、`.agents/skills`（200）、`customSkillDirs`（300）、DSH 用户根 `skills`（400）、共享 agents 根 `skills`（500）、bundled（600）。没有 `.git` 时以 cwd 为项目根。`includeDefaultRoots: false` 会关闭默认根。
+- DSH 用户根取 `dshHome` 配置，否则 `$DSH_HOME` / `~/.dsh`；共享 agents 根取 `agentsHome` 配置，否则 `$DSH_AGENTS_HOME` / `~/.agents`。优先检查当前 profile 配置及重名遮蔽，不能仅因目录存在就声称可发现。
+- canonical frontmatter 的 `name`（kebab-case）与 `description` 必填；附加数据放 `metadata`。DSH 特有调用键为 `disable-model-invocation` / `user-invocable`，默认均允许；不为适配而全局关闭自动调用，也不把 Codex 的 `agents/openai.yaml` 当作 DSH 配置。
+- 通过 `skill` 工具按精确名称加载，返回的资源基目录用于解析 `references/`、`scripts/`、`templates/` 等相对路径；仅看目录摘要不等于已加载正文。用户已显式加载正文时不重复加载。显式文件读取/公开脚本调用仅是 fallback，不能声称修复了自动发现。
+- 当前技能依赖仍由各技能声明，不能假设 DSH 插件已经提供 Python、Typst、Office/PDF、浏览器或全部外部包。命令、网络、输入/支持读与授权交付根/owned `.work`/独立核查目录写权限按会话实际工具与权限核验，不把本仓库写成可执行插件包。
+
+安装助手 `scripts/install-dsh-skills.py` 默认只读检查，`--install` 才复制，已有不同目标须 `--replace` 并保留 `.presto-backups/` 回滚目录；复制后校验完整目录 SHA-256 清单，不改动 DSH profile 或凭据。该助手依赖 Python 3 + PyYAML，不负责依赖安装和 DSH 运行测试。
+
+### 专业调研报告
+
+`professional-research-report` 是可跨 runtime 的取证、原稿格式继承与交付工作流，附标准库只读 DOCX 审计；编辑、制图、PDF 渲染使用宿主已有能力。现有报告的人类验收不等于技能所有模板与 runtime 均通过实机验收。该技能不扩展既有六技能自动 clean-delivery 覆盖。

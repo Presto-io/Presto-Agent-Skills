@@ -12,6 +12,7 @@ metadata:
     - OpenCode
     - OpenClaw
     - Hermes Agent
+    - DeepSeek Harness
 ---
 
 # 党员学习笔记
@@ -70,5 +71,6 @@ metadata:
 | OpenCode | 使用当前版本支持的技能发现机制，失败时显式读取 canonical 文件；不生成另一份 runtime-specific 工作流 |
 | OpenClaw | 安装时验证实际技能根、发现结果和读取权限；未实测前不保证自动发现。文件交付或 PDF 所需权限与依赖另行核验 |
 | Hermes Agent | 用 `skills_list`/`skill_view` 核验当前 profile 实际发现的技能。安装到实际活动技能根，不硬编码 NAS 的旧目录；更新或写文件前核验当前用户权限，发现失败时显式读取本文件 |
+| DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；`skill` 按精确名称加载，资源相对技能根读取。失败时显式读本文件/调用公开脚本；核验实际依赖、工具插件、输入/支持读、授权交付根/owned `.work`/独立核查目录写权限及 sandbox。源码核对不等于实机验收。 |
 
 本技能无内置脚本、网络或凭据依赖；文字写作可单独使用。默认 PDF 优先依赖 `gongwen`，兜底依赖环境已有 PDF 导出能力。六个 runtime 均须核验技能发现、实际渲染依赖及输出目录权限，不宣称未实测的自动发现或 PDF 成功。

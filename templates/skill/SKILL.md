@@ -12,6 +12,7 @@ metadata:
     - OpenCode
     - OpenClaw
     - Hermes Agent
+    - DeepSeek Harness
 ---
 
 # <Skill Title>
@@ -55,6 +56,7 @@ Use this table for concise compatibility notes. Do not duplicate the skill proce
 | OpenCode | <Verified native path or install note; whole-folder preservation; explicit fallback; tool permissions and authorized write boundaries> |
 | OpenClaw | <Installation-time verification of exact path, conservative frontmatter, whole-folder/support/script discovery, external commands, allowlist/sandbox and read/write boundaries; explicit script fallback when uncertain> |
 | Hermes Agent | <Installation-time verification of exact local/global path, project/global behavior, whole-folder/support/script discovery, execute/read/write and allowlist; explicit script fallback when uncertain> |
+| DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；`skill` 按精确名称加载，资源相对技能根读取。失败时显式读本文件/调用公开脚本；核验实际依赖、工具插件、输入/支持读、授权交付根/owned `.work`/独立核查目录写权限及 sandbox。源码核对不等于实机验收。 |
 
 ## Outputs
 
@@ -92,7 +94,7 @@ Follow `docs/clean-delivery-directory-contract.md` for every workflow that write
 - [ ] <Checkable success criterion for safety boundaries>
 - [ ] Whole-folder copy can read required `references/`, `scripts/`, `templates/`, and fixtures without sibling-skill or repository-root runtime imports.
 - [ ] First publish, changed whole-bundle history, byte-identical no-op, handled rollback, unknown/symlink refusal, and `.work` cleanup are exercised through the public command.
-- [ ] Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent notes each name whole-folder discovery, explicit fallback, real dependencies, execute/read/write, sandbox/allowlist, delivery root/`.work`, and verify workdir boundaries; OpenClaw/Hermes claims are installation-time verified only.
+- [ ] Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, Hermes Agent, and DeepSeek Harness notes each name whole-folder discovery, explicit fallback, real dependencies, execute/read/write, sandbox/allowlist, delivery root/`.work`, and verify workdir boundaries; OpenClaw/Hermes claims are installation-time verified only.
 - [ ] <If detailed verification is long, this entry links to the skill-local reference that owns it>
 
 ## Success Criteria

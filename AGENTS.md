@@ -6,7 +6,7 @@
 
 ## Project Purpose
 
-本仓库用于沉淀可跨多类 AI agent 使用的技能。核心策略是：一个 canonical `SKILL.md` 作为语义源文件，再用 runtime adapter 说明 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes Agent 的差异。
+本仓库用于沉淀可跨多类 AI agent 使用的技能。核心策略是：一个 canonical `SKILL.md` 作为语义源文件，再用 runtime adapter 说明 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes Agent、DeepSeek Harness（DSH）的差异。
 
 ## Editing Rules
 
@@ -25,7 +25,7 @@
 - 一个技能只服务一个明确工作流。
 - 复杂背景材料放到 `references/`，脚本放到 `scripts/`，输出模板放到 `templates/`。
 - 技能涉及外部命令、网络、凭据或文件写入时，必须写明安全边界和验证步骤。
-- OpenClaw 与 Hermes Agent 是必须考虑的 runtime；新增技能不能只写 Claude/Codex 说明。
+- OpenClaw 与 Hermes Agent 是必须考虑的 runtime；新增技能不能只写 Claude/Codex 说明；同时补齐 DeepSeek Harness（DSH）的目录发现、工具和权限差异。
 
 ## GSD Workflow
 

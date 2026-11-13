@@ -37,7 +37,7 @@
 
 `references/` 是 skill-local progressive disclosure 区域，不是新的 canonical skill body。引用文件可以很详细，但必须服务 owning skill 的 workflow；不要把某个模板的 metadata fields、renderer rules 或 fixture 细节提升为全仓库通用 schema。`scripts/` 只放可调用辅助命令或内部模块；大型脚本可以拆成 CLI dispatch、parsing、rendering、artifact writing、verification/reporting 等 skill-local modules，但外层公共命令、常用 flags、输出文件名、manifest keys 和行为契约必须保持稳定。`templates/` 只放生成输出时复制、渲染或填充的文件模板，不要把长说明文档混进模板目录。
 
-这些路径描述的是 canonical repository ownership，不是用户 delivery root。安装技能时复制整个 `skills/<skill-name>/`，保留 `SKILL.md` 及实际存在的 `references/`、`scripts/`、`templates/`、`fonts/`、`assets/` 和 skill-local fixture；不要为 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 或 Hermes Agent 创建 runtime-specific adapter folder，也不要复制分叉 workflow。真实学生简历、照片、预览和成品必须位于仓库外，不属于技能资源。
+这些路径描述的是 canonical repository ownership，不是用户 delivery root。安装技能时复制整个 `skills/<skill-name>/`，保留 `SKILL.md` 及实际存在的 `references/`、`scripts/`、`templates/`、`fonts/`、`assets/` 和 skill-local fixture；不要为 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes Agent 或 DeepSeek Harness 创建 runtime-specific adapter folder，也不要复制分叉 workflow。真实学生简历、照片、预览和成品必须位于仓库外，不属于技能资源。
 
 ## User Delivery Roots
 
@@ -128,3 +128,7 @@ runtime 差异优先写进 canonical `SKILL.md` 的 `Runtime Adapter Notes`。�
 | `examples/<example-name>/SKILL.md` | 可选参考示例，帮助读者对照 canonical 模板 |
 
 当前 v1 不保留示例文件。只有在确实有贡献者参考价值时，才创建 `examples/` 并补充短小、可审阅的示例；示例必须优先让读者看见 `templates/skill/SKILL.md`，而且不要把它写成 v1 的硬要求。
+
+## 专业调研报告与 DSH
+
+`skills/professional-research-report/` 保存通用工作流、证据/排版/交付规则、Markdown 骨架和标准库只读 DOCX 审计；不收录学校原始申报包、实拍或实际报告。`scripts/install-dsh-skills.py` 是仓库安装辅助入口，完整复制选定技能至显式 DSH 根，默认只读检查；不新增 runtime adapter 副本。DSH 同样消费 canonical `SKILL.md`，适配说明位于各技能自身的 Runtime Adapter Notes。

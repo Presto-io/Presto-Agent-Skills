@@ -12,6 +12,7 @@ metadata:
     - OpenCode
     - OpenClaw
     - Hermes Agent
+    - DeepSeek Harness
 ---
 
 # Graduate Resume
@@ -111,6 +112,10 @@ skills/graduate-resume/scripts/graduate-resume.sh verify \
 图标按主题 accent 着色，尺寸 4.2 mm，作为标题行内字符占位，使用 box 的 14% 基线对齐，图标与标题文字间距 1 mm。图标从原标题起点开始，标题文字自然向右移动 5.2 mm；不使用悬挂、负缩进、绝对定位或逐图标偏移。浅色侧栏保持原始底色边界。正文横向起点、栏宽和段落间距保持不变，标题行高度由行内排版自然计算并重新检查分页。基本信息头部没有模块标题时不额外添加图标。视觉检查须放大检查图标与文字的行内对齐、底色边界及裁切；模块图标可见图形中心与标题字框中心的纵向偏差不超过 0.5 pt。单页与双页铺满检查照常执行。
 
 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 与 Hermes Agent 都应保留完整 skill folder，并通过同一个 `scripts/graduate-resume.sh` 执行上述 runtime-neutral 工作流。运行环境只需允许离线 shell、读取用户授权的输入/本地照片，以及写入用户授权的 workdir 和 delivery root。跨 runtime 的安装与发现验收属于 Phase 49，本技能不在 Phase 48 声称已经完成。
+
+### DeepSeek Harness
+
+整目录置于已启用 filesystem provider 的 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；按精确名称用 `skill` 加载，支持资源相对返回的技能根读取。发现失败时显式读取本文件并执行本技能公开命令。核验实际依赖与工具插件、输入/支持读取、授权交付根/owned `.work` 和独立 verify workdir 写权限及 sandbox；源码核对不等于实机验收。
 
 ## Outputs
 

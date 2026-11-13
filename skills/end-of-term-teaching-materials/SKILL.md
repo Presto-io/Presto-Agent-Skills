@@ -12,6 +12,7 @@ metadata:
     - OpenCode
     - OpenClaw
     - Hermes Agent
+    - DeepSeek Harness
 ---
 
 # End-of-Term Teaching Materials
@@ -71,6 +72,7 @@ The normal workflow does not expose JSON, CSV, manifest, task-map, score-summary
 | OpenCode | 使用适用版本 native skill path 或 Claude-compatible fallback，保持 whole-folder 完整。 | 自动发现不可用时显式调用 shell 入口。 | 需要 Bash、Python 3、Typst；不联网、不自动安装。 | 验证 execute/read/write，不假定继承宿主权限。 | 配置 allowlist/sandbox 读取模板并仅写授权 root/`.work`。 |
 | OpenClaw | exact skill root、frontmatter、support-file discovery 与 whole-folder 完整性必须 installation-time verification。 | automatic discovery 不作保证；installation-time verification 后仍保留显式 shell fallback。 | 安装时核验 Bash、Python 3、Typst；禁止联网与自动安装。 | installation-time verification 覆盖 execute/read/write。 | 安装时实测 allowlist/sandbox 只允许完整 folder、输入、delivery root 与 `.work`。 |
 | Hermes Agent | exact local/global path、frontmatter、support-file discovery 与 whole-folder 完整性必须 installation-time verification。 | automatic discovery 不作保证；明确保留 shell invocation fallback。 | 安装时核验 Bash、Python 3、Typst；禁止联网与自动安装。 | installation-time verification 覆盖 execute/read/write。 | 安装时实测 allowlist/sandbox 和 delivery root/`.work` 写入边界。 |
+| DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；核对重名优先级。 | 按精确名称用 `skill` 加载，支持文件相对资源根解析；失败时显式读本文件并调用公开脚本。 | 核验本技能声明的依赖、字体及渲染器，不假定插件提供全部工具。 | 核验输入/支持文件读与授权交付根、owned `.work`、独立 verify workdir 写权限。 | 遵守会话权限与 allowlist；源码核对不等于实机验收。 |
 
 ## Outputs
 

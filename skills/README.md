@@ -4,6 +4,8 @@ Canonical skills live here.
 
 Current skills:
 
+- `professional-research-report`：专业申报调研/设置可行性报告，原稿 Word 格式继承、可追溯取证、简体中文大字图表与独立来源账本；含只读 DOCX 审计，未纳入六技能自动发布覆盖。
+
 - `party-member-study-notes-cn`: 从学习材料与已确认个人经历起草、审阅党员学习笔记、心得体会和组织生活记录；默认优先依赖 `gongwen` 交付 PDF，不可用时用已有 PDF 工具兜底，并保留 Markdown 源稿，不计入六技能自动发布覆盖。
 
 - `vocational-practical-exam`: 职业技能等级认定实操出题、逐字母版重构、评分表与只读 DOCX 审计。
@@ -58,6 +60,6 @@ Artifact contract discovery:
 | `teaching-design-package` | `templates/teaching-design-package-full.md` | `SKILL.md`, `references/format-and-orchestration.md`, `scripts/teaching-design-package.sh` |
 | `tiaokedan` | `templates/tiaokedan.md` | `SKILL.md`, `references/markdown-contract.md`, `references/pdf-workflow.md`, `scripts/tiaokedan.sh` |
 
-Before adding a new skill, copy `templates/skill/SKILL.md` and fill the runtime adapter table for all required runtimes.
+Before adding a new skill, copy `templates/skill/SKILL.md` and fill the runtime adapter table for all required runtimes, including DeepSeek Harness（DSH）.
 
 Every skill that writes files must also follow `docs/clean-delivery-directory-contract.md`: keep only the current Markdown and current final deliverables at the delivery root, archive previous successful output sets together under `history/`, and clean temporary verification from `.work/`.

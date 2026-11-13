@@ -12,6 +12,7 @@ metadata:
     - OpenCode
     - OpenClaw
     - Hermes Agent
+    - DeepSeek Harness
 ---
 
 # School Presentation
@@ -71,6 +72,7 @@ skills/school-presentation/scripts/school-presentation.sh verify \
 | OpenCode | 使用可加载的完整 skill folder；Claude-compatible 路径只作发现 fallback，仍验证 scripts/references/assets identity。 | allowlist 必须覆盖 shell/Python execute、输入 read、delivery/.work write；manifest、浏览器导出和 bookmark evidence 只能写独立 workdir。 |
 | OpenClaw | AgentSkills-compatible whole-folder 支持仅作 installation-time verified 声明；自动发现不确定时使用显式 shell fallback。 | 安装时验证 frontmatter、support discovery、Bash/Python execute、sandbox/allowlist 的 read/write；delivery root/.work 与 verify workdir 分权，browser/PDF 命令另行授权。 |
 | Hermes Agent | 项目级/全局 whole-folder 路径与支持文件发现仅作 installation-time verified 声明；保留显式脚本 fallback。 | 安装时验证 shell/Python execute、输入/assets read、delivery/.work write、独立 verify workdir 和可选 browser/PDF 权限，不假定 runtime wrapper。 |
+| DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层，用 `skill` 按精确名称加载，支持文件相对返回资源根读取；失败时显式入口/公开脚本 fallback。 | 核验本技能实际依赖和工具插件、输入/支持读、授权交付根与 owned `.work`/独立 verify workdir 写权限及 sandbox；未实机验收不宣称完整支持。 |
 
 ## Outputs
 

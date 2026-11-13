@@ -12,6 +12,7 @@ metadata:
     - OpenCode
     - OpenClaw
     - Hermes Agent
+    - DeepSeek Harness
 ---
 
 # School PPTX
@@ -168,6 +169,7 @@ manifest、logical JSON、日志、诊断和 verification evidence 不进入公�
 | OpenCode | 使用适用版本的 native skill path 或 Claude-compatible fallback，whole-folder 安装并验证支持文件。 | 自动脚本发现不可用时显式调用 `scripts/school-pptx.sh`。 | 需要 Python、python-pptx、Pillow、lxml、PyYAML；Pandoc 可选。 | shell/Python 是外部命令；不联网、不自动安装。 | installation-time verification 要实测 execute/read/write 权限，不假定继承宿主权限。 | 配置 sandbox/allowlist 读取模板、fixture、媒体并写目标目录。 | delivery root 授权 current/support 与 `.work`；verify 只用明确 caller workdir。 |
 | OpenClaw | 作为必需 runtime；exact skill root、frontmatter 解析、support-file discovery 和 whole-folder 完整性必须 installation-time verification。 | automatic script discovery 不作保证；安装时验证后仍保留显式 `scripts/school-pptx.sh` fallback。 | 安装时核验 Python、python-pptx、Pillow、lxml、PyYAML；Pandoc 可选。 | shell/Python 属外部命令；禁止联网与自动安装。 | installation-time verification 覆盖 execute/read/write 权限。 | 安装时核验脚本 allowlist、sandbox 对模板/fixture/媒体/目标的访问。 | installation-time 实测 delivery `.work` 收尾与独立 caller `verify --workdir` 边界。 |
 | Hermes Agent | 作为必需 runtime；先通过 `skills_list`/`skill_view` 确认实际生效的 profile-local root，禁止猜 shared 同名路径。必须核验 frontmatter、support-file discovery、whole-folder 完整性及读取权限。 | automatic script discovery 不作保证；保留 explicit invocation fallback。对每次执行显式设置 `SCHOOL_PPTX_PYTHON=<ready-venv>/bin/python` 后调用 `<effective-skill-root>/scripts/school-pptx.sh`；脚本也会继承已激活的 `VIRTUAL_ENV`。 | 先用同一个解释器执行 `import pptx, PIL, lxml, yaml`；缺任一项时停止并报告 interpreter 与缺失包，不能改用系统 `python3`，也不能在渲染过程中自动安装。 | shell/Python 属外部命令；禁止联网与自动安装。 | installation-time verification 覆盖 execute/read/write 权限；聊天中不得尝试 patch 已安装的只读技能。更新必须走已配置的 Presto 更新链路，然后重新发现 effective root。 | 安装时核验 allowlist/sandbox 对完整 folder、媒体和目标目录的访问。 | 先对同一解释器运行 `validate`，仅成功后 `render`；再用独立 caller workdir `verify`，并明确区分自动验证与 WPS/PowerPoint 人工 UAT。 |
+| DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；`skill` 按精确名称加载，资源相对技能根读取。失败时显式读本文件/调用公开脚本；核验实际依赖、工具插件、输入/支持读、授权交付根/owned `.work`/独立核查目录写权限及 sandbox。源码核对不等于实机验收。 |
 
 Hermes 执行前的最小预检（路径以 `skills_list` 返回的 effective root 为准）：
 

@@ -12,6 +12,7 @@ metadata:
     - OpenCode
     - OpenClaw
     - Hermes Agent
+    - DeepSeek Harness
 ---
 
 # Tiaokedan
@@ -88,6 +89,7 @@ skills/tiaokedan/scripts/tiaokedan.sh render \
 | OpenCode | 使用 native skill path 并保留全部支持文件；无法自动发现时显式执行 `scripts/tiaokedan.sh`。allowlist 必须覆盖 Bash/Python、输入读取、delivery root/`.work` 写入，PDF 另需 `typst`。 |
 | OpenClaw | whole-folder 支持、frontmatter、support-file discovery 和路径行为均须 installation-time verified；始终保留 `scripts/tiaokedan.sh` 显式 fallback，并验证 Bash/Python、可选 `typst`、sandbox/allowlist 与 delivery root/`.work` 权限。 |
 | Hermes Agent | whole-folder 项目/全局加载、support-file discovery 和权限模型均须 installation-time verified；始终保留 `scripts/tiaokedan.sh` 显式 fallback，并验证 Bash/Python、可选 `typst`、输入读取及 delivery root/`.work` 写入。 |
+| DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；`skill` 按精确名称加载，资源相对技能根读取。失败时显式读本文件/调用公开脚本；核验实际依赖、工具插件、输入/支持读、授权交付根/owned `.work`/独立核查目录写权限及 sandbox。源码核对不等于实机验收。 |
 
 ## Outputs
 
