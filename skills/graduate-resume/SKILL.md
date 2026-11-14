@@ -47,7 +47,7 @@ metadata:
 3. 生成或更新 `graduate-resume.md`：把首页信息栏所需的 `profile`、可选本地 `photo` 路径和派生偏好写入 YAML frontmatter；把教育、技能、证书、项目、实训、经历和目标写入 Markdown 正文。
 4. 运行 `validate` 检查 schema、必填、稳定 ID、待确认事实、照片状态和 target 完整度。
 5. 资料通过 `validate` 后，使用 `render --generic` 或 `render --target <stable-id>` 预检单份版本；使用 `batch` 预检 generic 与全部 confirmed targets。两个命令都固定生成保守稳妥、现代简洁、个性设计三个主题。
-6. 检查预检中的版本矩阵、逐条件四态、gap allow、完整 stems 和 `added/updated/unchanged/removed`。没有确认时不改变 current/history；确认无误后用完全相同参数追加 `--confirm`。
+6. 检查预检中的版本矩阵、逐条件四态、gap allow、完整 stems 和 `added/updated/unchanged/removed`。没有确认时不改变 current/history；确认无误后用完全相同参数追加 `--confirm --approval-digest <该次预检输出的64位digest>`。
 7. 逐页查看三种主题的 PDF 栅格预览，检查左右栏顶端、窄栏换行、联系方式、模块间距、裁切和续页。单页与双页都检查逐栏铺满，不能只检查“放得下”。布局计划冻结模块分配、栏宽、明细间距与逐栏弹性间隙；逐页 `fill_satisfied` 为 false 时说明留白原因，不能声称满足铺满。正常内容优先单页；自动双页必须两页均达标，强制双页内容不足时显示警告。联系方式从 `profile.contact` 展示，不要重复写进摘要。
 8. 失败时按稳定错误码修正事实、覆盖冲突、gap、照片、字体、命名碰撞或投递根异常，再重新预检。不要手工发布 partial triple 或绕过 `.work`/history 审计。
 9. 使用 `verify --workdir <临时证据目录>` 运行完整技能验收。其发布、跨运行环境和人工 UAT 证据缺失应如实说明，不能替代本次产物的 PDF 页数、内容与视觉检查。排版回归入口见 `references/targeted-render-delivery-contract.md`。
@@ -103,9 +103,11 @@ skills/graduate-resume/scripts/graduate-resume.sh verify \
   --workdir <临时证据目录>
 ```
 
-`render` 在 `--generic` 与 `--target` 中二选一，固定采用 patch 语义；`batch` 默认展开 generic + all confirmed targets，固定采用 authority 语义。`--retain`、`--exclude`、`--pin`、`--allow-gap-target` 可重复；不适用覆盖只有 `--not-applicable <target-id> <condition-id> <reason>` 这一种公开三参数语法。先运行上述命令查看预检，再追加 `--confirm` 发布。
+`render` 在 `--generic` 与 `--target` 中二选一，固定采用 patch 语义；`batch` 默认展开 generic + all confirmed targets，固定采用 authority 语义。`--retain`、`--exclude`、`--pin`、`--allow-gap-target` 可重复；不适用覆盖只有 `--not-applicable <target-id> <condition-id> <reason>` 这一种公开三参数语法。先运行上述命令查看预检，再追加 `--confirm --approval-digest <该次预检输出的64位digest>` 发布。
 
 ## Runtime Adapter Notes
+
+先检查所选 Python 环境能导入 PyYAML、Pillow、PyMuPDF，参考照片构图还需 NumPy；Typst 使用 0.15.1，Poppler 命令须可用。缺失依赖可安装到调用方工作目录的虚拟环境或依赖目录，不写入技能文件夹。
 
 有照片的信息栏必须在整组文字与照片布局底部保留至少 3 mm 的实体内边距，使分割线与正文侧栏底色分离。不得依赖照片比文字高时自然产生的留白，或会在布局边界折叠的块间距；测量与正式渲染必须使用同一结构，并检查文字高于照片、照片高于文字两种情况。
 

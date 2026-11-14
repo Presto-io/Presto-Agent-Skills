@@ -58,7 +58,7 @@ skills/graduate-resume/scripts/graduate-resume.sh batch \
   --delivery-root delivery
 ```
 
-先检查预检 JSON，再以完全相同参数追加 `--confirm`。失败时先按稳定错误码修正事实、target ID、condition ID、覆盖冲突、gap allow、照片、字体、stem collision 或 delivery-root 异常，再重新运行预检；不要手工拼接 partial triple 或删除 `.work`/history 来绕过审计。
+先检查预检 JSON，再以完全相同参数追加 `--confirm --approval-digest <该次预检输出的64位digest>`。失败时先按稳定错误码修正事实、target ID、condition ID、覆盖冲突、gap allow、照片、字体、stem collision 或 delivery-root 异常，再重新运行预检；不要手工拼接 partial triple 或删除 `.work`/history 来绕过审计。
 
 ## 排版测量与回归
 
