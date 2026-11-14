@@ -154,7 +154,7 @@
       [#metadata((template: style, rail_height_mm: rail-height / 1mm, main_height_mm: natural-main / 1mm, main_gap_mm: gap / 1mm, available_mm: height / 1mm)) <layout-report>]
       grid(columns: (64mm, 110mm), gutter: 6mm, align: top,
         block(width: 64mm, height: height, fill: palette.pale, inset: 6mm)[#rail],
-        [#page-flow(main-groups, 110mm, height, max-size: 12pt, max-gap: 18mm)],
+        [#page-flow(main-groups, 110mm, height, max-size: 12pt, max-gap: if style == "sidebar-left-02" { 30mm } else { 18mm })],
       )
     } else {
       let contents = groups(kinds)
