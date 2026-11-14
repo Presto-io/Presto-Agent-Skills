@@ -104,7 +104,11 @@
   }
 ]
 
-#let measured-flow(groups, width, available, max-gap: 8mm) = context {
+#import "../../page-flow.typ": page-flow
+#let measured-flow(groups, width, available, max-gap: 8mm, adaptive: false) = context {
+  if adaptive {
+    page-flow(groups, width, available, max-size: 12pt, max-gap: 18mm)
+  } else {
   let heights = groups.map(group => measure(block(width: width)[#group]).height)
   let natural = heights.sum(default: 0pt)
   let gaps = calc.max(0, groups.len() - 1)
@@ -113,6 +117,7 @@
   for (index, group) in groups.enumerate() {
     group
     if index < gaps { v(gap) }
+  }
   }
 }
 
@@ -143,10 +148,10 @@
       let right-height = right-groups.map(item => measure(block(width: right-width)[#item]).height).sum(default: 0pt)
       [#metadata((template: style, header_height_mm: head-height / 1mm, available_mm: available / 1mm, left_natural_mm: left-height / 1mm, right_natural_mm: right-height / 1mm)) <layout-report>]
       grid(columns: widths, gutter: 8mm, align: top,
-        measured-flow(left-groups, widths.at(0), available),
+        measured-flow(left-groups, widths.at(0), available, adaptive: true),
         if style == "sidebar-right" {
-          block(width: 100%, height: available, fill: palette.pale, inset: 4mm, radius: 1mm)[#measured-flow(right-groups, right-width, available - 8mm)]
-        } else { measured-flow(right-groups, right-width, available) })
+          block(width: 100%, height: available, fill: palette.pale, inset: 4mm, radius: 1mm)[#measured-flow(right-groups, right-width, available - 8mm, adaptive: true)]
+        } else { measured-flow(right-groups, right-width, available, adaptive: true) })
     } else {
       let groups = kinds.map(group)
       let natural = groups.map(item => measure(block(width: width)[#item]).height).sum(default: 0pt)
