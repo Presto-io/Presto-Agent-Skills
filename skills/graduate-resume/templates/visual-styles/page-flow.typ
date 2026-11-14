@@ -4,7 +4,7 @@
     let chosen = min-size
     let natural = 0pt
     let leading = .62em
-    for candidate in (12pt, 11.5pt, 11pt, 10.5pt, 10pt, 9.6pt, 9.2pt) {
+    for candidate in (13pt, 12.5pt, 12pt, 11.5pt, 11pt, 10.5pt, 10pt, 9.6pt, 9.2pt) {
       if candidate <= max-size and candidate >= min-size {
         let total = groups.map(item => measure(block(width: width)[#set text(size: candidate)
           #set par(leading: .62em)
