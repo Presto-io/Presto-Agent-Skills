@@ -124,7 +124,7 @@
   set par(justify: false, leading: 0.52em, spacing: 1.3mm)
   let kinds = ("education", "skills", "certificates", "projects", "training", "experience").filter(kind => data.sections.any(item => item.kind == kind))
   let render-group(kind) = group(kind, data, theme, style, kinds.position(item => item == kind))
-  let flow(selected, width) = page-flow(selected.map(render-group), width, 216mm, max-size: 11.5pt)
+  let flow(selected, width) = page-flow(selected.map(render-group), width, 216mm, max-size: 11.5pt, max-gap: if style == "art-deco" { 18mm } else { 14mm })
   context {
     let head = header(data, theme, style)
     let body = if style in ("chinese-classic", "brutalist", "botanical") {

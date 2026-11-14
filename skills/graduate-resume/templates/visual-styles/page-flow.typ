@@ -1,4 +1,4 @@
-#let page-flow(groups, width, available, max-size: 11.5pt, min-size: 9.6pt) = context {
+#let page-flow(groups, width, available, max-size: 11.5pt, min-size: 9.6pt, max-gap: 14mm) = context {
   set block(above: 0pt, below: 0pt)
   if groups.len() > 0 {
     let chosen = min-size
@@ -23,7 +23,7 @@
         natural = total
       }
     }
-    let gap = calc.min(14mm, (available - 3mm - natural) / calc.max(1, groups.len() - 1))
+    let gap = calc.min(max-gap, (available - 3mm - natural) / calc.max(1, groups.len() - 1))
     set text(size: chosen)
     set par(leading: leading)
     for (index, item) in groups.enumerate() {

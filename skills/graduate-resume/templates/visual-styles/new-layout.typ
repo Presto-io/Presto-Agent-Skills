@@ -141,7 +141,7 @@
   set text(font: spec.font, lang: "zh", size: if spec.mode in ("margin", "ladder", "single") { 10pt } else { 9.6pt }, fill: spec.ink)
   set par(justify: false, leading: .55em, spacing: 1.3mm)
   let kinds = ("education", "skills", "certificates", "projects", "training", "experience").filter(kind => data.sections.any(item => item.kind == kind))
-  let flow(selected, width) = page-flow(selected.map(kind => section(kind, data, spec, style, kinds.position(item => item == kind))), width, 216mm, max-size: 11.5pt)
+  let flow(selected, width) = page-flow(selected.map(kind => section(kind, data, spec, style, kinds.position(item => item == kind))), width, 216mm, max-size: 11.5pt, max-gap: if style == "nordic" { 18mm } else { 14mm })
   context {
     let head = header(data, spec, style)
     let body = if spec.mode in ("margin", "ladder", "single") { flow(kinds, 180mm) }
