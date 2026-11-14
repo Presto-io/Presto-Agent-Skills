@@ -14,11 +14,11 @@
     }
     assert(natural > 0pt, message: "LAYOUT_OVERFLOW: 满页排版无法容纳正文")
     // Spread short columns through readable line spacing before adding section gaps.
-    for candidate in (.76em, .9em, 1.05em) {
+    for candidate in (.76em, .9em, 1.05em, 1.2em, 1.35em) {
       let total = groups.map(item => measure(block(width: width)[#set text(size: chosen)
         #set par(leading: candidate)
         #item]).height).sum(default: 0pt)
-      if natural < available * .82 and total + (groups.len() - 1) * 3mm <= available - 3mm {
+      if natural < available * .9 and total + (groups.len() - 1) * 3mm <= available - 3mm {
         leading = candidate
         natural = total
       }
