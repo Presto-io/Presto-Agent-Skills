@@ -3,7 +3,7 @@ name: "graduate-resume"
 description: "Use when collecting, reviewing, validating, and preparing a verified Chinese graduate resume source package for offline generic or targeted resume generation with optional photo and deterministic Markdown/Typst/PDF outputs."
 metadata:
   short-description: "毕业生简历资料契约与离线生成工作流"
-  version: "0.3.2"
+  version: "0.4.0"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -51,6 +51,10 @@ metadata:
 7. 逐页查看三种主题的 PDF 栅格预览，检查左右栏顶端、窄栏换行、联系方式、模块间距、裁切和续页。单页与双页都检查逐栏铺满，不能只检查“放得下”。布局计划冻结模块分配、栏宽、明细间距与逐栏弹性间隙；逐页 `fill_satisfied` 为 false 时说明留白原因，不能声称满足铺满。正常内容优先单页；自动双页必须两页均达标，强制双页内容不足时显示警告。联系方式从 `profile.contact` 展示，不要重复写进摘要。
 8. 失败时按稳定错误码修正事实、覆盖冲突、gap、照片、字体、命名碰撞或投递根异常，再重新预检。不要手工发布 partial triple 或绕过 `.work`/history 审计。
 9. 使用 `verify --workdir <临时证据目录>` 运行完整技能验收。其发布、跨运行环境和人工 UAT 证据缺失应如实说明，不能替代本次产物的 PDF 页数、内容与视觉检查。排版回归入口见 `references/targeted-render-delivery-contract.md`。
+
+## 可选视觉样式选样
+
+模板目录共 44 款：基础三主题、风格合集 33 款、美图参考复刻 8 款。需要后 41 款单页视觉选样、对照修订或数字居中调整时，阅读 `references/visual-styles.md`，使用 `scripts/graduate_resume_styles.py`。此入口消费已验证的最终 Markdown，另存 PDF，不替代三主题 `render` / `batch` 的事务、资料校验与 current/history 契约。
 
 ## One-Time Questions
 

@@ -13,13 +13,13 @@
 - canonical 模板、schema、通用渲染器、字体、图标及其许可。
 - 从零编写、与真实学生无关的虚构测试夹具；不得从学生简历抽取事实拼成夹具。
 - 现有两张 1 × 1 单色 JPEG 仅用于验证照片处理路径，不含人像、身份信息或 EXIF。不得替换为学生照片。
-- 生产 Typst 模板为 `templates/resume-themes.typ`。旧的个人化参考模板不属于发布包；不要重新复制进 `templates/themes/`。
+- 三主题生产 Typst 模板为 `templates/resume-themes.typ`；41 款可选单页视觉选样包位于 `templates/visual-styles/`，包含通用布局、SVG 装饰、目录和八张不含身份信息的 `reference/backgrounds/*-plain.png`。禁止打包嵌入人物照片的 `*-photo.png` 或 portrait 目录。不要重新复制个人化模板进 `templates/themes/`。
 
 ## 提交前检查
 
 1. 使用明确路径暂存本次技能与相关说明，不使用未经审查的 `git add .`。
 2. 检查 `git diff --cached --name-status` 和新增、修改文件的暂存区内容，确认没有真实学生资料、照片、成品或本机绝对路径；删除旧个人化文件不代表历史记录已被清除。
-3. 从 `scripts/` 运行 `python3 -m unittest test_publication_contract`，确认包内只保留生产 Typst 模板、无交付成品、照片夹具为无身份信息的单色像素。该检查不能替代对 Markdown、代码和暂存区的人工内容审查。
+3. 从 `scripts/` 运行 `python3 -m unittest test_publication_contract`，确认 Typst 模板处于允许目录、无交付成品、照片夹具为无身份信息的单色像素，参考背景不含 EXIF。该检查不能替代对图片、Markdown、代码和暂存区的人工内容审查。
 4. 在 Typst `0.15.0` 和已安装 Python 依赖的环境中运行功能回归；将功能回归与 Phase 49 完整发布验收分别报告，不伪造六 runtime 安装或人工 UAT 通过。
 
 `.gitignore` 只是防误加入措施，不能阻止强制添加，也不能保护已经跟踪的文件。发现真实资料时，应先在仓库外备份，再从当前版本移除。已存在的远端历史需要另行评估、授权和协调；不得擅自强制推送或重写历史。

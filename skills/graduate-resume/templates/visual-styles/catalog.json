@@ -1,0 +1,401 @@
+[
+  {
+    "id": "conservative",
+    "label": "保守稳妥",
+    "engine": "canonical",
+    "revision": "existing",
+    "pages": [
+      1,
+      2
+    ]
+  },
+  {
+    "id": "modern",
+    "label": "现代简洁",
+    "engine": "canonical",
+    "revision": "existing",
+    "pages": [
+      1,
+      2
+    ]
+  },
+  {
+    "id": "expressive",
+    "label": "个性设计",
+    "engine": "canonical",
+    "revision": "existing",
+    "pages": [
+      1,
+      2
+    ]
+  },
+  {
+    "id": "mono-minimal",
+    "label": "留白极简",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "editorial-serif",
+    "label": "衬线书刊",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "nordic",
+    "label": "北欧留白",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "bauhaus",
+    "label": "包豪斯几何",
+    "engine": "visual",
+    "revision": "selected-redesign",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "power-substation",
+    "label": "强电一次系统",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "distribution-panel",
+    "label": "配电柜档案",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "cad-blueprint",
+    "label": "电气工程蓝图",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "industrial-safety",
+    "label": "工业铭牌",
+    "engine": "visual",
+    "revision": "original-lightning-centered",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "plc-ladder",
+    "label": "PLC 梯形图",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "pcb-traces",
+    "label": "弱电 PCB 走线",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "signal-wave",
+    "label": "信号测量",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "network-topology",
+    "label": "弱电网络拓扑",
+    "engine": "visual",
+    "revision": "selected-redesign",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "chinese-classic",
+    "label": "中式古典",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "steampunk",
+    "label": "蒸汽朋克",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "dreamcore",
+    "label": "梦核漫游",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "handmade-collage",
+    "label": "手工拼贴",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "cyberpunk",
+    "label": "赛博朋克",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "art-deco",
+    "label": "装饰艺术",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "botanical",
+    "label": "植物手账",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "brutalist",
+    "label": "先锋海报",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "single-column-02",
+    "label": "工程条目",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "sidebar-left-02",
+    "label": "蓝色侧栏",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "single-column-03",
+    "label": "黑白编排",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "banner-navy",
+    "label": "深蓝横幅",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "sidebar-right",
+    "label": "右栏档案",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "timeline-copper",
+    "label": "铜色时间轴",
+    "engine": "visual",
+    "revision": "selected-redesign",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "balanced-columns",
+    "label": "双栏杂志",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "soft-cards",
+    "label": "浅色卡片",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "centered-red",
+    "label": "朱红中轴",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "bento-mosaic",
+    "label": "便当拼贴",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "technical-matrix",
+    "label": "工程能力矩阵",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "swiss-grid",
+    "label": "瑞士方格",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "feature-dashboard",
+    "label": "项目名片",
+    "engine": "visual",
+    "revision": "existing",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "blue-poster",
+    "label": "蓝色视觉海报",
+    "engine": "visual",
+    "revision": "refined-portable-photo",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "serif-blue",
+    "label": "蓝色衬线大字",
+    "engine": "visual",
+    "revision": "refined-portable-photo",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "purple-doodle",
+    "label": "紫色手绘涂鸦",
+    "engine": "visual",
+    "revision": "refined-portable-photo",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "purple-sidebar",
+    "label": "紫色渐变侧栏",
+    "engine": "visual",
+    "revision": "refined-portable-photo",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "rust-editorial",
+    "label": "砖红复古书刊",
+    "engine": "visual",
+    "revision": "refined-portable-photo",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "blue-business",
+    "label": "浅蓝商务档案",
+    "engine": "visual",
+    "revision": "refined-portable-photo",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "blue-floral",
+    "label": "蓝花清新曲线",
+    "engine": "visual",
+    "revision": "refined-portable-photo",
+    "pages": [
+      1
+    ]
+  },
+  {
+    "id": "beige-notebook",
+    "label": "米色创意手账",
+    "engine": "visual",
+    "revision": "refined-portable-photo",
+    "pages": [
+      1
+    ]
+  }
+]

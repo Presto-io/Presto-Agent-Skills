@@ -15,7 +15,7 @@ Current skills:
 职业认定技能安装须携带二进制母版：实操技能内两份用户原始 DOCX，理论技能内考生卷和答案两份派生 DOCX。试卷包复用依赖中的模板，不保留分叉副本；理论派生模板尚待用户人工版式审阅。
 
 - `end-of-term-teaching-materials`: 期末教学提交材料和表格的 Markdown intermediate 到固定模板 Typst/PDF、deterministic table artifacts、calculated score evidence 和 workbook 的工作流。
-- `graduate-resume`: `0.3.2` 毕业生简历工作流；真实资料校验后，离线生成通用或定向的三主题 Markdown/Typst/PDF，支持实际排版测量、强制双栏主题、网格信息栏、图标与岗位词组强调，以及预检、确认发布和完整三件套历史。Phase 49 完整验收、六 runtime 安装与人工 UAT 仍需独立证据；真实学生资料及成品严禁进入仓库。
+- `graduate-resume`: `0.4.0` 毕业生简历工作流；真实资料校验后，离线生成通用或定向的三主题 Markdown/Typst/PDF，包含 44 款模板目录（基础 3 款、风格合集 33 款、参考复刻 8 款）与 41 款单页选样入口，支持实际排版测量、强制双栏主题、网格信息栏、图标与岗位词组强调，以及预检、确认发布和完整三件套历史。Phase 49 完整验收、六 runtime 安装与人工 UAT 仍需独立证据；真实学生资料及成品严禁进入仓库。
 - `gongwen`: 类公文 Markdown intermediate 到 Presto gongwen Typst/PDF 的工作流。
 - `school-presentation`: 学校正式汇报、课程展示、培训课件、招生宣讲或项目答辩材料的 Markdown logical-slide intermediate 到离线 HTML 演示文稿的工作流；生成物内置 preview、overview、playback、presenter markup、课堂交互/结构化版式和一键最终 PDF 导出。
 - `school-pptx`: 已审阅 Markdown logical slides 到受控模板、原生可编辑 PPTX 的工作流；public verify 检查结构与负例，真实 PowerPoint/WPS UAT 仍由人类完成。
