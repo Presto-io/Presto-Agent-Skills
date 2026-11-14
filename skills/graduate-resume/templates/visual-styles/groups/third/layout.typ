@@ -1,3 +1,4 @@
+#import "../../body-policy.typ": body-size
 #import "base-components.typ": entry, section-body, labels
 
 #let icons = (education: "graduation-cap", skills: "wrench", certificates: "badge-check", projects: "folder-kanban", training: "flask-conical", experience: "briefcase-business", profile: "user-round", contact: "file-text")
@@ -93,7 +94,7 @@
 
 #let resume(data, style) = {
   set page(paper: "a4", margin: (x: 14mm, y: 14mm), fill: if style == "bento-mosaic" { rgb("F0F1ED") } else { white })
-  set text(font: "Noto Sans Mono CJK SC", lang: "zh", size: 10.5pt, fill: rgb("273532"))
+  set text(font: "Noto Sans Mono CJK SC", lang: "zh", size: body-size(), fill: rgb("273532"))
   set par(justify: false, leading: 0.52em, spacing: 1.3mm)
   let has(kind) = data.sections.any(item => item.kind == kind)
   let filtered(kinds) = kinds.filter(has)
@@ -159,7 +160,7 @@
     ] }
     }
     let lower = 3.5mm
-    let upper = 50mm
+    let upper = 8mm
     for iteration in range(12) {
       let midpoint = (lower + upper) / 2
       let height = measure(block(width: 182mm)[#compose(midpoint)]).height

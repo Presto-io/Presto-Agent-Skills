@@ -1,3 +1,4 @@
+#import "../../body-policy.typ": body-size
 #import "../../page-flow.typ": page-flow
 #set text(font: "Noto Sans Mono CJK SC", lang: "zh", size: 10pt, fill: rgb("24303C"))
 #set par(justify: false, leading: 0.57em, spacing: 1.6mm)
@@ -143,15 +144,16 @@
         #v(3mm)
         #text(size: 8.5pt, fill: palette.secondary)[#data.profile.at("summary", default: "")]
         #v(6mm)
+        #set text(size: body-size())
         #for group in groups(rail-kinds) { group; v(5mm) }
       ]
       let main-groups = groups(main-kinds)
       let rail-height = measure(block(width: 52mm)[#rail]).height
       let natural-main = main-groups.map(group => measure(block(width: 110mm)[#group]).height).sum()
       assert(rail-height <= height - 12mm, message: "LAYOUT_OVERFLOW: 侧栏内容超出一页")
-      assert(natural-main <= height - 4mm * (main-groups.len() - 1), message: "LAYOUT_OVERFLOW: 主栏内容超出一页")
       let gap = (height - 3mm - natural-main) / calc.max(1, main-groups.len() - 1)
       [#metadata((template: style, rail_height_mm: rail-height / 1mm, main_height_mm: natural-main / 1mm, main_gap_mm: gap / 1mm, available_mm: height / 1mm)) <layout-report>]
+      [#metadata((region: "sidebar", used_mm: rail-height / 1mm, available_mm: (height - 12mm) / 1mm, gap_mm: 5, groups: rail-kinds.len())) <body-region-report>]
       grid(columns: (64mm, 110mm), gutter: 6mm, align: top,
         block(width: 64mm, height: height, fill: palette.pale, inset: 6mm)[#rail],
         [#page-flow(main-groups, 110mm, height, max-size: 13pt, max-gap: 24mm)],
@@ -160,7 +162,6 @@
       let contents = groups(kinds)
       let natural = contents.map(group => measure(block(width: width)[#group]).height).sum()
       let available = height - head-height - 5mm
-      assert(natural <= available - 3mm * (contents.len() - 1), message: "LAYOUT_OVERFLOW: 单栏内容超出一页")
       let gap = (available - 3mm - natural) / calc.max(1, contents.len() - 1)
       [#metadata((template: style, header_height_mm: head-height / 1mm, content_height_mm: natural / 1mm, gap_mm: gap / 1mm, available_mm: available / 1mm)) <layout-report>]
       head

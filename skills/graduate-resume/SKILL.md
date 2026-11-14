@@ -3,7 +3,7 @@ name: "graduate-resume"
 description: "Use when collecting, reviewing, validating, and preparing a verified Chinese graduate resume source package for offline generic or targeted resume generation with optional photo and deterministic Markdown/Typst/PDF outputs."
 metadata:
   short-description: "毕业生简历资料契约与离线生成工作流"
-  version: "0.5.0"
+  version: "0.6.0"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -56,7 +56,9 @@ metadata:
 
 生成前核对用户提供的全部已确认事实，尤其是技能说明、资格证书、实训动作和实习职责；不要只提取标题而丢弃说明。可将已提供的事实整理成清楚的行动描述，但不得补造课程、成绩、熟练度、项目或量化成果。正常内容优先充实一页；确需两页时两页都须有充分正文。资料不足时说明缺失事实，不以超大间距或重复内容冒充铺满。
 
-全部运行环境必须使用本技能的模板目录和渲染脚本，不得另建布局族或仅换配色冒充 44 款模板。41 款选样入口默认执行逐页字符数、正文纵向跨度和占用行密度检查，失败返回 `STYLE_CONTENT_TOO_SPARSE`；先核查事实遗漏和版面分配，再重新生成。`--allow-sparse-preview` 仅用于诊断预览，不得作为正式交付通过依据。基础三主题继续使用主工作流的逐页逐栏铺满检查。
+全部运行环境必须使用本技能的模板目录和渲染脚本，不得另建布局族或仅换配色冒充 44 款模板。模板总数是候选目录数量，不是交付保底数量。生成前阅读 `references/visual-styles.md` 的有限轮次选样流程和 `catalog.json` 的逐模板推荐字数。先依据真实资料准备一次正文；不在推荐范围时最多重新组织一次已确认事实，资料仍不足则排除该款，不编造、不堆套话、不删除必须保留的事实。
+
+41 款视觉样式固定执行：默认字号渲染并检测 → 必要时在模板范围内调整字号一次并复检 → 保留合格版或排除。禁止重复调用渲染器重置次数、继续改字号、放宽阈值或为凑齐 44 款改模板。Typst `measure/query` 检查正文区域未用高度和模块间隔，PDF 检查逐页密度、完整性、安全区及字体。`--allow-sparse-preview` 仅供诊断，不得进入合订本。使用 `graduate_resume_style_collection.py` 自动生成合格样式合订本和逐款排除清单；全不合格时不生成空合订本。基础三主题保持原事务入口与逐栏冻结测量，不额外循环调字号；通过其原有逐栏检查后才可通过 `--canonical FINAL_MD PLAN_JSON` 加入同一合集。
 
 八款参考复刻的有照片版本由技能内置脚本在运行时生成抠图、网点、相纸和装饰组合，不能直接覆盖为统一矩形照片槽。照片须为透明 PNG 或浅色纯背景人像；无法可靠抠图时返回 `PORTRAIT_CUTOUT_REQUIRED`，不可静默退化。无照片版本继续使用不含人像的背景。
 

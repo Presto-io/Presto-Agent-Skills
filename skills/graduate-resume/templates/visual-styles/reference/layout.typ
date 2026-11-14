@@ -1,3 +1,4 @@
+#import "../body-policy.typ": body-size
 #let labels = (education: "教育背景", skills: "专业技能", certificates: "资格证书", projects: "项目经历", training: "实训经历", experience: "相关经历", contact: "联系方式")
 #let english = (education: "Education", skills: "Skills", certificates: "Certificates", projects: "Projects", training: "Practice", experience: "Experience", contact: "Contact")
 #let icon-names = (education: "graduation-cap", skills: "wrench", certificates: "badge-check", projects: "folder-kanban", training: "flask-conical", experience: "briefcase-business", contact: "user-round")
@@ -152,23 +153,17 @@
     let width = rect.at(2) * 1mm
     let available = rect.at(3) * 1mm
     let gaps = groups.len() - 1
-    let size = none
-    let natural = 0mm
-    for candidate in (12pt, 11.8pt, 11.6pt, 11.4pt, 11pt, 10.6pt, 10.2pt, 9.8pt, 9.4pt, 9pt, 8.8pt) {
-      if candidate <= max-size {
-        let total = groups.map(item => measure(block(width: width)[#set text(size: candidate)
-          #set par(leading: if compact { .38em } else { .48em })
-          #item]).height).sum(default: 0pt)
-        if total + gaps * 3mm <= available { size = candidate; natural = total; break }
-      }
-    }
-    assert(size != none, message: "LAYOUT_OVERFLOW: " + style + " / " + repr(kinds) + " / " + repr(rect))
+    let size = body-size(default: 10.2pt)
+    let natural = groups.map(item => measure(block(width: width)[#set text(size: size)
+      #set par(leading: if compact { .38em } else { .48em })
+      #item]).height).sum(default: 0pt)
+    assert(natural + gaps * 3mm <= available, message: "LAYOUT_OVERFLOW: " + style)
     let gap = calc.min(if card { 5mm } else if compact { 8mm } else { 14mm }, (available - natural) / calc.max(1, gaps))
     slot(rect, [
       #set text(size: size, fill: palette.ink)
       #set par(leading: if compact { .38em } else { .48em })
       #for (index, item) in groups.enumerate() { item; if index < gaps { v(gap) } }
-      #metadata((kinds: kinds, rect_mm: rect, font_pt: size / 1pt, natural_mm: natural / 1mm, gap_mm: gap / 1mm)) <slot-report>
+      #metadata((kinds: kinds, rect_mm: rect, font_pt: size / 1pt, natural_mm: natural / 1mm, gap_mm: gap / 1mm, groups: groups.len(), available_mm: available / 1mm, used_mm: (natural + gap * gaps) / 1mm)) <slot-report>
     ])
   }
 }

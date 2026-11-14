@@ -7,7 +7,23 @@
     "pages": [
       1,
       2
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 550,
+        "max": 1300,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "modern",
@@ -17,7 +33,23 @@
     "pages": [
       1,
       2
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1250,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "expressive",
@@ -27,7 +59,23 @@
     "pages": [
       1,
       2
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1150,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "mono-minimal",
@@ -36,7 +84,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1100,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "editorial-serif",
@@ -45,7 +109,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1150,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "nordic",
@@ -54,7 +134,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 750,
+        "max": 1200,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "bauhaus",
@@ -63,7 +159,23 @@
     "revision": "selected-redesign",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1100,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "power-substation",
@@ -72,7 +184,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1150,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "distribution-panel",
@@ -81,7 +209,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 750,
+        "max": 1250,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "cad-blueprint",
@@ -90,7 +234,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 800,
+        "max": 1300,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "industrial-safety",
@@ -99,7 +259,23 @@
     "revision": "original-lightning-centered",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1150,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "plc-ladder",
@@ -108,7 +284,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1150,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "pcb-traces",
@@ -117,7 +309,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 800,
+        "max": 1300,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "signal-wave",
@@ -126,7 +334,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 800,
+        "max": 1300,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "network-topology",
@@ -135,7 +359,23 @@
     "revision": "selected-redesign",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1100,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "chinese-classic",
@@ -144,7 +384,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1150,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "steampunk",
@@ -153,7 +409,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 800,
+        "max": 1250,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "dreamcore",
@@ -162,7 +434,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 750,
+        "max": 1200,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "handmade-collage",
@@ -171,7 +459,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 750,
+        "max": 1200,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "cyberpunk",
@@ -180,7 +484,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 750,
+        "max": 1250,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "art-deco",
@@ -189,7 +509,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 800,
+        "max": 1250,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "botanical",
@@ -198,7 +534,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1100,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "brutalist",
@@ -207,7 +559,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1050,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "single-column-02",
@@ -216,7 +584,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1100,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "sidebar-left-02",
@@ -225,7 +609,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 850,
+        "max": 1300,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "single-column-03",
@@ -234,7 +634,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1150,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "banner-navy",
@@ -243,7 +659,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1050,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "sidebar-right",
@@ -252,7 +684,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 800,
+        "max": 1250,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "timeline-copper",
@@ -261,7 +709,23 @@
     "revision": "selected-redesign",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1150,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "balanced-columns",
@@ -270,7 +734,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 850,
+        "max": 1300,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "soft-cards",
@@ -279,7 +759,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1100,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "centered-red",
@@ -288,7 +784,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1100,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "bento-mosaic",
@@ -297,7 +809,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 750,
+        "max": 1200,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "technical-matrix",
@@ -306,7 +834,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 750,
+        "max": 1200,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "swiss-grid",
@@ -315,7 +859,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 800,
+        "max": 1250,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "feature-dashboard",
@@ -324,7 +884,23 @@
     "revision": "existing",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 750,
+        "max": 1200,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.5,
+        "min": 9.2,
+        "max": 12.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "blue-poster",
@@ -333,7 +909,23 @@
     "revision": "refined-portable-photo",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1050,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.2,
+        "min": 9.0,
+        "max": 11.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "serif-blue",
@@ -342,7 +934,23 @@
     "revision": "refined-portable-photo",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1000,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.2,
+        "min": 9.0,
+        "max": 11.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "purple-doodle",
@@ -351,7 +959,23 @@
     "revision": "refined-portable-photo",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1050,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.2,
+        "min": 9.0,
+        "max": 11.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "purple-sidebar",
@@ -360,7 +984,23 @@
     "revision": "refined-portable-photo",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 600,
+        "max": 1000,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.2,
+        "min": 9.0,
+        "max": 11.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "rust-editorial",
@@ -369,7 +1009,23 @@
     "revision": "refined-portable-photo",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1050,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.2,
+        "min": 9.0,
+        "max": 11.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "blue-business",
@@ -378,7 +1034,23 @@
     "revision": "refined-portable-photo",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1100,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.2,
+        "min": 9.0,
+        "max": 11.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "blue-floral",
@@ -387,7 +1059,23 @@
     "revision": "refined-portable-photo",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 550,
+        "max": 950,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.2,
+        "min": 9.0,
+        "max": 11.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   },
   {
     "id": "beige-notebook",
@@ -396,6 +1084,22 @@
     "revision": "refined-portable-photo",
     "pages": [
       1
-    ]
+    ],
+    "content_policy": {
+      "body_characters": {
+        "min": 650,
+        "max": 1050,
+        "unit": "non-whitespace Unicode characters in visible body facts",
+        "advisory": true
+      },
+      "font_pt": {
+        "default": 10.2,
+        "min": 9.0,
+        "max": 11.5
+      },
+      "max_font_adjustments": 1,
+      "max_section_gap_mm": 18,
+      "max_unused_height_ratio": 0.22
+    }
   }
 ]

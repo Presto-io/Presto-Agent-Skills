@@ -105,20 +105,8 @@
 ]
 
 #import "../../page-flow.typ": page-flow
-#let measured-flow(groups, width, available, max-gap: 8mm, adaptive: false) = context {
-  if adaptive {
-    page-flow(groups, width, available, max-size: 12pt, max-gap: 18mm)
-  } else {
-  let heights = groups.map(group => measure(block(width: width)[#group]).height)
-  let natural = heights.sum(default: 0pt)
-  let gaps = calc.max(0, groups.len() - 1)
-  assert(natural + gaps * 2mm <= available, message: "LAYOUT_OVERFLOW: 当前版式的一页自然高度超限")
-  let gap = (available - 2mm - natural) / calc.max(1, gaps)
-  for (index, group) in groups.enumerate() {
-    group
-    if index < gaps { v(gap) }
-  }
-  }
+#let measured-flow(groups, width, available, max-gap: 8mm, adaptive: false) = {
+  page-flow(groups, width, available, max-gap: max-gap)
 }
 
 #let resume(data, style) = {
