@@ -132,9 +132,14 @@
     #v(if compact { 1.7mm } else { 2.7mm })
     #if kind == "contact" { contacts(data, palette, narrow: style in ("beige-notebook", "purple-sidebar", "blue-business")) } else {
       let entries = data.sections.filter(item => item.kind == kind)
-      for (entry-index, item) in entries.enumerate() {
-        entry(item, palette, style, compact: compact)
-        if entry-index < entries.len() - 1 { v(entry-gap) }
+      if kind == "certificates" and style in ("serif-blue", "blue-floral") {
+        grid(columns: (1fr, 1fr), column-gutter: 5mm, row-gutter: entry-gap,
+          ..entries.map(item => entry(item, palette, style, compact: compact)))
+      } else {
+        for (entry-index, item) in entries.enumerate() {
+          entry(item, palette, style, compact: compact)
+          if entry-index < entries.len() - 1 { v(entry-gap) }
+        }
       }
     }
   ]

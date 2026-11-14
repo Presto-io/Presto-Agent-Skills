@@ -3,6 +3,7 @@
   if groups.len() > 0 {
     let chosen = min-size
     let natural = 0pt
+    let leading = .62em
     for candidate in (12pt, 11.5pt, 11pt, 10.5pt, 10pt, 9.6pt, 9.2pt) {
       if candidate <= max-size and candidate >= min-size {
         let total = groups.map(item => measure(block(width: width)[#set text(size: candidate)
@@ -12,9 +13,19 @@
       }
     }
     assert(natural > 0pt, message: "LAYOUT_OVERFLOW: 满页排版无法容纳正文")
+    // Spread short columns through readable line spacing before adding section gaps.
+    for candidate in (.76em, .9em, 1.05em) {
+      let total = groups.map(item => measure(block(width: width)[#set text(size: chosen)
+        #set par(leading: candidate)
+        #item]).height).sum(default: 0pt)
+      if natural < available * .82 and total + (groups.len() - 1) * 3mm <= available - 3mm {
+        leading = candidate
+        natural = total
+      }
+    }
     let gap = calc.min(14mm, (available - 3mm - natural) / calc.max(1, groups.len() - 1))
     set text(size: chosen)
-    set par(leading: .62em)
+    set par(leading: leading)
     for (index, item) in groups.enumerate() {
       item
       if index < groups.len() - 1 { v(gap) }
