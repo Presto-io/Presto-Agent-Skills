@@ -16,7 +16,7 @@ class VisualStyleTests(unittest.TestCase):
     def test_synthetic_styles_and_non_overwrite(self):
         typst = os.environ.get('TYPST_BIN')
         if not typst:
-            self.skipTest('Set TYPST_BIN to Typst 0.15.0')
+            self.skipTest('Set TYPST_BIN to Typst 0.15.1')
         fonts = tuple(Path(p) for p in os.environ.get('STYLE_TEST_FONT_PATHS', '').split(os.pathsep) if p)
         source = SKILL_ROOT / 'fixtures/visual-styles.md'
         document = cli.load_resume(str(source))

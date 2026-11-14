@@ -3,7 +3,7 @@ name: "graduate-resume"
 description: "Use when collecting, reviewing, validating, and preparing a verified Chinese graduate resume source package for offline generic or targeted resume generation with optional photo and deterministic Markdown/Typst/PDF outputs."
 metadata:
   short-description: "毕业生简历资料契约与离线生成工作流"
-  version: "0.4.0"
+  version: "0.4.1"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -143,7 +143,7 @@ Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw 与 Hermes Agent 都应�
 - [x] gap allow 逐 target 生效；unknown 只警告；`--not-applicable TARGET_ID CONDITION_ID "REASON"` 是唯一公开覆盖入口。
 - [x] 任一候选或事务失败不改变 current/history；相同输入为 true no-op。
 - [x] 不可满足的强制页数经公开 shell CLI 以非零退出和稳定 JSON `LAYOUT_UNSATISFIABLE` 失败，不输出 traceback、部分 Typst、PDF 或 PNG。
-- [x] 受控编译锁定 Typst 0.15.0、skill-local 字体和 `--ignore-system-fonts`；照片槽位不超过 35 mm x 49 mm，默认 contain 等比、禁止拉伸，只有主题显式许可时才可受控裁切。
+- [x] 受控编译锁定 Typst 0.15.1、skill-local 字体和 `--ignore-system-fonts`；照片槽位不超过 35 mm x 49 mm，默认 contain 等比、禁止拉伸，只有主题显式许可时才可受控裁切。
 
 ## Safety
 

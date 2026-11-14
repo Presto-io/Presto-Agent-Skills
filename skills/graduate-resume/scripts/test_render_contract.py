@@ -51,7 +51,7 @@ def _verified_typst_runtime():
 
 class TypstRuntimeResolverTests(unittest.TestCase):
     @staticmethod
-    def _fake_typst(path: Path, version: str = "typst 0.15.0") -> None:
+    def _fake_typst(path: Path, version: str = "typst 0.15.1") -> None:
         path.write_text(
             "#!/bin/sh\n"
             f"if [ \"$1\" = \"--version\" ]; then printf '%s\\n' '{version}'; exit 0; fi\n"
@@ -71,7 +71,7 @@ class TypstRuntimeResolverTests(unittest.TestCase):
             original_version = subprocess.check_output([str(candidate), "--version"], text=True).strip()
             with resolve_typst_executable(candidate) as executable:
                 snapshot = executable.snapshot_path
-                self.assertEqual(executable.version, "0.15.0")
+                self.assertEqual(executable.version, "0.15.1")
                 self.assertNotEqual(snapshot, candidate)
                 self.assertNotEqual(snapshot, candidate.resolve())
                 self.assertEqual(snapshot.stat().st_mode & 0o777, 0o500)
@@ -87,16 +87,16 @@ class TypstRuntimeResolverTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            target = root / "Cellar" / "typst" / "0.15.0" / "bin" / "typst"
+            target = root / "Cellar" / "typst" / "0.15.1" / "bin" / "typst"
             target.parent.mkdir(parents=True)
             self._fake_typst(target)
             relative = root / "bin" / "typst"
             relative.parent.mkdir()
-            relative.symlink_to(Path("../Cellar/typst/0.15.0/bin/typst"))
+            relative.symlink_to(Path("../Cellar/typst/0.15.1/bin/typst"))
             absolute = root / "typst-absolute"
             absolute.symlink_to(relative)
             with resolve_typst_executable(absolute) as executable:
-                self.assertEqual(executable.version, "0.15.0")
+                self.assertEqual(executable.version, "0.15.1")
                 self.assertEqual(executable.run(("probe",), text=True).args[0], str(executable.snapshot_path))
 
     def test_invalid_chain_target_and_version_fail_closed(self) -> None:
@@ -120,7 +120,7 @@ class TypstRuntimeResolverTests(unittest.TestCase):
             for index, path in enumerate(hop_paths):
                 path.symlink_to((hop_paths[index + 1] if index + 1 < len(hop_paths) else final).name)
             bad_versions = []
-            for name, version in (("wrong", "typst 9.9.0"), ("multi", "typst 0.15.0\\nextra")):
+            for name, version in (("wrong", "typst 9.9.0"), ("multi", "typst 0.15.1\\nextra")):
                 path = root / name
                 self._fake_typst(path, version)
                 bad_versions.append(path)
@@ -156,7 +156,7 @@ class TypstRuntimeResolverTests(unittest.TestCase):
                 os.replace(replacement, original)
 
             with resolve_typst_executable(link, _after_source_verified=replace_source) as executable:
-                self.assertEqual(executable.version, "0.15.0")
+                self.assertEqual(executable.version, "0.15.1")
                 self.assertIn(str(executable.snapshot_path), executable.run(("probe",), text=True).stdout)
                 self.assertNotIn("9.9.0", executable.run(("--version",), text=True).stdout)
 
@@ -169,7 +169,7 @@ class TypstRuntimeResolverTests(unittest.TestCase):
             with resolve_typst_executable(source) as executable:
                 original = executable.snapshot_path.read_bytes()
                 executable.snapshot_path.chmod(0o700)
-                executable.snapshot_path.write_bytes(original.replace(b"0.15.0", b"9.9.0 "))
+                executable.snapshot_path.write_bytes(original.replace(b"0.15.1", b"9.9.0 "))
                 executable.snapshot_path.chmod(0o500)
                 with self.assertRaises(cli.CliError):
                     executable.run(("--version",), text=True)

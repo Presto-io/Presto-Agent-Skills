@@ -36,7 +36,7 @@
 
 ## 照片自包含契约
 
-照片必须来自用户明确提供的本地 JPEG/PNG。使用锁定的 Typst 0.15.0 在零边距透明页面上执行 contain、保持宽高比、允许等比放大、禁止拉伸和裁切，以透明像素补齐槽位而不添加白色底框，并以 `--format png --ppi 300 --creation-timestamp 0` 生成 `413 × 579`、300 PPI 栅格基准的 PNG。输出重新解码验证 IHDR，移除 EXIF、方向、源文件名和路径 metadata。
+照片必须来自用户明确提供的本地 JPEG/PNG。使用锁定的 Typst 0.15.1 在零边距透明页面上执行 contain、保持宽高比、允许等比放大、禁止拉伸和裁切，以透明像素补齐槽位而不添加白色底框，并以 `--format png --ppi 300 --creation-timestamp 0` 生成 `413 × 579`、300 PPI 栅格基准的 PNG。输出重新解码验证 IHDR，移除 EXIF、方向、源文件名和路径 metadata。
 
 规范化 PNG bytes 直接以内嵌 bytes 写入正式 `.typ`；中间 PNG 只存在于 owned workdir。正式 `.md/.typ/.pdf` 不含原始照片绝对路径或 URL。current triple 移动后、旧 triple 进入 history 后，都能在没有原照片目录的环境中仅凭 skill-local fonts 独立重编译 `.typ`。
 
@@ -70,7 +70,7 @@ skills/graduate-resume/scripts/graduate-resume.sh batch \
 
 自动双页仅在两页都达到铺满标准时成立；资料过短不自动拆双页。用户显式强制两页时允许保留留白，但计划必须带警告并建议单页，不能标记为达标。单页内容完整且结构安全但未铺满时，同样保留真实留白并说明原因，不补造事实。侧栏背景随内容高度收缩；双栏主题的续页也必须有左右两栏正文，无法组成时失败，不改为全宽。姓名、联系方式、摘要与照片分别展示；重复的求职标题和方向不重复印刷。
 
-在可用的 Typst 0.15.0、PyYAML、PyMuPDF、Pillow、Poppler 环境中，从 `scripts/` 运行：
+在可用的 Typst 0.15.1、PyYAML、PyMuPDF、Pillow、Poppler 环境中，从 `scripts/` 运行：
 
 ```bash
 python3 -m unittest test_layout_contract test_theme_contract test_layout_fixtures

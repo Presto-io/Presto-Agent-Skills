@@ -52,8 +52,8 @@ def render(input_path: Path, style: str, output: Path, *, typst: str = 'typst',
     output.parent.mkdir(parents=True, exist_ok=True)
     if output.exists():
         raise ValueError('STYLE_OUTPUT_EXISTS: choose a new output path')
-    if not command([typst, '--version']).decode().startswith('typst 0.15.0 '):
-        raise ValueError('TYPST_RUNTIME_INVALID: Typst 0.15.0 required')
+    if not command([typst, '--version']).decode().startswith('typst 0.15.1 '):
+        raise ValueError('TYPST_RUNTIME_INVALID: Typst 0.15.1 required')
     with tempfile.TemporaryDirectory(prefix='resume-style-') as temp:
         work = Path(temp)
         shutil.copytree(STYLE_ROOT, work / 'templates' / 'visual-styles')

@@ -15,7 +15,7 @@ python3 scripts/graduate_resume_styles.py --input /path/to/final.md --style bauh
 
 包豪斯几何和网络拓扑用固定尺寸圆形、明确的文字高度度量及水平垂直对齐。默认保持已确认的位置；`--number-lift-pt 0.55` 可试用数字上移微调，范围 0–1 pt，只移动圆内数字。铜色时间轴保持圆点在上、编号在下，两者共用中线；不要将它误改成圆内编号。
 
-照片模式须显式提供本地 `--photo`，无照片模式禁止额外照片。处理时去除 EXIF，仅在临时目录保存规范化照片。依赖 Python、PyYAML、Pillow、Typst 0.15.0 与 Poppler。字体使用技能内 Noto 字体和思源黑体／宋体，思源字体分别附带 SIL OFL 许可，来源为 Adobe Source Han Sans / Source Han Serif 项目。部分样式还需要合法安装的 Courier、Didot、Songti SC、Noteworthy、American Typewriter、Helvetica Neue 等系统字体，使用可重复的 `--font-path` 指定；系统字体不打包或重新分发。
+照片模式须显式提供本地 `--photo`，无照片模式禁止额外照片。处理时去除 EXIF，仅在临时目录保存规范化照片。依赖 Python、PyYAML、Pillow、Typst 0.15.1 与 Poppler。字体使用技能内 Noto 字体和思源黑体／宋体，思源字体分别附带 SIL OFL 许可，来源为 Adobe Source Han Sans / Source Han Serif 项目。部分样式还需要合法安装的 Courier、Didot、Songti SC、Noteworthy、American Typewriter、Helvetica Neue 等系统字体，使用可重复的 `--font-path` 指定；系统字体不打包或重新分发。
 
 输出只支持 A4 单页，检查文字内容、电话邮箱唯一性、12 mm 文字安全区和字体嵌入。无法容纳时失败，不降级删减内容。生成在临时目录，成功后以独占方式创建新 PDF；现有文件不会覆盖。不要把 PDF、照片或真实资料输出到技能仓库。选样 PDF 不携带三主题的自包含 Typst/Markdown triple，也不宣称兼容任意长度或多页资料。
 

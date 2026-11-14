@@ -1,4 +1,4 @@
-"""Descriptor-bound Typst 0.15.0 executable snapshots."""
+"""Descriptor-bound Typst 0.15.1 executable snapshots."""
 
 from __future__ import annotations
 
@@ -17,17 +17,17 @@ from graduate_resume_cli import CliError
 
 
 TYPST_RUNTIME_INVALID = "TYPST_RUNTIME_INVALID"
-EXPECTED_TYPST_VERSION = "0.15.0"
+EXPECTED_TYPST_VERSION = "0.15.1"
 MAX_SYMLINK_HOPS = 16
 MAX_EXECUTABLE_BYTES = 128 * 1024 * 1024
 COPY_CHUNK_BYTES = 1024 * 1024
 MAX_RUN_OUTPUT_BYTES = 1024 * 1024
 MAX_VERSION_OUTPUT_BYTES = 4096
-_VERSION_RE = re.compile(r"typst 0\.15\.0(?: \([^\r\n]*\))?\Z")
+_VERSION_RE = re.compile(r"typst 0\.15\.1(?: \([^\r\n]*\))?\Z")
 
 
 def _runtime_error() -> CliError:
-    return CliError(TYPST_RUNTIME_INVALID, "受控 Typst 0.15.0 运行时无效。")
+    return CliError(TYPST_RUNTIME_INVALID, "受控 Typst 0.15.1 运行时无效。")
 
 
 def _lexical_absolute(path: Path) -> Path:
@@ -165,7 +165,7 @@ def resolve_typst_executable(
     _after_source_verified: Callable[[], None] | None = None,
     _copy_chunk_hook: Callable[[int], None] | None = None,
 ) -> TypstExecutable:
-    """Freeze one executable candidate and verify the snapshot reports Typst 0.15.0."""
+    """Freeze one executable candidate and verify the snapshot reports Typst 0.15.1."""
     if candidate is None:
         discovered = shutil.which("typst")
         if discovered is None:

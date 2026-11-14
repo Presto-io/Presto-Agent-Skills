@@ -31,7 +31,7 @@ Phase 46 冻结以下命令名，并已实现其中的基础离线能力：
 - `validate` 校验受限 schema、稳定事实 ID、必填资料、待确认事实、照片状态和 target 完整度。
 - `target` 只输出归一化 target brief 摘要；无 target 时明确转为通用版。
 - `plan` 现输出脱敏 `FrozenResumePlan`：受控主题、照片模式、精确 1/2 页、测量哈希和推荐/对照建议。可用 `graduate-resume.sh plan --theme <conservative|modern|expressive>` 明确选择保守稳妥 (conservative)、现代简洁 (modern)、个性设计 (expressive)。
-- `verify` 先运行 skill-local schema fixture，再运行固定布局样张矩阵；受控 Typst 0.15.0 使用 skill-local 字体和 `--ignore-system-fonts` 编译，并在临时 workdir 中检查 A4、页锚点和 PNG 安全区。
+- `verify` 先运行 skill-local schema fixture，再运行固定布局样张矩阵；受控 Typst 0.15.1 使用 skill-local 字体和 `--ignore-system-fonts` 编译，并在临时 workdir 中检查 A4、页锚点和 PNG 安全区。
 - 可选 AI 整理模式只能产出待审阅草稿，不得混入 final CLI 主路径。
 
 ## Fixture Baseline
@@ -54,7 +54,7 @@ Phase 46 冻结以下命令名，并已实现其中的基础离线能力：
 Phase 46 已冻结并公开以下“必须受控”的要求：
 
 - 当前 `plan` / `verify` 会探测 `python3`、PyYAML 和 `typst` 是否可用，作为后续固定依赖基线。
-- Typst 编译锁定 0.15.0。
+- Typst 编译锁定 0.15.1。
 - 中文字体必须作为 skill-local 受控依赖处理，不能依赖系统 fallback，并以 `--ignore-system-fonts` 编译。
 - 照片槽位上限为 35 mm x 49 mm；默认 contain 等比、禁止拉伸，只有主题显式许可且主体安全区域完整时才可受控裁切。
 

@@ -32,7 +32,7 @@ graduate-resume.sh verify --workdir <caller-owned-dir> --resume <active_run_id>
 14. `P49-G14-evidence-mutation-guards`
 
 聚合器必须保留每个 gate 的原始 exit code、stdout/stderr hash、重开产物观察、fixture、Typst
-`0.15.0` 快照、受控字体清单及文件 hash。它独立重新计算 `required == called`、顺序、唯一性和
+`0.15.1` 快照、受控字体清单及文件 hash。它独立重新计算 `required == called`、顺序、唯一性和
 `dynamic_skips == []`；不信任生产者写入的 passed/count/hash/page/theme/photo 字段。
 
 `P49-G01-release-prerequisites` 必须重新读取 Phase 48 的 review 和 security 报告：review 只能是
