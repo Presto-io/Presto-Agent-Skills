@@ -26,7 +26,7 @@ def command(args: list[str]) -> bytes:
 
 def render(input_path: Path, style: str, output: Path, *, typst: str = 'typst',
            font_paths: tuple[Path, ...] = (), photo: Path | None = None,
-           number_lift_pt: float = 0) -> None:
+           number_lift_pt: float = 0, allow_sparse_preview: bool = False) -> dict:
     catalog = {row['id'] for row in json.loads((STYLE_ROOT / 'catalog.json').read_text())}
     if style not in catalog:
         raise ValueError('STYLE_UNKNOWN')
@@ -62,6 +62,11 @@ def render(input_path: Path, style: str, output: Path, *, typst: str = 'typst',
             from PIL import Image, ImageOps
             with Image.open(photo) as image:
                 ImageOps.exif_transpose(image).convert('RGBA').save(work / 'photo.png')
+            plain = STYLE_ROOT / 'reference' / 'backgrounds' / (style + '-plain.png')
+            if plain.exists():
+                from graduate_resume_portrait import compose_background
+                compose_background(style, photo, plain, work / 'reference-photo.png')
+                data['reference_background'] = '/reference-photo.png'
         (work / 'data.json').write_text(json.dumps(data, ensure_ascii=False))
         (work / 'main.typ').write_text(
             '#import "templates/visual-styles/layout.typ": resume\n'
@@ -108,8 +113,13 @@ def render(input_path: Path, style: str, output: Path, *, typst: str = 'typst',
         fonts_report = command(['pdffonts', str(work / 'result.pdf')]).decode().splitlines()[2:]
         if not fonts_report or any(not re.search(r'\byes\s+yes\s+yes\s+\d+\s+\d+\s*$', row) for row in fonts_report):
             raise ValueError('STYLE_FONT_INVALID')
+        from graduate_resume_visual_audit import audit_pdf
+        audit = audit_pdf(work / 'result.pdf')
+        if not audit['fill_satisfied'] and not allow_sparse_preview:
+            raise ValueError('STYLE_CONTENT_TOO_SPARSE: review all supplied facts and expand supported actions; ' + json.dumps(audit))
         with output.open('xb') as target:
             target.write((work / 'result.pdf').read_bytes())
+        return audit
 
 
 def main() -> None:
@@ -122,6 +132,7 @@ def main() -> None:
     parser.add_argument('--font-path', type=Path, action='append', default=[])
     parser.add_argument('--photo', type=Path)
     parser.add_argument('--number-lift-pt', type=float, default=0)
+    parser.add_argument('--allow-sparse-preview', action='store_true', help='Preview only; does not qualify as a full-page delivery')
     args = parser.parse_args()
     if args.list:
         print((STYLE_ROOT / 'catalog.json').read_text())
@@ -131,7 +142,7 @@ def main() -> None:
     try:
         render(args.input, args.style, args.output, typst=args.typst,
                font_paths=tuple(args.font_path), photo=args.photo,
-               number_lift_pt=args.number_lift_pt)
+               number_lift_pt=args.number_lift_pt, allow_sparse_preview=args.allow_sparse_preview)
     except (ValueError, OSError, CliError) as error:
         parser.exit(1, str(error) + '\n')
     print('STYLE_VERIFIED')

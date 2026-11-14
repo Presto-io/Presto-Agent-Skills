@@ -1,6 +1,6 @@
 #let badge(body, width: 5.6mm, height: 5.6mm, fill: none, stroke: none, round: false, lift: 0pt) = {
   box(width: width, height: height, inset: 0pt, fill: fill, stroke: stroke, radius: if round { 50% } else { 0pt })[
-    #align(center + horizon)[#set text(font: "Courier", top-edge: "cap-height", bottom-edge: "baseline")
+    #align(center + horizon)[#set text(font: ("Courier", "Liberation Mono", "Noto Sans Mono CJK SC"), top-edge: "cap-height", bottom-edge: "baseline")
       #move(dy: -lift)[#body]]
   ]
 }
@@ -9,7 +9,7 @@
 
 #let specs = (
   "mono-minimal": (accent: rgb("222222"), secondary: rgb("686868"), ink: rgb("222222"), pale: white, font: "Noto Sans Mono CJK SC", mode: "margin", eyebrow: "CURRICULUM VITAE"),
-  "editorial-serif": (accent: rgb("51463E"), secondary: rgb("776D62"), ink: rgb("302F2C"), pale: none, font: "Songti SC", mode: "margin", eyebrow: "P E R S O N A L   R E C O R D"),
+  "editorial-serif": (accent: rgb("51463E"), secondary: rgb("776D62"), ink: rgb("302F2C"), pale: none, font: ("Songti SC", "Source Han Serif SC"), mode: "margin", eyebrow: "P E R S O N A L   R E C O R D"),
   "nordic": (accent: rgb("815541"), secondary: rgb("736E64"), ink: rgb("353B34"), pale: none, font: "Noto Sans Mono CJK SC", mode: "right", eyebrow: "a considered beginning"),
   "bauhaus": (accent: rgb("A93628"), secondary: rgb("6E645A"), ink: rgb("222222"), pale: none, font: "Noto Sans Mono CJK SC", mode: "single", eyebrow: "FORM / FUNCTION / FUTURE"),
   "power-substation": (accent: rgb("183C5D"), secondary: rgb("697782"), ink: rgb("263947"), pale: none, font: "Noto Sans Mono CJK SC", mode: "single", eyebrow: "ELECTRICAL / PERSONAL RECORD"),
@@ -59,7 +59,7 @@
       badge(text(size: 8pt, fill: white)[#(index+1)], fill: if calc.even(index) { rgb("2459A3") } else { rgb("A93628") }, round: true, lift: float(sys.inputs.at("number-lift-pt", default: "0")) * 1pt),
       text(size: 13.4pt, weight: "bold", fill: rgb("222222"))[#labels.at(kind)])
   } else if style == "editorial-serif" {
-    text(font: "Didot", size: 24pt, fill: spec.secondary)[0#(index + 1)]
+    text(font: ("Didot", "Liberation Serif", "Source Han Serif SC"), size: 24pt, fill: spec.secondary)[0#(index + 1)]
     v(2mm)
     label
   } else if style == "distribution-panel" {
@@ -108,7 +108,7 @@
 
 #let header(data, spec, style) = {
   let words = [
-    #text(font: if style == "editorial-serif" { "Didot" } else { "Courier" }, size: 7.5pt, fill: spec.accent)[#spec.eyebrow]
+    #text(font: if style == "editorial-serif" { ("Didot", "Liberation Serif", "Source Han Serif SC") } else { ("Courier", "Liberation Mono", "Noto Sans Mono CJK SC") }, size: 7.5pt, fill: spec.accent)[#spec.eyebrow]
     #v(2mm)
     #text(font: spec.font, size: if style in ("mono-minimal", "bauhaus") { 32pt } else { 28pt }, weight: "bold", fill: spec.accent)[#data.profile.name]
     #v(1.5mm)

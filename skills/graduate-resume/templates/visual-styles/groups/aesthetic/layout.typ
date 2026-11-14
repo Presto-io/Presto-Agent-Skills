@@ -2,14 +2,14 @@
 #import "../../page-flow.typ": page-flow
 
 #let themes = (
-  "chinese-classic": (accent: rgb("983F32"), secondary: rgb("766A58"), ink: rgb("303D34"), panel: none, heading: "Songti SC", body: "Songti SC", latin: "Didot"),
-  "steampunk": (accent: rgb("62401E"), secondary: rgb("806442"), ink: rgb("372B20"), panel: rgb("F0E3C8"), heading: "Songti SC", body: "Songti SC", latin: "American Typewriter"),
-  "dreamcore": (accent: rgb("605287"), secondary: rgb("7D7291"), ink: rgb("3D3654"), panel: rgb("FCF9FF"), heading: "Noto Sans Mono CJK SC", body: "Noto Sans Mono CJK SC", latin: "Didot"),
-  "handmade-collage": (accent: rgb("894933"), secondary: rgb("756C60"), ink: rgb("303B35"), panel: rgb("FCF9EE"), heading: "Songti SC", body: "Noto Sans Mono CJK SC", latin: "Noteworthy"),
-  "cyberpunk": (accent: rgb("79EFF0"), secondary: rgb("95B8C7"), ink: rgb("E3EFF4"), panel: rgb("142536"), heading: "Noto Sans Mono CJK SC", body: "Noto Sans Mono CJK SC", latin: "Courier"),
-  "art-deco": (accent: rgb("DFC894"), secondary: rgb("B5C2B6"), ink: rgb("F0EDDE"), panel: none, heading: "Songti SC", body: "Songti SC", latin: "Didot"),
-  "botanical": (accent: rgb("50694F"), secondary: rgb("7A816C"), ink: rgb("374335"), panel: rgb("EFF0E5"), heading: "Songti SC", body: "Songti SC", latin: "Noteworthy"),
-  "brutalist": (accent: rgb("22272A"), secondary: rgb("667061"), ink: rgb("23272A"), panel: none, heading: "Noto Sans Mono CJK SC", body: "Noto Sans Mono CJK SC", latin: "Courier"),
+  "chinese-classic": (accent: rgb("983F32"), secondary: rgb("766A58"), ink: rgb("303D34"), panel: none, heading: ("Songti SC", "Source Han Serif SC"), body: ("Songti SC", "Source Han Serif SC"), latin: ("Didot", "Liberation Serif", "Source Han Serif SC")),
+  "steampunk": (accent: rgb("62401E"), secondary: rgb("806442"), ink: rgb("372B20"), panel: rgb("F0E3C8"), heading: ("Songti SC", "Source Han Serif SC"), body: ("Songti SC", "Source Han Serif SC"), latin: ("American Typewriter", "Liberation Mono", "Noto Sans Mono CJK SC")),
+  "dreamcore": (accent: rgb("605287"), secondary: rgb("7D7291"), ink: rgb("3D3654"), panel: rgb("FCF9FF"), heading: "Noto Sans Mono CJK SC", body: "Noto Sans Mono CJK SC", latin: ("Didot", "Liberation Serif", "Source Han Serif SC")),
+  "handmade-collage": (accent: rgb("894933"), secondary: rgb("756C60"), ink: rgb("303B35"), panel: rgb("FCF9EE"), heading: ("Songti SC", "Source Han Serif SC"), body: "Noto Sans Mono CJK SC", latin: ("Noteworthy", "Liberation Sans", "Noto Sans Mono CJK SC")),
+  "cyberpunk": (accent: rgb("79EFF0"), secondary: rgb("95B8C7"), ink: rgb("E3EFF4"), panel: rgb("142536"), heading: "Noto Sans Mono CJK SC", body: "Noto Sans Mono CJK SC", latin: ("Courier", "Liberation Mono", "Noto Sans Mono CJK SC")),
+  "art-deco": (accent: rgb("DFC894"), secondary: rgb("B5C2B6"), ink: rgb("F0EDDE"), panel: none, heading: ("Songti SC", "Source Han Serif SC"), body: ("Songti SC", "Source Han Serif SC"), latin: ("Didot", "Liberation Serif", "Source Han Serif SC")),
+  "botanical": (accent: rgb("50694F"), secondary: rgb("7A816C"), ink: rgb("374335"), panel: rgb("EFF0E5"), heading: ("Songti SC", "Source Han Serif SC"), body: ("Songti SC", "Source Han Serif SC"), latin: ("Noteworthy", "Liberation Sans", "Noto Sans Mono CJK SC")),
+  "brutalist": (accent: rgb("22272A"), secondary: rgb("667061"), ink: rgb("23272A"), panel: none, heading: "Noto Sans Mono CJK SC", body: "Noto Sans Mono CJK SC", latin: ("Courier", "Liberation Mono", "Noto Sans Mono CJK SC")),
 )
 #let icon-names = (education: "graduation-cap", skills: "wrench", certificates: "badge-check", projects: "folder-kanban", training: "flask-conical", experience: "briefcase-business")
 

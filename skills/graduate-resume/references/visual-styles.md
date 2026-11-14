@@ -11,12 +11,14 @@ python3 scripts/graduate_resume_styles.py --input /path/to/final.md --style bauh
 
 `bauhaus`（包豪斯几何）、`network-topology`（弱电网络拓扑）、`timeline-copper`（铜色时间轴）采用已确认改版。`power-substation`（强电一次系统）、`signal-wave`（信号测量）、`pcb-traces`（弱电 PCB 走线）、`industrial-safety`（工业铭牌）、`brutalist`（先锋海报）保持原始排版；工业铭牌仅修正警示三角形内闪电居中。其余沿用现有样式。
 
-八款参考复刻使用不含个人照片的背景图；照片由调用者显式提供并在运行时叠加，使用 contain 保持比例。该可移植照片适配与原先将特定人物嵌入背景的效果存在区别，不保证人物抠图或原背景逐像素一致。
+八款参考复刻使用不含个人照片的背景图；有照片时由 `graduate_resume_portrait.py` 在运行时生成透明抠图、黑白网点、相纸及各款装饰组合，保持人物比例。接收透明 PNG 或浅色纯背景照片，无法可靠分离背景时明确失败，不能静默改成原始矩形照片。所有含人像的背景仅保存在临时目录，不进入技能资源。
 
 包豪斯几何和网络拓扑用固定尺寸圆形、明确的文字高度度量及水平垂直对齐。默认保持已确认的位置；`--number-lift-pt 0.55` 可试用数字上移微调，范围 0–1 pt，只移动圆内数字。铜色时间轴保持圆点在上、编号在下，两者共用中线；不要将它误改成圆内编号。
 
-照片模式须显式提供本地 `--photo`，无照片模式禁止额外照片。处理时去除 EXIF，仅在临时目录保存规范化照片。依赖 Python、PyYAML、Pillow、Typst 0.15.1 与 Poppler。字体使用技能内 Noto 字体和思源黑体／宋体，思源字体分别附带 SIL OFL 许可，来源为 Adobe Source Han Sans / Source Han Serif 项目。部分样式还需要合法安装的 Courier、Didot、Songti SC、Noteworthy、American Typewriter、Helvetica Neue 等系统字体，使用可重复的 `--font-path` 指定；系统字体不打包或重新分发。
+照片模式须显式提供本地 `--photo`，无照片模式禁止额外照片。处理时去除 EXIF，仅在临时目录保存规范化照片。依赖 Python、PyYAML、Pillow、NumPy、Typst 0.15.1 与 Poppler。字体使用技能内 Noto 字体和思源黑体／宋体，思源字体分别附带 SIL OFL 许可，来源为 Adobe Source Han Sans / Source Han Serif 项目。装饰字体按顺序使用本机字体、Liberation 或技能内思源／Noto 字体回退。需要特定系统字体时使用可重复的 `--font-path` 指定；系统字体不打包或重新分发。
 
 输出只支持 A4 单页，检查文字内容、电话邮箱唯一性、12 mm 文字安全区和字体嵌入。无法容纳时失败，不降级删减内容。生成在临时目录，成功后以独占方式创建新 PDF；现有文件不会覆盖。不要把 PDF、照片或真实资料输出到技能仓库。选样 PDF 不携带三主题的自包含 Typst/Markdown triple，也不宣称兼容任意长度或多页资料。
 
 用户审核选中某些页面或样式后，只修改明确指出的问题。保留前一版，另存改版与对照；不要因共用组件而改变已接受样式。放大检查所有编号的可见字形中心与圆形或方框中心，并检查标题、圆点、横线及正文起点；不能只凭编译成功判断居中。
+
+正式选样还检查每页至少 300 个非空白字符、文字纵向跨度至少 78%、文字占用行比例至少 30%。这些是空洞拦截下限，不代表通过即有良好视觉效果，仍须逐页检查内容分布。`STYLE_CONTENT_TOO_SPARSE` 时核对遗漏的已确认事实，调整字号与模块分配；不得虚构内容。`--allow-sparse-preview` 只用于诊断预览。

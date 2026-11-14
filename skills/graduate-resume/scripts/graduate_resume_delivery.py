@@ -294,7 +294,13 @@ class DeliverySession:
 
     @staticmethod
     def _directory_entries(directory_fd: int) -> tuple[str, ...]:
-        return tuple(sorted(entry.name for entry in os.scandir(directory_fd)))
+        # dup() shares a directory offset on Linux; reopen "." for each scan.
+        scan_fd = os.open(".", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory_fd)
+        try:
+            with os.scandir(scan_fd) as entries:
+                return tuple(sorted(entry.name for entry in entries))
+        finally:
+            os.close(scan_fd)
 
     @staticmethod
     def _require_directory(name: str, *, directory_fd: int) -> None:

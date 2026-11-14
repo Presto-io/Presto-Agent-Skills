@@ -12,7 +12,7 @@
       }
     }
     assert(natural > 0pt, message: "LAYOUT_OVERFLOW: 满页排版无法容纳正文")
-    let gap = (available - 3mm - natural) / calc.max(1, groups.len() - 1)
+    let gap = calc.min(14mm, (available - 3mm - natural) / calc.max(1, groups.len() - 1))
     set text(size: chosen)
     set par(leading: .62em)
     for (index, item) in groups.enumerate() {

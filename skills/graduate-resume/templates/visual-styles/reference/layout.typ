@@ -31,19 +31,19 @@
 #let heading(kind, palette, style, index) = {
   if style == "purple-doodle" {
     box(fill: palette.pale, inset: (x: 2mm, y: 1mm))[
-      #text(font: "Noteworthy", size: 11pt, weight: "bold")[#upper(english.at(kind))]#h(2mm)#text(size: 9pt)[#labels.at(kind)]
+      #text(font: ("Noteworthy", "Liberation Sans", "Noto Sans Mono CJK SC"), size: 11pt, weight: "bold")[#upper(english.at(kind))]#h(2mm)#text(size: 9pt)[#labels.at(kind)]
     ]
     v(.7mm)
     line(length: 72%, stroke: .85pt + palette.ink)
   } else if style == "rust-editorial" {
     grid(columns: (auto, auto, 1fr), gutter: 2mm, align: horizon,
-      text(font: "Didot", style: "italic", size: 20pt, fill: palette.accent, top-edge: "ascender", bottom-edge: "descender")[#english.at(kind)],
+      text(font: ("Didot", "Liberation Serif", "Source Han Serif SC"), style: "italic", size: 20pt, fill: palette.accent, top-edge: "ascender", bottom-edge: "descender")[#english.at(kind)],
       text(size: 8pt, fill: palette.secondary)[#labels.at(kind)],
       line(length: 100%, stroke: .45pt + palette.accent))
   } else if style == "serif-blue" {
     grid(columns: (1fr, auto), align: horizon,
-      [#text(font: serif-font, size: 15pt, weight: 900, fill: palette.accent)[#labels.at(kind)]#h(2mm)#text(font: "Didot", size: 12pt, fill: palette.accent)[#english.at(kind)]],
-      text(font: "Didot", size: 25pt, fill: palette.accent)[0#(index + 2).])
+      [#text(font: serif-font, size: 15pt, weight: 900, fill: palette.accent)[#labels.at(kind)]#h(2mm)#text(font: ("Didot", "Liberation Serif", "Source Han Serif SC"), size: 12pt, fill: palette.accent)[#english.at(kind)]],
+      text(font: ("Didot", "Liberation Serif", "Source Han Serif SC"), size: 25pt, fill: palette.accent)[0#(index + 2).])
     v(.9mm)
     line(length: 100%, stroke: .4pt + palette.accent)
   } else if style == "blue-floral" {
@@ -83,6 +83,7 @@
     if kind == "skills" {
       text(weight: "bold", fill: palette.accent)[#value.group]
       for item in value.items { paragraph(item, palette, compact: compact) }
+      paragraph(value.at("note", default: ""), palette, compact: compact)
     } else if kind == "certificates" {
       [#icon(kind, palette.accent, size: 3mm)#h(2mm)#text(weight: "bold")[#value.name]]
       if value.at("note", default: "") != "持有" + value.name + "。" { paragraph(value.at("note", default: ""), palette, compact: compact) }
@@ -148,7 +149,7 @@
     let gaps = groups.len() - 1
     let size = none
     let natural = 0mm
-    for candidate in (11.4pt, 11pt, 10.6pt, 10.2pt, 9.8pt, 9.4pt, 9pt, 8.8pt) {
+    for candidate in (12pt, 11.8pt, 11.6pt, 11.4pt, 11pt, 10.6pt, 10.2pt, 9.8pt, 9.4pt, 9pt, 8.8pt) {
       if candidate <= max-size {
         let total = groups.map(item => measure(block(width: width)[#set text(size: candidate)
           #set par(leading: if compact { .38em } else { .48em })
@@ -169,73 +170,69 @@
 #let resume(data, style) = {
   let palette = schemes.at(style)
   let photo = data.photo != none
-  let background = "backgrounds/" + style + "-plain.png"
+  let background = data.at("reference_background", default: "backgrounds/" + style + "-plain.png")
   set page(paper: "a4", margin: 0mm, background: image(background, width: 210mm, height: 297mm))
-  if photo {
-    let bounds = ("blue-poster": (133, 18, 61, 73), "serif-blue": (125, 16, 72, 91), "purple-doodle": (131, 14, 64, 77), "purple-sidebar": (12, 15, 51, 62), "rust-editorial": (116, 18, 75, 93), "blue-business": (17, 53, 56, 70), "blue-floral": (123, 12, 72, 86), "beige-notebook": (128, 17, 66, 79)).at(style)
-    slot(bounds, image(data.photo, width: bounds.at(2)*1mm, height: bounds.at(3)*1mm, fit: "contain"))
-  }
   set text(font: body-font, size: 9.8pt, lang: "zh", fill: palette.ink)
   set par(justify: false, leading: .48em, spacing: 0pt)
   set block(above: 0pt, below: 0pt)
   let main = ("projects", "training", "experience")
   let all = ("education", "skills", "certificates", "projects", "training", "experience")
-  let main-size = if data.sections.len() < 9 { 11.4pt } else { 10.6pt }
+  let main-size = 12pt
   if style == "blue-poster" {
-    if not photo { slot((133, 33, 63, 46), [#set text(font: "Didot", size: 30pt, fill: rgb("75A1CA"), top-edge: "ascender", bottom-edge: "descender")
+    if not photo { slot((133, 33, 63, 46), [#set text(font: ("Didot", "Liberation Serif", "Source Han Serif SC"), size: 30pt, fill: rgb("75A1CA"), top-edge: "ascender", bottom-edge: "descender")
       #stack(dir: ttb, spacing: 1mm, [Personal], [Resume])]) }
     slot((14, 18, 111, 73), [
-      #text(font: "Helvetica Neue", size: 58pt, weight: "black", fill: palette.accent)[Hello!]
+      #text(font: ("Helvetica Neue", "Liberation Sans", "Noto Sans Mono CJK SC"), size: 58pt, weight: "black", fill: palette.accent)[Hello!]
       #v(5mm)#nameplate(data, palette, size: 58pt)
       #v(3mm)#titleline(data, palette)#v(3mm)#summary(data, palette)
     ])
-    flow(data, ("contact", "education", "skills", "certificates"), (14, 106, 83, 175), palette, style, max-size: 10.2pt, compact: true)
+    flow(data, ("contact", "education", "skills", "certificates"), (14, 106, 83, 175), palette, style, max-size: 11.4pt, compact: true)
     flow(data, main, (111, 106, 85, 175), palette, style, max-size: main-size)
   } else if style == "serif-blue" {
     slot((14, 18, 102, 61), [#nameplate(data, palette, size: 90pt)#v(4mm)#titleline(data, palette)#v(3mm)#summary(data, palette)])
     slot((14, 86, 95, 27), [#text(font: serif-font, size: 12pt, fill: palette.accent)[基本信息]#v(2mm)#contacts(data, palette)])
-    flow(data, all, (14, 118, 182, 163), palette, style, max-size: 10.2pt, compact: true, entry-gap: 2mm)
+    flow(data, all, (14, 118, 182, 163), palette, style, max-size: 11.4pt, compact: true, entry-gap: 2mm)
   } else if style == "purple-doodle" {
     slot((14, 17, 109, 77), [
-      #text(font: "Noteworthy", size: 27pt, weight: "bold")[HEY, I'M]
+      #text(font: ("Noteworthy", "Liberation Sans", "Noto Sans Mono CJK SC"), size: 27pt, weight: "bold")[HEY, I'M]
       #v(2mm)#nameplate(data, palette, size: 46pt, serif: false)
       #v(4mm)#titleline(data, palette)#v(5mm)#summary(data, palette)
     ])
     flow(data, main, (14, 110, 101, 162), palette, style, max-size: main-size)
-    flow(data, ("skills", "education", "certificates", "contact"), (129, 110, 67, 162), palette, style, max-size: 10.2pt, compact: true)
+    flow(data, ("skills", "education", "certificates", "contact"), (129, 110, 67, 162), palette, style, max-size: 11.4pt, compact: true)
   } else if style == "purple-sidebar" {
     let reversed = (accent: rgb("F3EDF9"), secondary: rgb("CEC1E3"), ink: rgb("ECE8F4"), pale: rgb("9D83C7"))
     if not photo { slot((14, 20, 49, 50), text(font: serif-font, size: 40pt, fill: rgb("AE9DB8"))[个人\ 简历]) }
     slot((83, 17, 113, 48), [#nameplate(data, palette, size: 43pt)#v(4mm)#titleline(data, palette)#v(5mm)#summary(data, palette)])
-    flow(data, ("contact", "skills"), (14, 100, 47, 176), reversed, "purple-doodle", max-size: 10.2pt, compact: true, entry-gap: 5mm)
-    flow(data, ("education", "certificates", "projects", "training", "experience"), (82, 74, 114, 205), palette, style, max-size: 10.2pt, card: true, compact: true, entry-gap: 2.7mm)
+    flow(data, ("contact", "skills"), (14, 100, 47, 176), reversed, "purple-doodle", max-size: 11.4pt, compact: true, entry-gap: 5mm)
+    flow(data, ("education", "certificates", "projects", "training", "experience"), (82, 74, 114, 205), palette, style, max-size: 11.4pt, card: true, compact: true, entry-gap: 2.7mm)
   } else if style == "rust-editorial" {
     slot((14, 18, 99, 91), [
       #nameplate(data, palette, size: 74pt)#v(3mm)
-      #block[#set text(font: "Didot", style: "italic", size: 28pt, fill: palette.accent, top-edge: "ascender", bottom-edge: "descender")
+      #block[#set text(font: ("Didot", "Liberation Serif", "Source Han Serif SC"), style: "italic", size: 28pt, fill: palette.accent, top-edge: "ascender", bottom-edge: "descender")
         #stack(dir: ttb, spacing: 1mm, [Personal], [Resume])]
       #v(4mm)#titleline(data, palette)#v(3mm)#summary(data, palette)
     ])
-    flow(data, ("contact", "education", "skills", "certificates"), (14, 124, 76, 153), palette, style, max-size: 10.2pt, compact: true, entry-gap: 2.5mm)
+    flow(data, ("contact", "education", "skills", "certificates"), (14, 124, 76, 153), palette, style, max-size: 11.4pt, compact: true, entry-gap: 2.5mm)
     flow(data, main, (105, 124, 91, 153), palette, style, max-size: main-size, compact: true, entry-gap: 3.2mm)
   } else if style == "blue-business" {
     slot((14, 15, 75, 32), [#nameplate(data, palette, size: 35pt, serif: false)#v(3mm)#titleline(data, palette)])
     slot((91, 19, 105, 26), [#summary(data, palette)])
-    flow(data, ("contact", "education", "certificates"), (18, if photo { 131 } else { 58 }, 54, if photo { 146 } else { 219 }), palette, style, max-size: 10.2pt, compact: true, entry-gap: 3mm)
+    flow(data, ("contact", "education", "certificates"), (18, if photo { 131 } else { 58 }, 54, if photo { 146 } else { 219 }), palette, style, max-size: 11.4pt, compact: true, entry-gap: 3mm)
     flow(data, ("projects", "training", "experience", "skills"), (88, 54, 108, 226), palette, style, max-size: main-size, entry-gap: 4mm)
   } else if style == "blue-floral" {
     let light = (accent: white, secondary: rgb("EFF6FA"), ink: white, pale: palette.pale)
     let head-ink = (accent: rgb("244B68"), secondary: rgb("315B77"), ink: rgb("244B68"), pale: palette.pale)
     slot((16, 17, 106, 50), [#nameplate(data, light, size: 48pt)#v(4mm)#titleline(data, head-ink)#v(4mm)#summary(data, head-ink)])
     slot((17, 71, 97, 23), [#contacts(data, head-ink)])
-    flow(data, all, (16, 113, 166, 168), palette, style, max-size: 10.2pt, compact: true, entry-gap: 2mm)
+    flow(data, all, (16, 113, 166, 168), palette, style, max-size: 11.4pt, compact: true, entry-gap: 2mm)
   } else if style == "beige-notebook" {
     slot((14, 20, 108, 77), [
-      #text(font: "Noteworthy", size: 26pt, fill: palette.accent)[Hi there! ♡]
+      #text(font: ("Noteworthy", "Liberation Sans", "Noto Sans Mono CJK SC"), size: 26pt, fill: palette.accent)[Hi there! ♡]
       #v(3mm)#nameplate(data, palette, size: 60pt)
       #v(4mm)#titleline(data, palette)#v(5mm)#summary(data, palette)
     ])
-    flow(data, ("contact", "education", "skills", "certificates"), (17, 113, 65, 165), palette, style, max-size: 10.2pt, compact: true)
+    flow(data, ("contact", "education", "skills", "certificates"), (17, 113, 65, 165), palette, style, max-size: 11.4pt, compact: true)
     flow(data, main, (94, 113, 102, 165), palette, style, max-size: main-size, entry-gap: 4mm)
   }
   [#metadata((template: style, revision: "refined-3", photo: photo, body_font: body-font, display_font: serif-font)) <layout-report>]

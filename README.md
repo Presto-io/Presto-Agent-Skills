@@ -16,7 +16,7 @@ Presto Agent Skills 是一个面向多类 AI agent 的技能仓库框架。它�
 
 其中 OpenClaw 和 Hermes Agent 是 v1 必须支持的目标。
 
-`graduate-resume` 技能当前为 `0.4.1`（Typst `0.15.1`）：支持毕业生真实资料校验、岗位定向、三主题 Markdown/Typst/PDF 生成和事务交付，包含 44 款模板目录（基础 3 款、风格合集 33 款、参考复刻 8 款）、41 款单页选样入口及实际排版测量、强制双栏主题、网格信息栏、本地图标及岗位词组强调。离线 CLI 提供 `validate` / `target` / `plan` / `render` / `batch` / `verify`；Phase 49 完整验收及六 runtime 安装、人工 UAT 证据尚未齐备，不能据此宣称完整发布验收通过。
+`graduate-resume` 技能当前为 `0.5.0`（Typst `0.15.1`）：支持毕业生真实资料校验、岗位定向、三主题 Markdown/Typst/PDF 生成和事务交付，包含 44 款模板目录（基础 3 款、风格合集 33 款、参考复刻 8 款）、41 款单页选样入口及实际排版测量、强制双栏主题、网格信息栏、本地图标及岗位词组强调。离线 CLI 提供 `validate` / `target` / `plan` / `render` / `batch` / `verify`；Phase 49 完整验收及六 runtime 安装、人工 UAT 证据尚未齐备，不能据此宣称完整发布验收通过。
 
 **严禁提交任何真实学生的简历资料、照片、预览或成品。** 仓库只保留通用技能和完全虚构的测试夹具；真实资料及制作目录必须位于仓库外。提交前遵守[简历技能仓库发布规则](skills/graduate-resume/references/repository-publication.md)，审查暂存区内容，不只检查文件名。
 

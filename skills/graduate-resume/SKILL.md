@@ -3,7 +3,7 @@ name: "graduate-resume"
 description: "Use when collecting, reviewing, validating, and preparing a verified Chinese graduate resume source package for offline generic or targeted resume generation with optional photo and deterministic Markdown/Typst/PDF outputs."
 metadata:
   short-description: "毕业生简历资料契约与离线生成工作流"
-  version: "0.4.1"
+  version: "0.5.0"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -53,6 +53,12 @@ metadata:
 9. 使用 `verify --workdir <临时证据目录>` 运行完整技能验收。其发布、跨运行环境和人工 UAT 证据缺失应如实说明，不能替代本次产物的 PDF 页数、内容与视觉检查。排版回归入口见 `references/targeted-render-delivery-contract.md`。
 
 ## 可选视觉样式选样
+
+生成前核对用户提供的全部已确认事实，尤其是技能说明、资格证书、实训动作和实习职责；不要只提取标题而丢弃说明。可将已提供的事实整理成清楚的行动描述，但不得补造课程、成绩、熟练度、项目或量化成果。正常内容优先充实一页；确需两页时两页都须有充分正文。资料不足时说明缺失事实，不以超大间距或重复内容冒充铺满。
+
+全部运行环境必须使用本技能的模板目录和渲染脚本，不得另建布局族或仅换配色冒充 44 款模板。41 款选样入口默认执行逐页字符数、正文纵向跨度和占用行密度检查，失败返回 `STYLE_CONTENT_TOO_SPARSE`；先核查事实遗漏和版面分配，再重新生成。`--allow-sparse-preview` 仅用于诊断预览，不得作为正式交付通过依据。基础三主题继续使用主工作流的逐页逐栏铺满检查。
+
+八款参考复刻的有照片版本由技能内置脚本在运行时生成抠图、网点、相纸和装饰组合，不能直接覆盖为统一矩形照片槽。照片须为透明 PNG 或浅色纯背景人像；无法可靠抠图时返回 `PORTRAIT_CUTOUT_REQUIRED`，不可静默退化。无照片版本继续使用不含人像的背景。
 
 模板目录共 44 款：基础三主题、风格合集 33 款、美图参考复刻 8 款。需要后 41 款单页视觉选样、对照修订或数字居中调整时，阅读 `references/visual-styles.md`，使用 `scripts/graduate_resume_styles.py`。此入口消费已验证的最终 Markdown，另存 PDF，不替代三主题 `render` / `batch` 的事务、资料校验与 current/history 契约。
 

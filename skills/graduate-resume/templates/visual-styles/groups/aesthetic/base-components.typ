@@ -27,6 +27,7 @@
     #if kind == "skills" {
       text(weight: "bold", fill: palette.accent)[#value.group]
       for item in value.items { detail(item) }
+      detail(value.at("note", default: ""))
     } else if kind == "certificates" {
       text(weight: "bold")[#value.name]
       if value.at("note", default: "") != "持有" + value.name + "。" { detail(value.at("note", default: "")) }

@@ -13,7 +13,7 @@
 - canonical 模板、schema、通用渲染器、字体、图标及其许可。
 - 从零编写、与真实学生无关的虚构测试夹具；不得从学生简历抽取事实拼成夹具。
 - 现有两张 1 × 1 单色 JPEG 仅用于验证照片处理路径，不含人像、身份信息或 EXIF。不得替换为学生照片。
-- 三主题生产 Typst 模板为 `templates/resume-themes.typ`；41 款可选单页视觉选样包位于 `templates/visual-styles/`，包含通用布局、SVG 装饰、目录和八张不含身份信息的 `reference/backgrounds/*-plain.png`。禁止打包嵌入人物照片的 `*-photo.png` 或 portrait 目录。不要重新复制个人化模板进 `templates/themes/`。
+- 三主题生产 Typst 模板为 `templates/resume-themes.typ`；41 款可选单页视觉选样包位于 `templates/visual-styles/`，包含通用布局、SVG 装饰、目录和八张不含身份信息的 `reference/backgrounds/*-plain.png`。照片构图脚本只读取调用方运行时照片，生成物不得打包；禁止打包嵌入人物照片的 `*-photo.png` 或 portrait 目录。不要重新复制个人化模板进 `templates/themes/`。
 
 ## 提交前检查
 

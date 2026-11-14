@@ -10,6 +10,7 @@ import graduate_resume_cli as cli
 from graduate_resume_final_markdown import emit_final_markdown
 from graduate_resume_targeting import LayoutFeedback, PageBudgetRequest, resolve_version_projection
 from graduate_resume_styles import SKILL_ROOT, STYLE_ROOT, render
+from PIL import Image, ImageDraw
 
 
 class VisualStyleTests(unittest.TestCase):
@@ -32,30 +33,40 @@ class VisualStyleTests(unittest.TestCase):
             catalog = json.loads((STYLE_ROOT / 'catalog.json').read_text())
             self.assertEqual(len(catalog), 44)
             self.assertEqual(len({row['id'] for row in catalog}), 44)
+            with self.assertRaisesRegex(ValueError, 'STYLE_CONTENT_TOO_SPARSE'):
+                render(final, 'mono-minimal', root / 'rejected.pdf', typst=typst, font_paths=fonts)
+            self.assertFalse((root / 'rejected.pdf').exists())
             for row in catalog:
                 if row['engine'] == 'canonical':
                     continue
                 with self.subTest(style=row['id']):
                     output = root / (row['id'] + '.pdf')
-                    render(final, row['id'], output, typst=typst, font_paths=fonts)
+                    render(final, row['id'], output, typst=typst, font_paths=fonts, allow_sparse_preview=True)
                     original = output.read_bytes()
                     with self.assertRaisesRegex(ValueError, 'STYLE_OUTPUT_EXISTS'):
-                        render(final, row['id'], output, typst=typst, font_paths=fonts)
+                        render(final, row['id'], output, typst=typst, font_paths=fonts, allow_sparse_preview=True)
                     self.assertEqual(output.read_bytes(), original)
             for style in ('bauhaus', 'network-topology'):
                 render(final, style, root / (style + '-lift.pdf'), typst=typst,
-                    font_paths=fonts, number_lift_pt=.55)
+                    font_paths=fonts, number_lift_pt=.55, allow_sparse_preview=True)
             photo_final = root / 'photo-final.md'
             photo_final.write_bytes(emit_final_markdown(document.data, projection,
                 canonical_hash=hashlib.sha256(source.read_bytes()).hexdigest(),
                 theme_key='conservative', page_count=1, photo_mode='photo'))
+            # Synthetic silhouette tests cutout/composition without a real person's photo.
+            portrait = Image.new('RGB', (200, 260), 'white')
+            drawing = ImageDraw.Draw(portrait)
+            drawing.ellipse((65, 20, 135, 105), fill='#B88768')
+            drawing.rectangle((38, 110, 162, 259), fill='#253B55')
+            photo = root / 'synthetic-portrait.png'
+            portrait.save(photo)
             for row in catalog:
                 if row['engine'] == 'canonical':
                     continue
                 with self.subTest(photo_style=row['id']):
                     render(photo_final, row['id'], root / (row['id'] + '-photo.pdf'),
                         typst=typst, font_paths=fonts,
-                        photo=SKILL_ROOT / 'fixtures/render/media/source-photo.jpg')
+                        photo=photo, allow_sparse_preview=True)
             final.write_bytes(final.read_bytes().replace(b'graduate-resume-delivery/v1', b'invalid/v1'))
             with self.assertRaises(cli.CliError):
                 render(final, 'bauhaus', root / 'tampered.pdf', typst=typst)
