@@ -19,7 +19,7 @@ from xml.sax.saxutils import escape as xml_escape
 
 from .delivery import CURRENT_NAMES, DeliveryError, DeliverySession, DeliverySpec
 
-VERSION = "0.8.0"
+VERSION = "0.8.1"
 PACKAGE_ARTIFACTS = [
     "成绩记分册",
     "成绩汇总表",
