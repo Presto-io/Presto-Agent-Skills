@@ -55,8 +55,10 @@ def canonical_audit(final, plan_path, source):
     return document.theme_key, pdf, dict(audit, typst_frozen_regions=regions)
 
 
-def collect(source, output, *, typst='typst', photo=None, font_paths=(), canonical=()):
+def collect(source, output, *, typst='typst', photo=None, font_paths=(), canonical=(), expected_count=None):
     from pypdf import PdfReader, PdfWriter
+    if expected_count is not None and (isinstance(expected_count, bool) or not isinstance(expected_count, int) or expected_count < 1):
+        raise ValueError("COLLECTION_EXPECTED_COUNT_INVALID")
     selection = recommendations(source)
     output.mkdir(parents=True, exist_ok=False)
     individual = output / 'individual'
@@ -103,10 +105,19 @@ def collect(source, output, *, typst='typst', photo=None, font_paths=(), canonic
     if accepted:
         with (output / 'qualified-styles.pdf').open('xb') as stream:
             writer.write(stream)
+    merged_pages = 0
+    if accepted:
+        merged = PdfReader(output / 'qualified-styles.pdf')
+        merged_pages = len(merged.pages)
+        expected_pages = sum(len(PdfReader(Path(row['file'])).pages) for row in accepted)
+        if merged_pages != expected_pages:
+            raise ValueError('COLLECTION_PAGE_COUNT_MISMATCH')
     for row in accepted:
         row['sha256'] = hashlib.sha256(Path(row['file']).read_bytes()).hexdigest()
     report = dict(source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                   selection=selection, accepted=len(accepted), excluded=len(records) - len(accepted),
+                  expected_count=expected_count, request_satisfied=(expected_count is None or len(accepted) == expected_count),
+                  individual_pdf_count=len(accepted), collection_pages=merged_pages,
                   styles=records, collection='qualified-styles.pdf' if accepted else None)
     (output / 'selection-report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     return report
@@ -117,6 +128,7 @@ def main():
     parser.add_argument('--input', type=Path, required=True)
     parser.add_argument('--recommend', action='store_true')
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--expected-count', type=int, help='Requested number of resume styles per person; mismatch exits nonzero')
     parser.add_argument('--photo', type=Path)
     parser.add_argument('--typst', default=os.environ.get('TYPST_BIN', 'typst'))
     parser.add_argument('--font-path', type=Path, action='append', default=[])
@@ -127,9 +139,10 @@ def main():
         print(json.dumps(recommendations(args.input), ensure_ascii=False, indent=2))
     elif args.output:
         report = collect(args.input, args.output, typst=args.typst,
-                         photo=args.photo, font_paths=tuple(args.font_path), canonical=args.canonical)
-        print(json.dumps(dict(accepted=report['accepted'], excluded=report['excluded']), ensure_ascii=False))
-        if not report['accepted']:
+                         photo=args.photo, font_paths=tuple(args.font_path), canonical=args.canonical, expected_count=args.expected_count)
+        print(json.dumps({key: report[key] for key in ('accepted', 'excluded', 'expected_count',
+                         'request_satisfied', 'individual_pdf_count', 'collection_pages')}, ensure_ascii=False))
+        if not report['accepted'] or not report['request_satisfied']:
             raise SystemExit(2)
     else:
         parser.error('--recommend or --output is required')

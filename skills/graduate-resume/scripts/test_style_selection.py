@@ -40,8 +40,12 @@ class StyleSelectionTests(unittest.TestCase):
                 'graduate_resume_style_collection.load_final_resume', return_value=SimpleNamespace(theme_key='conservative')), patch(
                 'graduate_resume_style_collection.canonical_audit', side_effect=ValueError('COLUMN_UNFILLED')), patch(
                 'graduate_resume_style_collection.render', side_effect=produce):
-                report = collect(source, root / 'result', canonical=[(source, root / 'plan.json')])
+                report = collect(source, root / 'result', canonical=[(source, root / 'plan.json')], expected_count=3)
                 self.assertEqual((report['accepted'], report['excluded']), (1, 2))
+                self.assertFalse(report['request_satisfied'])
+                self.assertEqual(report['expected_count'], 3)
+                self.assertEqual(report['individual_pdf_count'], 1)
+                self.assertEqual(report['collection_pages'], 1)
                 self.assertEqual(len(PdfReader(root / 'result/qualified-styles.pdf').pages), 1)
                 self.assertEqual([p.name for p in (root / 'result/individual').iterdir()], ['good.pdf'])
                 self.assertIn('COLUMN_UNFILLED', report['styles'][0]['reason'])
@@ -50,7 +54,27 @@ class StyleSelectionTests(unittest.TestCase):
                 rows[:] = rows[:1]
                 empty = collect(source, root / 'empty', canonical=[(source, root / 'plan.json')])
                 self.assertIsNone(empty['collection'])
+                self.assertEqual(empty['collection_pages'], 0)
+                self.assertTrue(empty['request_satisfied'])
+                for count in (0, -1, True, 1.5):
+                    with self.assertRaisesRegex(ValueError, 'COLLECTION_EXPECTED_COUNT_INVALID'):
+                        collect(source, root / 'invalid', expected_count=count)
                 self.assertFalse((root / 'empty/qualified-styles.pdf').exists())
+
+    def test_collection_cli_fails_when_requested_count_is_not_met(self):
+        from contextlib import redirect_stdout
+        import io
+        from graduate_resume_style_collection import main
+        report = dict(accepted=1, excluded=43, expected_count=44, request_satisfied=False,
+                      individual_pdf_count=1, collection_pages=1)
+        with patch('sys.argv', ['collection', '--input', 'synthetic.md', '--output', 'new',
+                                '--expected-count', '44']), patch(
+                'graduate_resume_style_collection.collect', return_value=report) as collect, redirect_stdout(io.StringIO()) as output:
+            with self.assertRaises(SystemExit) as result:
+                main()
+            self.assertEqual(result.exception.code, 2)
+            self.assertEqual(collect.call_args.kwargs['expected_count'], 44)
+            self.assertFalse(json.loads(output.getvalue())['request_satisfied'])
 
     def test_catalog_bounds_and_visible_character_count(self):
         catalog = json.loads((STYLE_ROOT / 'catalog.json').read_text())

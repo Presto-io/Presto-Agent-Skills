@@ -58,6 +58,30 @@ def brush(draw, horizontal, vertical, width, height, fill="#B7A1DD"):
         path(draw, [(horizontal + RANDOM.uniform(-1.2, .8), vertical+offset), (horizontal+width+RANDOM.uniform(-.8, 1.3), vertical+offset+RANDOM.uniform(-.3, .3))], fill, .3)
 
 
+def edge_connected(mask):
+    """Select candidate pixels reachable from the image perimeter."""
+    candidate = Image.fromarray(np.uint8(mask) * 255).copy()
+    width, height = candidate.size
+    for x in range(width):
+        for y in (0, height - 1):
+            if candidate.getpixel((x, y)) == 255:
+                ImageDraw.floodfill(candidate, (x, y), 128)
+    for y in range(height):
+        for x in (0, width - 1):
+            if candidate.getpixel((x, y)) == 255:
+                ImageDraw.floodfill(candidate, (x, y), 128)
+    return np.asarray(candidate) == 128
+
+
+def validate_cutout(image):
+    """A PNG name or one transparent pixel does not prove background removal."""
+    alpha = np.asarray(image.getchannel("A"))
+    transparent = edge_connected(alpha <= 16)
+    if not .03 <= np.mean(transparent) <= .95 or np.mean(alpha >= 240) < .05:
+        raise ValueError("PORTRAIT_CUTOUT_REQUIRED: no usable edge-connected transparency")
+    return image
+
+
 def prepare_portrait(source_path):
     with Image.open(source_path) as original:
         source = ImageOps.exif_transpose(original).convert("RGBA")
@@ -65,27 +89,37 @@ def prepare_portrait(source_path):
     if source.width < 32 or source.height < 32:
         raise ValueError("PORTRAIT_SOURCE_TOO_SMALL")
     pixels = np.asarray(source.convert("RGB")).astype(np.float32)
-    if source.getchannel("A").getextrema()[0] < 250:
-        image = source
+    alpha = np.asarray(source.getchannel("A"))
+    if alpha.min() < 250:
+        image = validate_cutout(source)
     else:
-        # Remove only near-neutral pale pixels connected to the photo edges.
         low = pixels.min(axis=2)
         spread = pixels.max(axis=2) - low
-        # fromarray may share a read-only NumPy buffer; floodfill needs writable pixels.
-        candidate = Image.fromarray(np.uint8((low > 170) & (spread < 38)) * 255).copy()
-        for x in range(0, source.width, max(1, source.width // 32)):
-            for y in (0, source.height-1):
-                if candidate.getpixel((x,y)) == 255: ImageDraw.floodfill(candidate, (x,y), 128)
-        for y in range(0, source.height, max(1, source.height // 32)):
-            for x in (0, source.width-1):
-                if candidate.getpixel((x,y)) == 255: ImageDraw.floodfill(candidate, (x,y), 128)
-        connected = np.asarray(candidate) == 128
-        if np.mean(connected) < .03 or np.mean(connected) > .85:
-            raise ValueError("PORTRAIT_CUTOUT_REQUIRED: provide a transparent PNG or a plain pale-background portrait")
-        alpha = np.full(low.shape, 255, dtype=np.uint8)
-        alpha[connected] = np.uint8(np.clip((255-low[connected])*1.18, 0, 255))
-        image = source.copy()
-        image.putalpha(Image.fromarray(alpha))
+        # Pale neutral background, or a sufficiently uniform blue/green backdrop.
+        candidate = (low > 170) & (spread < 38)
+        border = np.concatenate((pixels[0], pixels[-1], pixels[:, 0], pixels[:, -1]))
+        backdrop = np.median(border, axis=0)
+        channel = int(np.argmax(backdrop))
+        others = np.delete(backdrop, channel)
+        chroma = backdrop[channel] - max(others)
+        color_key = channel in (1, 2) and chroma > 35 and backdrop[channel] > 100
+        if color_key:
+            delta = np.linalg.norm(pixels - backdrop, axis=2)
+            other_max = np.max(np.delete(pixels, channel, axis=2), axis=2)
+            dominant = pixels[:, :, channel] - other_max > 25
+            candidate = (delta < 65) & dominant
+        connected = edge_connected(candidate)
+        if not .03 <= np.mean(connected) <= .85:
+            raise ValueError("PORTRAIT_CUTOUT_REQUIRED: provide a verified transparent PNG or uniform backdrop")
+        mask = Image.fromarray(np.uint8(~connected) * 255).filter(ImageFilter.GaussianBlur(.45))
+        if color_key:
+            # Despill only near the silhouette; retain interior clothing colors.
+            edge = (np.asarray(mask.filter(ImageFilter.MinFilter(5))) < 255) & (np.asarray(mask) > 0)
+            excess = np.maximum(0, pixels[:, :, channel] - np.max(np.delete(pixels, channel, axis=2), axis=2))
+            pixels[:, :, channel][edge] -= excess[edge] * .85
+        image = Image.fromarray(np.uint8(np.clip(pixels, 0, 255))).convert("RGBA")
+        image.putalpha(mask)
+        validate_cutout(image)
     gray = ImageEnhance.Contrast(ImageOps.grayscale(source)).enhance(1.18)
     dot_canvas = Image.new("L", source.size, 248)
     dots = ImageDraw.Draw(dot_canvas)

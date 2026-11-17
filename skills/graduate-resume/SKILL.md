@@ -3,7 +3,7 @@ name: "graduate-resume"
 description: "Use when collecting, reviewing, validating, and preparing a verified Chinese graduate resume source package for offline generic or targeted resume generation with optional photo and deterministic Markdown/Typst/PDF outputs."
 metadata:
   short-description: "毕业生简历资料契约与离线生成工作流"
-  version: "0.6.0"
+  version: "0.6.1"
   portability: "canonical"
   supported-runtimes:
     - Codex
@@ -38,6 +38,10 @@ metadata:
 - `fixtures/`: 有照片、无照片、通用版、多目标和错误样例。
 - `scripts/graduate-resume.sh`: 离线公开 CLI 入口。
 
+## 本次任务与质量基线
+
+开始时从当前对话和已批准产物确认“人数 × 每人套数 × 每套页数”、参考版本、文案要求与照片模式。“44套”表示44种版式，“44页”可能表示合集页数，不将两者或人数互相替代；只有上下文仍无法判断时才追问。用户要求重写或参照他人写法时先阅读 `references/job-focused-writing.md`，完成语义重写后再排版；参考他人的行文而不借用其经历。批量修订与交付核查见 `references/revision-quality-contract.md`，本次更正须同步所有受影响的单份、合集和压缩包。
+
 ## Canonical Workflow
 
 资料整理和文案优化先阅读 `references/job-focused-writing.md`，以 HR 能快速识别的岗位匹配证据为目标：明确求职方向，突出相关技术、本人行动与真实成果；教育经历分开呈现学业表现和相关课程，相关课程优先，优秀成绩有据才强调。原始事实与熟练程度必须保留。离线渲染器按已确认岗位/招聘要求或通用求职方向自动排序课程并对正文匹配词组加粗，每段最多 3 处；测量和正式渲染共用强调结果，不能仅在导出的 PDF 中临时加粗。
@@ -60,7 +64,7 @@ metadata:
 
 41 款视觉样式固定执行：默认字号渲染并检测 → 必要时在模板范围内调整字号一次并复检 → 保留合格版或排除。禁止重复调用渲染器重置次数、继续改字号、放宽阈值或为凑齐 44 款改模板。Typst `measure/query` 检查正文区域未用高度和模块间隔，PDF 检查逐页密度、完整性、安全区及字体。`--allow-sparse-preview` 仅供诊断，不得进入合订本。使用 `graduate_resume_style_collection.py` 自动生成合格样式合订本和逐款排除清单；全不合格时不生成空合订本。基础三主题保持原事务入口与逐栏冻结测量，不额外循环调字号；通过其原有逐栏检查后才可通过 `--canonical FINAL_MD PLAN_JSON` 加入同一合集。
 
-八款参考复刻的有照片版本由技能内置脚本在运行时生成抠图、网点、相纸和装饰组合，不能直接覆盖为统一矩形照片槽。照片须为透明 PNG 或浅色纯背景人像；无法可靠抠图时返回 `PORTRAIT_CUTOUT_REQUIRED`，不可静默退化。无照片版本继续使用不含人像的背景。
+八款参考复刻的有照片版本由技能内置脚本在运行时生成抠图、网点、相纸和装饰组合，不能直接覆盖为统一矩形照片槽。照片须为经透明度验证的 PNG、浅色纯背景或可可靠分离的均匀蓝/绿背景人像；无法可靠抠图时返回 `PORTRAIT_CUTOUT_REQUIRED`，不可静默退化。无照片版本继续使用不含人像的背景。
 
 模板目录共 44 款：基础三主题、风格合集 33 款、美图参考复刻 8 款。需要后 41 款单页视觉选样、对照修订或数字居中调整时，阅读 `references/visual-styles.md`，使用 `scripts/graduate_resume_styles.py`。此入口消费已验证的最终 Markdown，另存 PDF，不替代三主题 `render` / `batch` 的事务、资料校验与 current/history 契约。
 

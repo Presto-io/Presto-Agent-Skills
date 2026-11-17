@@ -11,7 +11,7 @@ python3 scripts/graduate_resume_styles.py --input /path/to/final.md --style bauh
 
 `bauhaus`（包豪斯几何）、`network-topology`（弱电网络拓扑）、`timeline-copper`（铜色时间轴）采用已确认改版。`power-substation`（强电一次系统）、`signal-wave`（信号测量）、`pcb-traces`（弱电 PCB 走线）、`industrial-safety`（工业铭牌）、`brutalist`（先锋海报）保持原始排版；工业铭牌仅修正警示三角形内闪电居中。其余沿用现有样式。
 
-八款参考复刻使用不含个人照片的背景图；有照片时由 `graduate_resume_portrait.py` 在运行时生成透明抠图、黑白网点、相纸及各款装饰组合，保持人物比例。接收透明 PNG 或浅色纯背景照片，无法可靠分离背景时明确失败，不能静默改成原始矩形照片。所有含人像的背景仅保存在临时目录，不进入技能资源。
+八款参考复刻使用不含个人照片的背景图；有照片时由 `graduate_resume_portrait.py` 在运行时生成透明抠图、黑白网点、相纸及各款装饰组合，保持人物比例。接收经透明度验证的 PNG、浅色纯背景或可可靠分离的均匀蓝/绿背景照片，无法可靠分离背景时明确失败，不能静默改成原始矩形照片。所有含人像的背景仅保存在临时目录，不进入技能资源。
 
 包豪斯几何和网络拓扑用固定尺寸圆形、明确的文字高度度量及水平垂直对齐。默认保持已确认的位置；`--number-lift-pt 0.55` 可试用数字上移微调，范围 0–1 pt，只移动圆内数字。铜色时间轴保持圆点在上、编号在下，两者共用中线；不要将它误改成圆内编号。
 
@@ -41,3 +41,5 @@ python3 scripts/graduate_resume_style_collection.py --input /path/to/final.md --
 无照片稿省略 `--photo`。有照片稿必须显式提供。新输出目录必须不存在，防止覆盖旧版。合集需要 `pypdf`，其余依赖不变。基础主题的 `.pdf` 必须与 `FINAL_MD` 同名；检查同源完整事实、页面密度、字体安全区以及 `PLAN_JSON.frozen_layout` 的主题、页数与逐栏铺满。未提供或未通过的基础主题不会自动混入合集。
 
 Hermes、OpenClaw、Codex 和其他 agent 共用此入口与停止条件。不要为了满足历史示例的 44/44 再循环调整；最后人工只检查合格款的重叠、裁切、编号居中和人像比例，发现问题可以排除，不能自动开启第三轮字号修正。纯总字数无法反映栏间分布，推荐区间应随合成回归样例逐步校准，不能用真实学生资料入仓。
+
+批量交付与照片修复遵循 `revision-quality-contract.md`。明确请求套数时使用 `--expected-count N`，不要将目录数量、合格套数、个人数量和合订页数混为一谈。
