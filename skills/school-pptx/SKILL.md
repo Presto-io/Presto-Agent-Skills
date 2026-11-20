@@ -47,6 +47,6 @@ python <skill-root>/scripts/school_pptx.py check <deck.pptx> --school-template -
 python <skill-root>/scripts/school_pptx.py preview <deck.pptx> --out-dir <empty-preview-dir>
 ```
 
-也可用`scripts/school-pptx.sh`调用同一工具，解释器可由`SCHOOL_PPTX_PYTHON`指定。依赖Python、python-pptx、Pillow、lxml；预览另需LibreOffice及PyMuPDF或Poppler。先在同一解释器核验依赖，缺项时报告具体缺项和解释器，不在渲染时安装软件。模板、媒体和字体均从已有本地资源读取。
+优先用`scripts/school-pptx.sh`调用同一工具：解释器依次取`SCHOOL_PPTX_PYTHON`、已激活虚拟环境、安装时配置的`${XDG_CACHE_HOME:-$HOME/.cache}/presto/school-pptx/runtime/bin/python`，最后才取系统`python3`。依赖Python、python-pptx、Pillow、lxml；预览另需LibreOffice及PyMuPDF或Poppler。先在同一解释器核验依赖，缺项时报告具体缺项和解释器，不在渲染时安装软件。模板、媒体和字体均从已有本地资源读取。
 
 安装时整目录发布。Hermes应核实当前profile实际发现的技能根，在宿主更新源仓库与活动安装，不在聊天运行时修改只读共享技能。项目产物和验证证据放在项目目录，不写入技能安装目录。
