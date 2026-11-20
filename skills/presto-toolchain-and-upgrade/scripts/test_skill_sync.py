@@ -129,4 +129,12 @@ class SyncTest(unittest.TestCase):
         self.config['approved_publication']=[x['approval'] for x in report]
         self.assertEqual(s.fleet(self.config)['status'],'complete')
 
+    def test_remote_trigger_preserves_actionable_report(self):
+        import sys
+        config=self.root/'trigger.json'
+        payload={'status':'conflict','report':'/private/conflicts.json'}
+        s.dump(config,{'state_dir':str(self.root/'trigger-state'),'controller':[sys.executable,'-c','import json,sys;print(json.dumps('+repr(payload)+'));sys.exit(2)']})
+        r=subprocess.run([sys.executable,str(Path(s.__file__)),'--config',str(config),'sync'],capture_output=True)
+        self.assertEqual(r.returncode,2);self.assertEqual(json.loads(r.stdout),payload)
+
 if __name__=='__main__':unittest.main(verbosity=2)

@@ -264,10 +264,17 @@ def decode_blobs(values):
         result[sha] = data
     return result
 
-def run_command(argv, cwd=None, data=None, timeout=180):
+def run_command(argv, cwd=None, data=None, timeout=180, allow_json_error=False):
     env = dict(os.environ, GIT_TERMINAL_PROMPT='0', GCM_INTERACTIVE='never')
     r = subprocess.run(argv, cwd=cwd, env=env, input=data, capture_output=True, timeout=timeout)
     if r.returncode:
+        if allow_json_error and r.returncode == 2:
+            try:
+                result = json.loads(r.stdout)
+                if isinstance(result, dict) and result.get('status') in {'blocked', 'partial', 'conflict'}:
+                    return r.stdout
+            except (ValueError, UnicodeError):
+                pass
         # Diagnostics remain local; do not echo arbitrary tool output or credentials.
         raise Blocked('Command failed (exit %s): %s' % (r.returncode, Path(argv[0]).name))
     return r.stdout
@@ -331,7 +338,7 @@ def contact(endpoint, operation, request):
     if 'config' in endpoint:
         config = load(endpoint['config'])
         return endpoint_export(config, request) if operation == 'export' else endpoint_apply(config, request)
-    raw = run_command(endpoint['command'] + [operation], data=json.dumps(request).encode(), timeout=endpoint.get('timeout', 300))
+    raw = run_command(endpoint['command'] + [operation], data=json.dumps(request).encode(), timeout=endpoint.get('timeout', 300), allow_json_error=True)
     try:
         result = json.loads(raw)
     except (ValueError, UnicodeError):
@@ -532,7 +539,7 @@ def main():
         req = json.load(sys.stdin)
         result = endpoint_export(config, req) if a.command == 'export' else endpoint_apply(config, req)
     elif 'controller' in config:
-        raw = run_command(config['controller'] + [a.command], timeout=config.get('timeout', 1800))
+        raw = run_command(config['controller'] + [a.command], timeout=config.get('timeout', 1800), allow_json_error=True)
         result = json.loads(raw)
     elif a.command == 'status':
         result = load(state_dir(config) / 'last-result.json', {'status': 'not_initialized'})
@@ -541,9 +548,10 @@ def main():
         try:
             result = fleet(config)
         except (Blocked, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
-            if load(state_dir(config) / 'last-result.json') == previous:
-                dump(state_dir(config) / 'last-result.json', {'status': 'blocked', 'reason': str(error)})
-            raise
+            result = load(state_dir(config) / 'last-result.json')
+            if result == previous:
+                result = {'status': 'blocked', 'reason': str(error)}
+                dump(state_dir(config) / 'last-result.json', result)
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result.get('status') not in {'conflict', 'partial', 'blocked'} else 2
 
