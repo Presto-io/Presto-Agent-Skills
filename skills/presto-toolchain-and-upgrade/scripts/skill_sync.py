@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Git-backed skill fleet synchronizer. Python 3.9+, Git; private JSON configuration."""
+"""Independent Git-backed device skill synchronizer. Python 3.9+, Git; private JSON configuration."""
 import argparse
 import base64
 import contextlib
@@ -254,18 +254,25 @@ def refresh_engine(config, tree, blobs):
     destination = config.get('engine_path')
     if not destination or not tree:
         return
-    item = tree.get('scripts/skill_sync.py')
-    if not item:
-        raise Blocked('Updated sync skill is missing its engine')
-    data = blobs[item['sha']]
-    compile(data, '<sync-engine>', 'exec')
     target = Path(destination).expanduser()
-    temp = target.with_name(target.name + '.' + uuid.uuid4().hex + '.tmp')
-    try:
-        temp.write_bytes(data); temp.chmod(0o644)
-        os.replace(temp, target)
-    finally:
-        temp.unlink(missing_ok=True)
+    pending = []
+    for source, output in [('scripts/skill_sync.py', target), ('scripts/local_client.py', target.with_name('local_client.py'))]:
+        item = tree.get(source)
+        if not item:
+            if source.endswith('skill_sync.py'):
+                raise Blocked('Updated sync skill is missing its engine')
+            continue
+        data = blobs[item['sha']]
+        compile(data, '<sync-module>', 'exec')
+        pending.append((output, data))
+    # Install dependencies first; then atomically switch the engine.
+    for output, data in reversed(pending):
+        temp = output.with_name(output.name + '.' + uuid.uuid4().hex + '.tmp')
+        try:
+            temp.write_bytes(data); temp.chmod(0o644)
+            os.replace(temp, output)
+        finally:
+            temp.unlink(missing_ok=True)
 
 def decode_blobs(values):
     result = {}
@@ -347,17 +354,27 @@ def validate_skill(name, tree, blobs):
             raise Blocked(name + '/' + rel + ': credential-like content')
 
 def contact(endpoint, operation, request):
-    if 'config' in endpoint:
-        config = load(endpoint['config'])
+    if 'local' in endpoint or 'config' in endpoint:
+        config = endpoint['local'] if 'local' in endpoint else load(endpoint['config'])
         return endpoint_export(config, request) if operation == 'export' else endpoint_apply(config, request)
-    raw = run_command(endpoint['command'] + [operation], data=json.dumps(request).encode(), timeout=endpoint.get('timeout', 300), allow_json_error=True)
-    try:
-        result = json.loads(raw)
-    except (ValueError, UnicodeError):
-        raise Blocked(endpoint['id'] + ': invalid or truncated response')
-    if result.get('status') == 'blocked':
-        raise Blocked(endpoint['id'] + ': ' + result.get('reason', 'endpoint blocked'))
-    return result
+    raise Blocked('Only local installations are supported')
+
+def device_config(config):
+    if config.get('mode') != 'device':
+        raise Blocked('Use mode=device with a local installation; central configurations must be migrated')
+    if 'controller' in config or 'endpoints' in config:
+        raise Blocked('Device mode cannot contact controllers or remote endpoints')
+    identity = config.get('device_id', '')
+    if not identity or len(identity) > 128:
+        raise Blocked('A stable device_id is required')
+    installation = config['installation']
+    if state_dir(installation) == state_dir(config):
+        raise Blocked('Installation and synchronization locks need separate state directories')
+    roots(installation)
+    return dict(config, endpoints=[{'id': identity, 'local': installation}])
+
+def device_sync(config):
+    return fleet(device_config(config))
 
 def fleet(config):
     state = state_dir(config)
@@ -366,12 +383,19 @@ def fleet(config):
         cache = state / 'repository'
         marker = state / 'owned-cache.json'
         if not cache.exists():
-            run_command(['git', 'clone', '--no-checkout', config['repository'], str(cache)])
+            command = ['git']
+            if config.get('ssh_command'):
+                command += ['-c', 'core.sshCommand=' + config['ssh_command']]
+            run_command(command + ['clone', '--no-checkout', config['repository'], str(cache)])
             dump(marker, {'path': str(cache.resolve()), 'repository': config['repository']})
         if load(marker) != {'path': str(cache.resolve()), 'repository': config['repository']}:
             raise Blocked('Cache is not registered as exclusively owned')
         if git(cache, 'remote', 'get-url', 'origin').decode().strip() != config['repository']:
             raise Blocked('Repository URL changed')
+        if config.get('ssh_command'):
+            git(cache, 'config', 'core.sshCommand', config['ssh_command'])
+        if config.get('credential_helper'):
+            git(cache, 'config', 'credential.helper', config['credential_helper'])
         branch = config.get('branch', 'main')
         if branch != 'main':
             raise Blocked('Only the configured production main branch is accepted')
@@ -550,15 +574,15 @@ def main():
     if a.command in {'export', 'apply'}:
         req = json.load(sys.stdin)
         result = endpoint_export(config, req) if a.command == 'export' else endpoint_apply(config, req)
-    elif 'controller' in config:
-        raw = run_command(config['controller'] + [a.command], timeout=config.get('timeout', 1800), allow_json_error=True)
-        result = json.loads(raw)
+    elif 'local_service' in config:
+        from local_client import request_service
+        result = request_service(config['local_service'], a.command, config.get('timeout', 1800))
     elif a.command == 'status':
         result = load(state_dir(config) / 'last-result.json', {'status': 'not_initialized'})
     else:
         previous = load(state_dir(config) / 'last-result.json')
         try:
-            result = fleet(config)
+            result = device_sync(config)
         except (Blocked, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
             result = load(state_dir(config) / 'last-result.json')
             if result == previous:

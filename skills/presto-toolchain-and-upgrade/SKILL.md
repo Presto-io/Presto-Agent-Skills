@@ -1,17 +1,17 @@
 ---
 name: presto-toolchain-and-upgrade
-description: 在任一设备修改 Presto 技能后，将公开技能变更合并发布到 GitHub，再同步已登记平台；用于技能升级、跨设备同步和冲突处理。
+description: 各设备独立将本机公开技能修改合并发布到 GitHub，并更新本机安装；用于技能升级、跨设备同步和冲突处理。
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   portability: canonical
   supported-runtimes: [Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, Hermes Agent, DeepSeek Harness]
 ---
 
 # Presto 技能同步升级
 
-用户要求升级、同步，或完成本次已授权的技能修改后，执行一次“收集各端修改 → 三方合并 → 校验 → 推送 GitHub main → 安装各端 → 哈希回读”。不作为公文、教学、PPT 等业务工作的前置技能，也不启动后台定时任务。
+用户要求升级、同步，或完成本次已授权的技能修改后，在当前设备执行一次“收集本机副本 → 与 GitHub 三方合并 → 校验 → 推送 GitHub main → 安装本机 → 哈希回读”。各设备仅通过 GitHub 交换版本，其他设备离线不影响本机。其他设备在各自下次执行时更新，不声称一次调用会即时更新所有离线设备。不作为公文、教学、PPT 等业务工作的前置技能，也不启动后台定时任务。
 
-使用本机私有配置 `~/.config/presto-skill-sync/config.json`，运行本技能的 `scripts/skill_sync.py --config <配置绝对路径> sync`。配置为控制端时执行完整流程；配置为触发端时请求已登记控制端执行。首次配置及平台适配见 [references/configuration.md](references/configuration.md)。不得把真实设备配置、密钥、业务资料或同步状态放进公开仓库。
+使用本机私有配置 `~/.config/presto-skill-sync/config.json`，运行本技能的 `scripts/skill_sync.py --config <配置绝对路径> sync`。使用 `mode: device`、本机 `installation` 和本机独立基线/缓存；不登记其他设备，不使用远程控制器、跳板或中继。只读运行时可通过同一宿主机 Unix socket 请求本地安装服务。首次配置及平台适配见 [references/configuration.md](references/configuration.md)。不得把真实设备配置、密钥、业务资料或同步状态放进公开仓库。
 
 ## 合并规则
 
@@ -25,10 +25,10 @@ metadata:
 
 执行前检查本次修改清单和发布内容，排除真实学生资料、照片、成品及凭据。新增文件及二进制变更会生成集中发布审阅清单；核实可公开后，把清单内绑定 SHA 的 approval 填入私有配置 `approved_publication` 再执行。已有明确授权且内容可确定时由 agent 完成审阅，不重复请求许可。脚本的凭据扫描只是辅助，不能代替内容审阅。为变更技能运行适当的入口校验、脚本测试或渲染验证，按需放进控制器的 validators。
 
-离线端收集失败时停止本轮发布；发布后某端安装失败则记录 pending，保留备份及基线，修复后重试。遇到中断 journal 应先检查目标与外置备份，恢复完成才重试；不删除锁、不强推、不 reset 用户维护仓。不把 GitHub 推送成功说成全端已更新。
+GitHub 不可达或本机副本读取失败时保留修改并停止；发布后本机安装失败则记录 pending，保留备份及基线，修复后重试。推送遇到并发更新时重新取得 GitHub 最新内容，最多合并重试3轮，不能强推。遇到中断 journal 应先检查目标与外置备份，恢复完成才重试；不删除锁、不强推、不 reset 用户维护仓。不把 GitHub 推送成功说成全端已更新。
 
-完成后简要报告提交 SHA、已确认设备、未完成设备；逐文件哈希一致才报告同步一致。运行时发现可按新进程加载技能核验；已有会话是否缓存由运行时决定。
+完成后报告提交 SHA、本机设备及安装结果；逐文件哈希一致才报告本机同步成功，不推断其他设备状态。运行时发现可按新进程加载技能核验；已有会话是否缓存由运行时决定。
 
 ## Runtime adapter notes
 
-Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes Agent、DSH 均使用相同 Python CLI 和私有配置。安装根由配置显式登记，不能因品牌名猜路径。仅为正在使用的运行时登记安装根；维护仓 skills 也登记，以便捕获其修改。Hermes 的公共及角色目录分别登记，保留其路径适配。只读容器通过受限运维端点安装，不能声称普通聊天进程可直接写入。需要 Python 3.9+；控制端另需 Git 和 GitHub 推送权限，触发端无需 GitHub 凭据。
+Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes Agent、DSH 均使用相同 Python CLI 和私有配置。安装根由配置显式登记，不能因品牌名猜路径。仅为正在使用的运行时登记安装根；维护仓 skills 也登记，以便捕获其修改。Hermes 的公共及角色目录在 NAS 本机登记，保留其路径适配；只读容器通过同宿主安装服务完成同步，服务不依赖用户电脑、不开放任意命令。每台实际同步设备需要 Python 3.9+、Git 和独立 GitHub 仓库读写凭据；普通运行时可只访问本地服务，不接触其凭据。

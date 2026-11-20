@@ -135,4 +135,4 @@ runtime 差异优先写进 canonical `SKILL.md` 的 `Runtime Adapter Notes`。�
 
 ## 技能跨设备同步
 
-`skills/presto-toolchain-and-upgrade/` 保存共同入口、Python 同步引擎、合成集成测试和配置/冲突协议。真实设备配置、触发密钥、基线、合并候选、冲突原文和安装备份必须在技能发现根及公开仓库之外；默认配置入口为 `~/.config/presto-skill-sync/config.json`。各端维护仓和活动安装都作为独立副本比较；不把某端私有路径写进 canonical 技能，也不复制历史分支到生产目录。
+`skills/presto-toolchain-and-upgrade/` 保存共同入口、Python 同步引擎、合成集成测试和配置/冲突协议。真实设备配置、触发密钥、基线、合并候选、冲突原文和安装备份必须在技能发现根及公开仓库之外；默认配置入口为 `~/.config/presto-skill-sync/config.json`。每台设备仅比较本机维护仓及活动安装，保留独立基线和缓存，通过GitHub交换版本，不注册远程控制器；不把某端私有路径写进 canonical 技能，也不复制历史分支到生产目录。

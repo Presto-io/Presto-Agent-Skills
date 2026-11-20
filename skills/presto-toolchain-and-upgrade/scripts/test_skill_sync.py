@@ -103,10 +103,12 @@ class SyncTest(unittest.TestCase):
         with patch.object(s.os,'replace',fail):
             with self.assertRaises(OSError):s.endpoint_apply(conf,{'actions':actions,'blobs':{k:s.base64.b64encode(v).decode() for k,v in blobs.items()}})
         self.assertEqual(s.snapshot(self.root/'a/sample'),before);self.assertEqual(s.snapshot(second/'sample'),before)
-    def test_offline_stops_before_push(self):
+    def test_github_offline_preserves_local_changes(self):
         s.fleet(self.config);self.edit('a','data.txt','edited');before=self.head()
-        self.config['endpoints'].append({'id':'offline','command':['false']})
-        with self.assertRaises(s.Blocked):s.fleet(self.config)
+        hidden=self.root/'offline.git';self.remote.rename(hidden)
+        try:
+            with self.assertRaises(s.Blocked):s.fleet(self.config)
+        finally:hidden.rename(self.remote)
         self.assertEqual(before,self.head());self.assertEqual((self.root/'a/sample/data.txt').read_text(),'edited')
 
     def test_push_race_recollects_and_merges(self):
@@ -139,12 +141,53 @@ class SyncTest(unittest.TestCase):
         self.config['approved_publication']=[x['approval'] for x in report]
         self.assertEqual(s.fleet(self.config)['status'],'complete')
 
-    def test_remote_trigger_preserves_actionable_report(self):
-        import sys
-        config=self.root/'trigger.json'
-        payload={'status':'conflict','report':'/private/conflicts.json'}
-        s.dump(config,{'state_dir':str(self.root/'trigger-state'),'controller':[sys.executable,'-c','import json,sys;print(json.dumps('+repr(payload)+'));sys.exit(2)']})
-        r=subprocess.run([sys.executable,str(Path(s.__file__)),'--config',str(config),'sync'],capture_output=True)
-        self.assertEqual(r.returncode,2);self.assertEqual(json.loads(r.stdout),payload)
+    def device(self, name):
+        return dict(self.config, mode='device', device_id=name,
+                    state_dir=str(self.root/(name+'-sync')), installation=s.load(self.ends[0 if name=='a' else 1]['config']),
+                    endpoints=None)
+
+    def test_independent_devices_reconcile_without_peer_access(self):
+        a=self.device('a');b=self.device('b');a.pop('endpoints');b.pop('endpoints')
+        s.device_sync(a);s.device_sync(b)
+        self.edit('a','data.txt','ONE\n'+'unchanged\n'*10+'last\n')
+        hidden=self.root/'offline-b';(self.root/'b').rename(hidden)
+        try:self.assertEqual(s.device_sync(a)['applied'],['a'])
+        finally:hidden.rename(self.root/'b')
+        self.edit('b','data.txt','one\n'+'unchanged\n'*10+'LAST\n')
+        self.assertEqual(s.device_sync(b)['applied'],['b'])
+        s.device_sync(a)
+        self.assertEqual((self.root/'a/sample/data.txt').read_text(),'ONE\n'+'unchanged\n'*10+'LAST\n')
+        self.assertEqual(s.snapshot(self.root/'a/sample'),s.snapshot(self.root/'b/sample'))
+
+    def test_device_mode_rejects_cross_device_configuration(self):
+        config=self.device('a')
+        with self.assertRaises(s.Blocked):s.device_sync(config)
+        config.pop('endpoints');config['controller']=['ssh','other-host']
+        with self.assertRaises(s.Blocked):s.device_sync(config)
+        with self.assertRaises(s.Blocked):s.device_sync(self.config)
+
+    @unittest.skipIf(not hasattr(__import__('socket'), 'AF_UNIX'), 'Unix service')
+    def test_local_service_returns_reports_and_rejects_commands(self):
+        import os, socket, sys, time
+        from local_client import request_service
+        engine=self.root/'fake-engine.py'
+        engine.write_text("import json;print(json.dumps({'status':'conflict','conflicts':[{'file':'sample.md'}]}))")
+        sock=self.root/'sync.sock'
+        process=subprocess.Popen([sys.executable,str(Path(s.__file__).with_name('local_service.py')),
+            '--socket',str(sock),'--engine',str(engine),'--config',str(self.root/'config'),
+            '--allow-uid',str(os.getuid())],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        try:
+            for _ in range(100):
+                if sock.exists():break
+                if process.poll() is not None:self.fail(process.stderr.read().decode())
+                time.sleep(0.01)
+            response=request_service(str(sock),'sync',5)
+            self.assertEqual(response['conflicts'],[{'file':'sample.md'}])
+            with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as connection:
+                connection.connect(str(sock));connection.sendall(b'{"operation":"sync","command":"arbitrary"}\n')
+                response=json.loads(connection.makefile('rb').readline())
+                self.assertEqual(response['status'],'blocked')
+        finally:
+            process.terminate();process.communicate(timeout=5)
 
 if __name__=='__main__':unittest.main(verbosity=2)

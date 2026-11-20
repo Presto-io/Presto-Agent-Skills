@@ -208,4 +208,4 @@ python3 scripts/install-dsh-skills.py --skill professional-research-report --des
 - `teaching-design-package`：用于整合授课计划和实操教案，先输出统一 Markdown intermediate，再由 package-owned model 和 renderer 生成 model-derived dynamic `1 + 1 + N` current bundle；model、status、module、merge 和 staging 证据只存在于 owned `.work` 或调用方 diagnostic workdir。正常运行不依赖 sibling skill folders。入口见 `skills/teaching-design-package/SKILL.md`，Artifact contract 见 `skills/teaching-design-package/references/format-and-orchestration.md`。
 - `tiaokedan`：用于生成 `调课单`/`调课说明`，先输出教师可审阅的 `templates/tiaokedan.md` 结构 Markdown intermediate，再由 skill-local renderer 生成 Typst，并在教师确认后可选生成 PDF。Markdown 可省略标题、收文对象、表格序号列和表格后落款行；renderer 会补默认标题/收文对象、自动序号、frontmatter 落款，并用 `Songti SC` 优先的宋体标题 `weight: 700`。入口见 `skills/tiaokedan/SKILL.md`，Artifact contract 见 `skills/tiaokedan/references/markdown-contract.md` 和 `skills/tiaokedan/references/pdf-workflow.md`，公开 helper 见 `skills/tiaokedan/scripts/tiaokedan.sh`。
 
-- `presto-toolchain-and-upgrade`：按调用收集各端技能修改，以成功基线三方合并并发布 GitHub main，随后安装和回读各端；私有配置、状态和备份独立保存。
+- `presto-toolchain-and-upgrade`：各设备独立收集本机技能修改，以成功基线与 GitHub main 三方合并并发布，随后安装和回读本机；私有配置、状态和备份独立保存。

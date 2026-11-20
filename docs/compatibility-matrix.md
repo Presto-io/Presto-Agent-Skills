@@ -166,4 +166,4 @@ References:
 
 ## 技能同步升级
 
-`presto-toolchain-and-upgrade` 在七种 runtime 中使用相同 CLI；按私有配置登记目录和传输方式，不修改 runtime 启用策略。控制端需要 Python 3.9+、Git、推送权限；端点仅需 Python，触发端无需 GitHub 凭据。Hermes 只读技能挂载由 NAS 端点写宿主目录；普通容器进程不承担安装。macOS/Linux 的接入核验不能替代 Windows 或各 runtime 的实机发现验收。
+`presto-toolchain-and-upgrade` 在七种 runtime 中使用相同 CLI；按私有配置登记目录和传输方式，不修改 runtime 启用策略。各设备独立需要 Python 3.9+、Git 和仓库读写凭据，互不依赖其他设备。Hermes 只读技能挂载由 NAS 同宿主本地服务更新；普通容器进程仅访问本地socket，不接触服务凭据。macOS/Linux 的接入核验不能替代 Windows 或各 runtime 的实机发现验收。
