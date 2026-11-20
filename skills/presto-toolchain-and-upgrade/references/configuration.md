@@ -14,7 +14,7 @@
 {"state_dir":"/private/sync/controller","repository":"https://github.com/Presto-io/Presto-Agent-Skills.git","branch":"main","author_name":"维护者","author_email":"GitHub noreply email","resolution_file":"/private/sync/resolutions.json","endpoints":[{"id":"this-device","config":"/private/sync/endpoint.json"},{"id":"other-device","command":["ssh","registered-host","/private/endpoint-wrapper"],"timeout":600}],"validators":[]}
 ```
 
-远端 wrapper 只接受 `export`、`apply`，固定调用引擎和端点配置；stdin/stdout 是 JSON，不混入登录提示。它必须使用有安装权限的帐号。SSH 凭据仅部署在私有运维目录。控制端拥有自己的 Git 缓存；不以用户维护仓作为合并工作区，不修改其分支、索引或未提交文件。
+远端 wrapper 只接受 `export`、`apply`，固定调用引擎和端点配置；stdin/stdout 是 JSON，不混入登录提示。它必须使用有安装权限的帐号。特权端点的引擎、配置、状态目录应由运维帐号持有，不能放在普通聊天进程可改写的目录中；仅触发密钥和客户端配置可交给聊天进程。root 端点可在受信任 roots 配置中设 `owner: {"uid": 1000, "gid": 10}`，仅为对应源码目录保留普通编辑帐号的所有权。SSH 凭据仅部署在私有运维目录。控制端拥有自己的 Git 缓存；不以用户维护仓作为合并工作区，不修改其分支、索引或未提交文件。
 
 触发端配置：
 

@@ -159,7 +159,8 @@ def endpoint_apply(config, request):
         for pending in (state / 'backups').glob('*/journal.json'):
             if load(pending).get('status') == 'prepared':
                 raise Blocked('Interrupted installation; inspect journal before retry: ' + str(pending))
-        approved = {r['path'] for r in roots(config)}
+        registered = {r['path']: r for r in roots(config)}
+        approved = set(registered)
         blobs = decode_blobs(request['blobs'])
         actions = request['actions']
         targets = set()
@@ -194,6 +195,10 @@ def endpoint_apply(config, request):
                     put_tree(stage, a['tree'], blobs)
                     if snapshot(stage) != a['tree']:
                         raise Blocked('Candidate verification failed')
+                    owner = registered[a['root']].get('owner')
+                    if owner is not None and hasattr(os, 'geteuid') and os.geteuid() == 0:
+                        for path in [stage, *stage.rglob('*')]:
+                            os.chown(path, owner['uid'], owner['gid'])
                 # Recheck immediately before the rename, after staging.
                 if snapshot(target) != a['expected']:
                     raise Blocked('Concurrent edit: ' + str(target))
@@ -371,8 +376,13 @@ def fleet(config):
                     canonical[p.name] = snapshot(p, blobs)
             if collected is None:
                 collected = []
+                unavailable = []
                 for endpoint in endpoints:
-                    packet = contact(endpoint, 'export', {'names': sorted(canonical), 'known': sorted(blobs)})
+                    try:
+                        packet = contact(endpoint, 'export', {'names': sorted(canonical), 'known': sorted(blobs)})
+                    except (Blocked, OSError, subprocess.SubprocessError) as error:
+                        unavailable.append({'endpoint': endpoint['id'], 'reason': str(error)})
+                        continue
                     blobs.update(decode_blobs(packet['blobs']))
                     for copy in packet['copies']:
                         copy['endpoint'] = endpoint['id']
@@ -380,6 +390,9 @@ def fleet(config):
                             raise Blocked('Unexpected skill in endpoint response')
                         collected.append(copy)
                 dump(run / 'collected.json', collected)
+                if unavailable:
+                    dump(state / 'last-result.json', {'status': 'blocked', 'pending': unavailable, 'report': str(run / 'collected.json')})
+                    raise Blocked('Collection incomplete; no publication: ' + ', '.join(x['endpoint'] for x in unavailable))
             desired = {n: dict(t) for n, t in canonical.items()}
             conflicts = []
             for copy in collected:
@@ -498,7 +511,13 @@ def main():
     elif a.command == 'status':
         result = load(state_dir(config) / 'last-result.json', {'status': 'not_initialized'})
     else:
-        result = fleet(config)
+        previous = load(state_dir(config) / 'last-result.json')
+        try:
+            result = fleet(config)
+        except (Blocked, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+            if load(state_dir(config) / 'last-result.json') == previous:
+                dump(state_dir(config) / 'last-result.json', {'status': 'blocked', 'reason': str(error)})
+            raise
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result.get('status') not in {'conflict', 'partial', 'blocked'} else 2
 
