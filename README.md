@@ -198,7 +198,7 @@ python3 scripts/install-dsh-skills.py --skill professional-research-report --des
 
 ## 已有技能
 
-- `professional-research-report`：新专业申报调研报告；官方与本校证据核验、直接继承原 Word 母版、简体中文大字插图、图外图注和表格双向居中，正文不放数字引文标记，来源账本单独保存。提供只读 DOCX 审计，实际渲染与视觉检查由宿主可用工具完成。
+- `professional-research-report`：新专业申报调研与设置可行性报告；围绕区域人才需求、供给短板和本校培养条件形成四章论证，详细教学进程归相应培养方案。核验官方与本校证据、继承原 Word 母版，简体中文大字图表的标题和备注放在图外，表格双向居中，正文不放数字引文标记。来源账本单独保存，内容复核、只读 DOCX 格式审计与全页视觉检查分别完成。
 
 - `end-of-term-teaching-materials`：用于整理期末教学提交材料和表格，先输出可复核 Markdown intermediate，再以固定四件套事务发布 Markdown、Typst、PDF 和 XLSX；model、manifest 与评分证据不属于 current。Artifact contract 见 `skills/end-of-term-teaching-materials/references/data-contract.md` 和 `skills/end-of-term-teaching-materials/references/workflow-and-artifacts.md`。
 - `graduate-resume`：整理毕业生简历的主题无关 canonical 资料，在真实事实校验后生成通用或定向的保守稳妥、现代简洁、个性设计三主题 Markdown/Typst/PDF，支持预检、确认发布、完整三件套历史与失败回滚。安装时保留整个技能目录，包括字体、图标及许可；排版回归与 Phase 49 完整验收分别报告，不能把样张成功当作六 runtime 和人工 UAT 全部通过。

@@ -4,7 +4,7 @@ Canonical skills live here.
 
 Current skills:
 
-- `professional-research-report`：专业申报调研/设置可行性报告，原稿 Word 格式继承、可追溯取证、简体中文大字图表与独立来源账本；含只读 DOCX 审计，未纳入六技能自动发布覆盖。
+- `professional-research-report`：专业申报调研/设置可行性报告，以人才需求、供给问题及本校条件形成四章论证；继承原 Word 格式，保留可追溯取证、图外标题备注和独立来源账本。内容、DOCX 格式与全页视觉分别复核，未纳入自动发布覆盖。
 
 - `party-member-study-notes-cn`: 从学习材料与已确认个人经历起草、审阅党员学习笔记、心得体会和组织生活记录；默认优先依赖 `gongwen` 交付 PDF，不可用时用已有 PDF 工具兜底，并保留 Markdown 源稿，不计入六技能自动发布覆盖。
 
