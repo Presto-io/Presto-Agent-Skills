@@ -198,6 +198,7 @@ python3 scripts/install-dsh-skills.py --skill professional-research-report --des
 
 ## 已有技能
 
+- `evidence-backed-work-summary`：教师工作总结与岗位述职；按附件正文识别并续接已授权任务，核验事实来源，显式调用 `gongwen` 交付正式 PDF，正文变化后重新生成；UWS 仅在相应环境使用。
 - `professional-research-report`：新专业申报调研与设置可行性报告；围绕区域人才需求、供给短板和本校培养条件形成四章论证，详细教学进程归相应培养方案。核验官方与本校证据、继承原 Word 母版，简体中文大字图表的标题和备注放在图外，表格双向居中，正文不放数字引文标记。来源账本单独保存，内容复核、只读 DOCX 格式审计与全页视觉检查分别完成。
 
 - `end-of-term-teaching-materials`：用于整理期末教学提交材料和表格，先输出可复核 Markdown intermediate，再以固定四件套事务发布 Markdown、Typst、PDF 和 XLSX；model、manifest 与评分证据不属于 current。Artifact contract 见 `skills/end-of-term-teaching-materials/references/data-contract.md` 和 `skills/end-of-term-teaching-materials/references/workflow-and-artifacts.md`。
