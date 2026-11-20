@@ -73,6 +73,8 @@ skills/gongwen/scripts/gongwen.sh render \
 | Hermes Agent | 安装时验证项目级/全局 whole-folder 路径、support-file discovery、Bash/Python 3/`cmp`、可选 `typst`、工具权限及 delivery/`.work` 可写同设备；发现不确定时显式调用 `gongwen.sh`。若运行态 `PATH` 未包含 Typst，设置 `TYPST_BIN` 指向可执行文件，并以 `TYPST_FONT_PATH` 指定字体目录；脚本也兼容 Hermes 的 `/opt/data/.bin/typst` 与 `/opt/data/fonts` 持久路径。企业微信交付时，最终回复另起一行写 `MEDIA:<最终 PDF 绝对路径>`，由网关发送原生附件；附件发送失败时如实报告错误，不得声称已发送。 |
 | DeepSeek Harness | 整目录置于 `.dsh/skills`、`.agents/skills` 或 `customSkillDirs` 直属层；`skill` 按精确名称加载，资源相对技能根读取。失败时显式读本文件/调用公开脚本；核验实际依赖、工具插件、输入/支持读、授权交付根/owned `.work`/独立核查目录写权限及 sandbox。源码核对不等于实机验收。 |
 
+若 Hermes 环境存在 `~/.config/presto-skill-sync/runtime-adapter.md`，先读取其中的工作资料入口及任务目录适配，用其已确认的真实任务目录替换本文 `documents/` 示例；适配仅改变路径与资料定位，不改变交付契约。该文件由设备私下维护，不属于公开技能。
+
 ## Outputs
 
 - 当前交付是 exact same-stem `标题.md + 标题.typ` pair；请求 `--pdf` 时是 exact `标题.md + 标题.typ + 标题.pdf` triple。PDF 的增加或移除都是整套变化。
