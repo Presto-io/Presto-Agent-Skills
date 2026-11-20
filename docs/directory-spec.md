@@ -132,3 +132,7 @@ runtime 差异优先写进 canonical `SKILL.md` 的 `Runtime Adapter Notes`。�
 ## 专业调研报告与 DSH
 
 `skills/professional-research-report/` 保存通用工作流、证据/排版/交付规则、Markdown 骨架和标准库只读 DOCX 审计；不收录学校原始申报包、实拍或实际报告。`scripts/install-dsh-skills.py` 是仓库安装辅助入口，完整复制选定技能至显式 DSH 根，默认只读检查；不新增 runtime adapter 副本。DSH 同样消费 canonical `SKILL.md`，适配说明位于各技能自身的 Runtime Adapter Notes。
+
+## 技能跨设备同步
+
+`skills/presto-toolchain-and-upgrade/` 保存共同入口、Python 同步引擎、合成集成测试和配置/冲突协议。真实设备配置、触发密钥、基线、合并候选、冲突原文和安装备份必须在技能发现根及公开仓库之外；默认配置入口为 `~/.config/presto-skill-sync/config.json`。各端维护仓和活动安装都作为独立副本比较；不把某端私有路径写进 canonical 技能，也不复制历史分支到生产目录。

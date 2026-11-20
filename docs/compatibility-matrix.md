@@ -163,3 +163,7 @@ References:
 ### 专业调研报告
 
 `professional-research-report` 是可跨 runtime 的取证、原稿格式继承与交付工作流，附标准库只读 DOCX 审计；编辑、制图、PDF 渲染使用宿主已有能力。现有报告的人类验收不等于技能所有模板与 runtime 均通过实机验收。该技能不扩展既有六技能自动 clean-delivery 覆盖。
+
+## 技能同步升级
+
+`presto-toolchain-and-upgrade` 在七种 runtime 中使用相同 CLI；按私有配置登记目录和传输方式，不修改 runtime 启用策略。控制端需要 Python 3.9+、Git、推送权限；端点仅需 Python，触发端无需 GitHub 凭据。Hermes 只读技能挂载由 NAS 端点写宿主目录；普通容器进程不承担安装。macOS/Linux 的接入核验不能替代 Windows 或各 runtime 的实机发现验收。
