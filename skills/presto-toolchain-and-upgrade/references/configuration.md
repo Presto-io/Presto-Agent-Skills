@@ -30,4 +30,4 @@
 
 Windows 的 Python/Git 核心设计兼容，但 SSH、文件系统权限与运行时目录需单独接入验收；不把 macOS/Linux 的验证等同 Windows 实测。
 
-验收时可先执行 `status` 查看上一轮结果，再执行 `sync`；status 仅查询，不触发发布。
+验收时可先执行 `status` 查看上一轮结果，再执行 `sync`；status 仅查询，不触发发布。控制端必须在线；离线时保留本地修改，待恢复后重试。

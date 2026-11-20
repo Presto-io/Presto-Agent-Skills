@@ -37,6 +37,16 @@ class SyncTest(unittest.TestCase):
         p=self.root/side/'sample'/filename
         p.write_bytes(data if isinstance(data,bytes) else data.encode())
     def head(self):return self.git('--git-dir='+str(self.remote),'rev-parse','main')
+    def test_unreadable_directory_is_not_deletion(self):
+        target = self.root/'a/sample'
+        original = s.os.scandir
+        def denied(path):
+            if Path(path) == target:
+                raise PermissionError('injected unreadable directory')
+            return original(path)
+        with patch.object(s.os, 'scandir', denied):
+            with self.assertRaises(PermissionError):
+                s.snapshot(target)
     def test_roundtrip_and_nonoverlap(self):
         self.assertEqual(s.fleet(self.config)['status'],'complete')
         self.edit('a','data.txt','ONE\n'+'unchanged\n'*10+'last\n')

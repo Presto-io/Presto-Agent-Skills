@@ -63,7 +63,19 @@ def snapshot(root, blobs=None):
     if not root.is_dir():
         raise Blocked('Skill is not a directory: ' + str(root))
     result = {}
-    for p in sorted(root.rglob('*')):
+    def walk(directory):
+        # pathlib.rglob suppresses scandir permission errors on some Python versions.
+        # A denied subtree must never look like deleted files.
+        with os.scandir(directory) as entries:
+            children = sorted(entries, key=lambda entry: entry.name)
+        for entry in children:
+            child = Path(entry.path)
+            if entry.name in IGNORE or child.suffix == '.pyc':
+                continue
+            yield child
+            if entry.is_dir(follow_symlinks=False):
+                yield from walk(child)
+    for p in walk(root):
         rel = p.relative_to(root).as_posix()
         if any(part in IGNORE for part in p.relative_to(root).parts) or p.suffix == '.pyc':
             continue
