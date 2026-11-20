@@ -19,7 +19,6 @@
 
 v1.0 shipped on 2026-05-30. The repository now has a documentation-first portable skill framework: contributor entry docs, directory ownership rules, project agent instructions, a canonical `SKILL.md` template, runtime adapter notes inside that template, and a compatibility matrix covering Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, and Hermes Agent.
 
-v1.2 shipped the first real skill built on the document workflow pattern: normalize class-official-document content into Markdown first, then render through the Presto gongwen Typst template and verify output artifacts. v1.3 extends that pattern to `jiaoan-shicao`; v1.4 adds `jiaoan-jihua` for授课进度计划表. v1.5 shipped `school-presentation`, extending the Markdown-first control surface to school-style offline HTML presentations. v1.6 refined that HTML output with playback, preview, hierarchy, ordered reveals, emphasis animation, and answer masks. v1.7 returns to the document workflow family with `end-of-term-teaching-materials`: structured data, reviewable Markdown, fixed-template outputs, and strict final gates. v1.8-v1.16 expanded the teaching and presentation skill family while preserving Markdown-first, skill-local execution. v1.17 added `school-pptx`, a controlled-template editable PPTX workflow with deterministic pagination and hash-bound viewer UAT. v1.18 standardized clean delivery across all six writing skills with candidate-first publication, exact no-op detection, whole-bundle history, handled rollback, confirmation-gated cleanup, and evidence-bound central verification.
 
 ## What This Is
 
@@ -118,10 +117,7 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - [x] Add the first concrete `gongwen` skill with trigger wording, canonical workflow, runtime notes, script code, and verification path. - v1.2 Phase 5
 - [x] Add the second concrete `jiaoan-shicao` skill with trigger wording, canonical workflow, support resource, script code, and verification path. - v1.3 Phase 6
 - [x] Add the `jiaoan-jihua` skill with trigger wording, canonical workflow, script code, and Typst/PDF verification path. - v1.4 Phase 7
-- [x] Add the `school-presentation` skill with a Markdown logical-slide intermediate, school identity assets, offline HTML rendering, overflow splitting, and human-accepted visual output. - v1.5 Phase 8
-- [x] Refine `school-presentation` playback with preview workspace, page hierarchy, ordered reveals, emphasis animation, and answer masks. - v1.6 Phases 9-10
 - [x] Add the `end-of-term-teaching-materials` skill with structured data input, teacher-reviewable Markdown, fixed-template Typst/PDF rendering, deterministic table artifacts, workbook output, and strict review gates. - v1.7 Phases 11-13
-- [x] Add presenter-facing marking tools to the `school-presentation` playback UI while keeping annotations separate from Markdown source content. - v1.8 Phase 14
 - [x] Add deterministic classroom interaction extensions compatible with reveal/mask playback. - v1.8 Phase 15
 - [x] Add structured layout helpers, print/export review behavior, and one-click final PDF export without breaking the offline single-file HTML model or fixed slide canvas constraints. - v1.8 Phases 15-16
 - [x] Reduce the default reading weight of current `SKILL.md` files without losing trigger clarity, runtime adapter coverage, verification instructions, or safety boundaries. - v1.9 Phase 17
@@ -222,7 +218,6 @@ A skill authored in the canonical repository format can be understood, reviewed,
 - Hosted deployment, password-gated sharing, and multi-device synchronization - defer until the offline HTML deck and presenter-local tooling are stable.
 - PPTX, Keynote, and fully editable PowerPoint export for the school presentation skill - prior attempts were too unstable, so the active presentation line remains HTML-first.
 - Cropping user images to fill decorative frames - images should keep their original aspect ratio and use contain-style placement by default.
-- OCR, handwriting interpretation, and arbitrary school-template marketplace support - not part of the first school-presentation slice.
 - Arbitrary form discovery, OCR extraction, and uncontrolled spreadsheet scraping for the end-of-term skill - v1.7 starts from explicit structured data and fixed templates.
 - Generic office-suite automation, freeform template marketplace support, and one-step data-to-PDF generation without a Markdown checkpoint - these would weaken the reviewable workflow.
 - Example-heavy showcase expansions - still deferred; the canonical skill path stays primary until a concrete contributor need appears.
@@ -239,13 +234,11 @@ v1.0 shipped 3 phases and 3 plans:
 
 v1.2 adds the first concrete skill using that pattern: `skills/gongwen`, backed by a Presto gongwen renderer and Typst PDF verification. v1.3 adds the second concrete skill, `skills/jiaoan-shicao`, backed by a Presto jiaoan-shicao renderer, calendar support resource, and Typst PDF verification. v1.4 adds `skills/jiaoan-jihua`, backed by the Presto jiaoan-jihua renderer and Typst/PDF verification.
 
-v1.5 added `skills/school-presentation`, backed by extracted official-school visual assets and a Markdown-to-HTML presentation renderer. The milestone deliberately avoids PPTX generation and treats HTML as the primary stable output. v1.6 added playback and classroom interaction controls to that HTML deck.
 
 v1.7 shipped a concrete document workflow skill for end-of-term teaching-materials submission. It reuses the proven data/Markdown/Typst/PDF shape from `gongwen`, `jiaoan-shicao`, and `jiaoan-jihua`, but targets a package of fixed-template documents, deterministic tables, and workbook output rather than a single document type.
 
 v1.8 completed the official-school presentation continuation path from v1.5 and v1.6. It closed the Phase 10 deferred scope through scoped Markdown/rendering/playback capabilities: playback-local presenter markup, peek and sorting exercises, restrained body animation, SmartArt/timeline/cards/gallery-style layout helpers, semantic icons, section controls, print/export review behavior, and one-click final PDF export. The milestone kept freeform HTML editing, hosted collaboration, and office-suite automation out of scope.
 
-v1.9 shipped the first decomposition pass for the current skill system. Some entry files and scripts had grown too heavy for the progressive-disclosure model, so the milestone slimmed current entries, moved long support material into references, split `school-presentation.sh`, `end-of-term-teaching-materials/scripts/render_package.py`, and `gongwen.sh` behind stable public entry points, and updated repository guidance for future skill authors.
 
 v1.10 shipped strict jiaoan fixture conversion. `skills/jiaoan-shicao` and `skills/jiaoan-jihua` now generate the two committed `test/1.10/` Typst targets from Markdown through skill-local script code only. Both flows preserve public commands, use the target Typst only for generated-output comparison, and record clean diff/hash evidence in phase verification artifacts plus the passed milestone audit.
 
@@ -257,7 +250,6 @@ v1.12 completed the post-close repair slice for the integrated teaching-design p
 
 v1.13 shipped from the committed Markdown baseline `skills/teaching-design-package/templates/teaching-design-package-full.md` rather than a new Markdown schema. The reference Markdown format stays teacher-facing and copyable, while the pre-v1.14 package render path consumes that Markdown and produces split and combined outputs.
 
-v1.17 starts a new PPTX skill line rather than reopening `school-presentation`. The new `school-pptx` milestone targets editable PowerPoint output from a fixed school template: first hand-normalize the supplied `.potx` visual sample into a standard template, then hand-author the Markdown fixture, then implement the renderer and verification gate. The Markdown surface is intentionally constrained to YAML metadata and explicit slide blocks so the template, not the input document, owns coordinates, typography, theme behavior, overflow rules, and layout consistency.
 
 v1.14 shipped the corrected `teaching-design-package` boundary. The package now owns its normal rendering path instead of relying on sibling skills, the skill entry starts with teacher source-material organization before scripts, and the default successful output directory is exactly the public 1+1+3 set. Derived scheduling facts and PDF readiness are validated from evidence, while status/model/logs/split Typst and failure diagnostics stay hidden.
 
@@ -326,10 +318,8 @@ v1.20 聚焦 `school-pptx` 的受控视觉增强：增加布局、媒体构图�
 | Add `gongwen` as the first real skill | User provided a concrete Presto gongwen fixture and requested a trigger for similar official-document writing | Good - shipped in v1.2 Phase 5 |
 | Add `jiaoan-shicao` as the second real skill | User provided a Presto jiaoan-shicao fixture, `calendar.json`, and requested the trigger word for practical lesson-plan writing | Good - shipped in v1.3 Phase 6 |
 | Add `jiaoan-jihua` as a授课进度计划 skill | User provided a Presto jiaoan-jihua fixture, `calendar.json`, and requested the trigger word for teaching-schedule writing | Good - shipped in v1.4 Phase 7 |
-| Add `school-presentation` as a school-style HTML presentation skill | User rejected unstable PPTX output and prefers Markdown-controlled, single-file HTML presentations with fixed layouts and school visual identity | Good - shipped in v1.5 Phase 8 |
 | Treat logical slides and physical pages separately | Users should edit one Markdown logical slide while the renderer splits overflow into additional HTML pages automatically | Good - shipped in v1.5 Phase 8 |
 | Defer marking and annotation tools from playback UX | The current milestone should focus on slide playback, preview, hierarchy, reveals, and answer masks before adding presenter markup controls | Good - shipped in v1.6 |
-| Resume `school-presentation` with deferred interaction and delivery features in v1.8 | The Phase 10 deferred scope was the user's requested continuation path, and the v1.6 playback base had passed visual UAT | Good - shipped in v1.8 |
 | Keep presenter markup playback-local | Saved annotations would mutate the Markdown source and deterministic review artifacts, while the accepted v1.8 scope was live delivery support | Good - shipped in v1.8 Phase 14 |
 | Keep structured classroom syntax teacher-facing | `peek`, `timeline`, `cards`, `gallery`, and `smartart` are easier to edit and review than raw HTML or internal renderer names | Good - shipped in v1.8 Phase 15 |
 | Add one-click final PDF export inside the generated deck | Browser print alone could not reliably produce the accepted final artifact with outline/bookmarks and agenda links | Good - shipped in v1.8 Phase 16 |

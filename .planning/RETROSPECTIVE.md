@@ -525,7 +525,6 @@
 |-----------|----------|--------|------------|
 | v1.0 | 3 | 3 | Established canonical-template-first documentation and deferred unused examples. |
 | v1.7 | 3+ | 3 | Added fixed-template document package generation with strict review gates and audit-driven closure. |
-| v1.8 | 6+ | 3 | Extended the school-presentation renderer through live markup, classroom structures, and one-click PDF export while preserving HTML-first delivery. |
 | v1.9 | 4+ | 3 | Reduced skill entry and script weight through progressive-disclosure references, skill-local modules, and contributor guidance. |
 | v1.10 | 4+ | 2 | Added strict skill-local jiaoan Markdown-to-Typst fixture conversion with byte-for-byte verification. |
 | v1.11 | 4+ | 4 | Added integrated teaching-design package orchestration with scheduling evidence, optional end-of-term module pointers, and honest manifest readiness. |

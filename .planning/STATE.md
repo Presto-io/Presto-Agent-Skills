@@ -70,7 +70,6 @@ Phase order:
 - [v1.17]: Phase numbering continues after v1.16; this milestone starts at Phase 41 and ends at Phase 44.
 - [v1.17]: Requirements coverage is limited to current v1.17 requirements only.
 - [v1.17]: Build order follows research: hand-normalized standard template, hand-authored Markdown fixture/contract, renderer, then verification/runtime/UAT gate.
-- [v1.17]: `school-pptx` is a new PPTX skill line, not a reopening of `school-presentation` HTML output.
 - [Phase 41]: `standard-school` is the first controlled PPTX theme and is backed by a skill-local `.pptx`, YAML manifest, and `template-report` evidence command.
 - [Phase 42]: Public Markdown exposes 10 authorable layouts; the manifest-owned `closing` remains exactly one implicit final page.
 - [Phase 42]: Phase 43 consumes the source-located logical document model instead of reparsing Markdown.

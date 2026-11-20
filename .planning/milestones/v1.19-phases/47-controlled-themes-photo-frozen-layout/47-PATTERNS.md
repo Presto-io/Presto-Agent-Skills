@@ -12,7 +12,6 @@
 | `scripts/graduate_resume_layout.py` | service/model | transform、分页规划 | `skills/school-pptx/scripts/pptx_model.py` + `pptx_paginate.py` | role-match |
 | `scripts/graduate_resume_typst.py` | service/utility | transform、file-I/O | `skills/tiaokedan/scripts/tiaokedan_renderer.py` | role-match |
 | `templates/resume-themes.typ` | template/config | transform、layout | `skills/end-of-term-teaching-materials/templates/typst/end-of-term-package.typ` | partial |
-| `fonts/manifest.json` 与字体文件 | config/assets | file-I/O、integrity | `skills/school-presentation/references/identity/asset-manifest.json` | partial |
 | `fixtures/layout/*`、`fixtures/media/*` | fixture/test data | batch、file-I/O | `skills/graduate-resume/fixtures/*.md` | role-match |
 | `SKILL.md` | documentation/config | request-response | 同文件 | exact |
 | `references/phase-46-baseline.md` | documentation | transform contract | 同文件 | exact |
@@ -186,7 +185,6 @@ Phase 47 fixture 编译扩展参数为受控 `--font-path`、`--ignore-system-fo
 
 ### `skills/graduate-resume/fonts/manifest.json` 与受控字体（config/assets，file-I/O）
 
-**Analog:** `skills/school-presentation/references/identity/asset-manifest.json` 的“相对路径 + SHA-256”资产身份模式；该仓库没有可直接复制的字体 manifest，因此字体字段结构为新契约。
 
 清单至少列出相对文件名、族名、weight（400/600）、SHA-256、许可证/来源记录。布局规划器先读取/验证清单、计算确定 `font_manifest_hash`，再允许构建 `FrozenResumePlan`；文件缺失、哈希不符或 Typst 在 `--ignore-system-fonts` 下不可见时失败关闭。不得扫描系统字体作为 fallback。
 

@@ -306,7 +306,6 @@
 
 **Key accomplishments:**
 
-- Added playback mode, thumbnail rail, large preview, and tiled overview for generated `school-presentation` HTML decks.
 - Documented and rendered page hierarchy across logical slides, physical pages, sections, and reveal steps.
 - Added ordered reveals, restrained emphasis animation, and classroom answer masks controlled from Markdown.
 - Closed the Phase 10 visual UAT gate after agenda, cover, media fallback, alert icon, spacing, list pagination, and playback fit fixes.
@@ -325,7 +324,6 @@
 
 **Key accomplishments:**
 
-- Added `school-presentation`, with a reusable Markdown logical-slide intermediate and an offline self-contained HTML deck renderer.
 - Extracted school identity assets and applied blue-green school-style layouts, footer branding, formula/table/chart/media rendering, overflow splitting, and a closing page.
 - Passed deterministic render verification and user-confirmed visual UAT.
 

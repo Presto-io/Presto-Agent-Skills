@@ -41,7 +41,7 @@
 
 ## User Delivery Roots
 
-当前 clean-delivery coverage 是封闭五技能集合：`end-of-term-teaching-materials`、`gongwen`、`school-presentation`、`teaching-design-package`、`tiaokedan`。它们的用户交付根遵守 [canonical clean-delivery contract](clean-delivery-directory-contract.md)，但各自稳定 current 文件名和 optional/dynamic managed set 仍由 owning `SKILL.md` 与 artifact contract 声明。`school-pptx`按自身入口组织项目交付与验证目录。
+当前 clean-delivery coverage 是封闭四技能集合：`end-of-term-teaching-materials`、`gongwen`、`teaching-design-package`、`tiaokedan`。它们的用户交付根遵守 [canonical clean-delivery contract](clean-delivery-directory-contract.md)，但各自稳定 current 文件名和 optional/dynamic managed set 仍由 owning `SKILL.md` 与 artifact contract 声明。`school-pptx`按自身入口组织项目交付与验证目录。
 
 ```text
 <authorized-delivery-root>/

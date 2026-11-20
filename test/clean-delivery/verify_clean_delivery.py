@@ -48,7 +48,6 @@ REQUIRED_SKILL_NAMES = (
     "end-of-term-teaching-materials",
     "gongwen",
     "school-pptx",
-    "school-presentation",
     "teaching-design-package",
     "tiaokedan",
 )
@@ -337,19 +336,6 @@ def build_skill_adapters() -> dict[str, SkillAdapter]:
                 RegressionContract(("PASS phase_41_42_regression", "fixture_example"),
                                    ("existing_renderer_regression_gate",)),
             ),
-        ),
-        "school-presentation": SkillAdapter(
-            "school-presentation",
-            "skills/school-presentation/scripts/school-presentation.sh",
-            ((python, "-m", "unittest", "skills/school-presentation/scripts/school_presentation/test_delivery.py", "-v"),),
-            (RegressionContract((
-                "test_all_faults_and_signals_restore_pair_history_and_sources",
-                "test_archived_referenced_assets_resolve_and_unreferenced_stays_out",
-                "test_first_identical_changed_and_gap_history",
-                "test_unknown_legacy_manifest_symlink_partial_and_stale_work_fail_closed",
-                "test_validation_failures_never_change_current", "test_render_publishes_only_pair_and_keeps_manifest_external",
-                "Ran 11 tests", "OK",
-            ), (*transaction_gates, "existing_renderer_regression_gate"), True),),
         ),
         "teaching-design-package": SkillAdapter(
             "teaching-design-package",

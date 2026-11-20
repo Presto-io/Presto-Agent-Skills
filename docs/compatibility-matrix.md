@@ -43,7 +43,6 @@
 |-------|-----------------------------------|-------------------------------|
 | `end-of-term-teaching-materials` | Bash、Python、Typst；XLSX 由 skill-local Python writer 生成。 | 固定 Markdown/Typst/PDF/XLSX current；model、manifest、score evidence 仅在 owned work/evidence。 |
 | `gongwen` | Bash、Python 3 skill-local 安全发布 helper、Typst。 | Markdown/Typst/PDF 同 stem current；expected diff、logs 和 failure candidate 不发布。 |
-| `school-presentation` | Bash、Python；public verify 可使用安装环境提供的 browser。 | Markdown+offline HTML+显式引用 assets；manifest 和 caller `verify --workdir` evidence 不属于 delivery。 |
 | `school-pptx` | Python、python-pptx、Pillow、lxml；预览需LibreOffice及PyMuPDF或Poppler。 | 原生可编辑PPTX及所需预览、源文件；结构、模板资产、渲染与PowerPoint/WPS实机检查分别报告。 |
 | `teaching-design-package` | Bash、Node、Typst，以及 `pdfunite`、`qpdf` 或 Python PyMuPDF merge fallback。 | model-derived dynamic `1+1+N` current；model/status/module/merge/staging 只在 owned `.work` 或 caller diagnostic workdir。 |
 | `tiaokedan` | Bash、Python；PDF 请求另需 Typst。 | Markdown+Typst 或 optional PDF exact set；diff/log/status/failure evidence 不发布。 |
