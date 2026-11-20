@@ -44,7 +44,7 @@
 | `end-of-term-teaching-materials` | Bash、Python、Typst；XLSX 由 skill-local Python writer 生成。 | 固定 Markdown/Typst/PDF/XLSX current；model、manifest、score evidence 仅在 owned work/evidence。 |
 | `gongwen` | Bash、Python 3 skill-local 安全发布 helper、Typst。 | Markdown/Typst/PDF 同 stem current；expected diff、logs 和 failure candidate 不发布。 |
 | `school-presentation` | Bash、Python；public verify 可使用安装环境提供的 browser。 | Markdown+offline HTML+显式引用 assets；manifest 和 caller `verify --workdir` evidence 不属于 delivery。 |
-| `school-pptx` | Bash、Python、python-pptx、Pillow、lxml、PyYAML；Pandoc optional。 | reviewed Markdown+validated PPTX+confirmed referenced assets；best-effort 与 verify evidence 不发布，PowerPoint/WPS UAT 由人类完成。 |
+| `school-pptx` | Python、python-pptx、Pillow、lxml；预览需LibreOffice及PyMuPDF或Poppler。 | 原生可编辑PPTX及所需预览、源文件；结构、模板资产、渲染与PowerPoint/WPS实机检查分别报告。 |
 | `teaching-design-package` | Bash、Node、Typst，以及 `pdfunite`、`qpdf` 或 Python PyMuPDF merge fallback。 | model-derived dynamic `1+1+N` current；model/status/module/merge/staging 只在 owned `.work` 或 caller diagnostic workdir。 |
 | `tiaokedan` | Bash、Python；PDF 请求另需 Typst。 | Markdown+Typst 或 optional PDF exact set；diff/log/status/failure evidence 不发布。 |
 
@@ -81,10 +81,10 @@
 
 ### School PPTX
 
-- `school-pptx` 必须 whole-folder 安装，保留 canonical `skills/school-pptx/SKILL.md`、`references/`、`scripts/`、`templates/` 和 `fixtures/`；只复制入口会丢失 Markdown/template contract、normalized PPTX/manifest、canonical fixture、verification 与 UAT 规则。
-- required prerequisites 是 Python、python-pptx、Pillow、lxml、PyYAML；Pandoc 当前为 optional。runtime 不得联网或自动安装依赖，shell/Python external command 的 execute 权限、support/media read 权限、delivery/workdir write 权限和 sandbox/allowlist 必须在安装时核验。
-- 自动脚本发现不可用时，统一 explicit invocation fallback 是 `skills/school-pptx/scripts/school-pptx.sh <command>`；`verify --workdir <caller-workdir>` 只可在调用方 root 下写 delivery/evidence/work，不能污染普通交付或仓库 source。
-- 六 runtime 的具体路径/发现差异只保留在 canonical `Runtime Adapter Notes`。OpenClaw 与 Hermes Agent 的 exact path、frontmatter/support-file discovery、automatic script discovery 和 workdir boundary 必须 installation-time verification，不声明未实测支持；真实 PowerPoint/WPS UAT 也不能由 runtime 自动 PASS。
+- `school-pptx` 必须整目录安装，保留入口、`agents/`、`references/`、`scripts/`和`assets/`；默认模板只有一份`assets/school-template.pptx`。
+- 使用同一Python核验python-pptx、Pillow、lxml；预览另需LibreOffice及PyMuPDF或Poppler。运行时不安装软件或联网下载模板。
+- 公开命令为`school_pptx.py doctor/inspect/check/preview`，Shell入口转发相同命令；所有项目产物和检查证据写在项目目录。
+- Hermes核实当前profile实际发现的技能根、读取与执行权限，并在宿主同步源码和安装；不能仅凭源码已更新声称安装生效。实机检查与自动检查分别报告。
 
 ### Codex
 

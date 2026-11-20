@@ -1,0 +1,4 @@
+interface:
+  display_name: "学校 PPT"
+  short_description: "使用学校统一模板，按内容设计并复核可编辑 PowerPoint"
+  default_prompt: "使用 $school-pptx，根据材料制作符合学校模板视觉的可编辑 PPT，并完成渲染复核。"

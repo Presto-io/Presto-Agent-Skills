@@ -1,0 +1,16 @@
+{
+  "template": "school-template.pptx",
+  "version": "2.1.0",
+  "sha256": "906cc9fecfbe88d6e04d73e2a1f9b657f299d3563393cb35b2e22aad735399dd",
+  "page_families": [
+    "cover",
+    "contents",
+    "section",
+    "content",
+    "closing"
+  ],
+  "slide_size_inches": [
+    13.3333333333,
+    7.5
+  ]
+}

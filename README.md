@@ -76,7 +76,7 @@ python3 scripts/install-dsh-skills.py --skill professional-research-report --des
 
 ### 六技能干净交付边界
 
-当前干净交付契约是封闭集合，只覆盖 `end-of-term-teaching-materials`、`gongwen`、`school-presentation`、`school-pptx`、`teaching-design-package` 和 `tiaokedan` 六个写文件技能，不把其他技能误计为已适配。每个技能都以自己声明的稳定 Markdown 名称、最终产物名称和可选产物开关构造 explicit managed set；完整候选先在 `.work/<run-id>/` 生成并通过最小可读性 gate，才允许变更 current。
+当前干净交付契约是封闭集合，只覆盖 `end-of-term-teaching-materials`、`gongwen`、`school-presentation`、`teaching-design-package` 和 `tiaokedan` 五个写文件技能，不把其他技能误计为已适配。每个技能都以自己声明的稳定 Markdown 名称、最终产物名称和可选产物开关构造 explicit managed set；完整候选先在 `.work/<run-id>/` 生成并通过最小可读性 gate，才允许变更 current。`school-pptx` 的交付与复核按其技能入口执行。
 
 - 首次发布只写显式受管集合；candidate 与 current 的相对路径集合和 bytes 全部相同时是 no-op，不创建 history，也不触碰 current。
 - 内容变化时，上一版完整受管集合以 `max + 1` 的同一序号进入 `history/<sequence>/`；普通发布不自动删除 history。
@@ -156,10 +156,10 @@ python3 scripts/install-dsh-skills.py --skill professional-research-report --des
 │   │   └── templates/
 │   └── school-pptx/
 │       ├── SKILL.md
-│       ├── fixtures/
+│       ├── agents/
 │       ├── references/
 │       ├── scripts/
-│       └── templates/
+│       └── assets/
 ├── templates/
 │   ├── README.md
 │   └── skill/
@@ -209,6 +209,6 @@ python3 scripts/install-dsh-skills.py --skill professional-research-report --des
 - `graduate-resume`：整理毕业生简历的主题无关 canonical 资料，在真实事实校验后生成通用或定向的保守稳妥、现代简洁、个性设计三主题 Markdown/Typst/PDF，支持预检、确认发布、完整三件套历史与失败回滚。安装时保留整个技能目录，包括字体、图标及许可；排版回归与 Phase 49 完整验收分别报告，不能把样张成功当作六 runtime 和人工 UAT 全部通过。
 - `gongwen`：用于写作、归一化和验证类公文文体文档，最终交付目录为 `documents/YYYYMMDD 事项名称/`，只保留同级 `标题.md`、`标题.typ`、`标题.pdf`；署名和日期由 YAML frontmatter 自动落款。Artifact contract 见 `skills/gongwen/references/format-and-rendering.md`。
 - `school-presentation`：用于整理学校正式汇报、课程展示、培训课件、招生宣讲或项目答辩材料，先输出 `school-presentation-full.md` 结构的 Markdown logical-slide intermediate，再生成带学校视觉识别的离线 HTML 演示文稿。生成的 deck 内置 preview workspace、overview、playback、presenter markup、课堂 reveal/mask/peek/排序/结构化版式，以及一键最终 PDF 导出；PDF 会展开揭示内容、保留答案/强调/排序最终态、支持目录链接和 reader outline，并按当前章节页预览状态包含或跳过章节分隔页。Authoring、export 和 verification contract 分别见 `skills/school-presentation/references/authoring-and-layout.md`、`skills/school-presentation/references/playback-and-export.md` 和 `skills/school-presentation/references/verification-contract.md`。
-- `school-pptx`：把已审阅的 Markdown logical slides 通过受控 `standard-school` template 生成原生可编辑 PowerPoint；[canonical skill](skills/school-pptx/SKILL.md) 支持受限的 hero、标注图、流程与 KPI 构图，以及离线 hash-bound 本地媒体，提供 review-before-render、public `verify --workdir` 和完整 fixture 回归入口。自动结构 PASS 之后仍须在真实 Microsoft PowerPoint 或 WPS Presentation 中完成人工 UAT，不能由代理自动批准。
+- `school-pptx`：使用学校统一模板制作原生可编辑 PowerPoint；[技能入口](skills/school-pptx/SKILL.md) 固定封面、目录、章节、页眉和尾页，正文按内容设计。提供结构、模板资产与全页渲染检查，分别报告自动检查、渲染检查和 PowerPoint/WPS 实机验证。
 - `teaching-design-package`：用于整合授课计划和实操教案，先输出统一 Markdown intermediate，再由 package-owned model 和 renderer 生成 model-derived dynamic `1 + 1 + N` current bundle；model、status、module、merge 和 staging 证据只存在于 owned `.work` 或调用方 diagnostic workdir。正常运行不依赖 sibling skill folders。入口见 `skills/teaching-design-package/SKILL.md`，Artifact contract 见 `skills/teaching-design-package/references/format-and-orchestration.md`。
 - `tiaokedan`：用于生成 `调课单`/`调课说明`，先输出教师可审阅的 `templates/tiaokedan.md` 结构 Markdown intermediate，再由 skill-local renderer 生成 Typst，并在教师确认后可选生成 PDF。Markdown 可省略标题、收文对象、表格序号列和表格后落款行；renderer 会补默认标题/收文对象、自动序号、frontmatter 落款，并用 `Songti SC` 优先的宋体标题 `weight: 700`。入口见 `skills/tiaokedan/SKILL.md`，Artifact contract 见 `skills/tiaokedan/references/markdown-contract.md` 和 `skills/tiaokedan/references/pdf-workflow.md`，公开 helper 见 `skills/tiaokedan/scripts/tiaokedan.sh`。
