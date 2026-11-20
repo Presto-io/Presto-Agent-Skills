@@ -512,10 +512,10 @@ function buildModuleFrontmatter(metadata, scheduling) {
       class_name: metadata.class_name,
       first_teaching_day: metadata.first_teaching_day,
       daily_hours: scheduling.daily_hours,
-      template: 'jiaoan-jihua',
+      template: 'teaching-plan',
     },
     'teaching-design': {
-      template: 'jiaoan-shicao',
+      template: 'teaching-design',
       course_name: metadata.course_name,
       course_attribute: metadata.course_attribute,
       textbook_name: metadata.textbook_name,

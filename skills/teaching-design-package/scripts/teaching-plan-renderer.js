@@ -56,7 +56,7 @@ function titleWeekRange() {
 
 const metadata = model.metadata;
 const lines = [
-  '// jiaoan-jihua official template',
+  '// teaching-plan official template',
   '// package-owned teaching-design-package migration; generated from shared scheduling model.',
   `// source_markdown: ${model.source_markdown}`,
   '// total_hours_source: teaching_plan_rows',

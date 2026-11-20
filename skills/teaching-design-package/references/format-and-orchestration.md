@@ -166,20 +166,18 @@ Registry order is the orchestration order and the future PDF merge order. New mo
 The module Markdown files are package internals. They are generated from the finalized unified Markdown and shared scheduling model under the current run evidence directory. They are not teacher-maintained source files and must not appear in the successful public output root.
 
 The evidence-only `teaching-plan.typ` is a package-owned formal `授课进度计划表`
-renderer output. It uses the migrated official `jiaoan-jihua` five-column table
+renderer output. It uses the migrated official `teaching-plan` five-column table
 surface, including the title block, course information grid, fixed columns
 `(3.15cm, 8.51cm, 1.12cm, 1.29cm, 1.27cm)`, learning-task total rows, stage
 rowspans, row week/weekday/hour cells, and signature grid. The renderer reads the
-shared package model and scheduling evidence; it does not invoke the historical
-standalone `jiaoan-jihua` skill or read sibling skill calendars at runtime.
+shared package model and scheduling evidence, using only the package-owned calendar and renderer.
 
 The evidence-only `teaching-design.typ` is a package-owned formal `教学设计方案`
-renderer output. It uses the migrated `jiaoan-shicao` formal surface, including
+renderer output. It uses the migrated `teaching-design` formal surface, including
 cover metadata, `学习任务分析`, landscape `教学活动设计` tables, `学业评价`, task
 hours, task date ranges, course `use_time`, total hours, teacher, class, and
 textbook fields. The renderer reads the shared package model and scheduling
-evidence; it does not invoke the historical standalone `jiaoan-shicao` skill or
-read sibling skill calendars at runtime.
+evidence, using only the package-owned calendar and renderer.
 
 ## Scheduling Rules
 
@@ -328,14 +326,7 @@ Allowed merge tools are selected by availability in this order:
 
 `status.json` records `merge_tool`, `command_summary`, `merge_inputs`, module ids, display names, staging paths, public paths, source Typst paths, input byte sizes, output path, exit code, stderr log path, output byte size, and non-empty result. `final_ready` is true only when this merge status is `passed`.
 
-Phase 34 migrates the formal `jiaoan-jihua` teaching-plan table rules into the
-package-owned renderer. Phase 35 migrates the formal `jiaoan-shicao`
-teaching-design rules into the package-owned renderer and adds strict
-cross-module validation. Historical standalone skills remain external
-compatibility surfaces and fixture oracles, not package runtime dependencies.
-Phase 36 performs final public course-name-prefixed delivery and PDF merge
-semantics. Historical standalone skills remain external compatibility surfaces
-and are not runtime dependencies.
+The package owns both formal renderers and their cross-module validation. Public delivery uses course-name-prefixed files and the package PDF merge contract. No standalone lesson-plan or schedule skill is required.
 
 ## Public Output Direction
 
@@ -357,11 +348,11 @@ scripts/teaching-design-package.sh example --output <tmp>/package.md
 scripts/teaching-design-package.sh render-package --pdf --input <tmp>/package.md --out-dir <tmp>/out
 ```
 
-This verification must succeed without repo sibling paths or external skill installation. The copied package must use its own `references/calendar.json`, produce exactly the course-name-prefixed public files, clean its owned `.work/<run-id>`, and avoid runtime references to sibling `jiaoan-jihua` or `jiaoan-shicao` skills.
+This verification must succeed without repo sibling paths or external skill installation. The copied package must use its own `references/calendar.json`, produce exactly the course-name-prefixed public files, clean its owned `.work/<run-id>`, and use only its own renderers and resources.
 
 ## External Compatibility Boundary
 
-Historical standalone entries in the repository are allowed to remain available outside this package. Package documentation may mention them only generically as external compatibility surfaces. They are not:
+Standalone legacy skills are archived outside the working branch and must not be installed in production. They are not:
 
 - package internals
 - package resources

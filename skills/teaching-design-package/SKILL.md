@@ -3,7 +3,7 @@ name: "teaching-design-package"
 description: "Use when turning teacher source materials into one reviewable teaching-design-package Markdown, then validating/rendering the finalized Markdown with package-owned tools."
 metadata:
   short-description: "教师源材料到统一教学资料 Markdown 的整包工作流"
-  version: "0.3.0"
+  version: "0.3.1"
   portability: "canonical"
   supported-runtimes:
     - Codex

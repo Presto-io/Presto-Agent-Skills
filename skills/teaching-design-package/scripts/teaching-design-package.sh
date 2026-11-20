@@ -454,7 +454,7 @@ const status = {
   teaching_plan_formal_renderer: {
     status: 'passed',
     renderer: 'package-owned teaching-plan-renderer.js',
-    legacy_surface: 'jiaoan-jihua official five-column table',
+    legacy_surface: 'teaching-plan official five-column table',
     source: 'shared_scheduling_model',
     total_hours_source: model.validation.total_hours_source,
     evidence_typst: `${runRoot}/${model.modules.items.find((item) => item.id === 'teaching-plan').work_typst}`,
@@ -466,7 +466,7 @@ const status = {
   teaching_design_formal_renderer: {
     status: 'passed',
     renderer: 'package-owned teaching-design-renderer.js',
-    legacy_surface: 'jiaoan-shicao formal teaching-design layout',
+    legacy_surface: 'teaching-design formal teaching-design layout',
     source: 'shared_scheduling_model',
     total_hours_source: model.validation.total_hours_source,
     task_hours_source: 'schedule.tasks[].total_hours',
@@ -526,7 +526,7 @@ const diagnosticsPath = process.argv[3];
   teaching_plan_formal_renderer: {
     status: 'passed',
     renderer: 'package-owned teaching-plan-renderer.js',
-    legacy_surface: 'jiaoan-jihua official five-column table',
+    legacy_surface: 'teaching-plan official five-column table',
     scheduling_source: 'shared_scheduling_model',
     evidence_typst: model.modules.items.find((item) => item.id === 'teaching-plan').work_typst,
     plan_docx_renderer: {
@@ -539,7 +539,7 @@ const diagnosticsPath = process.argv[3];
   teaching_design_formal_renderer: {
     status: 'passed',
     renderer: 'package-owned teaching-design-renderer.js',
-    legacy_surface: 'jiaoan-shicao formal teaching-design layout',
+    legacy_surface: 'teaching-design formal teaching-design layout',
     scheduling_source: 'shared_scheduling_model',
     evidence_typst: model.modules.items.find((item) => item.id === 'teaching-design').work_typst,
   },
