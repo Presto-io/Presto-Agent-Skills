@@ -2,7 +2,7 @@
 name: presto-toolchain-and-upgrade
 description: 各设备独立将本机公开技能修改合并发布到 GitHub，并更新本机安装；用于技能升级、跨设备同步和冲突处理。
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   portability: canonical
   supported-runtimes: [Codex, Claude Code, Gemini CLI, OpenCode, OpenClaw, Hermes Agent, DeepSeek Harness]
 ---

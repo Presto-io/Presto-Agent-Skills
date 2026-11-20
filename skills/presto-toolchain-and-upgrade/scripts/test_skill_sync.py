@@ -75,6 +75,9 @@ class SyncTest(unittest.TestCase):
         conf=s.load(self.ends[0]['config'])
         with self.assertRaises(s.Blocked):s.endpoint_export(conf,{'names':['uws-workspace']})
         with self.assertRaises(s.Blocked):s.endpoint_export(conf,{'names':['jiaoan-jihua']})
+        with self.assertRaises(s.Blocked):s.endpoint_export(conf,{'names':['presto-showcase-regeneration']})
+        with self.assertRaises(s.Blocked):
+            s.endpoint_apply(conf,{'actions':[{'root':str(self.root/'a'),'name':'presto-showcase-regeneration','expected':None,'tree':{}}],'blobs':{}})
     def test_cas_and_rename_failure_keep_original(self):
         conf=s.load(self.ends[0]['config']); blobs={};target=self.root/'a/sample'
         before=s.snapshot(target,blobs); desired=dict(before)

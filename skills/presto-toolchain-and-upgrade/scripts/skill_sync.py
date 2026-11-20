@@ -16,7 +16,7 @@ import tempfile
 import time
 import uuid
 
-RETIRED = {'school-presentation', 'resume-generation', 'jiaoan-jihua', 'jiaoan-shicao'}
+RETIRED = {'presto-showcase-regeneration', 'school-presentation', 'resume-generation', 'jiaoan-jihua', 'jiaoan-shicao'}
 PRIVATE = {'uws-workspace'}
 IGNORE = {'__pycache__', '.DS_Store'}
 FORBIDDEN = {'.git', '.secrets', '.env', '.work', '.venv', 'venv', 'history', 'backups', 'sources', 'source', 'output', 'delivery', 'node_modules'}
