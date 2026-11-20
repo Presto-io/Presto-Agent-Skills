@@ -448,6 +448,28 @@ def fleet(config):
                 dump(run / 'conflicts.json', conflicts)
                 dump(state / 'last-result.json', {'status': 'conflict', 'report': str(run / 'conflicts.json')})
                 raise Blocked('Conflicts need review: ' + str(run / 'conflicts.json'))
+            publication_review = []
+            approvals = set(config.get('approved_publication', []))
+            for name, tree in desired.items():
+                for rel, item in tree.items():
+                    previous = canonical[name].get(rel)
+                    if previous == item:
+                        continue
+                    data = blobs[item['sha']]
+                    try:
+                        if b'\x00' in data:
+                            raise UnicodeError()
+                        data.decode('utf-8')
+                        binary = False
+                    except UnicodeError:
+                        binary = True
+                    token = name + '/' + rel + '@' + item['sha']
+                    if (previous is None or binary) and token not in approvals:
+                        publication_review.append({'skill': name, 'file': rel, 'sha': item['sha'], 'reason': 'new file' if previous is None else 'binary change', 'approval': token})
+            if publication_review:
+                dump(run / 'publication-review.json', publication_review)
+                dump(state / 'last-result.json', {'status': 'blocked', 'reason': 'Review added files/binary changes before public upload', 'report': str(run / 'publication-review.json')})
+                raise Blocked('Publication review required: ' + str(run / 'publication-review.json'))
             changed = [n for n in desired if desired[n] != canonical[n]]
             for name in changed:
                 validate_skill(name, desired[name], blobs)

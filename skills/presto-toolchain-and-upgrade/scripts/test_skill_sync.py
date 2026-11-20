@@ -121,4 +121,12 @@ class SyncTest(unittest.TestCase):
         result=s.endpoint_apply(conf,{'actions':[{'root':str(self.root/'a'),'name':'sample','expected':before,'tree':desired}],'blobs':{sha:s.base64.b64encode(data).decode()}})
         self.assertEqual(result['status'],'applied');self.assertEqual(s.snapshot(target),desired)
 
+    def test_new_file_requires_hash_bound_review(self):
+        s.fleet(self.config);before=self.head();self.edit('a','new.txt','review me')
+        with self.assertRaises(s.Blocked):s.fleet(self.config)
+        self.assertEqual(self.head(),before)
+        report=s.load(s.load(self.root/'controller/last-result.json')['report'])
+        self.config['approved_publication']=[x['approval'] for x in report]
+        self.assertEqual(s.fleet(self.config)['status'],'complete')
+
 if __name__=='__main__':unittest.main(verbosity=2)
