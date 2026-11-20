@@ -82,9 +82,13 @@ def snapshot(root, blobs=None):
 def put_tree(root, tree, blobs):
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
+    root.chmod(0o755)
     for rel, item in tree.items():
         p = file_path(root, rel)
         p.parent.mkdir(parents=True, exist_ok=True)
+        for parent in [p.parent, *p.parent.parents]:
+            if parent == root or root in parent.parents:
+                parent.chmod(0o755)
         data = blobs[item['sha']]
         if digest(data) != item['sha']:
             raise Blocked('Blob checksum mismatch')
