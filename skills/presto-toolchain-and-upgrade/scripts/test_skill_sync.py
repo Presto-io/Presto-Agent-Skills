@@ -114,4 +114,11 @@ class SyncTest(unittest.TestCase):
         self.assertTrue((self.root/'a/sample/remote.txt').exists())
         self.assertTrue((self.root/'a/sample/data.txt').read_text().startswith('ONE'))
 
+    def test_apply_reuses_verified_local_assets(self):
+        conf=s.load(self.ends[0]['config']);target=self.root/'a/sample';before=s.snapshot(target)
+        desired=dict(before);data=b'only changed bytes travel';sha=s.digest(data)
+        desired['data.txt']={'sha':sha,'mode':420}
+        result=s.endpoint_apply(conf,{'actions':[{'root':str(self.root/'a'),'name':'sample','expected':before,'tree':desired}],'blobs':{sha:s.base64.b64encode(data).decode()}})
+        self.assertEqual(result['status'],'applied');self.assertEqual(s.snapshot(target),desired)
+
 if __name__=='__main__':unittest.main(verbosity=2)

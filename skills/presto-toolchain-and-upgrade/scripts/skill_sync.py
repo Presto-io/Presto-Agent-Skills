@@ -171,7 +171,7 @@ def endpoint_apply(config, request):
             if target in targets:
                 raise Blocked('Duplicate target')
             targets.add(target)
-            current = snapshot(target)
+            current = snapshot(target, blobs)
             if current != a['expected']:
                 raise Blocked('Changed since collection: ' + str(target))
             before[str(target)] = current
@@ -463,7 +463,8 @@ def fleet(config):
         for endpoint in endpoints:
             copies = [c for c in collected if c['endpoint'] == endpoint['id']]
             actions = [{'root': c['root'], 'name': c['name'], 'expected': c['tree'], 'tree': desired[c['name']]} for c in copies]
-            needed = {v['sha'] for a in actions if a['tree'] != a['expected'] for v in a['tree'].values()}
+            existing = {v['sha'] for a in actions if a['expected'] is not None for v in a['expected'].values()}
+            needed = {v['sha'] for a in actions if a['tree'] != a['expected'] for v in a['tree'].values()} - existing
             try:
                 receipt = contact(endpoint, 'apply', {'actions': actions, 'blobs': {s: base64.b64encode(blobs[s]).decode() for s in needed}, 'commit': published})
                 if receipt.get('status') != 'applied':
