@@ -29,3 +29,5 @@
 `validators` 示例：`{"skills":["a-skill"],"command":["python3","skills/a-skill/scripts/check.py"]}`。运行目录为隔离候选仓；命令非零则不发布。新增公共技能及整技能退休采用单独审阅提交，不根据某设备缺目录推断删除；退休目录不得通过本流程复活。
 
 Windows 的 Python/Git 核心设计兼容，但 SSH、文件系统权限与运行时目录需单独接入验收；不把 macOS/Linux 的验证等同 Windows 实测。
+
+验收时可先执行 `status` 查看上一轮结果，再执行 `sync`；status 仅查询，不触发发布。
