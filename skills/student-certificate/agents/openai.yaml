@@ -1,0 +1,4 @@
+interface:
+  display_name: "学生证明"
+  short_description: "按校内示例编写学生志愿服务、校内活动和实践表现证明"
+  default_prompt: "使用 $student-certificate 根据我提供的学生信息和活动事实生成学生证明 DOCX 和待盖章 PDF。"
